@@ -1,0 +1,56 @@
+\name{PrintModelList} 
+\alias{PrintModelList}
+\alias{GetModelList}
+\alias{GetModelNames}
+\title{Information about the implemented covariance models}
+\description{
+  \code{PrintModelList} prints the list of currently implemented models
+  including the corresponding simulation methods.
+}
+\usage{
+
+PrintModelList(operators=FALSE, internal=FALSE, newstyle=TRUE)
+
+}
+\arguments{
+  \item{operators}{logical. Flag whether operators should also be considered.
+  }
+  \item{internal}{logical. Flag whether internal models should also be considered. In case of \command{PrintModelList} and
+    \code{internal=2}, variants of internal models are also printed.
+  }
+  \item{newstyle}{
+    logical. If \code{FALSE} then only the old style model names (Version 2
+    and earlier) are shown. These names can still be used in the list
+    definition of models, see \link{RMmodelsAdvanced}.
+    If \code{TRUE} then the standard names will also be shown.
+  }
+}
+\value{
+  \code{PrintModelList} prints a table of the currently implemented covariance
+  functions and the matching methods.
+  \code{PrintModelList} returns \code{NULL}.
+}
+\details{
+ See \link{RMmodel} for a description of the models and their use.
+}
+\note{
+  From version 3.0 on, the command \code{PrintModelList()}
+  is replaced by the call
+  \code{\link{RFgetModelNames}(internal=FALSE)}.
+}
+
+
+\me
+
+\seealso{
+  \command{\link{RFgetModelNames}}
+}
+\keyword{spatial}
+
+ \examples{\dontshow{StartExample()}
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
+%  library(RandomFields)
+PrintModelList()
+\dontshow{FinalizeExample()}}
+%getOption("device")
