@@ -3,3 +3,5 @@
 *.so
 RandomFields/config.log
 RandomFields/config.status
+RandomFieldsUtils/config.log
+RandomFieldsUtils/config.status
