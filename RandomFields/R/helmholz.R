@@ -1,7 +1,6 @@
 
 
 xRMderivative <- function(phi, partial, var, scale, Aniso, proj) {
-  cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -15,7 +14,7 @@ xRMderivative <- function(phi, partial, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckProj(proj, subst)
-  model <- new(CLASS_CLIST, call = cl, name = 'RMderivative', 
+  model <- new(CLASS_CLIST,  name = 'RMderivative', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -37,7 +36,6 @@ xRMderivative <- new(CLASS_RM,
 
 
 xRMhelmholtz <- function(phi, component, var, scale, Aniso, proj) {
-  cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -51,7 +49,7 @@ xRMhelmholtz <- function(phi, component, var, scale, Aniso, proj) {
 	par.general[['scale']] <- CheckArg(scale, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckProj(proj, subst)
-  model <- new(CLASS_CLIST, call = cl, name = 'RMhelmholtz', 
+  model <- new(CLASS_CLIST, name = 'RMhelmholtz', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)

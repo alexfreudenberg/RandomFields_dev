@@ -314,7 +314,7 @@ setMethod('^', signature=c('character', CLASS_CLIST),
 ## those slots of 'par.general' are excluded from being printed
 ## for which the value is 'RMdefault', i.e. for which there is no
 ## explicit value given
-str.XXRMmodel <-
+str.RMmodel <-
   function(object, max.level = NA, vec.len = strO$vec.len,
            digits.d = strO$digits.d,
            nchar.max = 128, give.attr = TRUE, give.head = TRUE,
@@ -327,6 +327,10 @@ str.XXRMmodel <-
            drop.deparse.attr = strO$drop.deparse.attr,
            formatNum = strO$formatNum, list.len = 99, ...) 
 {
+  if (is.list(object)) {
+    class(object) <- NULL
+    str(object) # ok
+  }
   strO <- strOptions()
   #str1 <- getOption("str"); if (length(str1)>0) strO <- modifyList(str0, str1)
 
@@ -580,7 +584,7 @@ singleplot <- function(cov, dim, distance=NULL, distanceY=NULL,
 calculateRFplot <- function(x, y, dim=1,
                             fctn.type=NULL,
                             MARGIN, fixed.MARGIN, ...,
-                            params, RFopt=RFopt, plotmethod) {
+                            params=NULL, RFopt=RFopt, plotmethod) {
 
 #  Print("OK")
 #  Print(RFopt, missing(MARGIN), missing(fixed.MARGIN))

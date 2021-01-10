@@ -33,7 +33,6 @@ RRdistr <- function(name, nrow, ncol,  ## ddistr, pdistr, qdistr, rdistr,
     if (is.logical(u) && u) return(name)
   }
 
-  cl <- match.call()  
   par.general <- submodels <- par.model <- list()
 
   if (FALSE)
@@ -44,7 +43,7 @@ RRdistr <- function(name, nrow, ncol,  ## ddistr, pdistr, qdistr, rdistr,
 			ddistr=ddistr, pdistr=pdistr, qdistr=qdistr,
 			rdistr=rdistr, envir=envir),
 		   list(...))
-    model <- new(CLASS_CLIST, call = cl, name = RM_DISTR[1],
+    model <- new(CLASS_CLIST, name = RM_DISTR[1],
 		 submodels = submodels, 
 		 par.model = par.model, par.general = par.general)
     return(model) 
@@ -108,7 +107,7 @@ RRdistr <- function(name, nrow, ncol,  ## ddistr, pdistr, qdistr, rdistr,
   pm[['envir']] <- if (hasArg(envir)) envir else new.env()
   par.model <- c(pm, par.model)
     
-  model <- new(CLASS_CLIST, call = cl, name = RM_DISTR[1], submodels = submodels, 
+  model <- new(CLASS_CLIST, name = RM_DISTR[1], submodels = submodels, 
                par.model = par.model, par.general = par.general)
   return(model) 
 }
@@ -142,7 +141,6 @@ RMuser <- function(type, domain, isotropy, vdim, beta,
                    coordnames = c("x", "y", "z", "T"),
                    fctn, fst, snd, envir,
                    var, scale, Aniso, proj) {
-	cl <- match.call()
 	submodels <- par.general <- par.model <- list() 
 	
 	if (!hasArg(type)) type <- TYPE_NAMES[ShapeType + 1]
@@ -212,7 +210,7 @@ RMuser <- function(type, domain, isotropy, vdim, beta,
 	par.general[['Aniso']] <-if (hasArg(Aniso)) Aniso else NO_DOLLAR_VALUE
 	par.general[['proj']] <-if (hasArg(proj)) proj else NO_DOLLAR_VALUE
 
-	model <- new(CLASS_CLIST, call = cl, name = RM_USER[1], 
+	model <- new(CLASS_CLIST, name = RM_USER[1], 
 			submodels = submodels, 
 			par.model = par.model, par.general = par.general)
 	return(model) 
@@ -253,7 +251,7 @@ RMdeclare <- function(...) {
   par.model[right] <- NA
  # Print(left, right)
   for (i in 1:length(right)) par.model[[i]] <- base::...elt(i)    
-  model <- new(CLASS_CLIST, call = CL, name = model.name, submodels = list(), 
+  model <- new(CLASS_CLIST, name = model.name, submodels = list(), 
                par.model = par.model, par.general = list())
   
   return(model) 
@@ -462,7 +460,6 @@ XXXRMprod <- function(phi, var, scale, Aniso, proj) {
 
 RMtrendplus <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9,
                         add.na=FALSE, var, scale, Aniso, proj) {
-  cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('C0') && !is.null(subst <- substitute(C0))) 
@@ -496,7 +493,7 @@ RMtrendplus <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9,
     par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
   if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
     par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl,
+  model <- methods::new(CLASS_CLIST,
                         name = 'RMplus',  ## !!
                         submodels = submodels, 
                         par.model = par.model,
@@ -521,7 +518,6 @@ RMtrendplus <- new(CLASS_RM,
 
 RMmodelplus <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9,
                         trend, var, scale, Aniso, proj) {
-  cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('C0') && !is.null(subst <- substitute(C0))) 
@@ -555,7 +551,7 @@ RMmodelplus <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9,
     par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
   if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
     par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl,
+  model <- methods::new(CLASS_CLIST, 
                         name = 'RMplus',  ## !!
                         submodels = submodels, 
                         par.model = par.model,

@@ -217,7 +217,7 @@ void SetDefaultModeValues(int old, int m){
   //  f->optim_var_estim = fit_optim_var[m];
    char dummy[10];
   STRCPY(dummy, f_opt[m]);
-  f->optimiser = Match(dummy, OPTIMISER_NAMES, nOptimiser);
+  f->suboptimiser = f->optimiser = Match(dummy, OPTIMISER_NAMES, nOptimiser);
   GLOBAL.sequ.initial = -(GLOBAL.sequ.back = sequ_back_initial[m]);
 
   //  printf("optimiser %d %s\n", f->optimiser,  OPTIMISER_NAMES[f->optimiser]);
@@ -406,12 +406,13 @@ const char * fit[fitN] =
    "shortnamelength",  "split",   "scale_ratio", //20
    "critical",  "n_crit",  "max_neighbours",  //23
    "cliquesize",  "splitfactor_neighbours",  "smalldataset", 
-   "min_diag",  "reoptimise",   "optimiser", 
-   "algorithm",  "likelihood",  "ratiotest_approx", 
+   "min_diag",  "reoptimise",   "optimiser",
+   "nloptr_algorithm",  "likelihood",  "ratiotest_approx", 
    "split_refined",  "cross_refit",  "estimate_variance_globally", 
    "pgtol", "pgtol_recall",  "factr",
    "factr_recall" ,
-   "addNAlintrend", "emp_alpha", "suggesting_bounds"
+   "addNAlintrend", "emp_alpha", "suggesting_bounds", "trace",
+   "sub_optimiser"
   };
 
 
@@ -906,14 +907,11 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
     case 22: ef->smalldataset = POS0INT; break;//
     case 23: ef->min_diag = NUM; break;//
     case 24: ef->reoptimise = LOGI; break;
-    case 25: ef->optimiser = GetName(el, name, OPTIMISER_NAMES, nOptimiser, 0); //
-      break;
-    case 26: 
-      switch(ef->optimiser) {
-      case 3 : ef->algorithm = GetName(el, name, NLOPTR_NAMES, nNLOPTR); //
-	break;
-      default: ef->algorithm = UNSET;
-      }
+    case 25: ef->suboptimiser =  ef->optimiser =
+      GetName(el, name, OPTIMISER_NAMES, nOptimiser, 0);
+      break;      
+    case 26: // z.z. nur einer 
+      ef->algorithm = GetName(el, name, NLOPTR_NAMES, nNLOPTR); //
       break;
     case 27: ef->likelihood =
 	GetName(el, name, LIKELIHOOD_NAMES, nLikelihood); ; break; 
@@ -934,8 +932,12 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
       break;
     }
     case 38: ef->suggesting_bounds = LOGI; break;
-    default:  BUG;
-    }}
+    case 39: ef->trace = INT; break;
+    case 40: ef->suboptimiser =  
+	GetName(el, name, OPTIMISER_NAMES, nOptimiser, 0); //
+      break;
+     default:  BUG;
+      }}
   break;
   case 15: { // empvario
     empvario_param *ep;
@@ -1514,9 +1516,12 @@ void getRFoptions(SEXP sublist, int i, int local) {
     ADD(ScalarLogical(p->reoptimise));
     ADD(p->optimiser>=0 ? ScalarString(mkChar(OPTIMISER_NAMES[p->optimiser])) 
 	: R_NilValue);
-    ADD(p->algorithm == UNSET ? R_NilValue :
-	ScalarString(mkChar(p->optimiser == 3 ? NLOPTR_NAMES[p->algorithm]
-			    : "")
+    // printf("alg %d %s\n", p->algorithm, NLOPTR_NAMES[p->algorithm]);
+    ADD(//p->algorithm == UNSET ? R_NilValue :
+	ScalarString(mkChar(//p->optimiser == 3 ?
+			    NLOPTR_NAMES[p->algorithm]
+			    //: ""
+			    )
 		     ));
     ADD(ScalarString(mkChar(LIKELIHOOD_NAMES[p->likelihood])));
     ADD(ScalarLogical(p->ratiotest_approx));
@@ -1530,7 +1535,11 @@ void getRFoptions(SEXP sublist, int i, int local) {
     ADD(ScalarInteger(p->addNAlintrend));
     ADD(ScalarReal(p->emp_alpha));
     ADD(ScalarLogical(p->suggesting_bounds));
-  }  
+    ADD(ScalarInteger(p->trace));
+    ADD(p->suboptimiser>=0
+	? ScalarString(mkChar(OPTIMISER_NAMES[p->suboptimiser])) 
+	: R_NilValue);
+   }  
    break;
    
   case 15: {

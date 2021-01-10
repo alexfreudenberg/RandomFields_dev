@@ -38,7 +38,7 @@ RFfit(model, x, y = NULL, z = NULL, T = NULL, grid=NULL, data,
  \item{data}{\argData}
  \item{lower}{\argLower}
  \item{upper}{\argUpper}
- \item{methods}{\argFitmethods} 
+ \item{methods}{\argFitmethods. See Details.} 
  \item{sub.methods}{\argFitsubmethods. See Details.}
  \item{users.guess}{\argUsersguess}
  \item{distances,dim}{\argDistances}
@@ -58,12 +58,13 @@ RFfit(model, x, y = NULL, z = NULL, T = NULL, grid=NULL, data,
   \code{data} for \code{NA}s and will perform imputing.
 
   The function has many more options to tune the optimizer,
-  see \command{\link{RFoptions}} for details.
+  see \link{RFoptionsFit} for details.
 
   If the model defines a Gaussian random field, the options
   for \code{methods} and \code{submethods} are currently
   \code{"ml"} and \code{c("self", "plain", "sqrt.nr", "sd.inv", "internal")},
-  respectively.
+  respectively.  Either of them can be set to \cite{NULL} so that it is
+  not used at all.
 }
 
 
@@ -71,14 +72,14 @@ RFfit(model, x, y = NULL, z = NULL, T = NULL, grid=NULL, data,
   \itemize{
     \item
     An important optional argument is \code{boxcox} which indicates
-    a Box-Cox transformation; see \code{boxcox} in \command{\link{RFoptions}}
+    a Box-Cox transformation; see \code{boxcox} in \link{RFoptionsFit}
     and \code{RFboxcox} for details.
     \item
     Instead of \command{\link[stats]{optim}}, other optimisers can be used,
     see \link{RFfitOptimiser}.
     \item
     Several advanced options can be found in sections \sQuote{General
-      options} and \sQuote{fit} of \command{\link{RFoptions}}.
+      options} and \command{\link{RFoptionsFit}}.
     \item
     In particular, \code{boxcox}, \code{boxcox_lb},  \code{boxcox_ub}
     allow Box-Cox transformation.
@@ -110,6 +111,7 @@ RFfit(model, x, y = NULL, z = NULL, T = NULL, grid=NULL, data,
 \me
 
 \seealso{
+  \link{RFoptionsFit},
  \command{\link{RFfitOptimiser}},
   \command{\link{RFlikelihood}},
  \command{\link{RFratiotest}},

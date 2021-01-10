@@ -3,7 +3,7 @@
 
 
 RMplus <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, trend, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(C0)) submodels[['C0']] <- C0
   if (hasArg(C1)) submodels[['C1']] <- C1
@@ -26,7 +26,7 @@ RMplus <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, trend, var, scale, An
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMplus', 
+  model <- methods::new(CLASS_CLIST, name = 'RMplus', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -48,7 +48,7 @@ RMplus <- new(CLASS_RM,
 
 
 RMmult <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(C0)) submodels[['C0']] <- C0
   if (hasArg(C1)) submodels[['C1']] <- C1
@@ -69,7 +69,7 @@ RMmult <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, var, scale, Aniso, pr
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMmult', 
+  model <- methods::new(CLASS_CLIST, name = 'RMmult', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -91,7 +91,7 @@ RMmult <- new(CLASS_RM,
 
 
 RMS  <- function(phi, var, scale, Aniso, proj, anisoT) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -106,7 +106,7 @@ RMS  <- function(phi, var, scale, Aniso, proj, anisoT) {
   if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.model[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMS', 
+  model <- methods::new(CLASS_CLIST, name = 'RMS', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -128,7 +128,7 @@ RMS <- new(CLASS_RM,
 
 
 RMave <- function(phi, A, z, spacetime, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -146,7 +146,7 @@ RMave <- function(phi, A, z, spacetime, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMave', 
+  model <- methods::new(CLASS_CLIST, name = 'RMave', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -168,7 +168,7 @@ RMave <- new(CLASS_RM,
 
 
 RMbcw <- function(alpha, beta, const, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -185,7 +185,7 @@ RMbcw <- function(alpha, beta, const, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMbcw', 
+  model <- methods::new(CLASS_CLIST, name = 'RMbcw', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -207,7 +207,7 @@ RMbcw <- new(CLASS_RM,
 
 
 RMlsfbm <- function(alpha, const, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -222,7 +222,7 @@ RMlsfbm <- function(alpha, const, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMlsfbm', 
+  model <- methods::new(CLASS_CLIST, name = 'RMlsfbm', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -244,7 +244,7 @@ RMlsfbm <- new(CLASS_RM,
 
 
 RMbessel <- function(nu, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('nu') && !is.null(subst <- substitute(nu))) 
@@ -257,7 +257,7 @@ RMbessel <- function(nu, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMbessel', 
+  model <- methods::new(CLASS_CLIST, name = 'RMbessel', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -279,7 +279,7 @@ RMbessel <- new(CLASS_RM,
 
 
 RMbigneiting <- function(kappa, mu, s, sred12, gamma, cdiag, rhored, c, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('kappa') && !is.null(subst <- substitute(kappa))) 
@@ -306,7 +306,7 @@ RMbigneiting <- function(kappa, mu, s, sred12, gamma, cdiag, rhored, c, var, sca
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMbigneiting', 
+  model <- methods::new(CLASS_CLIST, name = 'RMbigneiting', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -328,7 +328,7 @@ RMbigneiting <- new(CLASS_RM,
 
 
 RMbernoulli <- function(phi, threshold, correlation, centred, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -346,7 +346,7 @@ RMbernoulli <- function(phi, threshold, correlation, centred, var, scale, Aniso,
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMbernoulli', 
+  model <- methods::new(CLASS_CLIST, name = 'RMbernoulli', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -368,7 +368,7 @@ RMbernoulli <- new(CLASS_RM,
 
 
 RMbiwm <- function(nudiag, nured12, nu, s, cdiag, rhored, c, notinvnu, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('nudiag') && !is.null(subst <- substitute(nudiag))) 
@@ -395,7 +395,7 @@ RMbiwm <- function(nudiag, nured12, nu, s, cdiag, rhored, c, notinvnu, var, scal
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMbiwm', 
+  model <- methods::new(CLASS_CLIST, name = 'RMbiwm', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -417,7 +417,7 @@ RMbiwm <- new(CLASS_RM,
 
 
 RMbistable <- function(alpha, s, cdiag, rho, rhored, betared, alphadiag, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -442,7 +442,7 @@ RMbistable <- function(alpha, s, cdiag, rho, rhored, betared, alphadiag, var, sc
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMbistable', 
+  model <- methods::new(CLASS_CLIST, name = 'RMbistable', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -464,7 +464,7 @@ RMbistable <- new(CLASS_RM,
 
 
 RMblend <- function(multi, blend, thresholds, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(multi)) submodels[['multi']] <- multi
   if (hasArg(blend)) submodels[['blend']] <- blend
@@ -479,7 +479,7 @@ RMblend <- function(multi, blend, thresholds, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMblend', 
+  model <- methods::new(CLASS_CLIST, name = 'RMblend', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -501,7 +501,7 @@ RMblend <- new(CLASS_RM,
 
 
 RMbrownresnick <- function(phi, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -513,7 +513,7 @@ RMbrownresnick <- function(phi, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMbrownresnick', 
+  model <- methods::new(CLASS_CLIST, name = 'RMbrownresnick', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -535,7 +535,7 @@ RMbrownresnick <- new(CLASS_RM,
 
 
 RMbr2bg <- function(phi, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -547,7 +547,7 @@ RMbr2bg <- function(phi, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMbr2bg', 
+  model <- methods::new(CLASS_CLIST, name = 'RMbr2bg', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -569,7 +569,7 @@ RMbr2bg <- new(CLASS_RM,
 
 
 RMbr2eg <- function(phi, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -581,7 +581,7 @@ RMbr2eg <- function(phi, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMbr2eg', 
+  model <- methods::new(CLASS_CLIST, name = 'RMbr2eg', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -603,7 +603,7 @@ RMbr2eg <- new(CLASS_RM,
 
 
 RMbubble <- function(phi, scaling, z, weight, minscale, barycentre, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(scaling)) submodels[['scaling']] <- scaling
@@ -624,7 +624,7 @@ RMbubble <- function(phi, scaling, z, weight, minscale, barycentre, var, scale, 
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMbubble', 
+  model <- methods::new(CLASS_CLIST, name = 'RMbubble', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -646,7 +646,7 @@ RMbubble <- new(CLASS_RM,
 
 
 RMcauchy <- function(gamma, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('gamma') && !is.null(subst <- substitute(gamma))) 
@@ -659,7 +659,7 @@ RMcauchy <- function(gamma, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMcauchy', 
+  model <- methods::new(CLASS_CLIST, name = 'RMcauchy', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -681,7 +681,7 @@ RMcauchy <- new(CLASS_RM,
 
 
 RMcircular <- function(var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('var') && !is.null(subst <- substitute(var))) 
@@ -692,7 +692,7 @@ RMcircular <- function(var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMcircular', 
+  model <- methods::new(CLASS_CLIST, name = 'RMcircular', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -714,14 +714,14 @@ RMcircular <- new(CLASS_RM,
 
 
 RMconstant <- function(M, var) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('M') && !is.null(subst <- substitute(M))) 
 	par.model[['M']] <- CheckArg(M, subst, TRUE)
     if (hasArg('var') && !is.null(subst <- substitute(var))) 
 	par.general[['var']] <- CheckArg(var, subst, TRUE)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMconstant', 
+  model <- methods::new(CLASS_CLIST, name = 'RMconstant', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -743,7 +743,7 @@ RMconstant <- new(CLASS_RM,
 
 
 iRMfixcov <- function(norm, M, x, raw, var, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(norm)) submodels[['norm']] <- norm
   
@@ -757,7 +757,7 @@ iRMfixcov <- function(norm, M, x, raw, var, proj) {
 	par.general[['var']] <- CheckArg(var, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMfixcov', 
+  model <- methods::new(CLASS_CLIST, name = 'RMfixcov', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -779,7 +779,7 @@ iRMfixcov <- new(CLASS_RM,
 
 
 RMcoxisham <- function(phi, mu, D, beta, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -797,7 +797,7 @@ RMcoxisham <- function(phi, mu, D, beta, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMcoxisham', 
+  model <- methods::new(CLASS_CLIST, name = 'RMcoxisham', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -819,7 +819,7 @@ RMcoxisham <- new(CLASS_RM,
 
 
 RMcubic <- function(var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('var') && !is.null(subst <- substitute(var))) 
@@ -830,7 +830,7 @@ RMcubic <- function(var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMcubic', 
+  model <- methods::new(CLASS_CLIST, name = 'RMcubic', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -852,7 +852,7 @@ RMcubic <- new(CLASS_RM,
 
 
 RMcurlfree <- function(phi, which, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -866,7 +866,7 @@ RMcurlfree <- function(phi, which, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMcurlfree', 
+  model <- methods::new(CLASS_CLIST, name = 'RMcurlfree', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -888,7 +888,7 @@ RMcurlfree <- new(CLASS_RM,
 
 
 RMcutoff <- function(phi, diameter, a, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -904,7 +904,7 @@ RMcutoff <- function(phi, diameter, a, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMcutoff', 
+  model <- methods::new(CLASS_CLIST, name = 'RMcutoff', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -926,7 +926,7 @@ RMcutoff <- new(CLASS_RM,
 
 
 RMdagum <- function(beta, gamma, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('beta') && !is.null(subst <- substitute(beta))) 
@@ -941,7 +941,7 @@ RMdagum <- function(beta, gamma, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMdagum', 
+  model <- methods::new(CLASS_CLIST, name = 'RMdagum', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -963,7 +963,7 @@ RMdagum <- new(CLASS_RM,
 
 
 RMdampedcos <- function(lambda, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('lambda') && !is.null(subst <- substitute(lambda))) 
@@ -976,7 +976,7 @@ RMdampedcos <- function(lambda, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMdampedcos', 
+  model <- methods::new(CLASS_CLIST, name = 'RMdampedcos', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -998,7 +998,7 @@ RMdampedcos <- new(CLASS_RM,
 
 
 RMderiv <- function(phi, which, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -1012,7 +1012,7 @@ RMderiv <- function(phi, which, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMderiv', 
+  model <- methods::new(CLASS_CLIST, name = 'RMderiv', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -1034,7 +1034,7 @@ RMderiv <- new(CLASS_RM,
 
 
 RMdewijsian <- function(alpha, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -1047,7 +1047,7 @@ RMdewijsian <- function(alpha, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMdewijsian', 
+  model <- methods::new(CLASS_CLIST, name = 'RMdewijsian', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -1069,7 +1069,7 @@ RMdewijsian <- new(CLASS_RM,
 
 
 RMdivfree <- function(phi, which, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -1083,7 +1083,7 @@ RMdivfree <- function(phi, which, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMdivfree', 
+  model <- methods::new(CLASS_CLIST, name = 'RMdivfree', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -1105,7 +1105,7 @@ RMdivfree <- new(CLASS_RM,
 
 
 RMepscauchy <- function(alpha, beta, eps, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -1122,7 +1122,7 @@ RMepscauchy <- function(alpha, beta, eps, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMepscauchy', 
+  model <- methods::new(CLASS_CLIST, name = 'RMepscauchy', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -1144,7 +1144,7 @@ RMepscauchy <- new(CLASS_RM,
 
 
 RMexp <- function(var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('var') && !is.null(subst <- substitute(var))) 
@@ -1155,7 +1155,7 @@ RMexp <- function(var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMexp', 
+  model <- methods::new(CLASS_CLIST, name = 'RMexp', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -1177,7 +1177,7 @@ RMexp <- new(CLASS_RM,
 
 
 RMexponential <- function(phi, n, standardised, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -1193,7 +1193,7 @@ RMexponential <- function(phi, n, standardised, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMexponential', 
+  model <- methods::new(CLASS_CLIST, name = 'RMexponential', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -1215,7 +1215,7 @@ RMexponential <- new(CLASS_RM,
 
 
 RMschlather <- function(phi, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -1227,7 +1227,7 @@ RMschlather <- function(phi, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMschlather', 
+  model <- methods::new(CLASS_CLIST, name = 'RMschlather', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -1249,7 +1249,7 @@ RMschlather <- new(CLASS_RM,
 
 
 RMfractdiff <- function(alpha, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -1262,7 +1262,7 @@ RMfractdiff <- function(alpha, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMfractdiff', 
+  model <- methods::new(CLASS_CLIST, name = 'RMfractdiff', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -1284,7 +1284,7 @@ RMfractdiff <- new(CLASS_RM,
 
 
 RMflatpower <- function(alpha, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -1297,7 +1297,7 @@ RMflatpower <- function(alpha, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMflatpower', 
+  model <- methods::new(CLASS_CLIST, name = 'RMflatpower', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -1319,7 +1319,7 @@ RMflatpower <- new(CLASS_RM,
 
 
 RMfbm <- function(alpha, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -1332,7 +1332,7 @@ RMfbm <- function(alpha, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMfbm', 
+  model <- methods::new(CLASS_CLIST, name = 'RMfbm', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -1354,7 +1354,7 @@ RMfbm <- new(CLASS_RM,
 
 
 RMfractgauss <- function(alpha, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -1367,7 +1367,7 @@ RMfractgauss <- function(alpha, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMfractgauss', 
+  model <- methods::new(CLASS_CLIST, name = 'RMfractgauss', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -1389,7 +1389,7 @@ RMfractgauss <- new(CLASS_RM,
 
 
 RMgauss <- function(var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('var') && !is.null(subst <- substitute(var))) 
@@ -1400,7 +1400,7 @@ RMgauss <- function(var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMgauss', 
+  model <- methods::new(CLASS_CLIST, name = 'RMgauss', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -1422,7 +1422,7 @@ RMgauss <- new(CLASS_RM,
 
 
 RMgenfbm <- function(alpha, beta, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -1437,7 +1437,7 @@ RMgenfbm <- function(alpha, beta, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMgenfbm', 
+  model <- methods::new(CLASS_CLIST, name = 'RMgenfbm', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -1459,7 +1459,7 @@ RMgenfbm <- new(CLASS_RM,
 
 
 RMgencauchy <- function(alpha, beta, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -1474,7 +1474,7 @@ RMgencauchy <- function(alpha, beta, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMgencauchy', 
+  model <- methods::new(CLASS_CLIST, name = 'RMgencauchy', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -1496,7 +1496,7 @@ RMgencauchy <- new(CLASS_RM,
 
 
 RMbicauchy <- function(alpha, beta, s, rho, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -1515,7 +1515,7 @@ RMbicauchy <- function(alpha, beta, s, rho, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMbicauchy', 
+  model <- methods::new(CLASS_CLIST, name = 'RMbicauchy', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -1537,7 +1537,7 @@ RMbicauchy <- new(CLASS_RM,
 
 
 RMgengneiting <- function(kappa, mu, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('kappa') && !is.null(subst <- substitute(kappa))) 
@@ -1552,7 +1552,7 @@ RMgengneiting <- function(kappa, mu, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMgengneiting', 
+  model <- methods::new(CLASS_CLIST, name = 'RMgengneiting', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -1574,7 +1574,7 @@ RMgengneiting <- new(CLASS_RM,
 
 
 RMgneiting <- function(orig, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('orig') && !is.null(subst <- substitute(orig))) 
@@ -1587,7 +1587,7 @@ RMgneiting <- function(orig, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMgneiting', 
+  model <- methods::new(CLASS_CLIST, name = 'RMgneiting', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -1609,7 +1609,7 @@ RMgneiting <- new(CLASS_RM,
 
 
 RMgennsst <- function(phi, psi, dim_u, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(psi)) submodels[['psi']] <- psi
@@ -1624,7 +1624,7 @@ RMgennsst <- function(phi, psi, dim_u, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMgennsst', 
+  model <- methods::new(CLASS_CLIST, name = 'RMgennsst', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -1646,7 +1646,7 @@ RMgennsst <- new(CLASS_RM,
 
 
 RMhyperbolic <- function(nu, lambda, delta, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('nu') && !is.null(subst <- substitute(nu))) 
@@ -1663,7 +1663,7 @@ RMhyperbolic <- function(nu, lambda, delta, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMhyperbolic', 
+  model <- methods::new(CLASS_CLIST, name = 'RMhyperbolic', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -1685,7 +1685,7 @@ RMhyperbolic <- new(CLASS_RM,
 
 
 RMiaco <- function(nu, lambda, delta, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('nu') && !is.null(subst <- substitute(nu))) 
@@ -1702,7 +1702,7 @@ RMiaco <- function(nu, lambda, delta, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMiaco', 
+  model <- methods::new(CLASS_CLIST, name = 'RMiaco', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -1724,7 +1724,7 @@ RMiaco <- new(CLASS_RM,
 
 
 RMidmodel <- function(phi, vdim, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -1738,7 +1738,7 @@ RMidmodel <- function(phi, vdim, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMidmodel', 
+  model <- methods::new(CLASS_CLIST, name = 'RMidmodel', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -1760,7 +1760,7 @@ RMidmodel <- new(CLASS_RM,
 
 
 RMkolmogorov <- function(var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('var') && !is.null(subst <- substitute(var))) 
@@ -1771,7 +1771,7 @@ RMkolmogorov <- function(var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMkolmogorov', 
+  model <- methods::new(CLASS_CLIST, name = 'RMkolmogorov', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -1793,7 +1793,7 @@ RMkolmogorov <- new(CLASS_RM,
 
 
 RMlgd <- function(alpha, beta, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -1808,7 +1808,7 @@ RMlgd <- function(alpha, beta, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMlgd', 
+  model <- methods::new(CLASS_CLIST, name = 'RMlgd', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -1830,7 +1830,7 @@ RMlgd <- new(CLASS_RM,
 
 
 RMmastein <- function(phi, nu, delta, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -1846,7 +1846,7 @@ RMmastein <- function(phi, nu, delta, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMmastein', 
+  model <- methods::new(CLASS_CLIST, name = 'RMmastein', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -1868,7 +1868,7 @@ RMmastein <- new(CLASS_RM,
 
 
 RMma <- function(phi, alpha, theta, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -1884,7 +1884,7 @@ RMma <- function(phi, alpha, theta, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMma', 
+  model <- methods::new(CLASS_CLIST, name = 'RMma', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -1906,7 +1906,7 @@ RMma <- new(CLASS_RM,
 
 
 RMintexp <- function(phi, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -1918,7 +1918,7 @@ RMintexp <- function(phi, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMintexp', 
+  model <- methods::new(CLASS_CLIST, name = 'RMintexp', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -1940,7 +1940,7 @@ RMintexp <- new(CLASS_RM,
 
 
 RMmatrix <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, M, vdim, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(C0)) submodels[['C0']] <- C0
   if (hasArg(C1)) submodels[['C1']] <- C1
@@ -1965,7 +1965,7 @@ RMmatrix <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, M, vdim, var, scale
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMmatrix', 
+  model <- methods::new(CLASS_CLIST, name = 'RMmatrix', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -1987,7 +1987,7 @@ RMmatrix <- new(CLASS_RM,
 
 
 RMmatern <- function(nu, notinvnu, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('nu') && !is.null(subst <- substitute(nu))) 
@@ -2002,7 +2002,7 @@ RMmatern <- function(nu, notinvnu, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMmatern', 
+  model <- methods::new(CLASS_CLIST, name = 'RMmatern', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -2024,7 +2024,7 @@ RMmatern <- new(CLASS_RM,
 
 
 RMmqam <- function(phi, C1, C2, C3, C4, C5, C6, C7, C8, C9, theta, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(C1)) submodels[['C1']] <- C1
@@ -2047,7 +2047,7 @@ RMmqam <- function(phi, C1, C2, C3, C4, C5, C6, C7, C8, C9, theta, var, scale, A
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMmqam', 
+  model <- methods::new(CLASS_CLIST, name = 'RMmqam', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -2069,7 +2069,7 @@ RMmqam <- new(CLASS_RM,
 
 
 RMmultiquad <- function(delta, tau, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('delta') && !is.null(subst <- substitute(delta))) 
@@ -2084,7 +2084,7 @@ RMmultiquad <- function(delta, tau, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMmultiquad', 
+  model <- methods::new(CLASS_CLIST, name = 'RMmultiquad', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -2106,7 +2106,7 @@ RMmultiquad <- new(CLASS_RM,
 
 
 RMnatsc <- function(phi, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -2118,7 +2118,7 @@ RMnatsc <- function(phi, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMnatsc', 
+  model <- methods::new(CLASS_CLIST, name = 'RMnatsc', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -2140,7 +2140,7 @@ RMnatsc <- new(CLASS_RM,
 
 
 RMnsst <- function(phi, psi, delta, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(psi)) submodels[['psi']] <- psi
@@ -2155,7 +2155,7 @@ RMnsst <- function(phi, psi, delta, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMnsst', 
+  model <- methods::new(CLASS_CLIST, name = 'RMnsst', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -2177,7 +2177,7 @@ RMnsst <- new(CLASS_RM,
 
 
 RMnugget <- function(tol, vdim, var, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('tol') && !is.null(subst <- substitute(tol))) 
@@ -2190,7 +2190,7 @@ RMnugget <- function(tol, vdim, var, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMnugget', 
+  model <- methods::new(CLASS_CLIST, name = 'RMnugget', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -2212,7 +2212,7 @@ RMnugget <- new(CLASS_RM,
 
 
 RMparswm <- function(nudiag, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('nudiag') && !is.null(subst <- substitute(nudiag))) 
@@ -2225,7 +2225,7 @@ RMparswm <- function(nudiag, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMparswm', 
+  model <- methods::new(CLASS_CLIST, name = 'RMparswm', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -2247,7 +2247,7 @@ RMparswm <- new(CLASS_RM,
 
 
 RMpenta <- function(var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('var') && !is.null(subst <- substitute(var))) 
@@ -2258,7 +2258,7 @@ RMpenta <- function(var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMpenta', 
+  model <- methods::new(CLASS_CLIST, name = 'RMpenta', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -2280,7 +2280,7 @@ RMpenta <- new(CLASS_RM,
 
 
 RMaskey <- function(alpha, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -2293,7 +2293,7 @@ RMaskey <- function(alpha, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMaskey', 
+  model <- methods::new(CLASS_CLIST, name = 'RMaskey', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -2315,7 +2315,7 @@ RMaskey <- new(CLASS_RM,
 
 
 RMpower <- function(phi, alpha, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -2329,7 +2329,7 @@ RMpower <- function(phi, alpha, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMpower', 
+  model <- methods::new(CLASS_CLIST, name = 'RMpower', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -2351,7 +2351,7 @@ RMpower <- new(CLASS_RM,
 
 
 RMprod <- function(phi, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -2363,7 +2363,7 @@ RMprod <- function(phi, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMprod', 
+  model <- methods::new(CLASS_CLIST, name = 'RMprod', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -2385,7 +2385,7 @@ RMprod <- new(CLASS_RM,
 
 
 RMqam <- function(phi, C1, C2, C3, C4, C5, C6, C7, C8, C9, theta, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(C1)) submodels[['C1']] <- C1
@@ -2408,7 +2408,7 @@ RMqam <- function(phi, C1, C2, C3, C4, C5, C6, C7, C8, C9, theta, var, scale, An
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMqam', 
+  model <- methods::new(CLASS_CLIST, name = 'RMqam', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -2430,7 +2430,7 @@ RMqam <- new(CLASS_RM,
 
 
 RMqexp <- function(alpha, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -2443,7 +2443,7 @@ RMqexp <- function(alpha, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMqexp', 
+  model <- methods::new(CLASS_CLIST, name = 'RMqexp', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -2465,7 +2465,7 @@ RMqexp <- new(CLASS_RM,
 
 
 RMscale <- function(phi, scaling, penalty, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(scaling)) submodels[['scaling']] <- scaling
@@ -2479,7 +2479,7 @@ RMscale <- function(phi, scaling, penalty, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMscale', 
+  model <- methods::new(CLASS_CLIST, name = 'RMscale', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -2501,7 +2501,7 @@ RMscale <- new(CLASS_RM,
 
 
 RMschur <- function(phi, M, diag, rhored, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -2519,7 +2519,7 @@ RMschur <- function(phi, M, diag, rhored, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMschur', 
+  model <- methods::new(CLASS_CLIST, name = 'RMschur', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -2541,7 +2541,7 @@ RMschur <- new(CLASS_RM,
 
 
 RMdelay <- function(phi, s, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -2555,7 +2555,7 @@ RMdelay <- function(phi, s, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMdelay', 
+  model <- methods::new(CLASS_CLIST, name = 'RMdelay', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -2577,7 +2577,7 @@ RMdelay <- new(CLASS_RM,
 
 
 RMsinepower <- function(alpha, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -2590,7 +2590,7 @@ RMsinepower <- function(alpha, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMsinepower', 
+  model <- methods::new(CLASS_CLIST, name = 'RMsinepower', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -2612,7 +2612,7 @@ RMsinepower <- new(CLASS_RM,
 
 
 RMspheric <- function(var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('var') && !is.null(subst <- substitute(var))) 
@@ -2623,7 +2623,7 @@ RMspheric <- function(var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMspheric', 
+  model <- methods::new(CLASS_CLIST, name = 'RMspheric', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -2645,7 +2645,7 @@ RMspheric <- new(CLASS_RM,
 
 
 RMstable <- function(alpha, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -2658,7 +2658,7 @@ RMstable <- function(alpha, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMstable', 
+  model <- methods::new(CLASS_CLIST, name = 'RMstable', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -2680,7 +2680,7 @@ RMstable <- new(CLASS_RM,
 
 
 RMintrinsic <- function(phi, diameter, rawR, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -2696,7 +2696,7 @@ RMintrinsic <- function(phi, diameter, rawR, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMintrinsic', 
+  model <- methods::new(CLASS_CLIST, name = 'RMintrinsic', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -2718,7 +2718,7 @@ RMintrinsic <- new(CLASS_RM,
 
 
 RMstein <- function(nu, zeta, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('nu') && !is.null(subst <- substitute(nu))) 
@@ -2733,7 +2733,7 @@ RMstein <- function(nu, zeta, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMstein', 
+  model <- methods::new(CLASS_CLIST, name = 'RMstein', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -2755,7 +2755,7 @@ RMstein <- new(CLASS_RM,
 
 
 RMstp <- function(xi, phi, S, z, M, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(xi)) submodels[['xi']] <- xi
   if (hasArg(phi)) submodels[['phi']] <- phi
@@ -2774,7 +2774,7 @@ RMstp <- function(xi, phi, S, z, M, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMstp', 
+  model <- methods::new(CLASS_CLIST, name = 'RMstp', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -2796,7 +2796,7 @@ RMstp <- new(CLASS_RM,
 
 
 RMtbm <- function(phi, fulldim, reduceddim, layers, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -2814,7 +2814,7 @@ RMtbm <- function(phi, fulldim, reduceddim, layers, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMtbm', 
+  model <- methods::new(CLASS_CLIST, name = 'RMtbm', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -2836,7 +2836,7 @@ RMtbm <- new(CLASS_RM,
 
 
 RMsum <- function(phi, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -2848,7 +2848,7 @@ RMsum <- function(phi, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMsum', 
+  model <- methods::new(CLASS_CLIST, name = 'RMsum', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -2870,7 +2870,7 @@ RMsum <- new(CLASS_RM,
 
 
 iRMcov <- function(gamma, x, a, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(gamma)) submodels[['gamma']] <- gamma
   
@@ -2886,7 +2886,7 @@ iRMcov <- function(gamma, x, a, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMcov', 
+  model <- methods::new(CLASS_CLIST, name = 'RMcov', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -2908,7 +2908,7 @@ iRMcov <- new(CLASS_RM,
 
 
 RMvector <- function(phi, a, Dspace, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -2924,7 +2924,7 @@ RMvector <- function(phi, a, Dspace, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMvector', 
+  model <- methods::new(CLASS_CLIST, name = 'RMvector', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -2946,7 +2946,7 @@ RMvector <- new(CLASS_RM,
 
 
 RMwave <- function(var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('var') && !is.null(subst <- substitute(var))) 
@@ -2957,7 +2957,7 @@ RMwave <- function(var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMwave', 
+  model <- methods::new(CLASS_CLIST, name = 'RMwave', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -2979,7 +2979,7 @@ RMwave <- new(CLASS_RM,
 
 
 RMwhittle <- function(nu, notinvnu, var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('nu') && !is.null(subst <- substitute(nu))) 
@@ -2994,7 +2994,7 @@ RMwhittle <- function(nu, notinvnu, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMwhittle', 
+  model <- methods::new(CLASS_CLIST, name = 'RMwhittle', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -3016,13 +3016,13 @@ RMwhittle <- new(CLASS_RM,
 
 
 RMtrend <- function(mean) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('mean') && !is.null(subst <- substitute(mean))) 
 	par.model[['mean']] <- CheckArg(mean, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMtrend', 
+  model <- methods::new(CLASS_CLIST, name = 'RMtrend', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -3044,7 +3044,7 @@ RMtrend <- new(CLASS_RM,
 
 
 RMangle <- function(angle, lat.angle, ratio, diag) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('angle') && !is.null(subst <- substitute(angle))) 
@@ -3056,7 +3056,7 @@ RMangle <- function(angle, lat.angle, ratio, diag) {
   if (hasArg('diag') && !is.null(subst <- substitute(diag))) 
 	par.model[['diag']] <- CheckArg(diag, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMangle', 
+  model <- methods::new(CLASS_CLIST, name = 'RMangle', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -3078,7 +3078,7 @@ RMangle <- new(CLASS_RM,
 
 
 RMball <- function(var, scale, Aniso, proj) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('var') && !is.null(subst <- substitute(var))) 
@@ -3089,7 +3089,7 @@ RMball <- function(var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMball', 
+  model <- methods::new(CLASS_CLIST, name = 'RMball', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -3111,7 +3111,7 @@ RMball <- new(CLASS_RM,
 
 
 iRMcovariate <- function(norm, data, x, raw, addNA, factor, name, var) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(norm)) submodels[['norm']] <- norm
   
@@ -3129,7 +3129,7 @@ iRMcovariate <- function(norm, data, x, raw, addNA, factor, name, var) {
 	par.model[['name']] <- CheckArg(name, subst, TRUE)
     if (hasArg('var') && !is.null(subst <- substitute(var))) 
 	par.general[['var']] <- CheckArg(var, subst, TRUE)
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMcovariate', 
+  model <- methods::new(CLASS_CLIST, name = 'RMcovariate', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -3151,7 +3151,7 @@ iRMcovariate <- new(CLASS_RM,
 
 
 RMeaxxa <- function(E, A) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('E') && !is.null(subst <- substitute(E))) 
@@ -3159,7 +3159,7 @@ RMeaxxa <- function(E, A) {
   if (hasArg('A') && !is.null(subst <- substitute(A))) 
 	par.model[['A']] <- CheckArg(A, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMeaxxa', 
+  model <- methods::new(CLASS_CLIST, name = 'RMeaxxa', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -3181,7 +3181,7 @@ RMeaxxa <- new(CLASS_RM,
 
 
 RMetaxxa <- function(E, A, alpha) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('E') && !is.null(subst <- substitute(E))) 
@@ -3191,7 +3191,7 @@ RMetaxxa <- function(E, A, alpha) {
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
 	par.model[['alpha']] <- CheckArg(alpha, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMetaxxa', 
+  model <- methods::new(CLASS_CLIST, name = 'RMetaxxa', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -3213,11 +3213,11 @@ RMetaxxa <- new(CLASS_RM,
 
 
 RMidcoord <- function() {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
 
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMidcoord', 
+  model <- methods::new(CLASS_CLIST, name = 'RMidcoord', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -3239,14 +3239,14 @@ RMidcoord <- new(CLASS_RM,
 
 
 RMtrafo <- function(phi, new) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
   if (hasArg('new') && !is.null(subst <- substitute(new))) 
 	par.model[['new']] <- CheckChar(new, subst, ISO_NAMES, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMtrafo', 
+  model <- methods::new(CLASS_CLIST, name = 'RMtrafo', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -3268,13 +3268,13 @@ RMtrafo <- new(CLASS_RM,
 
 
 RMpolygon <- function(lambda) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('lambda') && !is.null(subst <- substitute(lambda))) 
 	par.model[['lambda']] <- CheckArg(lambda, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMpolygon', 
+  model <- methods::new(CLASS_CLIST, name = 'RMpolygon', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -3296,7 +3296,7 @@ RMpolygon <- new(CLASS_RM,
 
 
 RMrational <- function(A, a) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('A') && !is.null(subst <- substitute(A))) 
@@ -3304,7 +3304,7 @@ RMrational <- function(A, a) {
   if (hasArg('a') && !is.null(subst <- substitute(a))) 
 	par.model[['a']] <- CheckArg(a, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMrational', 
+  model <- methods::new(CLASS_CLIST, name = 'RMrational', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -3326,7 +3326,7 @@ RMrational <- new(CLASS_RM,
 
 
 RMrotat <- function(speed, phi) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('speed') && !is.null(subst <- substitute(speed))) 
@@ -3334,7 +3334,7 @@ RMrotat <- function(speed, phi) {
   if (hasArg('phi') && !is.null(subst <- substitute(phi))) 
 	par.model[['phi']] <- CheckArg(phi, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMrotat', 
+  model <- methods::new(CLASS_CLIST, name = 'RMrotat', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -3356,13 +3356,13 @@ RMrotat <- new(CLASS_RM,
 
 
 RMrotation <- function(phi) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('phi') && !is.null(subst <- substitute(phi))) 
 	par.model[['phi']] <- CheckArg(phi, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMrotation', 
+  model <- methods::new(CLASS_CLIST, name = 'RMrotation', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -3384,14 +3384,14 @@ RMrotation <- new(CLASS_RM,
 
 
 RMsign <- function(phi, p) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
   if (hasArg('p') && !is.null(subst <- substitute(p))) 
 	par.model[['p']] <- CheckArg(p, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMsign', 
+  model <- methods::new(CLASS_CLIST, name = 'RMsign', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -3413,12 +3413,12 @@ RMsign <- new(CLASS_RM,
 
 
 RMm2r <- function(phi) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
 
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMm2r', 
+  model <- methods::new(CLASS_CLIST, name = 'RMm2r', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -3440,12 +3440,12 @@ RMm2r <- new(CLASS_RM,
 
 
 RMm3b <- function(phi) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
 
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMm3b', 
+  model <- methods::new(CLASS_CLIST, name = 'RMm3b', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -3467,12 +3467,12 @@ RMm3b <- new(CLASS_RM,
 
 
 RMmps <- function(phi) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
 
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMmps', 
+  model <- methods::new(CLASS_CLIST, name = 'RMmps', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -3494,14 +3494,14 @@ RMmps <- new(CLASS_RM,
 
 
 RMtruncsupport <- function(phi, radius) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
   if (hasArg('radius') && !is.null(subst <- substitute(radius))) 
 	par.model[['radius']] <- CheckArg(radius, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMtruncsupport', 
+  model <- methods::new(CLASS_CLIST, name = 'RMtruncsupport', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -3523,13 +3523,13 @@ RMtruncsupport <- new(CLASS_RM,
 
 
 RRdeterm <- function(mean) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('mean') && !is.null(subst <- substitute(mean))) 
 	par.model[['mean']] <- CheckArg(mean, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RRdeterm', 
+  model <- methods::new(CLASS_CLIST, name = 'RRdeterm', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -3551,7 +3551,7 @@ RRdeterm <- new(CLASS_RM,
 
 
 RRgauss <- function(mu, sd, log) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('mu') && !is.null(subst <- substitute(mu))) 
@@ -3561,7 +3561,7 @@ RRgauss <- function(mu, sd, log) {
   if (hasArg('log') && !is.null(subst <- substitute(log))) 
 	par.model[['log']] <- CheckArg(log, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RRgauss', 
+  model <- methods::new(CLASS_CLIST, name = 'RRgauss', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -3583,7 +3583,7 @@ RRgauss <- new(CLASS_RM,
 
 
 RRloc <- function(phi, mu, scale, pow) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -3594,7 +3594,7 @@ RRloc <- function(phi, mu, scale, pow) {
   if (hasArg('pow') && !is.null(subst <- substitute(pow))) 
 	par.model[['pow']] <- CheckArg(pow, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RRloc', 
+  model <- methods::new(CLASS_CLIST, name = 'RRloc', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -3616,7 +3616,7 @@ RRloc <- new(CLASS_RM,
 
 
 RRmcmc <- function(phi, mcmc_n, sigma, normed, maxdensity, rand.loc, gibbs) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -3633,7 +3633,7 @@ RRmcmc <- function(phi, mcmc_n, sigma, normed, maxdensity, rand.loc, gibbs) {
   if (hasArg('gibbs') && !is.null(subst <- substitute(gibbs))) 
 	par.model[['gibbs']] <- CheckArg(gibbs, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RRmcmc', 
+  model <- methods::new(CLASS_CLIST, name = 'RRmcmc', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -3655,7 +3655,7 @@ RRmcmc <- new(CLASS_RM,
 
 
 RRrectangular <- function(phi, safety, minsteplen, maxsteps, parts, maxit, innermin, outermax, mcmc_n, normed, approx, onesided) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -3682,7 +3682,7 @@ RRrectangular <- function(phi, safety, minsteplen, maxsteps, parts, maxit, inner
   if (hasArg('onesided') && !is.null(subst <- substitute(onesided))) 
 	par.model[['onesided']] <- CheckArg(onesided, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RRrectangular', 
+  model <- methods::new(CLASS_CLIST, name = 'RRrectangular', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -3704,7 +3704,7 @@ RRrectangular <- new(CLASS_RM,
 
 
 RRspheric <- function(spacedim, balldim, R) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('spacedim') && !is.null(subst <- substitute(spacedim))) 
@@ -3714,7 +3714,7 @@ RRspheric <- function(spacedim, balldim, R) {
   if (hasArg('R') && !is.null(subst <- substitute(R))) 
 	par.model[['R']] <- CheckArg(R, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RRspheric', 
+  model <- methods::new(CLASS_CLIST, name = 'RRspheric', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -3736,7 +3736,7 @@ RRspheric <- new(CLASS_RM,
 
 
 RRunif <- function(min, max, normed) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('min') && !is.null(subst <- substitute(min))) 
@@ -3746,7 +3746,7 @@ RRunif <- function(min, max, normed) {
   if (hasArg('normed') && !is.null(subst <- substitute(normed))) 
 	par.model[['normed']] <- CheckArg(normed, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RRunif', 
+  model <- methods::new(CLASS_CLIST, name = 'RRunif', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -3768,7 +3768,7 @@ RRunif <- new(CLASS_RM,
 
 
 RMmppplus <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, p) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(C0)) submodels[['C0']] <- C0
   if (hasArg(C1)) submodels[['C1']] <- C1
@@ -3784,7 +3784,7 @@ RMmppplus <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, p) {
   if (hasArg('p') && !is.null(subst <- substitute(p))) 
 	par.model[['p']] <- CheckArg(p, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RMmppplus', 
+  model <- methods::new(CLASS_CLIST, name = 'RMmppplus', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -3806,7 +3806,7 @@ RMmppplus <- new(CLASS_RM,
 
 
 iRFsimulate <- function(phi, checkonly, setseed, env) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -3817,7 +3817,7 @@ iRFsimulate <- function(phi, checkonly, setseed, env) {
   if (hasArg('env') && !is.null(subst <- substitute(env))) 
 	par.model[['env']] <- CheckArg(env, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RFsimulate', 
+  model <- methods::new(CLASS_CLIST, name = 'RFsimulate', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -3839,12 +3839,12 @@ iRFsimulate <- new(CLASS_RM,
 
 
 iRFcovariance <- function(phi) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
 
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RFcovariance', 
+  model <- methods::new(CLASS_CLIST, name = 'RFcovariance', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -3866,12 +3866,12 @@ iRFcovariance <- new(CLASS_RM,
 
 
 iRFcovmatrix <- function(phi) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
 
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RFcovmatrix', 
+  model <- methods::new(CLASS_CLIST, name = 'RFcovmatrix', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -3893,7 +3893,7 @@ iRFcovmatrix <- new(CLASS_RM,
 
 
 iRFloglikelihood <- function(phi, data, estimate_variance, betas_separate, ignore_trend) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -3906,7 +3906,7 @@ iRFloglikelihood <- function(phi, data, estimate_variance, betas_separate, ignor
   if (hasArg('ignore_trend') && !is.null(subst <- substitute(ignore_trend))) 
 	par.model[['ignore_trend']] <- CheckArg(ignore_trend, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RFloglikelihood', 
+  model <- methods::new(CLASS_CLIST, name = 'RFloglikelihood', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -3928,12 +3928,12 @@ iRFloglikelihood <- new(CLASS_RM,
 
 
 iRFpseudovariogra <- function(phi) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
 
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RFpseudovariogra', 
+  model <- methods::new(CLASS_CLIST, name = 'RFpseudovariogra', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -3955,14 +3955,14 @@ iRFpseudovariogra <- new(CLASS_RM,
 
 
 iRFpseudomadogram <- function(phi, alpha) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
 	par.model[['alpha']] <- CheckArg(alpha, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RFpseudomadogram', 
+  model <- methods::new(CLASS_CLIST, name = 'RFpseudomadogram', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -3984,14 +3984,14 @@ iRFpseudomadogram <- new(CLASS_RM,
 
 
 iRFmadogram <- function(phi, alpha) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
 	par.model[['alpha']] <- CheckArg(alpha, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RFmadogram', 
+  model <- methods::new(CLASS_CLIST, name = 'RFmadogram', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -4013,12 +4013,12 @@ iRFmadogram <- new(CLASS_RM,
 
 
 iRFvariogram <- function(phi) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
 
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RFvariogram', 
+  model <- methods::new(CLASS_CLIST, name = 'RFvariogram', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -4040,14 +4040,14 @@ iRFvariogram <- new(CLASS_RM,
 
 
 RPtrend <- function(phi, mean) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
   if (hasArg('mean') && !is.null(subst <- substitute(mean))) 
 	par.model[['mean']] <- CheckArg(mean, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RPtrend', 
+  model <- methods::new(CLASS_CLIST, name = 'RPtrend', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -4069,7 +4069,7 @@ RPtrend <- new(CLASS_RM,
 
 
 RPaverage <- function(phi, shape, boxcox, intensity, method) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(shape)) submodels[['shape']] <- shape
@@ -4081,7 +4081,7 @@ RPaverage <- function(phi, shape, boxcox, intensity, method) {
   if (hasArg('method') && !is.null(subst <- substitute(method))) 
 	par.model[['method']] <- CheckArg(method, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RPaverage', 
+  model <- methods::new(CLASS_CLIST, name = 'RPaverage', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -4103,7 +4103,7 @@ RPaverage <- new(CLASS_RM,
 
 
 RPcoins <- function(phi, shape, boxcox, intensity, method) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(shape)) submodels[['shape']] <- shape
@@ -4115,7 +4115,7 @@ RPcoins <- function(phi, shape, boxcox, intensity, method) {
   if (hasArg('method') && !is.null(subst <- substitute(method))) 
 	par.model[['method']] <- CheckArg(method, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RPcoins', 
+  model <- methods::new(CLASS_CLIST, name = 'RPcoins', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -4137,7 +4137,7 @@ RPcoins <- new(CLASS_RM,
 
 
 RPcirculant <- function(phi, boxcox, force, mmin, strategy, maxGB, maxmem, tolIm, tolRe, trials, useprimes, dependent, approx_step, approx_maxgrid) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -4168,7 +4168,7 @@ RPcirculant <- function(phi, boxcox, force, mmin, strategy, maxGB, maxmem, tolIm
   if (hasArg('approx_maxgrid') && !is.null(subst <- substitute(approx_maxgrid))) 
 	par.model[['approx_maxgrid']] <- CheckArg(approx_maxgrid, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RPcirculant', 
+  model <- methods::new(CLASS_CLIST, name = 'RPcirculant', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -4190,7 +4190,7 @@ RPcirculant <- new(CLASS_RM,
 
 
 RPcutoff <- function(phi, boxcox, force, mmin, strategy, maxGB, maxmem, tolIm, tolRe, trials, useprimes, dependent, approx_step, approx_maxgrid, diameter, a) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -4225,7 +4225,7 @@ RPcutoff <- function(phi, boxcox, force, mmin, strategy, maxGB, maxmem, tolIm, t
   if (hasArg('a') && !is.null(subst <- substitute(a))) 
 	par.model[['a']] <- CheckArg(a, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RPcutoff', 
+  model <- methods::new(CLASS_CLIST, name = 'RPcutoff', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -4247,7 +4247,7 @@ RPcutoff <- new(CLASS_RM,
 
 
 RPintrinsic <- function(phi, boxcox, force, mmin, strategy, maxGB, maxmem, tolIm, tolRe, trials, useprimes, dependent, approx_step, approx_maxgrid, diameter, rawR) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -4282,7 +4282,7 @@ RPintrinsic <- function(phi, boxcox, force, mmin, strategy, maxGB, maxmem, tolIm
   if (hasArg('rawR') && !is.null(subst <- substitute(rawR))) 
 	par.model[['rawR']] <- CheckArg(rawR, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RPintrinsic', 
+  model <- methods::new(CLASS_CLIST, name = 'RPintrinsic', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -4304,14 +4304,14 @@ RPintrinsic <- new(CLASS_RM,
 
 
 RPdirect <- function(phi, boxcox) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
   if (hasArg('boxcox') && !is.null(subst <- substitute(boxcox))) 
 	par.model[['boxcox']] <- CheckArg(boxcox, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RPdirect', 
+  model <- methods::new(CLASS_CLIST, name = 'RPdirect', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -4333,7 +4333,7 @@ RPdirect <- new(CLASS_RM,
 
 
 RPhyperplane <- function(phi, boxcox, superpos, maxlines, mar_distr, mar_param, additive) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -4350,7 +4350,7 @@ RPhyperplane <- function(phi, boxcox, superpos, maxlines, mar_distr, mar_param, 
   if (hasArg('additive') && !is.null(subst <- substitute(additive))) 
 	par.model[['additive']] <- CheckArg(additive, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RPhyperplane', 
+  model <- methods::new(CLASS_CLIST, name = 'RPhyperplane', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -4372,7 +4372,7 @@ RPhyperplane <- new(CLASS_RM,
 
 
 RPnugget <- function(phi, boxcox, tol, vdim) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -4383,7 +4383,7 @@ RPnugget <- function(phi, boxcox, tol, vdim) {
   if (hasArg('vdim') && !is.null(subst <- substitute(vdim))) 
 	par.model[['vdim']] <- CheckArg(vdim, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RPnugget', 
+  model <- methods::new(CLASS_CLIST, name = 'RPnugget', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -4405,7 +4405,7 @@ RPnugget <- new(CLASS_RM,
 
 
 RPsequential <- function(phi, boxcox, back_steps, initial) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -4416,7 +4416,7 @@ RPsequential <- function(phi, boxcox, back_steps, initial) {
   if (hasArg('initial') && !is.null(subst <- substitute(initial))) 
 	par.model[['initial']] <- CheckArg(initial, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RPsequential', 
+  model <- methods::new(CLASS_CLIST, name = 'RPsequential', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -4438,7 +4438,7 @@ RPsequential <- new(CLASS_RM,
 
 
 RPspectral <- function(phi, boxcox, sp_lines, sp_grid, prop_factor, sigma) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -4453,7 +4453,7 @@ RPspectral <- function(phi, boxcox, sp_lines, sp_grid, prop_factor, sigma) {
   if (hasArg('sigma') && !is.null(subst <- substitute(sigma))) 
 	par.model[['sigma']] <- CheckArg(sigma, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RPspectral', 
+  model <- methods::new(CLASS_CLIST, name = 'RPspectral', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -4475,14 +4475,14 @@ RPspectral <- new(CLASS_RM,
 
 
 RPspecific <- function(phi, boxcox) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
   if (hasArg('boxcox') && !is.null(subst <- substitute(boxcox))) 
 	par.model[['boxcox']] <- CheckArg(boxcox, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RPspecific', 
+  model <- methods::new(CLASS_CLIST, name = 'RPspecific', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -4504,7 +4504,7 @@ RPspecific <- new(CLASS_RM,
 
 
 RPtbm <- function(phi, boxcox, fulldim, reduceddim, layers, lines, linessimufactor, linesimustep, center, points) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -4527,7 +4527,7 @@ RPtbm <- function(phi, boxcox, fulldim, reduceddim, layers, lines, linessimufact
   if (hasArg('points') && !is.null(subst <- substitute(points))) 
 	par.model[['points']] <- CheckArg(points, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RPtbm', 
+  model <- methods::new(CLASS_CLIST, name = 'RPtbm', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -4549,7 +4549,7 @@ RPtbm <- new(CLASS_RM,
 
 
 RPloggaussnormed <- function(variogram, prob, optimize_p, nth, burn.in, rejection) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(variogram)) submodels[['variogram']] <- variogram
   
@@ -4564,7 +4564,7 @@ RPloggaussnormed <- function(variogram, prob, optimize_p, nth, burn.in, rejectio
   if (hasArg('rejection') && !is.null(subst <- substitute(rejection))) 
 	par.model[['rejection']] <- CheckArg(rejection, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RPloggaussnormed', 
+  model <- methods::new(CLASS_CLIST, name = 'RPloggaussnormed', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -4586,7 +4586,7 @@ RPloggaussnormed <- new(CLASS_RM,
 
 
 RPbrorig <- function(phi, tcf, xi, mu, s) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(tcf)) submodels[['tcf']] <- tcf
@@ -4598,7 +4598,7 @@ RPbrorig <- function(phi, tcf, xi, mu, s) {
   if (hasArg('s') && !is.null(subst <- substitute(s))) 
 	par.model[['s']] <- CheckArg(s, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RPbrorig', 
+  model <- methods::new(CLASS_CLIST, name = 'RPbrorig', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -4620,7 +4620,7 @@ RPbrorig <- new(CLASS_RM,
 
 
 RPbrmixed <- function(phi, tcf, xi, mu, s, meshsize, vertnumber, optim_mixed, optim_mixed_tol, lambda, areamat, variobound) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(tcf)) submodels[['tcf']] <- tcf
@@ -4646,7 +4646,7 @@ RPbrmixed <- function(phi, tcf, xi, mu, s, meshsize, vertnumber, optim_mixed, op
   if (hasArg('variobound') && !is.null(subst <- substitute(variobound))) 
 	par.model[['variobound']] <- CheckArg(variobound, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RPbrmixed', 
+  model <- methods::new(CLASS_CLIST, name = 'RPbrmixed', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -4668,7 +4668,7 @@ RPbrmixed <- new(CLASS_RM,
 
 
 RPbrshifted <- function(phi, tcf, xi, mu, s) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(tcf)) submodels[['tcf']] <- tcf
@@ -4680,7 +4680,7 @@ RPbrshifted <- function(phi, tcf, xi, mu, s) {
   if (hasArg('s') && !is.null(subst <- substitute(s))) 
 	par.model[['s']] <- CheckArg(s, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RPbrshifted', 
+  model <- methods::new(CLASS_CLIST, name = 'RPbrshifted', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -4702,7 +4702,7 @@ RPbrshifted <- new(CLASS_RM,
 
 
 RPbrownresnick <- function(phi, tcf, xi, mu, s) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(tcf)) submodels[['tcf']] <- tcf
@@ -4714,7 +4714,7 @@ RPbrownresnick <- function(phi, tcf, xi, mu, s) {
   if (hasArg('s') && !is.null(subst <- substitute(s))) 
 	par.model[['s']] <- CheckArg(s, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RPbrownresnick', 
+  model <- methods::new(CLASS_CLIST, name = 'RPbrownresnick', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -4736,7 +4736,7 @@ RPbrownresnick <- new(CLASS_RM,
 
 
 RPbernoulli <- function(phi, stationary_only, threshold) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -4745,7 +4745,7 @@ RPbernoulli <- function(phi, stationary_only, threshold) {
   if (hasArg('threshold') && !is.null(subst <- substitute(threshold))) 
 	par.model[['threshold']] <- CheckArg(threshold, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RPbernoulli', 
+  model <- methods::new(CLASS_CLIST, name = 'RPbernoulli', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -4767,7 +4767,7 @@ RPbernoulli <- new(CLASS_RM,
 
 
 RPgauss <- function(phi, boxcox, stationary_only) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -4776,7 +4776,7 @@ RPgauss <- function(phi, boxcox, stationary_only) {
   if (hasArg('stationary_only') && !is.null(subst <- substitute(stationary_only))) 
 	par.model[['stationary_only']] <- CheckArg(stationary_only, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RPgauss', 
+  model <- methods::new(CLASS_CLIST, name = 'RPgauss', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -4798,7 +4798,7 @@ RPgauss <- new(CLASS_RM,
 
 
 RPpoisson <- function(shape, phi, intensity, support) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(shape)) submodels[['shape']] <- shape
   if (hasArg(phi)) submodels[['phi']] <- phi
@@ -4808,7 +4808,7 @@ RPpoisson <- function(shape, phi, intensity, support) {
   if (hasArg('support') && !is.null(subst <- substitute(support))) 
 	par.model[['support']] <- CheckArg(support, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RPpoisson', 
+  model <- methods::new(CLASS_CLIST, name = 'RPpoisson', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -4830,7 +4830,7 @@ RPpoisson <- new(CLASS_RM,
 
 
 RPschlather <- function(phi, tcf, xi, mu, s) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(tcf)) submodels[['tcf']] <- tcf
@@ -4842,7 +4842,7 @@ RPschlather <- function(phi, tcf, xi, mu, s) {
   if (hasArg('s') && !is.null(subst <- substitute(s))) 
 	par.model[['s']] <- CheckArg(s, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RPschlather', 
+  model <- methods::new(CLASS_CLIST, name = 'RPschlather', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -4864,7 +4864,7 @@ RPschlather <- new(CLASS_RM,
 
 
 RPopitz <- function(phi, xi, mu, s, alpha) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -4877,7 +4877,7 @@ RPopitz <- function(phi, xi, mu, s, alpha) {
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
 	par.model[['alpha']] <- CheckArg(alpha, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RPopitz', 
+  model <- methods::new(CLASS_CLIST, name = 'RPopitz', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -4899,7 +4899,7 @@ RPopitz <- new(CLASS_RM,
 
 
 RPsmith <- function(shape, tcf, xi, mu, s) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(shape)) submodels[['shape']] <- shape
   if (hasArg(tcf)) submodels[['tcf']] <- tcf
@@ -4911,7 +4911,7 @@ RPsmith <- function(shape, tcf, xi, mu, s) {
   if (hasArg('s') && !is.null(subst <- substitute(s))) 
 	par.model[['s']] <- CheckArg(s, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RPsmith', 
+  model <- methods::new(CLASS_CLIST, name = 'RPsmith', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -4933,7 +4933,7 @@ RPsmith <- new(CLASS_RM,
 
 
 RPchi2 <- function(phi, boxcox, f) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -4942,7 +4942,7 @@ RPchi2 <- function(phi, boxcox, f) {
   if (hasArg('f') && !is.null(subst <- substitute(f))) 
 	par.model[['f']] <- CheckArg(f, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RPchi2', 
+  model <- methods::new(CLASS_CLIST, name = 'RPchi2', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -4964,7 +4964,7 @@ RPchi2 <- new(CLASS_RM,
 
 
 RPt <- function(phi, boxcox, nu) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -4973,7 +4973,7 @@ RPt <- function(phi, boxcox, nu) {
   if (hasArg('nu') && !is.null(subst <- substitute(nu))) 
 	par.model[['nu']] <- CheckArg(nu, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'RPt', 
+  model <- methods::new(CLASS_CLIST, name = 'RPt', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -4995,7 +4995,7 @@ RPt <- new(CLASS_RM,
 
 
 R.minus <- function(x, y, factor) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5005,7 +5005,7 @@ R.minus <- function(x, y, factor) {
   if (hasArg('factor') && !is.null(subst <- substitute(factor))) 
 	par.model[['factor']] <- CheckMaths(factor, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.minus', 
+  model <- methods::new(CLASS_CLIST, name = 'R.minus', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5027,7 +5027,7 @@ R.minus <- new(CLASS_RM,
 
 
 R.plus <- function(x, y, factor) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5037,7 +5037,7 @@ R.plus <- function(x, y, factor) {
   if (hasArg('factor') && !is.null(subst <- substitute(factor))) 
 	par.model[['factor']] <- CheckMaths(factor, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.plus', 
+  model <- methods::new(CLASS_CLIST, name = 'R.plus', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5059,7 +5059,7 @@ R.plus <- new(CLASS_RM,
 
 
 R.div <- function(x, y, factor) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5069,7 +5069,7 @@ R.div <- function(x, y, factor) {
   if (hasArg('factor') && !is.null(subst <- substitute(factor))) 
 	par.model[['factor']] <- CheckMaths(factor, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.div', 
+  model <- methods::new(CLASS_CLIST, name = 'R.div', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5091,7 +5091,7 @@ R.div <- new(CLASS_RM,
 
 
 R.mult <- function(x, y, factor) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5101,7 +5101,7 @@ R.mult <- function(x, y, factor) {
   if (hasArg('factor') && !is.null(subst <- substitute(factor))) 
 	par.model[['factor']] <- CheckMaths(factor, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.mult', 
+  model <- methods::new(CLASS_CLIST, name = 'R.mult', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5123,7 +5123,7 @@ R.mult <- new(CLASS_RM,
 
 
 R.const <- function(x, name) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5131,7 +5131,7 @@ R.const <- function(x, name) {
   if (hasArg('name') && !is.null(subst <- substitute(name))) 
 	par.model[['name']] <- CheckChar(name, subst=subst, distr=TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.const', 
+  model <- methods::new(CLASS_CLIST, name = 'R.const', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5153,7 +5153,7 @@ R.const <- new(CLASS_RM,
 
 
 iR.p <- function(proj, new, factor, name) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
@@ -5165,7 +5165,7 @@ iR.p <- function(proj, new, factor, name) {
   if (hasArg('name') && !is.null(subst <- substitute(name))) 
 	par.model[['name']] <- CheckChar(name, subst=subst, distr=FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.p', 
+  model <- methods::new(CLASS_CLIST, name = 'R.p', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5187,7 +5187,7 @@ iR.p <- new(CLASS_RM,
 
 
 iR.c <- function(a, b, c, d, e, f, g, h, i, j, l, m, n, o, p, q, ncol, factor) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('a') && !is.null(subst <- substitute(a))) 
@@ -5227,7 +5227,7 @@ iR.c <- function(a, b, c, d, e, f, g, h, i, j, l, m, n, o, p, q, ncol, factor) {
   if (hasArg('factor') && !is.null(subst <- substitute(factor))) 
 	par.model[['factor']] <- CheckMaths(factor, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.c', 
+  model <- methods::new(CLASS_CLIST, name = 'R.c', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5249,7 +5249,7 @@ iR.c <- new(CLASS_RM,
 
 
 R.is <- function(x, is, y) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5259,7 +5259,7 @@ R.is <- function(x, is, y) {
   if (hasArg('y') && !is.null(subst <- substitute(y))) 
 	par.model[['y']] <- CheckMaths(y, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.is', 
+  model <- methods::new(CLASS_CLIST, name = 'R.is', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5281,13 +5281,13 @@ R.is <- new(CLASS_RM,
 
 
 R.asin <- function(x) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
 	par.model[['x']] <- CheckMaths(x, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.asin', 
+  model <- methods::new(CLASS_CLIST, name = 'R.asin', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5309,13 +5309,13 @@ R.asin <- new(CLASS_RM,
 
 
 R.atan <- function(x) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
 	par.model[['x']] <- CheckMaths(x, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.atan', 
+  model <- methods::new(CLASS_CLIST, name = 'R.atan', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5337,7 +5337,7 @@ R.atan <- new(CLASS_RM,
 
 
 R.atan2 <- function(y, x) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('y') && !is.null(subst <- substitute(y))) 
@@ -5345,7 +5345,7 @@ R.atan2 <- function(y, x) {
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
 	par.model[['x']] <- CheckMaths(x, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.atan2', 
+  model <- methods::new(CLASS_CLIST, name = 'R.atan2', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5367,13 +5367,13 @@ R.atan2 <- new(CLASS_RM,
 
 
 R.cos <- function(x) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
 	par.model[['x']] <- CheckMaths(x, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.cos', 
+  model <- methods::new(CLASS_CLIST, name = 'R.cos', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5395,13 +5395,13 @@ R.cos <- new(CLASS_RM,
 
 
 R.sin <- function(x) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
 	par.model[['x']] <- CheckMaths(x, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.sin', 
+  model <- methods::new(CLASS_CLIST, name = 'R.sin', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5423,13 +5423,13 @@ R.sin <- new(CLASS_RM,
 
 
 R.tan <- function(x) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
 	par.model[['x']] <- CheckMaths(x, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.tan', 
+  model <- methods::new(CLASS_CLIST, name = 'R.tan', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5451,13 +5451,13 @@ R.tan <- new(CLASS_RM,
 
 
 R.asinh <- function(x) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
 	par.model[['x']] <- CheckMaths(x, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.asinh', 
+  model <- methods::new(CLASS_CLIST, name = 'R.asinh', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5479,13 +5479,13 @@ R.asinh <- new(CLASS_RM,
 
 
 R.atanh <- function(x) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
 	par.model[['x']] <- CheckMaths(x, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.atanh', 
+  model <- methods::new(CLASS_CLIST, name = 'R.atanh', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5507,13 +5507,13 @@ R.atanh <- new(CLASS_RM,
 
 
 R.cosh <- function(x) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
 	par.model[['x']] <- CheckMaths(x, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.cosh', 
+  model <- methods::new(CLASS_CLIST, name = 'R.cosh', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5535,13 +5535,13 @@ R.cosh <- new(CLASS_RM,
 
 
 R.sinh <- function(x) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
 	par.model[['x']] <- CheckMaths(x, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.sinh', 
+  model <- methods::new(CLASS_CLIST, name = 'R.sinh', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5563,13 +5563,13 @@ R.sinh <- new(CLASS_RM,
 
 
 R.tanh <- function(x) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
 	par.model[['x']] <- CheckMaths(x, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.tanh', 
+  model <- methods::new(CLASS_CLIST, name = 'R.tanh', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5591,13 +5591,13 @@ R.tanh <- new(CLASS_RM,
 
 
 R.log <- function(x) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
 	par.model[['x']] <- CheckMaths(x, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.log', 
+  model <- methods::new(CLASS_CLIST, name = 'R.log', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5619,13 +5619,13 @@ R.log <- new(CLASS_RM,
 
 
 R.expm1 <- function(x) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
 	par.model[['x']] <- CheckMaths(x, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.expm1', 
+  model <- methods::new(CLASS_CLIST, name = 'R.expm1', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5647,13 +5647,13 @@ R.expm1 <- new(CLASS_RM,
 
 
 R.log1p <- function(x) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
 	par.model[['x']] <- CheckMaths(x, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.log1p', 
+  model <- methods::new(CLASS_CLIST, name = 'R.log1p', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5675,13 +5675,13 @@ R.log1p <- new(CLASS_RM,
 
 
 R.exp2 <- function(x) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
 	par.model[['x']] <- CheckMaths(x, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.exp2', 
+  model <- methods::new(CLASS_CLIST, name = 'R.exp2', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5703,13 +5703,13 @@ R.exp2 <- new(CLASS_RM,
 
 
 R.log2 <- function(x) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
 	par.model[['x']] <- CheckMaths(x, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.log2', 
+  model <- methods::new(CLASS_CLIST, name = 'R.log2', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5731,7 +5731,7 @@ R.log2 <- new(CLASS_RM,
 
 
 R.hypot <- function(x, y) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5739,7 +5739,7 @@ R.hypot <- function(x, y) {
   if (hasArg('y') && !is.null(subst <- substitute(y))) 
 	par.model[['y']] <- CheckMaths(y, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.hypot', 
+  model <- methods::new(CLASS_CLIST, name = 'R.hypot', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5761,13 +5761,13 @@ R.hypot <- new(CLASS_RM,
 
 
 R.cbrt <- function(x) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
 	par.model[['x']] <- CheckMaths(x, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.cbrt', 
+  model <- methods::new(CLASS_CLIST, name = 'R.cbrt', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5789,13 +5789,13 @@ R.cbrt <- new(CLASS_RM,
 
 
 R.ceil <- function(x) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
 	par.model[['x']] <- CheckMaths(x, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.ceil', 
+  model <- methods::new(CLASS_CLIST, name = 'R.ceil', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5817,13 +5817,13 @@ R.ceil <- new(CLASS_RM,
 
 
 R.floor <- function(x) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
 	par.model[['x']] <- CheckMaths(x, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.floor', 
+  model <- methods::new(CLASS_CLIST, name = 'R.floor', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5845,7 +5845,7 @@ R.floor <- new(CLASS_RM,
 
 
 R.fmod <- function(x, y) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5853,7 +5853,7 @@ R.fmod <- function(x, y) {
   if (hasArg('y') && !is.null(subst <- substitute(y))) 
 	par.model[['y']] <- CheckMaths(y, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.fmod', 
+  model <- methods::new(CLASS_CLIST, name = 'R.fmod', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5875,13 +5875,13 @@ R.fmod <- new(CLASS_RM,
 
 
 R.round <- function(x) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
 	par.model[['x']] <- CheckMaths(x, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.round', 
+  model <- methods::new(CLASS_CLIST, name = 'R.round', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5903,13 +5903,13 @@ R.round <- new(CLASS_RM,
 
 
 R.trunc <- function(x) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
 	par.model[['x']] <- CheckMaths(x, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.trunc', 
+  model <- methods::new(CLASS_CLIST, name = 'R.trunc', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5931,13 +5931,13 @@ R.trunc <- new(CLASS_RM,
 
 
 R.erfc <- function(x) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
 	par.model[['x']] <- CheckMaths(x, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.erfc', 
+  model <- methods::new(CLASS_CLIST, name = 'R.erfc', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5959,13 +5959,13 @@ R.erfc <- new(CLASS_RM,
 
 
 R.lgamma <- function(x) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
 	par.model[['x']] <- CheckMaths(x, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.lgamma', 
+  model <- methods::new(CLASS_CLIST, name = 'R.lgamma', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -5987,7 +5987,7 @@ R.lgamma <- new(CLASS_RM,
 
 
 R.remainder <- function(x, y) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5995,7 +5995,7 @@ R.remainder <- function(x, y) {
   if (hasArg('y') && !is.null(subst <- substitute(y))) 
 	par.model[['y']] <- CheckMaths(y, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.remainder', 
+  model <- methods::new(CLASS_CLIST, name = 'R.remainder', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -6017,7 +6017,7 @@ R.remainder <- new(CLASS_RM,
 
 
 R.fdim <- function(x, y) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -6025,7 +6025,7 @@ R.fdim <- function(x, y) {
   if (hasArg('y') && !is.null(subst <- substitute(y))) 
 	par.model[['y']] <- CheckMaths(y, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.fdim', 
+  model <- methods::new(CLASS_CLIST, name = 'R.fdim', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -6047,7 +6047,7 @@ R.fdim <- new(CLASS_RM,
 
 
 R.fmax <- function(x, y) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -6055,7 +6055,7 @@ R.fmax <- function(x, y) {
   if (hasArg('y') && !is.null(subst <- substitute(y))) 
 	par.model[['y']] <- CheckMaths(y, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.fmax', 
+  model <- methods::new(CLASS_CLIST, name = 'R.fmax', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -6077,7 +6077,7 @@ R.fmax <- new(CLASS_RM,
 
 
 R.fmin <- function(x, y) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -6085,7 +6085,7 @@ R.fmin <- function(x, y) {
   if (hasArg('y') && !is.null(subst <- substitute(y))) 
 	par.model[['y']] <- CheckMaths(y, subst, TRUE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.fmin', 
+  model <- methods::new(CLASS_CLIST, name = 'R.fmin', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -6107,13 +6107,13 @@ R.fmin <- new(CLASS_RM,
 
 
 R.gamma <- function(x) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
 	par.model[['x']] <- CheckMaths(x, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.gamma', 
+  model <- methods::new(CLASS_CLIST, name = 'R.gamma', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -6135,13 +6135,13 @@ R.gamma <- new(CLASS_RM,
 
 
 R.ggamma <- function(x) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
 	par.model[['x']] <- CheckMaths(x, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.ggamma', 
+  model <- methods::new(CLASS_CLIST, name = 'R.ggamma', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -6163,13 +6163,13 @@ R.ggamma <- new(CLASS_RM,
 
 
 R.exp <- function(x) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
 	par.model[['x']] <- CheckMaths(x, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.exp', 
+  model <- methods::new(CLASS_CLIST, name = 'R.exp', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -6191,13 +6191,13 @@ R.exp <- new(CLASS_RM,
 
 
 R.erf <- function(x) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
 	par.model[['x']] <- CheckMaths(x, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.erf', 
+  model <- methods::new(CLASS_CLIST, name = 'R.erf', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -6219,13 +6219,13 @@ R.erf <- new(CLASS_RM,
 
 
 R.fabs <- function(x) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
 	par.model[['x']] <- CheckMaths(x, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.fabs', 
+  model <- methods::new(CLASS_CLIST, name = 'R.fabs', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -6247,13 +6247,13 @@ R.fabs <- new(CLASS_RM,
 
 
 R.acos <- function(x) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
 	par.model[['x']] <- CheckMaths(x, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.acos', 
+  model <- methods::new(CLASS_CLIST, name = 'R.acos', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -6275,13 +6275,13 @@ R.acos <- new(CLASS_RM,
 
 
 R.acosh <- function(x) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
 	par.model[['x']] <- CheckMaths(x, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.acosh', 
+  model <- methods::new(CLASS_CLIST, name = 'R.acosh', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -6303,7 +6303,7 @@ R.acosh <- new(CLASS_RM,
 
 
 R.pow <- function(x, y) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -6311,7 +6311,7 @@ R.pow <- function(x, y) {
   if (hasArg('y') && !is.null(subst <- substitute(y))) 
 	par.model[['y']] <- CheckMaths(y, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.pow', 
+  model <- methods::new(CLASS_CLIST, name = 'R.pow', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
@@ -6333,13 +6333,13 @@ R.pow <- new(CLASS_RM,
 
 
 R.sqrt <- function(x) {
-  cl <- match.call()
+  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
 	par.model[['x']] <- CheckMaths(x, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, call = cl, name = 'R.sqrt', 
+  model <- methods::new(CLASS_CLIST, name = 'R.sqrt', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)

@@ -1,3 +1,5 @@
 *.o
 *.tar.gz
 *.so
+RandomFields/config.log
+RandomFields/config.status

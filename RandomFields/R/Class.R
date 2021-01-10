@@ -104,10 +104,7 @@ check.validity.n.vdim <- function(object) {
 
 ## definition of class CLASS_CLIST
 setClass(CLASS_CLIST, 
-         representation(
-                        # call='RMexp(var=1, sclae=1, Aniso=id, proj=id)
-                        call = "language",
-                        # name='RMexp'
+         representation(# name='RMexp'
                         name = "character",
                         # submodels=NULL, submodels=list(RMmodel1, RMmodel2)
                         submodels = "list",
@@ -184,18 +181,9 @@ setClass(CLASS_EMPIR,
                         coordunits = "character",
                         dim = "numeric",
                         varunits = "character",
-                        call = "ANY",
                         alpha = "numeric"
                         )
          )
-
-
-setValidity(CLASS_EMPIR, 
-            function(object){
-              if(!(is.null(object@call)) && !(is(object@call, "language")))
-                return("slot 'call' must be NULL or of class 'language'")
-              return(TRUE)
-            })
 
 
 

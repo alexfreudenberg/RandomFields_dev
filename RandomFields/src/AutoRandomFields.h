@@ -425,6 +425,9 @@ typedef enum sort_origin {
 #define nPOISSON_SCATTER (POISSON_SCATTER_ANY + 1)
 #define nEQ_NAMES 6
 
+
+#define NLOPTR 3
+
 extern const char *ISO_NAMES[LAST_ISO + 1],
   *EQ_NAMES[nEQ_NAMES],
   *OPTIMISER_NAMES[nOptimiser], *NLOPTR_NAMES[nNLOPTR],

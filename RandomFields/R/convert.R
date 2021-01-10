@@ -380,7 +380,6 @@ PrepareModel2 <- function(model, ...,
                           EnvDummies = new.env(parent=Env)
                           ) {
 
-
  # stopifnot(Zaehler <- Zaehler + 1 < 2)
   ## (1) rffit->unifydata
   ## (2)
@@ -414,7 +413,8 @@ PrepareModel2 <- function(model, ...,
       model <- if (isS4(model)) model@model else model$model
     if (is(model, CLASS_RM))
       model <- do.call(model, list())
-    if (is(model, CLASS_CLIST) && length(model@name) == 0)
+    if (is(model, CLASS_CLIST) &&
+        ((isS4(model)) && length(model@name) == 0) || (is.list(model) && length(model) == 0))
       stop("model is empty")
   }
  
@@ -562,7 +562,7 @@ PrepareModel2 <- function(model, ...,
             
    
   } else params <- NULL
-  
+
   n.formulae <- sum(formulae)
   if (n.formulae > 0) {
     ## identify genuine.formulae and #variables to be estimated; prepare Env
@@ -618,7 +618,6 @@ PrepareModel2 <- function(model, ...,
     ## Print(formulae, genuine.formulae, params, revOrdering, ls(envir=Env), Names[formulae], Names[genuine.formulae])
   } # if any(formulae)
   ##
- 
   
   data.varnames <-  data.coordnames <- data.names <-  character(0)
   idx.coord <- NULL
@@ -798,7 +797,7 @@ PrepareModel2 <- function(model, ...,
   }
   
 
-  ##  print(M)
+  ##  Print(M, missing(data), missing (x), if (!missing(data)) data, if (!missing(x)) x )
 
   M
 }
@@ -1004,7 +1003,7 @@ buildCovList <- function(model, x, Env, EnvDummies, add.na,
     return(list(model=model, idx.coord=idx.coord)) ## for recursive calling
 
   if (!isRMmodel(model)) stop('model must be of class ', CLASS_CLIST)
-  
+
   name <- model@name
   if (name == RM_PLUS[1]) name <- SYMBOL_PLUS
   else if (name == RM_MULT[1]) name  <- SYMBOL_MULT

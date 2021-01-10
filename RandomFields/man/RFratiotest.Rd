@@ -49,7 +49,7 @@ RFratiotest(nullmodel, alternative, x, y = NULL, z = NULL, T = NULL,
 }
 
 \note{
-  An important \command{\link{RFoptions}} is \code{ratiotest_approx}.
+  An important \command{\link[=RFoptionsFit]{RFoptions}} is \code{ratiotest_approx}.
 }
 
 \details{
@@ -59,7 +59,7 @@ RFratiotest(nullmodel, alternative, x, y = NULL, z = NULL, T = NULL,
     a covariance model, see \command{\link{RMmodel}} or
     type \code{\link{RFgetModelNames}(type="variogram")} to get all options.
 
-    If \command{\link{RFoptions}}
+    If \command{\link[=RFoptionsFit]{RFoptions}}
     \code{ratiotest_approx} is \code{TRUE} the chisq approximation is performed. Otherwise 
     a Monte Carlo ratio test is performed.
     \item
@@ -121,6 +121,7 @@ RFratiotest(nullmodel, alternative, x, y = NULL, z = NULL, T = NULL,
 }
 \seealso{
   \command{\link{RFfit}},
+  \command{\link{RFoptonsFit}},
  \command{\link{RMmodel}},
  \code{\link[=RandomFields-package]{RandomFields}},
  \command{\link{weather}}.

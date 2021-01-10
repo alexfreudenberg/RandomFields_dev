@@ -60,7 +60,7 @@ RFcrossvalidate(model, x, y=NULL, z=NULL, T=NULL, grid=NULL, data,
 \note{
   An important option is \code{cross_refit} that determines
   whether the model is refitted for each location left out.
-  Default is \code{FALSE}. See also \command{\link{RFoptions}}.
+  Default is \code{FALSE}. See also \command{\link[=RFoptionsFit]{RFoptions}}.
 }
 
 
@@ -111,6 +111,7 @@ RFcrossvalidate(model, x, y=NULL, z=NULL, T=NULL, grid=NULL, data,
 \seealso{
   \command{\link{RFratiotest}}
   \command{\link{RFfit}}
+  \command{\link{RFoptionsFit}}
   \command{\link{RMmodel}},
   \code{\link[=RandomFields-package]{RandomFields}},
   \command{\link{weather}}.

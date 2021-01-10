@@ -39,7 +39,7 @@ OneTo <- function(n) return(if (length(n) > 1) stop("invalid end of for loop") e
 TwoTo <- function(n) return(if (length(n) > 1) stop("invalid end of for loop") else if (n < 2) NULL else 2:n)
 
 Try <- function(expr) {
-  z <- tryCatch(expr, error = function(e){print(e);e} )
+  z <- tryCatch(expr, error = function(e) e)
   if (is.list(z) && !is.null(z$message) && !is.null(z$call))
     class(z) <- "try-error"
   z
@@ -159,7 +159,8 @@ DetectionNote <- function(...) {
 }
 
 data.columns <- function(data, model=NULL, force=FALSE, halt=TRUE,
-			 RFopt=RFoptions(), vdim=0, ..., xdim=0) {
+			 RFopt=RFoptions(), vdim=0, ..., params=NULL,
+                         xdim=0) {
   
   ##  Print(data, force)
   ##  Print(halt, vdim,  xdim)
@@ -202,7 +203,7 @@ data.columns <- function(data, model=NULL, force=FALSE, halt=TRUE,
                FUN= function(x) strsplit(x, "\\.n[[:digit:]]+$")[[1]][1]
                )
 
-    M <- PrepareModel2(model=model, ...,
+    M <- PrepareModel2(model=model, params=params, ...,
                        data=data, coord.opt=info, xdim=xdim)
     
    if (length(M$data.coordnames) > 0) {

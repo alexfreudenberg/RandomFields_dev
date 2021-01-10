@@ -398,7 +398,7 @@ RFrdistr <- function(model, n, params, dim=1, ...) {
 
 
 rfeval <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
-                  params, distances, dim, ..., 
+                  params=NULL, distances, dim, ..., 
                   ##                  dim = ifelse(is.matrix(x), ncol(x), 1),
                   fctncall=c("Covariance", "CovMatrix", "Fctn",
                              FCTN_TYPE_NAMES), reg=MODEL_USER) {
@@ -682,9 +682,9 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
 
   model <- PrepareModel2(model, params=params,..., return_transform=FALSE)$model
 
-#  print(model)
+  ##  print(model)
   ##
-#  print("done")
+  ##  print("done")
 
   err.model <-
     if (missing(err.model) || length(err.model) ==0) NULL
@@ -700,6 +700,7 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
                   rfCondGauss(model=model.orig, x=x, y=y, z=z, T=T,
                               grid=grid, n=n, data=data, given=given,
                               err.model=err.model,
+                              params = params,
                               ## next line to make sure that this part
                               ## matches with predictGauss
                               predict_register = MODEL_PREDICT,

@@ -324,7 +324,7 @@ struct distr_param{
 #define MAXCLIQUE(locmaxn) (((locmaxn) * 3) / 5)
 
 #define FLAT_UNDETERMINED -1
-#define fitN 39
+#define fitN 41
 #define FIT_BC_LB 10
 #define FIT_BC_UB 11
 #define FIT_MAXNEIGHBOUR 19
@@ -345,10 +345,8 @@ struct fit_param{
      critical, 
     n_crit, locmaxn, 
     locsplitn[3], // 0:when splitting is done; 1:min pts in a neighbourhood ; 2:max pts when still neighbourhoods are included
-    locsplitfactor, smalldataset, optimiser,
-    algorithm, likelihood, 
-    split,
-    addNAlintrend; // 17
+    locsplitfactor, smalldataset, optimiser, suboptimiser,
+    algorithm, likelihood, split, addNAlintrend, trace; // 
   usr_bool estimate_variance;
   bool  use_naturalscaling, onlyuser, 
    reoptimise, ratiotest_approx,
@@ -365,14 +363,14 @@ struct fit_param{
 	{RF_INF, RF_INF, RF_INF, RF_INF, RF_INF, RF_INF, RF_INF, RF_INF,\
 	    RF_INF, RF_INF, RF_INF, RF_INF, RF_INF, RF_INF, RF_INF, RF_INF,\
 	    RF_INF, RF_INF, RF_INF, RF_INF},				\
-	  0.1, 1e-7, fit_pgtol[NM], fit_pgtol_recall[NM], /* 17 */	\
+	  0.1, 1e-7, fit_pgtol[NM], fit_pgtol_recall[NM], /* */	\
 	    fit_factr[NM], fit_factr_recall[NM], PSEUDO,	\
 	    /* int: */							\
 	    50,  0 /* critical */,            /* 6 */			\
 	    5 /* ncrit */ , maxclique[NM],				\
 	    {MINCLIQUE(maxclique[NM]), MEDCLIQUE(maxclique[NM]),	\
-		MAXCLIQUE(maxclique[NM]) }, 2, 2000,  /* 11 */		\
-	   0, UNSET /* algorithm */, 0, fit_split[NM], 1, 	/* 17 */ \
+		MAXCLIQUE(maxclique[NM]) }, 2, 2000 /* small */,  /* 11 */ \
+   0, 0, 0 /* UNSET algorithm */, 0, fit_split[NM], 1, 0, /*  */ \
       /* usr_bool */ Nan,                                      \
 	  /* bool */ false, false, fit_reoptimise[NM],  /* 5 */ \
           fit_ratiotest_approx[NM], true, fit_cross_refit[NM], false, \

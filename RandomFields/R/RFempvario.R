@@ -91,14 +91,19 @@ rfempirical <- function(x, y = NULL, z = NULL, T = NULL, data, grid,
   pseudo <- alpha > 0
 #  Print(pseudo, alpha,  PSEUDO, PSEUDOMADOGRAM)
 
+  deltaT <- RFopt$empvario$delta
+  deltaTgiven <- all(deltaT > 0)
   bins = RFopt$empvario$bins
   if(length(bins)==0) bins <- 20
   if (length(bins) == 1) {
     ## automatic bin depending on coords
     xx <- Z$coords[[1]]$x
-    if(grid[1])
-      bins <- seq(0, max(xx[2, ] * xx[3, ]) / 2, len = bins) 
-    else {
+    if(grid[1]) {
+      maxi <- if (ncol(x) == 1 && length(Z$coords[[1]]$T) == 0) {
+                    bins * if (deltaTgiven) deltaT[2] else 1
+              } else max(xx[2, ] * xx[3, ]) / 2
+      bins <- seq(0, maxi, len = bins)
+    } else {
       bins <- seq(0, sqrt(sum((apply(xx, 2, max)-apply(xx, 2, min))^2))/2,
 		 len = bins)
     }
@@ -132,8 +137,6 @@ rfempirical <- function(x, y = NULL, z = NULL, T = NULL, data, grid,
   n.theta <- RFopt$empvario$ntheta # 0 if automatic
   phigiven <-  !dist.given && spatialdim > 1 && n.phi > 1
   thetagiven <- !dist.given && spatialdim > 2 && n.theta > 1
-  deltaT <- RFopt$empvario$delta
-  deltaTgiven <- all(deltaT > 0)
   basic <- !(has.time.comp || phigiven || thetagiven)
   
   phi <- if (!phigiven) c(0, 0) else c(RFopt$empvario$phi0, n.phi)
@@ -433,46 +436,25 @@ rfempirical <- function(x, y = NULL, z = NULL, T = NULL, data, grid,
   dimnames(empirical) <- name
   ##  {} else names(empirical) <- Z$varnames[1]
 
-
-
   dim <- has.time.comp + spatialdim
-  if (RFopt$general$spConform) {
-    l <- new(CLASS_EMPIR,
-	     centers=centers,
-	     empirical=empirical,
-	     var=variance,
-	     sd= empirical.sd,
-	     n.bin=N,
-	     phi.centers=phibins,
-	     theta.centers=thetabins,
-	     T=Tbins,
-	     vdim = vdim,
-	     coordunits = rep(Z$coordunits, length=dim),
-             dim = dim,
-	     varunits = varunits,
-	     call=call,
-	     alpha=alpha)
-  } else {
-    l <- list(centers=centers,
-	      empirical=empirical,
-	      var=variance,
-	      sd= empirical.sd,
-	      n.bin=N,
-	      phi.centers=phibins,
-	      theta.centers=thetabins,
-	      T=Tbins,
+  l <- list(centers=centers,
+            empirical=empirical,
+            var=variance,
+            sd= empirical.sd,
+            n.bin=N,
+            phi.centers=phibins,
+            theta.centers=thetabins,
+            T=Tbins,
 	      vdim = vdim,
-	      coordunits = rep(Z$coordunits, length=dim),
-              dim = dim,
-	      varunits = varunits,
-	      call=call,
-	      alpha=alpha
-	      )
-    class(l) <- CLASS_EMPIR
-  }
+            coordunits = rep(Z$coordunits, length=dim),
+            dim = dim,
+            varunits = varunits,
+            alpha=alpha
+            )
+  if (RFopt$general$spConform) l <- do.call("new", c(list(CLASS_EMPIR), l))
+  else class(l) <- CLASS_EMPIR
   
-  return(l)
-  
+  return(l)  
 } # function rfempirical
 
 

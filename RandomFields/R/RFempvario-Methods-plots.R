@@ -237,7 +237,7 @@ RFplotEmpVariogram <- function(x, model = NULL, nmax.phi = NA, nmax.theta = NA,
       stop("method only for objects of class '", CLASS_EMPIR, "' or '",
            CLASS_FITLIST, "'")
   }
-
+  
   for (i in c("empirical", "sd", "centers", "phi.centers", "theta.centers",
               "n.bin", "coordunits", "vdim", "dim",
               "alpha")) ## emprical variogram/covariance/etc
@@ -342,6 +342,7 @@ RFplotEmpVariogram <- function(x, model = NULL, nmax.phi = NA, nmax.theta = NA,
                              to = dotsRFfit$xlim[2], len = n.points)
     spatialdim <- dim - (length(T) > 0) ## ja nicht n.T > 1, da
     ## stille Zeitkomponent moeglich, die aber das Modell braucht
+
     x.spt <- x.space <-
       do.call(cbind, c(list(x.base), as.list(rep(0, spatialdim-1))))
     total <- n.points *  vdim^2

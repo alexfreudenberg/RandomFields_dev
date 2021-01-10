@@ -239,12 +239,20 @@ rfPrepareData <- function(model, x, y=NULL, z=NULL, T=NULL,
   missing.x <- missing(x) || length(x) == 0
   imputing <- missing.x && (missing(distances) || length(distances) == 0)
 
+  if (!imputing) {
+    new <- UnifyXT(x, y, z, T, grid=grid, distances=distances, dim=dim)
+    cn <- colnames(new$x)
+#    Print(cn)
+  #  RFoptions(coord.coordnames=cn)
+  }
 
-#  Print(model=model, data=data,...)
+  ##  Print(model=model, data=data,...)
+##  Print(given, data)
   
   if (length(given) == 0) {
     ## so either within the data or the same the x-values
     Z <- UnifyData(model=model, data=data, RFopt=RFopt, params=params, ...)
+#Print( data,     Z$matrix.indep.of.x.assumed)
     if (Z$matrix.indep.of.x.assumed) {
       if (missing.x) stop("coordinates cannot be detected")
       Z <- UnifyData(model=model, x=x, y=y, z=z, T=T, RFopt=RFopt,
@@ -252,6 +260,8 @@ rfPrepareData <- function(model, x, y=NULL, z=NULL, T=NULL,
                      data=data, params=params, ...)
     }
   } else {
+ #   Print(missing(given), missing(data),
+  #        if (!missing(given)) given, if (!missing(data)) data)
     Z <- UnifyData(model=model, data=data, x=given, RFopt=RFopt,
                    params=params,...)
   }
@@ -289,10 +299,10 @@ rfPrepareData <- function(model, x, y=NULL, z=NULL, T=NULL,
     } else new <- NULL
   } else {
     ## needed in soilRd, in condsimu!!
-    new <- UnifyXT(x, y, z, T, grid=grid, distances=distances, dim=dim)
     ## new <- Z$coords[[1]]  ## why was this set???
   ##  Print(new, UnifyXT(x, y, z, T, grid=grid, distances=distances, dim=dim)); kkkff
 
+##    Print(Z, new, x)
     
     if (Z$tsdim != new$spatialdim + new$has.time.comp)
       stop("coodinate dimension of locations with and without data, ",
@@ -643,7 +653,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
 rfCondGauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, n=1,
                         data,   # first coordinates, then data
                         given=NULL, ## alternative for coordinates of data
-                        params,
+                        params=NULL,
                         err.model=NULL, err.params, ...) { # ... wegen der Variablen
 
  

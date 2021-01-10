@@ -123,16 +123,6 @@ CheckChar <- function(arg, subst, names=NULL, distr) {
 
 
 copyProp <- function(what, from) {
-  return(new(CLASS_RM,
-             .Data = what,
-             type = from["type"],
-             isotropy = from["isotropy"],
-             domain = from["domain"],
-             operator = from["operator"],
-             monotone = from["monotone"],
-             finiterange = from["finiterange"],
-             simpleArguments = from["simpleArguments"],
-             maxdim = from["maxdim"],
-             vdim = from["vdim"]
-             ))
+  from@.Data <- what
+  return(from)
 }

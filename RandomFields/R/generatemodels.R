@@ -249,8 +249,6 @@ rfGenerateModels <- function(package="RandomFields", assigning,
  
     text.fct.body <-
       paste("{\n  ",
-            "cl <- match.call()",
-            "\n  ",
             "submodels <- par.general <- par.model <- list() \n  ",
             ## get submodels
             if (ex.anysub) {
@@ -270,7 +268,7 @@ rfGenerateModels <- function(package="RandomFields", assigning,
             },
             "\n  ",
              # create RMmodel object
-            "model <- methods::new(CLASS_CLIST, call = cl, ",
+            "model <- methods::new(CLASS_CLIST, ",
             "name = ", "'", nick, "'", ", \n  \t\t",
             "submodels = submodels, ",   "\n  \t\t",
             "par.model = par.model, ",
