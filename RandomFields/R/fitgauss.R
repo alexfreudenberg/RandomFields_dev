@@ -1543,8 +1543,8 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
   mindistance <- Z$mindist
   set.with.dist <- sapply(coords, function(x) x$dist.given) # ok
   maxdistance <- Z$rangex[2, ]
-  maxdistance[!set.with.dist] <-
-    maxdistance[!set.with.dist] - Z$rangex[1, !set.with.dist]
+ # maxdistance[!set.with.dist] <-
+ #   maxdistance[!set.with.dist] - Z$rangex[1, !set.with.dist]
   maxdistance <- sqrt(sum(maxdistance^2))
 
 ################    analyses of orginal model        ###############
