@@ -1374,7 +1374,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
     }
 
     if (trace == 0) {
-       if (printlevel>=PL_FCTN_DETAILS) Print(ans, LSMIN)  #
+       # if (printlevel>=PL_FCTN_DETAILS) Print(ans, LSMIN)  #
     } else {
       if (abs(trace) >= 2 || res == LSMIN) {
         if (trace < 0) Print(M, res, variab, param) #
