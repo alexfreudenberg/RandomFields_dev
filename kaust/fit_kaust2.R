@@ -1,8 +1,10 @@
+#!/usr/bin/env Rscript
+i = as.numeric(commandArgs(trailingOnly=TRUE))
+
 library(RandomFields)
 RFoptions(pivot=PIVOT_NONE, critical=-1, reoptimise=F, optimiser="optim", cores = 12,printlevel = 7)
 
 
-for(i in 12:16){
   df<-read.csv(paste0("~/kaust/Sub-competition_1a/dataset",i,"_training.csv"))
   #df <- df[1:18e3,]  
   len <- length(df$x)
@@ -14,4 +16,3 @@ for(i in 12:16){
   saveRDS(model, file = paste0("~/kaust/models/dataset_",i,".RDS"))
   cat(timestamp())
   cat(rep("\n",10))
-}
