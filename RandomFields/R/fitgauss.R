@@ -3272,11 +3272,11 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
       }
 
       if (Meth_i== M) {
-        H <- INVDIAGHESS(param.table[[M]][IDX("variab")], MLELB=MLELB,
-                      MLEUB=MLEUB, control=mle.optim.control)
-        param.table[[M]][IDX("sdvariab")] <- H$sd
-        Hessians[[Meth_i]] <- H$hessian
-        invH[[Meth_i]] <- invH
+        H <- NA #INVDIAGHESS(param.table[[M]][IDX("variab")], MLELB=MLELB,
+                      #MLEUB=MLEUB, control=mle.optim.control)
+        param.table[[M]][IDX("sdvariab")] <- NA # H$sd
+        Hessians[[Meth_i]] <- NA #H$hessian
+        invH[[Meth_i]] <- NA #invH
       }
     }
 
