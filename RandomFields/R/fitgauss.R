@@ -3447,13 +3447,14 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
         ## Print(dtrafo, n.param, n.variab, pseudoinv, pseudoinv %*% dtrafo, dtrafo %*% pseudoinv)
       
         ## TODO: not clear, whether next line makes sense of not
-        res[[M]]$hessian <- t(pseudoinv) %*% Hessians[[M]] %*% pseudoinv
+        res[[M]]$hessian <- NA # t(pseudoinv) %*% Hessians[[M]] %*% pseudoinv
         ## Print(res[[M]]$hessian)
-        if (length(invH[[M]]) == 0) res[[M]]$param[2, 1:n.param] <- NA
-        else {
-          res[[M]]$param[2, 1:n.param] <-
-            sqrt(-diag(dtrafo %*% invH[[M]] %*% t(dtrafo)))
-        }
+        #if (length(invH[[M]]) == 0) 
+        res[[M]]$param[2, 1:n.param] <- NA
+        #else {
+        #  res[[M]]$param[2, 1:n.param] <-
+        #    sqrt(-diag(dtrafo %*% invH[[M]] %*% t(dtrafo)))
+        #}
       } #for methods 
     } ## not identity
 
