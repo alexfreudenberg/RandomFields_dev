@@ -1044,6 +1044,30 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
                  TRY(pso::psoptim(par=par, fn=fn, lower=lower, upper=upper,
                                   control=control))
                },
+              "optimParallel" = {
+                function(par, fn, lower, upper, control) {
+                  if (length(idx <- which("algorithm" == names(control))) > 0)
+                    control <- control[-idx];
+                  print("LBFGS")
+                  # env <- new.env(); 
+                  
+                  # cl <- parallel::makeCluster(2, #type="FORK", 
+                  # useXDR=FALSE,
+                  # outfile="outfile.out")
+                  sapply(ls(),function(x)assign(x,x,envir=env));
+                  parallel::clusterExport(cl=cl,varlist=ls(envir= env),envir=env);ls(envir=env)
+                  
+                  #parallel::setDefaultCluster(cl=cl) # set 'cl' as default cluster
+                  print(ls())
+                  #parallel::clusterExport(cl=cl, varlist=ls())
+                  print(result <- optimParallel::optimParallel(par=par, fn=fn, lower=lower, upper=upper,
+                              #control=control,
+                              parallel=list(cl=cl, forward=FALSE, loginfo=TRUE)))
+                 # parallel::setDefaultCluster(cl=NULL); parallel::stopCluster(cl)
+                  
+                    result
+                }
+              },
              "DEoptim" =
                function(par, fn, lower, upper, control) {
                  control <- control[-pmatch(c("parscale", "fnscale", "pgtol",
@@ -3285,11 +3309,11 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
       }
 
       if (Meth_i== M) {
-        H <- INVDIAGHESS(param.table[[M]][IDX("variab")], MLELB=MLELB,
-                      MLEUB=MLEUB, control=mle.optim.control)
-        param.table[[M]][IDX("sdvariab")] <- H$sd
-        Hessians[[Meth_i]] <- H$hessian
-        invH[[Meth_i]] <- invH
+        H <- NA#INVDIAGHESS(param.table[[M]][IDX("variab")], MLELB=MLELB,
+             #         MLEUB=MLEUB, control=mle.optim.control)
+        param.table[[M]][IDX("sdvariab")] <- NA#H$sd
+        Hessians[[Meth_i]] <- NA#H$hessian
+        invH[[Meth_i]] <- NA#invH
       }
     }
 

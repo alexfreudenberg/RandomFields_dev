@@ -248,7 +248,7 @@ typedef enum Types { // IF CHANGED, CHANGE RFgetModelNames!
 #define LASTNN NN4
 #define LASTTYPE NN4
 
-#define nOptimiser 8
+#define nOptimiser 9
 #define nNLOPTR 15
 #define nLikelihood 4
 #define nDuplicatedloc 4

@@ -232,7 +232,7 @@ RC_UNREDUCED <- UNREDUCED 	<- as.integer(14)
  LASTNN 	<- as.integer(NN4)
  LASTTYPE 	<- as.integer(NN4)
 
- nOptimiser 	<- as.integer(8)
+ nOptimiser 	<- as.integer(9)
  nNLOPTR 	<- as.integer(15)
  nLikelihood 	<- as.integer(4)
  nDuplicatedloc 	<- as.integer(4)

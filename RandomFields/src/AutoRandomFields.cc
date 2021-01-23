@@ -11,7 +11,7 @@ const char // muss in separater Zeile sein
 
   *OPTIMISER_NAMES[nOptimiser] = { // RC
   "optim", "optimx", "soma", "nloptr", // nloptr muss immer 4. sein
-    "GenSA", "minqa", "pso", "DEoptim"},
+    "GenSA", "minqa", "pso", "optimParallel", "DEoptim"},
   
   *NLOPTR_NAMES[nNLOPTR] = { // RC
     "NLOPT_GN_DIRECT", "NLOPT_GN_DIRECT_L", 
