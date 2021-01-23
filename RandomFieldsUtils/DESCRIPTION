@@ -1,5 +1,5 @@
 Package: RandomFieldsUtils
-Version: 0.6.1
+Version: 0.6.1.1
 Title: Utilities for the Simulation and Analysis of Random Fields and
         Genomic Data
 Author: Martin Schlather [aut, cre], Reinhard Furrer [ctb], Martin Kroll [ctb], Brian D. Ripley [ctb]

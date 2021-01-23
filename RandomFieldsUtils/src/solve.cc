@@ -770,7 +770,7 @@ int doPosDef(double *M0, int size, bool posdef,
 		  //               of value 'true' in the first argument,
 		  //               so contents never distroyed by Alex
 		  size, // in:  size of the matrix
-		  rhs, //in: if NULL the inverse of M is calculated;
+		  rhs0, //in: if NULL the inverse of M is calculated;
 		  //  rhs is copied by Alex  because of value 'true'
 		  //  in the first argument,, so never distroyed by Alex
 		  rhs_cols, // in: number of columns on the right hand side

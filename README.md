@@ -1,5 +1,4 @@
-# Cracked version of RandomFields 3.6
+# Cracked version of RandomFields and RandomFieldsUtils
+
 Enhancements: 
-* Add slot for extra optimizer
-* Printing tryCatch erros
-* Printing name of optimiser
+* RFUtils fix (to be doublechecked)
