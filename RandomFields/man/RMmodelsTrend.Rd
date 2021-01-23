@@ -8,13 +8,13 @@
 }
 
 \details{
-  See \link{RFcalc}, \link{RMtrend} and also the examples below
+  See \link{RFcalc}, \link{RMshape} and also the examples below
   for some insight on the possibilities of trend modelling.
 }
 
 %\references{Ribeiro}
 \seealso{
-  \link{RFcalc}, \link{RM}, \link{RMmodels}, \link{RMtrend}, \link{RMmodelsMultivariate}.
+  \link{RFcalc}, \link{RM}, \link{RMmodels}, \link{RMshape}, \link{RMmodelsMultivariate}.
 }
 
 \examples{\dontshow{StartExample();if (!interactive()) RFoptions(modus="careless")} %ok

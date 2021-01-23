@@ -25,7 +25,5 @@
 
 fit.br <- function(...) {
   stop("estimation of Brown-Resnick fields not programmed yet")
-  RFoptOld <- internal.rfoptions(...)
-  on.exit(RFoptions(LIST=RFoptOld[[1]]))
-  RFopt <- RFoptOld[[2]]
+  RFopt <- internalRFoptions(...)
 }

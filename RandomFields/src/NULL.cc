@@ -57,20 +57,21 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 void LOC_SINGLE_NULL(location_type *loc, int len, int dim) {
   int d;
-  loc->spatialdim = loc->timespacedim = loc->lx = loc->ly = loc->xdimOZ = UNSET;
+  loc->spatialdim = loc->timespacedim = loc->xdimOZ = loc->rawset = UNSET;
   loc->xgr = (double **) MALLOC(dim * sizeof(double *));  
-  loc->ygr = (double **) MALLOC(dim * sizeof(double *));
+  loc->grY = (double **) MALLOC(dim * sizeof(double *));
   for (d=0; d<dim; d++) {
-    loc->xgr[d] = loc->ygr[d] = NULL;
+    loc->xgr[d] = loc->grY[d] = NULL;
   }
   loc->totalpoints = loc->spatialtotalpoints = 0;
-  loc->grid = loc->distances = loc->Time = false;
+  loc->grid = loc->gridY = loc->distances = loc->Time = false;
   loc->delete_x = loc->delete_y = true;
-  loc->x = loc->y = loc->caniso = NULL;
+  loc->x = loc->Y = loc->caniso = NULL;
+  loc->rawidx = NULL;
   //  loc->T[0] = loc->T[1] = loc->T[2] = 0.0;
   //loc->i_row = loc->i_col = I_COL_NA;
   loc->cani_ncol = loc->cani_nrow = NA_INTEGER;
-  loc->len = len;
+  LocLocSets(loc) = len;
 }
      
 
@@ -83,51 +84,72 @@ void LOC_NULL(location_type **Loc, int len, int dim) {
 
 location_type **LOCLIST_CREATE(int n, int dim) {
   int i;
-  location_type **loc = (location_type**) CALLOC(n, sizeof(location_type*));
+  location_type **Loc = NULL;
 
-  for (i=0; i<n; i++) loc[i] = (location_type*) MALLOC(sizeof(location_type));
-  LOC_NULL(loc, n, dim);
-  assert(loc[0]->len >= 1 && loc[0]->len <= 1e6);
-  return loc;
+  Loc = (location_type**) CALLOC(n, sizeof(location_type*));
+  
+  //  printf("LOCLIST_CREATE(int n, %d %ld\n", n, Loc);
+
+  for (i=0; i<n; i++) Loc[i] = (location_type*) MALLOC(sizeof(location_type));
+  LOC_NULL(Loc, n, dim);
+  assert(LocPSets(Loc) >= 1 && LocPSets(Loc) <= 1e6);
+  return Loc;
 }
 
 void LOCLIST_CREATE(model *cov, int n) {
-  cov->ownloc = LOCLIST_CREATE(n, ANYDIM);
+  cov->ownloc = LOCLIST_CREATE(n, OWNXDIM(0));
 }
-     
+
+void LOC_SINGLE_DELETE_Y(location_type *loc) {
+  // called hier and in getNset.cc
+  assert(loc != NULL);
+  if (loc != NULL) { // sicherheitshalber
+    if (loc->totalpointsY > 0 && loc->gridY) {
+      assert(loc->grY != NULL);
+      FREE(loc->grY[0]);
+      // do not  FREE(loc->grY); here!!
+    }
+    if (loc->delete_y) FREE(loc->Y);
+    loc->totalpointsY = 0;
+  }
+}
+  
+
 void LOC_SINGLE_DELETE(location_type **Loc) {
+  assert(Loc != NULL);
+  //printf("LOCLIST_SINGLE_DELE %ld\n", Loc); 
   location_type *loc = *Loc;    
   if (loc != NULL) {
-    if (loc->x != NULL) {
-      if (loc->delete_y)  FREE(loc->y);
-      if (loc->delete_x) {
-	assert(loc->x != NULL);
-	UNCONDFREE(loc->x); 
-      }     
-    }
-    FREE(loc->caniso);
+    LOC_SINGLE_DELETE_Y(loc); // very first to deleted!
+     FREE(loc->caniso);
+    FREE(loc->rawidx);
     // it may happen that both are set ! Especially after calling 
-    // partial_loc_set in variogramAndCo.cc
-    if (loc->spatialdim>0) {
-      if (loc->delete_y) FREE(loc->ygr[0]); ///
-      if (loc->delete_x) FREE(loc->xgr[0]); ///
+    // partial _loc _set in variogramAndCo.cc
+    if (loc->grid) {
+      assert(loc->xgr != NULL);
+      FREE(loc->xgr[0]);
     }
-    FREE(loc->ygr);
-    FREE(loc->xgr);
+    if (loc->delete_x) FREE(loc->x); 
+
+    FREE(loc->xgr); // always to be freed!
+    FREE(loc->grY); // always to be freed, but not in LOC_SINGLE_DELETE_Y
+
     UNCONDFREE(*Loc);
   }
 }
 
-void LOC_DELETE(location_type ***Loc) {
+
+
+void LOC_DELETE(location_type ***Loc) { // OK
   if (*Loc == NULL) return;
+  //  printf("LOCLIST_DELE %ld\n", *Loc); 
   int i, 
     len = (*Loc)[0]->len;
   for (i=0; i<len; i++) {
     LOC_SINGLE_DELETE( (*Loc) + i );    
   }
 
-  assert(**Loc == NULL); // UNCONDFREE(**Loc);
-  // UNCONDFREE(**Loc);
+  assert(**Loc == NULL); 
   UNCONDFREE(*Loc);
 }
 
@@ -164,47 +186,28 @@ void LIST_DELETE(listoftype **x) {
 }
 
 
-//void GLOBAL_NULL() {
-//  ReSetGlobal();
-//}
-//
-//void SetTemporarilyGlobal(globalparam *gp) {
-//  if (!GLOBALORIG.set) {
-//    MEMCOPY(&(GLOBALORIG.param), &GLOBAL, sizeof(globalparam));
-//    GLOBALORIG.set = true;
-//  }
-//  MEMCOPY(&GLOBAL, gp, sizeof(globalparam));
-//}
-//
-//void ReSetGlobal() {
-//  if (GLOBALORIG.set) {
-//    MEMCOPY(&GLOBAL, &(GLOBALORIG.param), sizeof(globalparam));
-//    GLOBALORIG.set = false;
-//  }
-//}
 
+void MPPPROPERTIES_NULL(mpp_properties *Mpp) {
+  // Mpp->refradius= 
+  int i;
+  for (i=0; i<MAXMPPVDIM; i++) Mpp->maxheights[i] = RF_INF; // maxv
+  Mpp->unnormedmass = RF_NA;
+  Mpp->mM = Mpp->mMplus = NULL;
+  //   Mpp->refsd = 
+  //Mpp->totalmass = RF_NA;
+  //Mpp->methnr = UNSET;
+  //Mpp->loc_done = false;
+}
 
-
- void MPPPROPERTIES_NULL(mpp_properties *Mpp) {
-   // Mpp->refradius= 
-   int i;
-   for (i=0; i<MAXMPPVDIM; i++) Mpp->maxheights[i] = RF_INF; // maxv
-   Mpp->unnormedmass = RF_NA;
-   Mpp->mM = Mpp->mMplus = NULL;
-   //   Mpp->refsd = 
-   //Mpp->totalmass = RF_NA;
-   //Mpp->methnr = UNSET;
-   //Mpp->loc_done = false;
- }
-
- void MPPPROPERTIES_DELETE(mpp_properties *Mpp) {   
-   FREE(Mpp->mM);
-   FREE(Mpp->mMplus);
- }
+void MPPPROPERTIES_DELETE(mpp_properties *Mpp) {   
+  FREE(Mpp->mM);
+  FREE(Mpp->mMplus);
+}
 
  
 
 void COV_DELETE_WITHOUTSUB(model **Cov, model *save) {
+  // DIESES DING IST GEFAEHLICH DA prevloc ff NICHT BEHANDELT IST
   // save : where to save the error message constained in Cov when Cov is deleted?
   model *cov = *Cov;
   assert(cov != NULL);
@@ -212,7 +215,6 @@ void COV_DELETE_WITHOUTSUB(model **Cov, model *save) {
   
   int i, j,
     lastparam = (COVNR < 0) ? MAXPARAM : DefList[COVNR].kappas; 
-  
   for (i=0; i<lastparam; i++) {
     int type = DefList[COVNR].kappatype[i];
     if (!PisNULL(i)) {     
@@ -246,11 +248,12 @@ void COV_DELETE_WITHOUTSUB(model **Cov, model *save) {
   //MPPPROPERTIES_DELETE(&(cov->mpp));
 
   cov->prevloc = NULL;
-  LOC_DELETE(&(cov->ownloc));
+  LOC_DELETE(&(cov->ownloc)); // OK ist es nicht, siehe oben
 
   if (cov->key != NULL) {
     //    TREE0(cov); /* ja nicht PMI, da dies auf geloeschtes zugreift */
     COV_DELETE(&(cov->key), save);
+    //printf("done\n");
   }
   if (cov->rf != NULL && cov->origrf) UNCONDFREE(cov->rf);
 
@@ -261,15 +264,14 @@ void COV_DELETE_WITHOUTSUB(model **Cov, model *save) {
   hyper_DELETE(&(cov->Shyper));  
   nugget_DELETE(&(cov->Snugget));
 
-  plus_DELETE(&(cov->Splus), save);
+  plus_DELETE(&(cov->Splus));
   sequ_DELETE(&(cov->Ssequ));
   //  SPECTRAL_DELETE(&(cov->Sspectral));
-  trend_DELETE(&(cov->Strend));
   tbm_DELETE(&(cov->Stbm));
-  br_DELETE(&(cov->Sbr), save);
+  br_DELETE(&(cov->Sbr));
   get_DELETE(&(cov->Sget));
-  pgs_DELETE(&(cov->Spgs), save);
-  fctn_DELETE(&(cov->Sfctn), save);
+  pgs_DELETE(&(cov->Spgs));
+  fctn_DELETE(&(cov->Sfctn));
   set_DELETE(&(cov->Sset));
   polygon_DELETE(&(cov->Spolygon));
   rect_DELETE(&(cov->Srect));
@@ -283,13 +285,15 @@ void COV_DELETE_WITHOUTSUB(model **Cov, model *save) {
   
   scatter_DELETE(&(cov->Sscatter));
   mcmc_DELETE(&(cov->Smcmc));
-   //  SELECT_DELETE(&(cov->Sselect));
-  gen_DELETE(&(cov->Sgen));  
+  //  SELECT_DELETE(&(cov->Sselect));
   likelihood_DELETE(&(cov->Slikelihood));  
   covariate_DELETE(&(cov->Scovariate));
   bubble_DELETE(&(cov->Sbubble));
   mle_DELETE(&(cov->Smle));
-  
+  model_DELETE(&(cov->Smodel), save);
+  trend_DELETE(&(cov->Strend));
+  gen_DELETE(&(cov->Sgen));  
+ 
   simu_storage *simu = &(cov->simu);
   simu->active = simu->pair = false;
   simu->expected_number_simu = 0;
@@ -336,10 +340,11 @@ void COV_DELETE_WITHOUT_LOC(model **Cov, model *save) {
 
 // COV_DELETE(
 void COV_DELETE_(model **Cov, model *save) { 
- model *cov = *Cov;
-  assert(*Cov != NULL);
-  // printf("COV_DELETE %.50s top=%d\n", NAME(cov), cov->calling == NULL);
-  if (cov->calling == NULL) LOC_DELETE(&(cov->prevloc));
+  if (*Cov == NULL) return; // 13.1.21 neu
+  assert(*Cov != NULL); // TO DO 13.1.21 ehemals -> if ( != NULL) streichen
+  model *cov = *Cov;
+  //  PMI0(cov);  printf("COV_DELETE %.50s top=%d\n", NAME(cov), cov->calling == NULL);
+  if (cov->calling == NULL) LOC_DELETE(&(cov->prevloc)); // OK
   COV_DELETE_WITHOUT_LOC(Cov, save);
 }
 
@@ -372,7 +377,6 @@ void COV_ALWAYS_NULL(model *cov) {
   cov->Splus = NULL;
   cov->Ssequ = NULL;
   cov->Stbm = NULL;
-  cov->Strend = NULL;
   cov->Sbr = NULL;
   cov->Sget = NULL;
   cov->Spgs = NULL;
@@ -390,12 +394,14 @@ void COV_ALWAYS_NULL(model *cov) {
   cov->Sscatter = NULL;
   cov->Smcmc = NULL;
   //cov->Sselect = NULL;
-  cov->Sgen = NULL;
   cov->Slikelihood = NULL;
   cov->Sbistable = NULL;
   cov->Scovariate = NULL;
-  cov->Smle = NULL;
   cov->Sbubble = NULL;
+  cov->Smle = NULL;
+  cov->Smodel = NULL;
+  cov->Strend = NULL;
+  cov->Sgen = NULL;
 
   cov->fieldreturn = falsch;
   cov->origrf = false;
@@ -449,7 +455,7 @@ void COV_NULL(model *cov, KEY_type *base) {
   cov->monotone = MON_UNSET; 
   //  cov->total_n = UNSET;
   //  cov->total_sum = 0.0;
-    // cov->diag = cov->semiseparatelast  = cov->separatelast = 
+  // cov->diag = cov->semiseparatelast  = cov->separatelast = 
   cov->hess = NOT_IMPLEMENTED;
   int i;
   for (i=0; i<=Nothing; i++) cov->pref[i] = PREF_BEST;
@@ -554,12 +560,10 @@ void nugget_DELETE(nugget_storage ** S)
 }
 
 ALL_NULL(plus)
-void plus_DELETE(plus_storage ** S, model *save){
+void plus_DELETE(plus_storage ** S){
   plus_storage *x = *S;
   if (x != NULL) {
     int i;
-    for (i=0; i<MAXSUB; i++)
-      if (x->keys[i] != NULL) COV_DELETE(x->keys + i, save);
     UNCONDFREE(*S);
   }
 }
@@ -586,7 +590,7 @@ void spectral_DELETE(spectral_storage **S)
   spectral_storage *x = *S;
   if (x!=NULL) {
     // do NOT delete cov --- only pointer
-      // spectral_storage *x; x =  *((spectral_storage**)S);
+    // spectral_storage *x; x =  *((spectral_storage**)S);
     UNCONDFREE(*S);   
   }
 }
@@ -621,12 +625,12 @@ void tbm_DELETE(tbm_storage **S) {
 
 ALL_NULL(br)
 void BRTREND_DELETE(double **BRtrend, int trendlen) {
-   int j;
-   if (BRtrend == NULL) return;
-   for (j=0; j<trendlen; j++) FREE(BRtrend[j]);
- }
+  int j;
+  if (BRtrend == NULL) return;
+  for (j=0; j<trendlen; j++) FREE(BRtrend[j]);
+}
 
-void br_DELETE(br_storage **S, model *save) {
+void br_DELETE(br_storage **S) {
   br_storage *sBR = *S;  
   if (sBR != NULL) {
     assert(sBR->nr);
@@ -636,12 +640,10 @@ void br_DELETE(br_storage **S, model *save) {
       BRTREND_DELETE(sBR->trend, sBR->trendlen); 
       UNCONDFREE(sBR->trend);
     }
-    if (sBR->vario != NULL) COV_DELETE(&(sBR->vario), save);
-
 
     if (sBR->nr == BRSHIFTED_INTERN || sBR->nr == BRSHIFTED_USER) {
       FREE(sBR->shift.loc2mem);
-      FREE(sBR->shift.mem2loc);
+      FREE(sBR->shift.mem2location);
       FREE(sBR->shift.locindex);
     } else if (sBR->nr == BRMIXED_INTERN || sBR->nr == BRMIXED_USER) {
       if (sBR->m3.countvector != NULL) {
@@ -664,7 +666,7 @@ void br_DELETE(br_storage **S, model *save) {
 	  for (i=0; i<total; i++) FREE(sBR->normed.C[i]);
 	}
 	FREE(sBR->normed.C);
-     }
+      }
       FREE(sBR->normed.dummyCi);    
     } else if (sBR->nr != BRORIGINAL_INTERN && sBR->nr != BRORIGINAL_USER) BUG;
          
@@ -674,7 +676,7 @@ void br_DELETE(br_storage **S, model *save) {
 
 
 ALL_NULL_BUT(pgs, x->alpha = 1.0) // alpha!=1.0 only for optiz
-void pgs_DELETE(pgs_storage **S, model *save) 
+void pgs_DELETE(pgs_storage **S) 
 {
   pgs_storage *x = *S;
   if (x!=NULL) {
@@ -715,20 +717,7 @@ void pgs_DELETE(pgs_storage **S, model *save)
     FREE(x->xstart);    
     FREE(x->x);
     FREE(x->inc);    
-
-    if (x->cov != NULL) {
-      model *dummy = x->cov;
-      if (x->cov->Spgs != NULL && x->cov->Spgs->cov != NULL && 
-	  x->cov->Spgs->cov->Spgs == x) {
-	 x->cov->Spgs->cov = NULL;// um "Unendlich"-Schleife zu vermeiden!
-      } else {
-	assert(x->cov->Spgs == NULL || x->cov->Spgs->cov == NULL || 
-	       x->cov->Spgs->cov->Spgs == x);
-      }
-      x->cov = NULL; // Sicherheitshalber
-      COV_DELETE(&(dummy), save);
-    }
-  
+ 
     UNCONDFREE(*S);
   }
 }
@@ -736,7 +725,7 @@ void pgs_DELETE(pgs_storage **S, model *save)
 
 
 ALL_NULL(fctn) // alpha!=1.0 only for optiz
-void fctn_DELETE(fctn_storage **S, model  VARIABLE_IS_NOT_USED *save) 
+void fctn_DELETE(fctn_storage **S) 
 {
   fctn_storage *x = *S;
   if (x!=NULL) {
@@ -756,7 +745,6 @@ void fctn_DELETE(fctn_storage **S, model  VARIABLE_IS_NOT_USED *save)
     FREE(x->incy);    
  
     FREE(x->cross);
-    FREE(x->Val);
     FREE(x->cum);
      
     //
@@ -906,7 +894,6 @@ void extra_DELETE(extra_storage **S)
     // FREE(x->j2);
     FREE(x->k1);
     FREE(x->k2);
-    //  LOC_DELETE(&(x->loc));
 #endif    
     UNCONDFREE(*S);
   }
@@ -995,7 +982,7 @@ void gen_DELETE(gen_storage **S) {
 }
 
 
-void likelihood_info_NULL(likelihood_info *x) {
+void likelihood_facts_NULL(likelihood_facts *x) {
   if (x == NULL) return;
   x->varmodel = model_undefined;
   x->Var = NULL; // DO NOT FREE
@@ -1007,15 +994,15 @@ void likelihood_info_NULL(likelihood_info *x) {
     x->nas[i] = 0;
   }
 }
-void likelihood_info_DELETE(likelihood_info *x) {
+void likelihood_facts_DELETE(likelihood_facts *x) {
   // nicht: Var, ptvariance !
   FREE(x->Matrix);
   //  x->Var = NULL; // DO NOT FREE
   //  x->Matrix = x->pt_variance = NULL; // DO NOT FREE
- }
+}
 
 
-ALL_NULL_BUT(likelihood, x->info.varmodel = model_undefined)
+ALL_NULL_BUT(likelihood, x->facts.varmodel = model_undefined)
 void likelihood_DELETE(likelihood_storage **S) {
   likelihood_storage *x = *S;
   if (x != NULL) {
@@ -1041,26 +1028,26 @@ void likelihood_DELETE(likelihood_storage **S) {
     FREE(x->data_nas);  
     int end = x->cum_n_betas[x->fixedtrends];
     for (int i=0; i<end; i++) FREE(x->betanames[i]);    
-    likelihood_info_DELETE(&(x->info)); 
+    likelihood_facts_DELETE(&(x->facts)); 
     UNCONDFREE(*S);
   }
 }
 
 /*
-likelihood_storage * likelihood_CREATEXXX(int n) { /// obsolete
+  likelihood_storage * likelihood_CREATEXXX(int n) { /// obsolete
   likelihood_storage * x =
-    (likelihood_storage*) MALLOC(sizeof(likelihood_storage));
-  likelihood_NULL(x);
+  (likelihood_st orage*) MAL LOC(sizeof(likelihood_storage));
+  likelihood _NULL(x);
   x->datasets = LIST_CREATE(n, LISTOF + REALSXP);
   // x->withoutdet = LIST_CREATE(n, LISTOF + REALSXP);
   if ((x->X = (double**) CALLOC(n, sizeof(double*))) == NULL ||
-      (x->XtX = (double*) CALLOC(n, sizeof(double))) == NULL ||
-      (x->XitXi = (double*) CALLOC(n, sizeof(double))) == NULL ||
-      (x->CinvXY = (double*) CALLOC(n, sizeof(double))) == NULL ||
-      (x->data_nas = (bool*) CALLOC(n, sizeof(bool))) == NULL)
-      err or("Memory allocation error for 'likelihood'");
- x->sets = n;
-}
+  (x->XtX = (double*) CALLOC(n, sizeof(double))) == NULL ||
+  (x->XitXi = (double*) CALLOC(n, sizeof(double))) == NULL ||
+  (x->CinvXY = (double*) CALLOC(n, sizeof(double))) == NULL ||
+  (x->data_nas = (bool*) CALLOC(n, sizeof(bool))) == NULL)
+  err or("Memory allocation error for 'likelihood'");
+  x->sets = n;
+  }
 */
 
 // #define PRNT printf("null: %lu\n", );
@@ -1069,8 +1056,9 @@ ALL_NULL_BUT(covariate, x->matrix_err = MATRIX_NOT_CHECK_YET )
 void covariate_DELETE(covariate_storage **S) {
   covariate_storage *x = *S;
   if (x != NULL) {
-    if (x->loc != NULL) LOC_DELETE(&(x->loc));
+    if (x->loc != NULL) LOC_DELETE(&(x->loc)); // OK da nur Parameter
     FREE(x->x);
+    FREE(x->nrow);
     UNCONDFREE(*S);
    }
 }
@@ -1086,7 +1074,7 @@ void bubble_DELETE(bubble_storage **S) {
     FREE(x->end);
     UNCONDFREE(*S);
   }
-}
+} 
 
 ALL_NULL(mle)
 void mle_DELETE(mle_storage **S) {
@@ -1096,20 +1084,49 @@ void mle_DELETE(mle_storage **S) {
   }
 }
 
+ALL_NULL(model)
+void model_DELETE(model_storage **S, model *save) {
+  model_storage *x = *S;
+  if (x != NULL) {
+     COV_DELETE(&(x->vario), save);
+     COV_DELETE(&(x->orig), save);
+     COV_DELETE(&(x->get_cov), save);
+     COV_DELETE(&(x->remote), save);
+     for (int i=0; i<MAXSUB; i++) COV_DELETE(x->keys + i, save);
+
+     if (x->cov != NULL) { // ehem. pgs_storage
+       model *dummy = x->cov;
+       if (x->cov->Smodel != NULL && x->cov->Smodel->cov != NULL && 
+	   x->cov->Smodel->cov->Smodel == x) {
+	 x->cov->Smodel->cov = NULL;// um "Unendlich"-Schleife zu vermeiden!
+       } else {
+	 assert(x->cov->Smodel == NULL || x->cov->Smodel->cov == NULL || 
+		x->cov->Smodel->cov->Smodel == x);
+       }
+      x->cov = NULL; // Sicherheitshalber
+      COV_DELETE(&(dummy), save);
+     }     
+    UNCONDFREE(*S);
+  }
+}
+
+
 
 void KEY_type_NULL(KEY_type *KT) {
-  KT->currentRegister = 0;
-  KT->naok_range = false;
+  KT->currentRegister = KT->set = 0;
+  KT->naok_range = KT->stored_init = false;
+  KT->rawConcerns = unsetConcerns;
   MEMSET(KT->PREF_FAILURE, 0, 90 * Nothing);
   KT->next = NULL;
   KT->error_causing_cov = NULL; // only a pointer, never free it.
   KT->zerox = NULL;
-  STRCPY(KT->error_loc, "<unkown location>");
-  MEMCOPY(&(KT->global), &GLOBAL, sizeof(globalparam));
+  STRCPY(KT->error_location, "<unkown location>");
+  globalparam_NULL(KT);
 }
 void KEY_type_DELETE(KEY_type **S) {
   KEY_type *KT = *S;
   model **key = KT->KEY;
+  globalparam_DELETE(KT);
   FREE(KT->zerox);
   for (int nr=0; nr<=MODEL_MAX; nr++)
     if (key[nr]!=NULL) COV_DELETE(key + nr, NULL);
@@ -1117,4 +1134,27 @@ void KEY_type_DELETE(KEY_type **S) {
 }
 
 
+void globalparam_NULL(KEY_type *KT, bool copy_messages) {
+  assert(generalN==20 && gaussN == 6 && krigeN == 5 && extremeN == 12
+	 && fitN == 42 && messagesN == 28 && coordsN == 20 && prefixN == 25);
+  messages_param m;
+  if (!copy_messages)
+    MEMCOPY(&m, &(KT->global.messages), sizeof(messages_param));
 
+  MEMCOPY(&(KT->global), &GLOBAL, sizeof(globalparam));
+  // pointer auf NULL setzten
+  if (!copy_messages)
+    MEMCOPY(&(KT->global.messages), &m, sizeof(messages_param));
+    
+  Ext_utilsparam_NULL(&(KT->global_utils));
+}
+
+void globalparam_NULL(KEY_type *KT) {
+  globalparam_NULL(KT, true);
+}
+
+void globalparam_DELETE(KEY_type *KT) {
+   // pointer loeschen
+  
+  Ext_utilsparam_DELETE(&(KT->global_utils));
+}

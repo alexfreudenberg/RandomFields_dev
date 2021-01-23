@@ -107,7 +107,7 @@ See \link{RMmodelsTailCorrelation}.
   \command{\link{RMcovariate}} \tab spatial covariates\cr
   \command{\link{RMprod}} \tab to model variability of the variance\cr
   \command{\link{RMpolynome}} \tab easy modelling of polynomial trends \cr
-  \command{\link{RMtrend}} \tab for explicit trend modelling\cr
+  \command{\link{RMshape}} \tab for explicit trend modelling\cr
   \command{\link{R.models}} \tab for implicit trend modelling\cr
   \command{\link{R.c}} \tab for multivariate trend modelling \cr
 }

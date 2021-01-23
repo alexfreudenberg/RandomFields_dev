@@ -468,18 +468,18 @@ double *matrixmult(double *m1, double *m2, int dim1, int dim2, int dim3) {
 SEXP TooLarge(int *n, int l){
 #define nTooLarge 2 // mit op
   const char *tooLarge[nTooLarge] = {"size", "msg"};
-  SEXP namevec, info;
-  PROTECT(info=allocVector(VECSXP, nTooLarge));
+  SEXP namevec, msg;
+  PROTECT(msg=allocVector(VECSXP, nTooLarge));
   PROTECT(namevec = allocVector(STRSXP, nTooLarge));
   for (int i=0; i<nTooLarge; i++)
     SET_STRING_ELT(namevec, i, mkChar(tooLarge[i]));
-  setAttrib(info, R_NamesSymbol, namevec);
+  setAttrib(msg, R_NamesSymbol, namevec);
   int i=0;
-  SET_VECTOR_ELT(info, i++, Int(n, l));
-  SET_VECTOR_ELT(info, i,
+  SET_VECTOR_ELT(msg, i++, Int(n, l));
+  SET_VECTOR_ELT(msg, i,
 		 mkString("too many elements - increase max.elements"));
   UNPROTECT(2);
-  return info;
+  return msg;
 }
 
 SEXP TooSmall(){
@@ -1091,13 +1091,17 @@ void GetName(SEXP el, char *name, const char * List[], int n,
 ErrorHandling0:
   SPRINTF(dummy, "'%.50s': unknown value '%.50s'. Possible values are:", 
 	  name, CHAR(STRING_ELT(el, k)));
+  //  printf("'%s': ", CHAR(STRING_ELT(el, k)));
   int i;
   for (i=0; i<n-1; i++) {
-    char info[1000];
-    SPRINTF(info, "%.50s '%.50s',", dummy, List[i]);    
-    STRCPY(dummy, info);
+    char msg[1000];
+    // printf("'%s', ", List[i]);
+    SPRINTF(msg, "%.900s '%.50s',", dummy, List[i]);    
+    STRCPY(dummy, msg);
   }
-  RFERROR2("%.50s and '%.50s'.", dummy, List[i]);  
+  //printf("'%s'\n ", List[i]);
+  	  
+  RFERROR2("%.900s and '%.50s'.", dummy, List[i]);  
  
  ErrorHandling:
   if (defaultvalue >= 0) {

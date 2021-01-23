@@ -49,51 +49,29 @@
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
-\dontrun{
-## Here some alternative optimisers to 'optim' are considered.
-## All but the \pkg{nloptr} algorithms are largely slower than 'optim'.
-## Only a few of them return results as good as 'optim'.
-
 data(soil)
-str(soil)
-soil <- RFspatialPointsDataFrame(
- coords = soil[ , c("x.coord", "y.coord")],
- data = soil[ , c("moisture", "NO3.N", "Total.N", "NH4.N", "DOC", "N20N")],
- RFparams=list(vdim=6, n=1)
-)
-dta <- soil["moisture"]
-\dontshow{if (RFoptions()$internal$examples_red) {
-  warning("data have been reduced !")
-  All <- 1:7 
-  rm(soil)
-  data(soil)
-  soil <- RFspatialPointsDataFrame(
-     coords = soil[All, c("x.coord", "y.coord")],
-     data = soil[All, c("moisture", "NO3.N", "Total.N",
-      "NH4.N", "DOC", "N20N")],
-      RFparams=list(vdim=6, n=1)
-  )
-  dta <- soil["moisture"]
-}}
+RFoptions(coordidx=1:2)
 
-model <- ~1 + RMwhittle(scale=NA, var=NA, nu=NA) + RMnugget(var=NA)
-\dontshow{if (RFoptions()$internal$examples_red){model<-~1+RMwhittle(scale=NA,var=NA,nu=1/2)}}
+if (interactive()) {
+   model <- moisture ~ 1 + RMwhittle(scale=NA, var=NA, nu=NA) + RMnugget(var=NA)
+} else model <- moisture ~ 1 + RMnugget(var=NA)
+
 ## standard optimiser 'optim'
-print(system.time(fit <- RFfit(model, data=dta)))
+print(system.time(fit <- RFfit(model, data=soil)))
 print(fit)
 
 opt <- "optimx" #  30 sec; better result
-print(system.time(fit2 <- try(RFfit(model, data=dta, optimiser=opt))))
+print(system.time(fit2 <- try(RFfit(model, data=soil, optimiser=opt))))
 print(fit2)
 
 \dontshow{\dontrun{ %in 6 sep 2017, soma has leak problems
 opt <- "soma" #  450 sec % sehr schlecht
-print(system.time(fit2 <- try(RFfit(model, data=dta, optimiser=opt))))
+print(system.time(fit2 <- try(RFfit(model, data=soil, optimiser=opt))))
 print(fit2)
 }}
 
 opt <- "minqa" # 330 sec %ok
-print(system.time(fit2 <- try(RFfit(model, data=dta, optimiser=opt))))
+print(system.time(fit2 <- try(RFfit(model, data=soil, optimiser=opt))))
 print(fit2)
 
 
@@ -102,25 +80,24 @@ algorithm <- RC_NLOPTR_NAMES
 \dontshow{if(!interactive()) algorithm <- RC_NLOPTR_NAMES[1]}
 for (i in 1:length(algorithm)) { % all algorithms are fast
   print(algorithm[i])
-  print(system.time(fit2 <- try(RFfit(model, data=dta, optimiser=opt,
+  print(system.time(fit2 <- try(RFfit(model, data=soil, optimiser=opt,
                                     algorithm=algorithm[i]))))
   print(fit2)
 }
-
 
 
 if (interactive()) {
 ## the following two optimisers are too slow to be run on CRAN.
 
 opt <- "pso" # 600 sec
-print(system.time(fit2 <- try(RFfit(model, data=dta, optimiser=opt))))
+print(system.time(fit2 <- try(RFfit(model, data=soil, optimiser=opt))))
 print(fit2)
 
 opt <- "GenSA" #  10^4 sec
-print(system.time(fit2 <- try(RFfit(model, data=dta, optimiser=opt))))
+print(system.time(fit2 <- try(RFfit(model, data=soil, optimiser=opt))))
 print(fit2)
 }
-}
+
 
 \dontshow{RFoptions(modus_operandi="normal")}
 \dontshow{FinalizeExample()}}

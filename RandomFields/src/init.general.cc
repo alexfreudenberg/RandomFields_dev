@@ -39,12 +39,21 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "init.h"
 #include "questions.h"
 #include "shape.h"
-#include "primitive.others.h"
+#include "QMath.h"
 
+
+int
+  PLUS,
+  USER,    
+  FIRSTDOLLAR, LASTDOLLAR, 
+  ISO2ISO0, SP2SP0, SP2ISO0, S2ISO0, S2SP0, S2S0, SId0, E2E0, E2EIso0, 
+  E2Sph0, E2SphIso0, Sph2Sph0, Sph2SphIso0,  FIRSTGATTER0, LASTGATTER0,
+  FIRST_PLANE, LAST_PLANE, EARTHKM2CART, EARTHMILES2CART,
+  EARTHKM2GNOMONIC, EARTHMILES2GNOMONIC,
+  EARTHKM2ORTHOGRAPHIC, EARTHMILES2ORTHOGRAPHIC,  
+  FIRST_TRAFO, LAST_TRAFO, MATHDIV;
 
 KEY_type *PIDKEY[PIDMODULUS];
-int parentpid;
-
 
 defn *DefList=NULL;
 int currentNrCov=UNSET,
@@ -116,23 +125,22 @@ const char *CAT_TYPE_NAMES[OtherType + 1] = {
 
 //  int SYS_TO_ISO[nr_coord_sys_proj] =  {GNOMONIC_PROJ, ORTHOGRAPHIC_PROJ};
 
-
-
-char
-  STANDARDPARAM[MAXPARAM][MAXCHAR],
+char STANDARDPARAM[MAXPARAM][MAXCHAR],
   STANDARDSUB[MAXSUB][MAXCHAR];
+
+
+int parentpid=-1;
+bool parallel() {
+  int mypid;
+  Ext_pid(&mypid);
+  // printf("pid = %d %d\n", mypid, parentpid);
+  return mypid != parentpid;
+}
 
 model **KEY() { return KEYT()->KEY; }
 KEY_type *KEYT() {  
   int mypid;
   Ext_pid(&mypid);
-  bool parallel = mypid != parentpid;
-
-  if (parallel && GLOBAL.internal.warn_parallel) {
-    GLOBAL.internal.warn_parallel = false;
-    PRINTF("Do not forget to run 'RFoptions(storing=FALSE)' after each call of a parallel command (e.g. from packages 'parallel') that calls a function in 'RandomFields'. (OMP within RandomFields is not affected.) This message appears only once per session."); //
-  }
-
   KEY_type *p = PIDKEY[mypid % PIDMODULUS];
   if (p == NULL) {
     KEY_type *neu = (KEY_type *) XCALLOC(1, sizeof(KEY_type));
@@ -149,8 +157,11 @@ KEY_type *KEYT() {
     neu->visitingpid = 0;
     neu->ok = true;
     if (PIDKEY[mypid % PIDMODULUS] != neu) BUG;
-    KEY_type_NULL(neu);
-     return neu;
+    KEY_type_NULL(neu);    
+    if (GLOBAL.messages.warn_parallel && mypid == parentpid) {
+      PRINTF("Do not forget to run 'RFoptions(storing=FALSE)' after each call of a parallel command (e.g. from packages 'parallel') that calls a function in 'RandomFields'. (OMP within RandomFields is not affected.) This message can be suppressed by 'RFoptions(warn_parallel=FALSE)'."); // ok
+    }
+   return neu;
   }
   while (p->pid != mypid && p->next != NULL) p = p->next;
   if (p->pid != mypid) {
@@ -172,7 +183,7 @@ KEY_type *KEYT() {
       p->visitingpid = 0;
       p->ok = true;
       
-       return neu;
+      return neu;
     }
     FREE(neu);
     p->visitingpid = 0;
@@ -180,9 +191,9 @@ KEY_type *KEYT() {
     KEY_type_NULL(neu);
     return KEYT();
   }
-  MEMCOPY(&(p->global), &GLOBAL, sizeof(globalparam));
   p->error_causing_cov = NULL;
   return p;
+
 }
 
 int currentRegister() {
@@ -195,10 +206,10 @@ int currentRegister() {
 void set_currentRegister(int cR) {
   KEY_type *p = KEYT();
   if (p == NULL) BUG;
-  p->currentRegister = cR;
+  p->currentRegister = cR; 
 }
 
-int zaehler = 0;
+//int zaehler = 0;
 double *ZERO(int dim, KEY_type *KT) {
   //   printf("zero enter %lu %lu\n", KT, KT->zerox);
   assert(KT != NULL);
@@ -214,24 +225,20 @@ double *ZERO(int dim, KEY_type *KT) {
 
 double *ZERO(model *cov) {
   assert(cov != NULL && cov->base != NULL);
-  return ZERO(PREVTOTALXDIM + 1, cov->base); // i_ncol
+  return ZERO(PREVTOTALXDIM, cov->base); // i_ncol
 }
 
+void Zero(int *info, model *cov, double *v) {
+  double *zero = ZERO(cov);
+  if (isKernel(PREV)) NONSTATCOV(zero, zero, info, cov, v)
+    else COV(zero, info, cov, v);
+}
 
-
-int
-  PLUS,
-  USER,    
-  FIRSTDOLLAR, LASTDOLLAR, 
-  ISO2ISO0, SP2SP0, SP2ISO0, S2ISO0, S2SP0, S2S0, SId0, E2E0, E2EIso0, 
-  E2Sph0, E2SphIso0, Sph2Sph0, Sph2SphIso0,  FIRSTGATTER0, LASTGATTER0,
-  FIRST_PLANE, LAST_PLANE, EARTHKM2CART, EARTHMILES2CART,
-  EARTHKM2GNOMONIC, EARTHMILES2GNOMONIC,
-  EARTHKM2ORTHOGRAPHIC, EARTHMILES2ORTHOGRAPHIC,  
-  FIRST_TRAFO, LAST_TRAFO, MATHDIV;
-
-
-   
+void Zero(model *cov, double *v) {
+  DEFAULT_INFO(info);
+  Zero(info, cov, v);
+}
+ 
 
 bool CheckListmodel(){
   assert((bool) 5 == 1);
@@ -239,7 +246,7 @@ bool CheckListmodel(){
   assert(OtherType == 20 && LASTTYPE == 30); // otherwise change TYPE_NAMES, 
   //                                           CAT_TYPE_NAMES[OtherType + 1]
   //                                           Type-Consistency in question.cc
-  assert(LAST_ISO == 20); // otherwise change ISO_NAMES
+ assert(LAST_ISO == 20); // otherwise change ISO_NAMES
   //  assert(MAXMPPDIM <= MAXSIMUDIM); // ZERO
   // assert(CUTOFF_THEOR == 4);/* do not change this value as used in RFmethods.Rd */
 
@@ -247,20 +254,20 @@ bool CheckListmodel(){
   const char *typefcts[ntypefcts] =
     {"+", "*", "$", "$power", "fixcov",
      "identity", "M", "matern", "tbm", "U",
-     "whittle", "nugget", "null", "trend", "trafo",
+     "whittle", "nugget", "null", "shape", "trafo",
      "setparam", "p", "c", "Simulate", "direct", "nuggetIntern",
      "binaryprocess", "gauss.process", "Cov", "CovMatrix",
      "Variogram", "Pseudovariogram", "loglikelihood"};
 
-  int nr, err=NOERROR;
-  defn *C;
-  for (nr=0; nr<currentNrCov; nr++) {     
-    C = DefList + nr; // nicht gatternr    
-    //  printf("%.50s\n", C->name);
-    if (C->vdim != SCALAR && equalsSymmetric(C->systems[0][0].iso)
-	&& C->check != checkmqam
-	 ) BUG;
+  int nr = 0,
+    err=NOERROR;
+  defn *C = NULL;
+  for ( ; nr<currentNrCov; nr++) {
+    //    printf("n=%d(%d) %s\n", nr, currentNrCov, C->name);
+
     
+    C = DefList + nr; // nicht gatternr    
+      
     err = 1;
     if (isManifold(SYSTYPE(C->systems[0], 0)) && C->TypeFct == NULL) 
       goto ErrorHandling;
@@ -277,6 +284,7 @@ bool CheckListmodel(){
 
     err = 4;
     if (C->setDI == NULL) {
+      err = 104;
        if (isParamDepI(C) || isParamDepD(C)) goto ErrorHandling;
     } else {
       if (!(isParamDepI(C) || isParamDepD(C) || isSubModelI(C)))
@@ -314,7 +322,6 @@ bool CheckListmodel(){
     if (C->TypeFct != NULL && C->name[0] != '-') {
       int i;
       for (i=0; i<ntypefcts; i++) if (!STRCMP(typefcts[i], C->name)) break;
-#ifdef SCHLATHERS_MACHINE
       if (i >=ntypefcts) {
 	PRINTF("Martin, read instructions for typefcts: '%s'\n", C->name);
 	/* 
@@ -326,12 +333,11 @@ bool CheckListmodel(){
 	 */
 	//	goto ErrorHandling;
       }
-#endif      
     }
 
     err = 9;
     if (nr != COVARIATE && nr != FIXCOV && nr != VARIOGRAM2COV &&
-	nr != VAR2COV_PROC) {
+	nr != VAR2COV_PROC && nr != PREDICT_CALL) {
       //      printf("%s\n", C->name);
       for (int k=0; k<C->kappas; k++) {
 	if (C->kappatype[k] == VECSXP) {
@@ -342,22 +348,49 @@ bool CheckListmodel(){
     }
 
     err = 10; // MISMATCH=-4
-    // printf("%s %d nr=%d\n", C->nick, C->maxmoments, nr);
+    // 
     Types type = SYSTYPE(C->systems[0], 0);
     if (nr > LAST_TRAFO && C->maxmoments < 0 && C->maxmoments != SUBMODEL_DEP &&
 	C->maxsub != 0 && C->Init != init_failed && !isInterface(type)) {
-      if (C->cov != ave && C->cov != IdStat && C->check != checkstp  //&&
+      if (C->cov != ave && C->cov != Id && C->check != checkstp  //&&
 	  // C->check != check_mcmc_pgs && C->check != check_Zhou
-	  ) goto ErrorHandling;
+	  ) {
+	PRINTF("%s %d nr=%d\n", C->nick, C->maxmoments, nr);
+	goto ErrorHandling;
+      }
     }
  
-
+    err = 11;
+    if (nr != VARIOGRAM2COV && nr !=  VAR2COV_PROC && nr != PREDICT_CALL) {
+      for (int k=0; k<C->kappas; k++) {
+	if (C->kappatype[k] == VECSXP &&
+	    (k==C->kappas-1 || STRCMP(C->kappanames[k+1], COVARIATE_RAW_NAME))){
+	  PRINTF("%s: Martin, all functions that have additional points inside must set KT->rawConcerns = neverRaw; then included in the exception list", C->name);
+	  goto ErrorHandling;
+	}
+      }
+    }
   }
+
+  printf("urgent to do: replace CORES by KEYT()->global_utils \n");// OK
+  printf("partially match of location with kriging\n"); // OK
+  printf("!!!! ACHTUNG ! bei Verwendung von TALLOC auf Sextra basierend, darf bis zu END_TALLOC kein cov stehen, oder es muss sichergestellt werden  dass die Fkt mit argument 'cov' nicht auch noch TALLOC aufruft!\n"); // OK
+  printf("fft is currently disabled\n"); //
+  printf("smith model \n"); // OK
+  printf("steht was wichtiges in famillies.cc.spaeter?\n"); // OK
+  printf("eps<1.0 in huetchen.cc!"); // OK
+  printf("rpbernoulli auch fuer prozesse"); // OK
+  //  printf("done\n");
   return true;
 
 
  ErrorHandling:
-  PRINTF("\n\nFehler in CheckListmodel: name = %s %d (err=%d)\n\n", C->nick, nr, err);
+  // if (C != NULL) PRINTF("%s: ", C->nick);
+  PRINTF("Fehler in CheckListmodel: err=%d nr=%d (%s) %d\n", err, nr,
+	 DefList[nr].nick, C == NULL);
+  
+  // PRINTF("\n\nFehler in CheckListmodel: name = %s %d (err=%d)\n\n",
+  //	 C == NULL ? "xxx" : C->nick, nr, err);
   return false;
 }
 
@@ -369,15 +402,14 @@ void InitModelList() {
   /* ja nicht setzen !! macht riesen aerger, da RF opt ions InitModel
     nicht aufruft:
     for (i=0; i<MAX UNITS; i++) {
-    STRCPY(GLOBAL.general.newunits[i], "");
-    STRCPY(GLOBAL.general.curunits[i], "");
-    STRCPY(GLOBAL.general.varunits[i], "");
+    STRCPY(glo bal->general.newunits[i], "");
+    STRCPY(glo bal->general.curunits[i], "");
+    STRCPY(glo bal->general.varunits[i], "");
   }
   */
 
 
    // init models
-  Ext_pid(&parentpid);
   
   for (int i=0; i<PIDMODULUS; i++) PIDKEY[i] = NULL; 
 
@@ -394,18 +426,18 @@ void InitModelList() {
   // **** RO-models ****
   // *******************
 
-
+   
   FIRSTGATTER0 =  // 0 -- always first
     IncludeModel("#",  OtherType, 1, 1, 0, NULL, PREVMODEL_D, PREVMODEL_I,
   		 checkNotOK, NULL, PREF_NOTHING, true, SUBMODEL_DEP,
   		 SUBMODEL_DEP, (ext_bool) SUBMODEL_DEP, MON_SUB_DEP);
-  assert(FIRSTGATTER0 == FIRSTGATTER);
-  addCov(stat2, D_2, DD_2, inverse2, nonstatinverse2);
+ 
+ assert(FIRSTGATTER0 == FIRSTGATTER);
+  addCov(stat2, D_2, DD_2, D3_2, D4_2, inverse2, inverse_nonstat2);
   addCov(nonstat2);// 
-  addlogCov(logstat2, lognonstat2, nonstat_loginverse2);
-  // addCov(iso2iso, D_2, DD_2, inverse2, nonstatinverse2);
+  addlogCov(logstat2, nonstat_log2, inverse_log_nonstat2);
+  // addCov(iso2iso, D_2, DD_2, inverse2, inversenonstat2);
   RandomShape(INFTY, struct2, init2, do2, dorandom2, true, true, false); 
-
   
   ISO2ISO0 = addFurtherCov(ErrCov, ErrD, ErrD); // 1
   SP2SP0 = addFurtherCov(ErrCov, ErrD, ErrD); // 2
@@ -430,11 +462,9 @@ void InitModelList() {
 		   checkEarth, NULL, PREF_NOTHING, true, SUBMODEL_DEP,
 		   4, (ext_bool) SUBMODEL_DEP, MON_SUB_DEP);
   
-  addCov(EarthKM2CartStat, NULL, NULL);
+  addCov(EarthKM2CartStat);
   addlogCov(EarthKM2Cart);//
-
-  
-  
+ 
   EARTHMILES2CART = addFurtherCov(EarthMiles2CartStat, ErrD);// 15
   addlogCov(EarthMiles2Cart);// 
 
@@ -465,8 +495,8 @@ void InitModelList() {
   // Achtung in covmatrix_plus wird SELECT_SUBNR verwendet!
   nickname("plus");
   kappanames("trend", INTSXP);
-  addCov(plusStat, Dplus, DDplus, NULL, NULL);
-  addCov(plusNonStat);
+  addCov(plus, Dplus, DDplus);
+  addCov(nonstat_plus);
   addTBM(NULL, spectralplus);
   RandomShape(0, structplus, initplus, doplus);
   addReturns(covmatrix_plus, iscovmatrix_plus);
@@ -482,9 +512,9 @@ void InitModelList() {
 		 checkmal, NULL, pmal, false, SUBMODEL_DEP, SUBMODEL_DEP,
 		 (ext_bool) SUBMODEL_DEP, MON_SUB_DEP);
   nickname("mult");
-  addCov(malStat, Dmal, NULL);
-  addCov(malNonStat);
-  addlogCov(logmalStat, logmalNonStat, NULL);
+  addCov(mal, Dmal);
+  addCov(nonstat_mal);
+  addlogCov(logmal, nonstat_logmal, NULL);
   RandomShape(0, structmal, initmal, domal);
   setptwise(pt_submodeldep);
   addTypeFct(Typemal);
@@ -506,10 +536,10 @@ void InitModelList() {
   change_typeof(DSCALE, RandomOrShapeType);
   change_typeof(DAUSER, ShapeType);
   subnames("phi");
-  addCov(Siso, DS, DDS, D3S, D4S, inverseS, nonstatinverseS); // unterscheidung nur wegen der 
+  addCov(Siso, DS, DDS, D3S, D4S, inverseS, inversenonstatS); // unterscheidung nur wegen der 
   //  geschwindigkeit, also Siso ist ein sehr haeufiger Spezialfall von Sstat
-  addCov(Snonstat);
-  addlogCov(logSiso, NULL, nonstat_loginverseS);
+  addCov(nonstatS);
+  addlogCov(logSiso, NULL, inverse_log_nonstatS);
   addLocal(coinitS, ieinitS);  
   addTBM(tbm2S, NULL, spectralS);
   nablahess(nablaS, hessS);
@@ -524,8 +554,8 @@ void InitModelList() {
    
   LASTDOLLAR = addFurtherCov(Sstat, DS, DDS); // 20.8.14 aus ErrCov (wieder)
   //                                        D2 gemacht
-  addCov(Snonstat);
-  addlogCov(logSstat, logSnonstat, NULL);
+  addCov(nonstatS);
+  addlogCov(logSstat, nonstat_logS, NULL);
 
   // printf("%d\n",  currentNrCov); BUG;
 
@@ -541,10 +571,10 @@ void InitModelList() {
   nickname("Spower");
   kappanames("var", REALSXP, "scale", REALSXP, "pow", REALSXP);
   subnames("phi");
-  addCov(PowSstat, NULL, NULL, inversePowS, nonstatinversePowS); // unterscheidung nur wegen der 
+  addCov(PowS, NULL, NULL, inversePowS, inversenonstatPowS); // unterscheidung nur wegen der 
   //  geschwindigkeit, also Siso ist ein sehr haeufiger Spezialfall von Sstat
-  addCov(PowSnonstat);
-  addlogCov(logSstat, logSnonstat, NULL);
+  addCov(nonstatPowS);
+  addlogCov(logPowS, nonstat_logPowS, NULL);
   // addLocal(coinitS, ieinitS);  
   RandomShape(INFTY, structPowS, initPowS, doPowS, true, true, true);
   Taylor(RF_NA, RF_NA, RF_NA, RF_NA);
@@ -563,7 +593,7 @@ void InitModelList() {
 	       false,SCALAR, PREVMODEL_DEP, falsch, NOT_MONOTONE);
   kappanames("x", REALSXP, "y", REALSXP, "factor", REALSXP);
   change_sortof(MATH_FACTOR, TRENDPARAM);
-  addCov(Mathminus, NULL, NULL);
+  addCov(Mathminus);
   AddVariant(TrendType, PREVMODEL_I);
   set_type(DefList[currentNrCov-1].systems[0], 0, ShapeType);
  
@@ -572,7 +602,7 @@ void InitModelList() {
 	      false,SCALAR, 1, falsch, NOT_MONOTONE);
   kappanames("x", REALSXP, "y", REALSXP, "factor", REALSXP);
   change_sortof(MATH_FACTOR, TRENDPARAM);
-  addCov(Mathplus, NULL, NULL);
+  addCov(Mathplus);
   AddVariant(TrendType, PREVMODEL_I);
   setptwise(pt_submodeldep); 
  
@@ -581,7 +611,7 @@ void InitModelList() {
 	      false,SCALAR, 1, falsch, NOT_MONOTONE);
   kappanames("x", REALSXP, "y", REALSXP,  "factor", REALSXP);
   change_sortof(MATH_FACTOR, TRENDPARAM);
-  addCov(Mathdiv, NULL, NULL);
+  addCov(Mathdiv);
   AddVariant(TrendType, PREVMODEL_I);
   setptwise(pt_submodeldep); 
  
@@ -591,7 +621,7 @@ void InitModelList() {
 	      false,SCALAR, 1, falsch, NOT_MONOTONE);
   kappanames("x", REALSXP, "y", REALSXP,  "factor", REALSXP);
   change_sortof(MATH_FACTOR, TRENDPARAM);
-  addCov(Mathmult, NULL, NULL);
+  addCov(Mathmult);
   setptwise(pt_submodeldep); 
   AddVariant(TrendType, PREVMODEL_I);
 
@@ -602,7 +632,7 @@ void InitModelList() {
   kappanames(CONST_A_NAME, REALSXP, COVARIATE_NAME_NAME, STRSXP);
   change_sortof(CONST_C, TRENDPARAM);
   change_sortof(CONST_NAME, IGNOREPARAM);
-  addCov(Mathc, NULL, NULL);
+  addCov(Mathc);
   AddVariant(TrendType, PREVMODEL_I);
   AddVariant(NegDefType, PREVMODEL_I);
   AddVariant(TcfType, PREVMODEL_I);
@@ -618,7 +648,7 @@ void InitModelList() {
   change_typeof(PROJ_ISO, NN2);// "new"
   change_sortof(PROJ_FACTOR , TRENDPARAM);
   change_sortof(PROJ_NAME, IGNOREPARAM); 
-  addCov(proj, NULL, NULL);
+  addCov(proj);
   AddVariant(TrendType, PREVMODEL_I);
   setDI(NULL, allowedIp, setproj);
   addTypeFct(Typeproj);
@@ -635,7 +665,7 @@ void InitModelList() {
  	     "q", REALSXP, // R: 16, C: 15
 	     "ncol", INTSXP, "factor", REALSXP);
   change_sortof(DefList[BIND].kappas - 1, TRENDPARAM);
-  addCov(Mathbind, NULL, NULL);
+  addCov(Mathbind);
   AddVariant(TrendType, SUBMODEL_I);
   assert(BIND_VARIABLES == 16);
   assert(DefList[BIND].kappas == BIND_VARIABLES + 2);
@@ -649,7 +679,7 @@ void InitModelList() {
 	      false, SCALAR, 1, falsch, NOT_MONOTONE);
   kappanames("x", REALSXP, "is", INTSXP, "y", REALSXP);
   change_typeof(IS_IS, NN1);
-  addCov(Mathis, NULL, NULL);
+  addCov(MathIs);
   AddVariant(TrendType, PREVMODEL_I);
   set_type(DefList[currentNrCov-1].systems[0], 0, ShapeType);
   setptwise(pt_posdef); 

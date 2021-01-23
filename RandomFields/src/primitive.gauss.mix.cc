@@ -46,16 +46,16 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 /* Cauchy models */
 #define CAUCHY_GAMMA 0
-void Cauchy(double *x, model *cov, double *v){
+void Cauchy(double *x, INFO, model *cov, double *v){
   double gamma = P0(CAUCHY_GAMMA);
   *v = POW(1.0 + *x * *x, -gamma);
 }
-void logCauchy(double *x, model *cov, double *v, double *Sign){
+void logCauchy(double *x, INFO, model *cov, double *v, double *Sign){
   double gamma = P0(CAUCHY_GAMMA);
   *v = LOG(1.0 + *x * *x) * -gamma;
   *Sign = 1.0;
 }
-void TBM2Cauchy(double *x, model *cov, double *v){
+void TBM2Cauchy(double *x, INFO, model *cov, double *v){
   double gamma = P0(CAUCHY_GAMMA), y2, lpy2;
   y2 = *x * *x; 
   lpy2 = 1.0 + y2;
@@ -71,11 +71,11 @@ void TBM2Cauchy(double *x, model *cov, double *v){
     ERR("TBM2 for cauchy only possible for alpha=0.5 + k; k=0, 1, 2, 3 ");
   }
 }
-void DCauchy(double *x, model *cov, double *v){
+void DCauchy(double *x, INFO, model *cov, double *v){
   double y=*x, gamma = P0(CAUCHY_GAMMA);
   *v = (-2.0 * gamma * y) * POW(1.0 + y * y, -gamma - 1.0);
 }
-void DDCauchy(double *x, model *cov, double *v){
+void DDCauchy(double *x, INFO, model *cov, double *v){
   double ha = *x * *x, gamma = P0(CAUCHY_GAMMA);
   *v = 2.0 * gamma * ((2.0 * gamma + 1.0) * ha - 1.0) * 
     POW(1.0 + ha, -gamma - 2.0);
@@ -103,7 +103,7 @@ void rangeCauchy(model VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->openmin[CAUCHY_GAMMA] = true;
   range->openmax[CAUCHY_GAMMA] = true;
 }
-void coinitCauchy(model VARIABLE_IS_NOT_USED *cov, localinfotype *li) {
+void coinitCauchy(model VARIABLE_IS_NOT_USED *cov, localfactstype *li) {
   li->instances = 1;
   li->value[0] = 1.0; //  q[CUTOFF_A] 
   li->msg[0] = MSGLOCAL_JUSTTRY;
@@ -162,7 +162,7 @@ void doCauchy(model VARIABLE_IS_NOT_USED *cov, gen_storage VARIABLE_IS_NOT_USED 
 #define CTBM_ALPHA 0
 #define CTBM_BETA 1
 #define CTBM_GAMMA 2
-void Cauchytbm(double *x, model *cov, double *v){
+void Cauchytbm(double *x, INFO, model *cov, double *v){
   double ha, 
     alpha = P0(CTBM_ALPHA), 
     beta = P0(CTBM_BETA), 
@@ -176,7 +176,7 @@ void Cauchytbm(double *x, model *cov, double *v){
   }
 }
 
-void DCauchytbm(double *x, model *cov, double *v){
+void DCauchytbm(double *x, INFO, model *cov, double *v){
   double y= *x, ha, 
     alpha = P0(CTBM_ALPHA), 
     beta = P0(CTBM_BETA),
@@ -223,24 +223,28 @@ void kappaconstant(int i, model VARIABLE_IS_NOT_USED *cov, int *nr, int *nc) {
   *nr = *nc = i ==  CONSTANT_M ? SIZE_NOT_DETERMINED : -1;
 }
 
-void constant(double VARIABLE_IS_NOT_USED *x, model *cov, double *v){
+void constant(double VARIABLE_IS_NOT_USED *x, INFO, model *cov, double *v){
   int 
     vdimSq = VDIM0 * VDIM1;
   MEMCOPY(v, P(CONSTANT_M), vdimSq * sizeof(double));
 }
 
-void nonstatconstant(double VARIABLE_IS_NOT_USED *x, double VARIABLE_IS_NOT_USED *y, model *cov, double *v){
+void nonstatconstant(double VARIABLE_IS_NOT_USED *x,
+		     double VARIABLE_IS_NOT_USED *y,
+		     INFO,model *cov, double *v){
   int 
     vdimSq = VDIM0 * VDIM1;
   MEMCOPY(v, P(CONSTANT_M), vdimSq * sizeof(double));
 }
 
 int checkconstant(model *cov) {
+ utilsparam *global_utils = &(cov->base->global_utils);
   int err; // anzahl listen elemente
- 
-  if (GLOBAL.internal.warn_constant) {
-    GLOBAL.internal.warn_constant = false;
-    warning("NOTE that the definition of 'RMconstant' has changed in version 3.0.61. Maybe  'RMfixcov' is the model your are looking for");
+  globalparam *global = &(cov->base->global);
+
+  if (global->messages.warn_constant) {
+    global->messages.warn_constant = false; // OK
+       warning("NOTE that the definition of 'RMconstant' has changed in version 3.0.61. Maybe  'RMfixcov' is the model your are looking for. This note appears only once per session and can be fully suppressed by RFoptions(warn_constant = false)");
   }
  
   VDIM0 = VDIM1 = cov->nrow[CONSTANT_M];
@@ -259,7 +263,7 @@ int checkconstant(model *cov) {
   if (!Ext_is_positive_definite(P(CONSTANT_M), VDIM0)) {
     cov->monotone = MONOTONE;
     cov->ptwise_definite = pt_indef;
-    if (!GLOBAL_UTILS->basic.skipchecks && isnowPosDef(cov))
+    if (!global_utils->basic.skipchecks && isnowPosDef(cov))
       return cov->q[0] = ERROR_MATRIX_POSDEF;
   } else {
     cov->monotone = COMPLETELY_MON;
@@ -315,31 +319,31 @@ void rangeconstant(model *cov, int VARIABLE_IS_NOT_USED k, int i, int j,
 
 
 /* exponential model */
-void exponential(double *x, model VARIABLE_IS_NOT_USED *cov, double *v){
+void exponential(double *x, INFO, model VARIABLE_IS_NOT_USED *cov, double *v){
    *v = EXP(- *x);
    //   printf(": %10g %10g\n", *x, *v);
 }
-void logexponential(double *x, model VARIABLE_IS_NOT_USED *cov, double *v, double *Sign){
+void logexponential(double *x, INFO, model VARIABLE_IS_NOT_USED *cov, double *v, double *Sign){
   *v = - *x;
   *Sign = 1.0;
  }
-void TBM2exponential(double *x, model VARIABLE_IS_NOT_USED *cov, double *v) 
+void TBM2exponential(double *x, INFO, model VARIABLE_IS_NOT_USED *cov, double *v) 
 {
   double y = *x;
   *v = 1.0;
   if (y!=0.0) *v = 1.0 - PIHALF * y * Ext_I0mL0(y);
 }
-void Dexponential(double *x, model VARIABLE_IS_NOT_USED *cov, double *v){
+void Dexponential(double *x, INFO, model VARIABLE_IS_NOT_USED *cov, double *v){
   *v = - EXP(- *x);
 }
-void DDexponential(double *x, model VARIABLE_IS_NOT_USED *cov, double *v){
+void DDexponential(double *x, INFO, model VARIABLE_IS_NOT_USED *cov, double *v){
  *v = EXP(-*x);
 }
 void Inverseexponential(double *x, model VARIABLE_IS_NOT_USED *cov, double *v){
   *v = *x <= 0.0 ? RF_INF : *x >= 1.0 ? 0.0 : -LOG(*x);
 }
 
-void nonstatLogInvExp(double *x, model *cov,
+void inverse_log_nonstatExp(double *x, model *cov,
 		      double *left, double *right){
   double 
     z = *x <= 0.0 ? - *x : 0.0;  
@@ -385,8 +389,8 @@ int initexponential(model *cov, gen_storage *s) {
   }
 
   else if (hasSmithFrame(cov) || hasPoissonFrame(cov)) {
-    //Inverseexponential(&GLOBAL.mpp. about_ zero, NULL, &(cov->mpp.refradius));
-    //  R *= GLOBAL.mpp.radius_natscale_factor;
+    //Inverseexponential(&g lobal->mpp. about_ zero, NULL, &(cov->mpp.refradius));
+    //  R *= glo bal->mpp.radius_natscale_factor;
     
     /*
     if (cov->mpp.moments >= 1) {
@@ -442,7 +446,8 @@ void do_exp(model VARIABLE_IS_NOT_USED *cov, gen_storage VARIABLE_IS_NOT_USED *s
 
 void spectralexponential(model *cov, gen_storage *S, double *e) {
   spectral_storage *s = &(S->Sspectral);
-  int dim = PREVLOGDIM(0);
+  assert(s != NULL);
+ int dim = PREVLOGDIM(0);
   if (dim <= 2) {
     double A = 1.0 - UNIFORM_RANDOM;
     E12(s, dim, SQRT(1.0 / (A * A) - 1.0), e);
@@ -529,12 +534,12 @@ int hyperexponential(double radius, double *center, double *rx,
   return -Err;
 }
 
-void coinitExp(model VARIABLE_IS_NOT_USED *cov, localinfotype *li) {
+void coinitExp(model VARIABLE_IS_NOT_USED *cov, localfactstype *li) {
   li->instances = 1;
   li->value[0] = 1.0; //  q[CUTOFF_A] 
   li->msg[0] = MSGLOCAL_OK;
 }
-void ieinitExp(model VARIABLE_IS_NOT_USED *cov, localinfotype *li) {
+void ieinitExp(model VARIABLE_IS_NOT_USED *cov, localfactstype *li) {
   li->instances = 1;
   li->value[0] = 1.0;
   li->msg[0] = MSGLOCAL_OK;
@@ -552,34 +557,34 @@ double LogMixDensExp(double VARIABLE_IS_NOT_USED *x, double VARIABLE_IS_NOT_USED
 
 
 /* Gausian model */
-void Gauss(double *x, model VARIABLE_IS_NOT_USED *cov, double *v) {
+void Gauss(double *x, INFO, model VARIABLE_IS_NOT_USED *cov, double *v) {
   *v = EXP(- *x * *x);
   //printf("x =%10g v=%10g\n", x[0], *v);
 }
-void logGauss(double *x, model VARIABLE_IS_NOT_USED  *cov, double *v, double *Sign) {
+void logGauss(double *x, INFO, model VARIABLE_IS_NOT_USED  *cov, double *v, double *Sign) {
   *v = - *x * *x;
   *Sign = 1.0;
 }
-void DGauss(double *x, model VARIABLE_IS_NOT_USED *cov, double *v) {
+void DGauss(double *x, INFO, model VARIABLE_IS_NOT_USED *cov, double *v) {
   double y = *x; 
   *v = -2.0 * y * EXP(- y * y);
 }
-void DDGauss(double *x, model VARIABLE_IS_NOT_USED *cov, double *v) {
+void DDGauss(double *x, INFO, model VARIABLE_IS_NOT_USED *cov, double *v) {
   double y = *x * *x; 
   *v = (4.0 * y - 2.0)* EXP(- y);
 }
-void D3Gauss(double *x, model VARIABLE_IS_NOT_USED *cov, double *v) {
+void D3Gauss(double *x, INFO, model VARIABLE_IS_NOT_USED *cov, double *v) {
   double y = *x * *x; 
   *v = *x * (12 - 8 * y) * EXP(- y);
 }
-void D4Gauss(double *x, model VARIABLE_IS_NOT_USED *cov, double *v) {
+void D4Gauss(double *x, INFO, model VARIABLE_IS_NOT_USED *cov, double *v) {
   double y = *x * *x; 
   *v = ((16 * y - 48) * y + 12) * EXP(- y);
 }
 void InverseGauss(double *x, model VARIABLE_IS_NOT_USED *cov, double *v) {
   *v =  *x <= 0.0 ? RF_INF : *x >= 1.0 ? 0.0 : SQRT(-LOG(*x));
 }
-void nonstatLogInvGauss(double *x, model VARIABLE_IS_NOT_USED *cov, 
+void inverse_log_nonstatGauss(double *x, model VARIABLE_IS_NOT_USED *cov, 
 		     double *left, double *right) {
   double 
     z = 0.0;
@@ -598,6 +603,7 @@ double densityGauss(double *x, model *cov) {
     return EXP(- 0.25 * x2 - (double) dim * (M_LN2 + M_LN_SQRT_PI));
 }
 int struct_Gauss(model *cov, model **newmodel) {  
+  globalparam *global = &(cov->base->global);
   ASSERT_NEWMODEL_NOT_NULL;
 
   //printf("dleete next lines\n");  ILLEGAL_FRAME_STRUCT;
@@ -611,7 +617,7 @@ int struct_Gauss(model *cov, model **newmodel) {
     addModelX(newmodel, FIRSTDOLLAR);
     kdefault(*newmodel, DSCALE, INVSQRTTWO);
     addModelX(newmodel, TRUNCSUPPORT);
-    InverseGauss(&GLOBAL.mpp.about_zero, cov, &invscale);
+    InverseGauss(&global->mpp.about_zero, cov, &invscale);
     kdefault(*newmodel, TRUNC_RADIUS, invscale);
     break;  
   default :
@@ -718,7 +724,7 @@ void densGauss(double *x, model *cov, double *v) {
     factor[MAXMPPDIM+1] = {0, 1 / M_SQRT_PI, INVPI, INVPI / M_SQRT_PI, 
 			   INVPI * INVPI},
     dim = cov->tsdim;
-    *v = factor[dim] * EXP(- *x * *x);
+    *v = factor[di m ] * EXP(- *x * *x);
 }
 */
 
@@ -768,11 +774,11 @@ void simuGauss(model *cov, int dim, double *v) {
 /* gencauchy */
 #define GENC_ALPHA 0
 #define GENC_BETA 1
-void generalisedCauchy(double *x, model *cov, double *v){
+void generalisedCauchy(double *x, INFO, model *cov, double *v){
   double alpha = P0(GENC_ALPHA), beta=P0(GENC_BETA);
   *v = POW(1.0 + POW(*x, alpha), -beta/alpha);
 }
-void DgeneralisedCauchy(double *x, model *cov, double *v){
+void DgeneralisedCauchy(double *x, INFO, model *cov, double *v){
   double alpha = P0(GENC_ALPHA), beta=P0(GENC_BETA), ha, y=*x;
   if (y ==0.0) {
     *v = ((alpha > 1.0) ? 0.0 : (alpha < 1.0) ? RF_NEGINF : -beta); 
@@ -781,7 +787,7 @@ void DgeneralisedCauchy(double *x, model *cov, double *v){
     *v = -beta * ha * POW(1.0 + ha * y, -beta / alpha - 1.0);
   }
 }
-void DDgeneralisedCauchy(double *x, model *cov, double *v){
+void DDgeneralisedCauchy(double *x, INFO, model *cov, double *v){
   double alpha = P0(GENC_ALPHA), beta=P0(GENC_BETA), ha, y=*x;
   if (y ==0.0) {
     *v = ((alpha==1.0) ? beta * (beta + 1.0) 
@@ -794,7 +800,7 @@ void DDgeneralisedCauchy(double *x, model *cov, double *v){
   }
 }
 
-void D3generalisedCauchy(double *x, model *cov, double *v){
+void D3generalisedCauchy(double *x, INFO, model *cov, double *v){
   double alpha = P0(GENC_ALPHA), beta=P0(GENC_BETA), ha, y=*x;
   if (y ==0.0) {
     *v = ((alpha==2.0) ? 0  :  (alpha == 1)? -beta*(beta+1)*(beta+2) :
@@ -807,7 +813,7 @@ void D3generalisedCauchy(double *x, model *cov, double *v){
   }
 }
 
-void D4generalisedCauchy(double *x, model *cov, double *v){
+void D4generalisedCauchy(double *x, INFO, model *cov, double *v){
   double alpha = P0(GENC_ALPHA), beta=P0(GENC_BETA), y=*x;
   if (y ==0.0) {
     *v = ((alpha==2.0) ? 3*beta*(beta + 2)  :  (alpha == 1)?
@@ -827,7 +833,7 @@ void D4generalisedCauchy(double *x, model *cov, double *v){
 }
 
 
-void loggeneralisedCauchy(double *x, model *cov, double *v, double *Sign){
+void loggeneralisedCauchy(double *x, INFO, model *cov, double *v, double *Sign){
   double alpha = P0(GENC_ALPHA), beta=P0(GENC_BETA);
   *v = LOG(1.0 + POW(*x, alpha)) *  -beta/alpha;
   *Sign = 1.0;
@@ -864,7 +870,7 @@ void rangegeneralisedCauchy(model *cov, range_type *range) {
  
 }
 
-void coinitgenCauchy(model *cov, localinfotype *li) {
+void coinitgenCauchy(model *cov, localfactstype *li) {
   double 
     thres[2] = {0.5, 1.0}, 
     alpha=P0(GENC_ALPHA); 
@@ -879,7 +885,7 @@ void coinitgenCauchy(model *cov, localinfotype *li) {
     li->msg[0] = (alpha <= thres[1]) ? MSGLOCAL_OK : MSGLOCAL_JUSTTRY;
   } 
 }
-void ieinitgenCauchy(model *cov, localinfotype *li) {
+void ieinitgenCauchy(model *cov, localfactstype *li) {
   li->instances = 1;
   if (P0(GENC_ALPHA) <= 1.0) {
     li->value[0] = 1.0;
@@ -949,7 +955,7 @@ void rangebiCauchy(model VARIABLE_IS_NOT_USED *cov, range_type *range){
 
 
 
-void coinitbiCauchy(model *cov, localinfotype *li) {
+void coinitbiCauchy(model *cov, localfactstype *li) {
   double
       thres = 1,
       *alpha = P(BICauchyalpha);
@@ -966,7 +972,7 @@ void coinitbiCauchy(model *cov, localinfotype *li) {
     }
 }
 
-void biCauchy (double *x, model *cov, double *v) {
+void biCauchy (double *x, int *info, model *cov, double *v) {
     int i;
     double alpha = P0(GENC_ALPHA), beta=P0(GENC_BETA),
             y = *x, z;
@@ -978,7 +984,7 @@ void biCauchy (double *x, model *cov, double *v) {
         z = y/P(BICauchyscale)[i];
         P(GENC_ALPHA)[0] = P(BICauchyalpha)[i];
         P(GENC_BETA)[0] = P(BICauchybeta)[i];
-        generalisedCauchy(&z, cov, v + i);
+        generalisedCauchy(&z, info, cov, v + i);
     }
      P(BICauchyalpha)[0] = alpha;
      P(BICauchybeta)[0] = beta;
@@ -989,7 +995,7 @@ void biCauchy (double *x, model *cov, double *v) {
 
 
 
-void DbiCauchy(double *x, model *cov, double *v) {
+void DbiCauchy(double *x, int *info, model *cov, double *v) {
     int i;
     double alpha = P0(GENC_ALPHA), beta=P0(GENC_BETA),
             y = *x, z;
@@ -1001,7 +1007,7 @@ void DbiCauchy(double *x, model *cov, double *v) {
         z = y/P(BICauchyscale)[i];
         P(GENC_ALPHA)[0] = P(BICauchyalpha)[i];
         P(GENC_BETA)[0] = P(BICauchybeta)[i];
-        DgeneralisedCauchy(&z, cov, v + i);
+        DgeneralisedCauchy(&z, info, cov, v + i);
         v[i] /=P(BICauchyscale)[i];
     }
     P(BICauchyalpha)[0] = alpha;
@@ -1011,7 +1017,7 @@ void DbiCauchy(double *x, model *cov, double *v) {
     v[2] = v[1];
 }
 
-void DDbiCauchy(double *x, model *cov, double *v) {
+void DDbiCauchy(double *x, int *info, model *cov, double *v) {
     int i;
     double alpha = P0(GENC_ALPHA), beta=P0(GENC_BETA),
             y = *x, z;
@@ -1023,7 +1029,7 @@ void DDbiCauchy(double *x, model *cov, double *v) {
         z = y/P(BICauchyscale)[i];
         P(GENC_ALPHA)[0] = P(BICauchyalpha)[i];
         P(GENC_BETA)[0] = P(BICauchybeta)[i];
-        DDgeneralisedCauchy(&z, cov, v + i);
+        DDgeneralisedCauchy(&z, info, cov, v + i);
         v[i] /=(P(BICauchyscale)[i]*P(BICauchyscale)[i]);
     }
      P(BICauchyalpha)[0] = alpha;
@@ -1033,7 +1039,7 @@ void DDbiCauchy(double *x, model *cov, double *v) {
      v[2] = v[1];
 }
 
-void D3biCauchy(double *x, model *cov, double *v) {
+void D3biCauchy(double *x, int *info, model *cov, double *v) {
     int i;
     double alpha = P0(GENC_ALPHA), beta=P0(GENC_BETA),
             y = *x, z;
@@ -1045,7 +1051,7 @@ void D3biCauchy(double *x, model *cov, double *v) {
         z = y/P(BICauchyscale)[i];
         P(GENC_ALPHA)[0] = P(BICauchyalpha)[i];
         P(GENC_BETA)[0] = P(BICauchybeta)[i];
-        D3generalisedCauchy(&z, cov, v + i);
+        D3generalisedCauchy(&z, info, cov, v + i);
         v[i] /=(P(BICauchyscale)[i]*P(BICauchyscale)[i]*P(BICauchyscale)[i]);
     }
      P(BICauchyalpha)[0] = alpha;
@@ -1055,7 +1061,7 @@ void D3biCauchy(double *x, model *cov, double *v) {
      v[2] = v[1];
 }
 
-void D4biCauchy(double *x, model *cov, double *v) {
+void D4biCauchy(double *x, int *info, model *cov, double *v) {
     int i;
     double alpha = P0(GENC_ALPHA), beta=P0(GENC_BETA),
             y = *x, z;
@@ -1067,7 +1073,7 @@ void D4biCauchy(double *x, model *cov, double *v) {
         z = y/P(BICauchyscale)[i];
         P(GENC_ALPHA)[0] = P(BICauchyalpha)[i];
         P(GENC_BETA)[0] = P(BICauchybeta)[i];
-        D4generalisedCauchy(&z, cov, v + i);
+        D4generalisedCauchy(&z, info, cov, v + i);
         double dummy = P(BICauchyscale)[i]*P(BICauchyscale)[i];
         v[i] /=(dummy*dummy);
 
@@ -1084,14 +1090,14 @@ void D4biCauchy(double *x, model *cov, double *v) {
 #define EPS_ALPHA 0
 #define EPS_BETA 1
 #define EPS_EPS 2
-void epsC(double *x, model *cov, double *v){
+void epsC(double *x, INFO, model *cov, double *v){
   double 
     alpha = P0(EPS_ALPHA), 
     beta=P0(EPS_BETA),
     eps=P0(EPS_EPS);
   *v = POW(eps + POW(*x, alpha), -beta/alpha);
  }
-void logepsC(double *x, model *cov, double *v, double *Sign){
+void logepsC(double *x, INFO, model *cov, double *v, double *Sign){
   double 
     alpha = P0(EPS_ALPHA),
     beta=P0(EPS_BETA), 
@@ -1099,7 +1105,7 @@ void logepsC(double *x, model *cov, double *v, double *Sign){
   *v = LOG(eps + POW(*x, alpha)) * -beta/alpha;
   *Sign = 1.0;
  }
-void DepsC(double *x, model *cov, double *v){
+void DepsC(double *x, INFO, model *cov, double *v){
   double ha, 
     y=*x,
     alpha = P0(EPS_ALPHA),
@@ -1113,7 +1119,7 @@ void DepsC(double *x, model *cov, double *v){
     *v = -beta * ha * POW(eps + ha * y, -beta / alpha - 1.0);
   }
 }
-void DDepsC(double *x, model *cov, double *v){
+void DDepsC(double *x, INFO, model *cov, double *v){
   double ha, 
     y=*x,
     alpha = P0(EPS_ALPHA),
@@ -1181,12 +1187,12 @@ void rangeepsC(model VARIABLE_IS_NOT_USED *cov, range_type *range){
 #define BOLIC_NU 0
 #define BOLIC_XI 1
 #define BOLIC_DELTA 2
-void hyperbolic(double *x, model *cov, double *v){ 
+void hyperbolic(double *x, int *info, model *cov, double *v){ 
   double Sign;
-  loghyperbolic(x, cov, v, &Sign);
+  loghyperbolic(x, info, cov, v, &Sign);
   *v = EXP(*v);
 }
-void loghyperbolic(double *x, model *cov, double *v, double *Sign){ 
+void loghyperbolic(double *x, int *info, model *cov, double *v, double *Sign){ 
   double 
     nu = P0(BOLIC_NU),
     xi=P0(BOLIC_XI), 
@@ -1224,12 +1230,12 @@ void loghyperbolic(double *x, model *cov, double *v, double *Sign){
      double w,
        g = MATERN_NU_THRES / nu;
      y = 0.5 * xiy * factor;
-     Gauss(&y, NULL, &w);
+     Gauss(&y, info, NULL, &w);
      *v = *v * g + (1.0 - g) * w;
    }
   }
 }
-void Dhyperbolic(double *x, model *cov, double *v)
+void Dhyperbolic(double *x, int *info, model *cov, double *v)
 { 
   double 
     nu = P0(BOLIC_NU), 
@@ -1242,7 +1248,7 @@ void Dhyperbolic(double *x, model *cov, double *v)
     return;
   }
   if (delta==0) { // whittle matern
-    *v = xi * Ext_DWM(y * xi, nu, cov->q[WM_LOGGAMMA], 0.0);
+    *v = xi * Intern_DWM(y * xi, nu, cov->q[WM_LOGGAMMA], 0.0);
     *v *= xi;
   } else if (xi==0) { //cauchy
     double ha;
@@ -1264,7 +1270,7 @@ void Dhyperbolic(double *x, model *cov, double *v)
       factor = 1.0 /  SQRT(nuThres),
       scale = 0.5 * factor;
     y = xi_s * scale;
-    DGauss(&y, NULL, &w);
+    DGauss(&y, info, NULL, &w);
     w *= scale;
     *v = *v * g + (1.0 - g) * w;
     }
@@ -1286,7 +1292,8 @@ int inithyperbolic(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
        factor = 1 / SQRT(nuThres),
        g = MATERN_NU_THRES / nu,
        y = 0.5 * xd * factor;
-     Gauss(&y, NULL, &w);
+     DEFAULT_INFO(info);
+     Gauss(&y, info, NULL, &w);
      QVALUE3 =  QVALUE3 * g + (1.0 - g) * w;
    }
 
@@ -1353,18 +1360,18 @@ void rangehyperbolic(model VARIABLE_IS_NOT_USED *cov, range_type *range){
 
 /* stable model */
 #define STABLE_ALPHA 0
-void stable(double *x, model *cov, double *v){
+void stable(double *x, INFO, model *cov, double *v){
   double y = *x, alpha = P0(STABLE_ALPHA);  
   *v = 1.0;
   if (y!=0.0) *v = EXP(-POW(y, alpha));
 }
-void logstable(double *x, model *cov, double *v, double *Sign){
+void logstable(double *x, INFO, model *cov, double *v, double *Sign){
   double y = *x, alpha = P0(STABLE_ALPHA);  
   *v = 0.0;
   if (y!=0.0) *v= -POW(y, alpha);
   *Sign = 1.0;
 }
-void Dstable(double *x, model *cov, double *v){
+void Dstable(double *x, INFO, model *cov, double *v){
   double z, y = *x, alpha = P0(STABLE_ALPHA);
   if (y == 0.0) {
     *v = (alpha > 1.0) ? 0.0 : (alpha < 1.0) ? RF_NEGINF : -1.0;
@@ -1374,7 +1381,7 @@ void Dstable(double *x, model *cov, double *v){
   }
 }
 /* stable: second derivative at t=1 */
-void DDstable(double *x, model *cov, double *v) 
+void DDstable(double *x, INFO, model *cov, double *v) 
 {
   double z, y = *x, alpha = P0(STABLE_ALPHA), xalpha;
   if (y == 0.0) {
@@ -1388,7 +1395,7 @@ void DDstable(double *x, model *cov, double *v)
   }
 }
 
-void D3stable(double *x, model *cov, double *v)
+void D3stable(double *x, INFO, model *cov, double *v)
 {
   double z, y = *x, alpha = P0(STABLE_ALPHA), xalpha;
   if (y == 0.0) {
@@ -1403,7 +1410,7 @@ void D3stable(double *x, model *cov, double *v)
   }
 }
 
-void D4stable(double *x, model *cov, double *v)
+void D4stable(double *x, INFO, model *cov, double *v)
 {
   double z, y = *x, alpha = P0(STABLE_ALPHA), xalpha;
   if (y == 0.0) {
@@ -1420,7 +1427,7 @@ void D4stable(double *x, model *cov, double *v)
   }
 }
 
-void D5stable(double *x, model *cov, double *v)
+void D5stable(double *x, INFO, model *cov, double *v)
 {
   double z, y = *x, alpha = P0(STABLE_ALPHA), xalpha;
   if (y == 0.0) {
@@ -1444,7 +1451,7 @@ void Inversestable(double *x, model *cov, double *v){
     alpha = P0(STABLE_ALPHA);  
   *v = y >= 1.0 ? 0.0 : y <= 0.0 ? RF_INF : POW( -LOG(y), 1.0 / alpha);
 }
-void nonstatLogInversestable(double *x, model *cov,
+void inverse_log_nonstat_stable(double *x, model *cov,
 			     double *left, double *right){
   double
     y = *x,
@@ -1479,22 +1486,22 @@ void rangestable(model *cov, range_type *range){
   range->openmin[STABLE_ALPHA] = true;
   range->openmax[STABLE_ALPHA] = false;
 }
-void coinitstable(model *cov, localinfotype *li) {
+void coinitstable(model *cov, localfactstype *li) {
   coinitgenCauchy(cov, li);
 }
-void ieinitstable(model *cov, localinfotype *li) {  
+void ieinitstable(model *cov, localfactstype *li) {  
   ieinitgenCauchy(cov, li);
 }
 
 
 /* DOUBLEISOTROPIC stable model for testing purposes only */
-void stableX(double *x, model *cov, double *v){
+void stableX(double *x, INFO, model *cov, double *v){
   double y, alpha = P0(STABLE_ALPHA);
   y = x[0] * x[0] + x[1] * x[1];
   *v =  1.0;
   if (y!=0.0) *v = EXP(-POW(y, 0.5 * alpha));
 }
-void DstableX(double *x, model *cov, double *v){
+void DstableX(double *x, INFO, model *cov, double *v){
   double z, y, alpha = P0(STABLE_ALPHA);
   y = x[0] * x[0] + x[1] * x[1];
   if (y == 0.0) {
@@ -1526,11 +1533,11 @@ int checkbiStable(model *cov) {
   s.check = true;
 
   if ((err = checkkappas(cov, false)) != NOERROR) RETURN_ERR(err);
-  //   bistable_storage *S = cov->Sbistable;
-
+  
   if (cov->Sbistable == NULL) {
     NEW_STORAGE(bistable);
-    bistable_storage *S = cov->Sbistable;
+    getStorage(S ,     bistable);
+ 
     S->alphadiag_given = !PisNULL(BIStablealphadiag);
     S->rhored_given = !PisNULL(BIStablerhored);
     // printf("check: alphadiag_given = %d\n", S->alphadiag_given);
@@ -1552,9 +1559,10 @@ sortsofparam sortof_bistable(model *cov, int k,
 			     int  VARIABLE_IS_NOT_USED *row,
 			     int  VARIABLE_IS_NOT_USED *col,
 			     sort_origin origin) {
-  bistable_storage *S = cov->Sbistable;
-  if (S == NULL) return UNKNOWNPARAM;
-  switch(k) {
+ if (cov->Sbistable == NULL) return UNKNOWNPARAM;
+ getStorage(S ,   bistable); 
+
+ switch(k) {
   case BIStablealphadiag : case BIStablebetared :
     return S->alphadiag_given || origin != original_model
       ? ANYPARAM : IGNOREPARAM;
@@ -1568,25 +1576,6 @@ sortsofparam sortof_bistable(model *cov, int k,
       ? ANYPARAM : IGNOREPARAM;
   case BIStablealpha : return S->alphadiag_given || origin == mle_conform
       ? IGNOREPARAM : ONLYRETURN;
-  default : BUG;
-  }
-}
-
-
-
-sortsofparam sortof_bistable_INisOUT(model *cov, int k,
-			     int  VARIABLE_IS_NOT_USED *row,
-			     int  VARIABLE_IS_NOT_USED *col) {
-  bistable_storage *S = cov->Sbistable;
-  if (S == NULL) return UNKNOWNPARAM;
-  switch(k) {
-  case BIStablealphadiag : return !S->alphadiag_given ? ONLYMLE : ANYPARAM;
-  case BIStablescale: return SCALEPARAM;
-  case BIStablecdiag : return VARPARAM;
-  case BIStablerho : return S->rhored_given ? ONLYRETURN : IGNOREPARAM;
-  case BIStablerhored : return S->rhored_given ? ONLYMLE : ANYPARAM;
-  case BIStablebetared : return !S->alphadiag_given ? ONLYMLE : ANYPARAM;
-  case BIStablealpha : return !S->alphadiag_given ? ONLYRETURN : IGNOREPARAM;
   default : BUG;
   }
 }
@@ -1826,7 +1815,7 @@ int initbiStable(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
     right = 0;
   int dim = OWNLOGDIM(0);
   bool notallowed = false;
-  bistable_storage *S = cov->Sbistable;
+getStorage(S ,   bistable); 
   assert(S != NULL);
 
   if (PisNULL(BIStablescale)) {
@@ -1988,7 +1977,7 @@ int initbiStable(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
   RETURN_NOERROR;
 }
 
-void coinitbiStable(model *cov, localinfotype *li) {
+void coinitbiStable(model *cov, localfactstype *li) {
   double
       thres = 1,
       *alpha = P(BIStablealpha);
@@ -2006,7 +1995,7 @@ void coinitbiStable(model *cov, localinfotype *li) {
     }
 }
 
-void biStable (double *x, model *cov, double *v) {
+void biStable (double *x, int *info, model *cov, double *v) {
   int i;
   double
     alpha = P0(STABLE_ALPHA),
@@ -2015,15 +2004,10 @@ void biStable (double *x, model *cov, double *v) {
   
   assert(BIStablealpha == STABLE_ALPHA);
   
-  /*   biStable_storage *S = cov->SbiStable;
-    assert(S != NULL);
-    */
-  
-  
   for (i=0; i<3; i++) {
     z = y/P(BIStablescale)[i];
     P(STABLE_ALPHA)[0] = P(BIStablealpha)[i];
-    stable(&z, cov, v + i);
+    stable(&z, info, cov, v + i);
   }
   P(BIStablealpha)[0] = alpha;
   
@@ -2040,7 +2024,7 @@ void biStable (double *x, model *cov, double *v) {
 
 
 
-void DbiStable(double *x, model *cov, double *v) {
+void DbiStable(double *x, int *info, model *cov, double *v) {
   int i;
   double
     alpha = P0(STABLE_ALPHA),
@@ -2048,14 +2032,11 @@ void DbiStable(double *x, model *cov, double *v) {
     y = *x, z;
   assert(BIStablealpha == STABLE_ALPHA);
   
-  /*  biStable_storage *S = cov->SbiStable;
-    assert(S != NULL);
-   */
   
   for (i=0; i<3; i++) {
     z = y/P(BIStablescale)[i];
     P(STABLE_ALPHA)[0] = P(BIStablealpha)[i];
-    Dstable(&z, cov,  v + i);
+    Dstable(&z, info, cov,  v + i);
     v[i] /= P(BIStablescale)[i];
   }
   P(BIStablealpha)[0] = alpha;
@@ -2067,7 +2048,7 @@ void DbiStable(double *x, model *cov, double *v) {
 }
 
 
-void DDbiStable(double *x, model *cov, double *v) {
+void DDbiStable(double *x, int *info, model *cov, double *v) {
   int i;
   double
     alpha = P0(STABLE_ALPHA),
@@ -2075,14 +2056,10 @@ void DDbiStable(double *x, model *cov, double *v) {
     y = *x, z;
   assert(BIStablealpha == STABLE_ALPHA);
 
-  /*  biStable_storage *S = cov->SbiStable;
-    assert(S != NULL);
-    */
-
   for (i=0; i<3; i++) {
       z = y/P(BIStablescale)[i];
       P(STABLE_ALPHA)[0] = P(BIStablealpha)[i];
-      DDstable(&z, cov,  v + i);
+      DDstable(&z, info, cov,  v + i);
       v[i] /= P(BIStablescale)[i]*P(BIStablescale)[i];
     }
   P(BIStablealpha)[0] = alpha;
@@ -2092,7 +2069,7 @@ void DDbiStable(double *x, model *cov, double *v) {
   v[1] *= P0(BIStablerho)*SQRT(cdiag[0]*cdiag[1]);
   v[2] = v[1];
 }
-void D3biStable(double *x, model *cov, double *v) {
+void D3biStable(double *x, int *info, model *cov, double *v) {
   int i;
   double
     alpha = P0(STABLE_ALPHA),
@@ -2100,14 +2077,11 @@ void D3biStable(double *x, model *cov, double *v) {
     y = *x, z;
   assert(BIStablealpha == STABLE_ALPHA);
 
-  /*   biStable_storage *S = cov->SbiStable;
-    assert(S != NULL);
-   */
 
   for (i=0; i<3; i++) {
       z = y/P(BIStablescale)[i];
       P(STABLE_ALPHA)[0] = P(BIStablealpha)[i];
-      D3stable(&z, cov, v + i);
+      D3stable(&z, info, cov, v + i);
       v[i] /= P(BIStablescale)[i]*P(BIStablescale)[i]*P(BIStablescale)[i];
     }
   P(BIStablealpha)[0] = alpha;
@@ -2117,24 +2091,17 @@ void D3biStable(double *x, model *cov, double *v) {
   v[1] *= P0(BIStablerho)*SQRT(cdiag[0]*cdiag[1]);
   v[2] = v[1];
 }
-void D4biStable(double *x, model *cov, double *v) {
+void D4biStable(double *x, int *info, model *cov, double *v) {
   int i;
   double
     alpha = P0(STABLE_ALPHA),
     *cdiag = P(BIStablecdiag),
     y = *x, z;
-  //   assert(BIStablealpha == STABLE_ALPHA);
-  
-  /*    biStable_storage *S = cov->SbiStable;
-    assert(S != NULL);
-  */
-  //    assert(cov->initialised);
-  
   
   for (i=0; i<3; i++) {
     z = y/P(BIStablescale)[i];
     P(STABLE_ALPHA)[0] = P(BIStablealpha)[i];
-    D4stable(&z, cov, v + i);
+    D4stable(&z, info, cov, v + i);
     double dummy =P(BIStablescale)[i]*P(BIStablescale)[i];
     v[i] /= dummy*dummy;
   }

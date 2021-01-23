@@ -71,7 +71,7 @@ RPloggaussnormed(variogram, prob, optimize_p, nth, burn.in, rejection)
   The argument \code{xi} is always a number, i.e. \eqn{\xi} is constant
   in space. In contrast, \eqn{\mu} and \eqn{s} might be constant
   numerical values or given an \code{\link{RMmodel}}, in particular by an
-  \code{\link{RMtrend}} model. 
+  \code{\link{RMshape}} model. 
 
   The functions \code{RPbrorig}, \code{RPbrshifted} and \code{RPbrmixed}
   simulate a Brown-Resnick process, which is defined by

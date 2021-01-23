@@ -58,7 +58,7 @@ void kappa_ave(int i, model *cov, int *nr, int *nc){
 }
 
 
-void ave(double *h, model *cov, double *v) {
+void ave(double *h, int *info, model *cov, double *v) {
   // f = uAu +zu; 
   bool 
     spacetime = (bool) (PisNULL(AVE_SPACETIME) || P0INT(AVE_SPACETIME));
@@ -92,12 +92,13 @@ void ave(double *h, model *cov, double *v) {
   double det, AhEinvAh;
   Ext_XCinvXdet(Eplus2B, dim, Ah, 1, &AhEinvAh, &det, false, NULL);
   double y = SQRT(0.5 * hh  + c * c * (1.0 - 2.0 * AhEinvAh));
-  COV(&y, next, v);
+  COV(&y, info, next, v);
   *v /= SQRT(det);
 }
 
 
 int checkave(model *cov) {
+  utilsparam *global_utils = &(cov->base->global_utils);
    ASSERT_UNREDUCED;
  model *next = cov->sub[0];
   bool
@@ -122,7 +123,7 @@ int checkave(model *cov) {
   if (cov->ncol[AVE_Z] != 1 || cov->nrow[AVE_Z] != spdim) 
     SERR1("z not (%.50s)-dim vector", dim_info[spacetime]);
 
-  if (!GLOBAL_UTILS->basic.skipchecks)
+  if (!global_utils->basic.skipchecks)
     for (i=0; i<spdim; i++)
       for (j=i+1; j<spdim; j++)
 	if (A[i + j * spdim] != A[j + i * spdim]) {
@@ -240,7 +241,7 @@ int structAve(model *cov, model **newmodel) {
 
 
 
-void  logshapeave(double *x, model *cov, double *v, double *Sign) {
+void  logshapeave(double *x, INFO, model *cov, double *v, double *Sign) {
     // nur stationaer
   bool 
     spacetime = (bool) (PisNULL(AVE_SPACETIME) || P0INT(AVE_SPACETIME));
@@ -360,8 +361,9 @@ void do_shapeave(model *cov, gen_storage *S) {
 void GetEu2Dinv(model *cov, double *x, int dim, 
 		double *det, double *Eu2Dinv,
 		double *newxsq, double *newx, double *z) {
+  // NIE TALLAC HIER
     double 
-	y[CoxMaxDim],
+      y[CoxMaxDim],
       *V = P(COX_MU),
       *D= P(COX_D),
       beta = P0(COX_BETA),
@@ -435,7 +437,7 @@ void kappa_cox(int i, model *cov, int *nr, int *nc){
     }
 }
 
-void cox(double *x, model *cov, double *v) {
+void cox(double *x, int *info, model *cov, double *v) {
   model *next = cov->sub[0];
  int dim = OWNLOGDIM(0) - 1,
       dimsq = dim * dim;
@@ -445,11 +447,11 @@ void cox(double *x, model *cov, double *v) {
   END_TALLOC_XX1;
   // printf("cox det=%10g %10g\n", det, newx);
   
-  COV(&newx, next, v);
+  COV(&newx, info, next, v);
   *v /= SQRT(det);
  } 
 
-void coxhess(double *x, model *cov, double *v) {
+void coxhess(double *x, int *info, model *cov, double *v) {
   model *next = cov->sub[0];
   int logicaldim = OWNLOGDIM(0),
       dim = logicaldim - 1,
@@ -460,11 +462,11 @@ void coxhess(double *x, model *cov, double *v) {
 
   GetEu2Dinv(cov, x, dim, &det, Eu2Dinv, &newxsq, &newx, z);
 
-  Abl2(&newx, next, &phiD2);  
+  Abl2(&newx, info, next, &phiD2);  
   if (newxsq == 0.0) {
     cpyUf(Eu2Dinv, phiD2 / SQRT(det), dim, logicaldim, v);
   } else {
-    Abl1(&newx, next, &phiD);
+    Abl1(&newx, info, next, &phiD);
     cpyUf(Eu2Dinv, phiD / (SQRT(det) * newx), dim, logicaldim, v);
     addzzT(v, (phiD2 - phiD/newx) / (SQRT(det) * newxsq), z, dim, logicaldim);
   }
@@ -472,7 +474,7 @@ void coxhess(double *x, model *cov, double *v) {
 } 
  
 
-void coxnabla(double *x, model *cov, double *v) {
+void coxnabla(double *x, int *info, model *cov, double *v) {
   model *next = cov->sub[0];
   int d,
     logicaldim = OWNLOGDIM(0),
@@ -488,7 +490,7 @@ void coxnabla(double *x, model *cov, double *v) {
       for (d=0; d<=dim; d++)  v[d] = 0.0;
   } else {    
     newx = SQRT(newxsq);
-    Abl1(&newx, next, &phiD);
+    Abl1(&newx, info, next, &phiD);
     factor = phiD / (det * newx); 
     for (d=0; d<dim; d++) {
 	v[d] = factor * z[d];
@@ -625,9 +627,10 @@ void kappa_stp(int i, model *cov, int *nr, int *nc){
   *nr = i < DefList[COVNR].kappas ? OWNLOGDIM(0) : -1;
 }
 
-void stp(double *x,  double *y, model *cov, double *v) {
+void stp(double *x,  double *y, int *info, model *cov, double *v) {
   int d, j, k, err,
     dim =  OWNLOGDIM(0),
+    xdim = OWNXDIM(0),
     dimsq = dim * dim;
   double h[StpMaxDim], 
     Mh[StpMaxDim], hSx[StpMaxDim],
@@ -645,8 +648,8 @@ void stp(double *x,  double *y, model *cov, double *v) {
   TALLOC_X3(A, dimsq);
     
   if (Sf != NULL) {
-    FCTN(x, Sf, Sx); // symmetric, pos definite !!
-    FCTN(y, Sf, Sy);
+    FCTN(x, info, Sf, Sx); // symmetric, pos definite !!
+    FCTN(y, info + INFOS_PER_COORD, Sf, Sy);
     //
     //    if (false) {
     //      int ii;
@@ -664,8 +667,8 @@ void stp(double *x,  double *y, model *cov, double *v) {
   }
 
   if (xi2 != NULL) {
-    FCTN(x, xi2, &xi2x);
-    FCTN(y, xi2, &xi2y);
+    FCTN(x, info, xi2, &xi2x);
+    FCTN(y, info + INFOS_PER_COORD, xi2, &xi2y);
   } else {
     xi2x = xi2y = 0.0;
   }
@@ -720,12 +723,7 @@ void stp(double *x,  double *y, model *cov, double *v) {
 
   Q = SQRT(Q);
 
-  aux_covfct auxcf;
-  if ((auxcf = DefList[MODELNR(phi)].aux_cov) != NULL) {
-    BUG;
-    auxcf(x, y, Q, phi, v);
-  } else 
-    FCTN(&Q, phi, v);
+  FCTN(&Q, info, phi, v);
 
   
   *v *=  POW(2.0, 0.5 * double(dim)) * POW(dx * dy / (detA * detA), 0.25);
@@ -824,7 +822,8 @@ int structStp(model *cov, model **newmodel) {
 }
 
 
-void logshapestp(double *x, double *u, model *cov, double *v, double *Sign){
+void logshapestp(double *x, double *u, int *info,
+		 model *cov, double *v, double *Sign){
   // kann um ca. Faktor 2 beschleunigt werden, wenn
   // Sx , log det U, Hx fuer alle x abgespeichert werden
   // und die Werte dann aus dem Speicher gelesen werden
@@ -845,21 +844,21 @@ void logshapestp(double *x, double *u, model *cov, double *v, double *Sign){
   assert(q != NULL);
   
   TALLOC_X1(Sx, dimsq); 
-
   if (Sf == NULL) {
     MEMCOPY(Sx, Sc, bytes);
   } else {
-    FCTN(x, Sf, Sx); // symmetric, pos definite !!
+    FCTN(x, info, Sf, Sx); // symmetric, pos definite !!
   }
 
   if (xi2 == NULL) {
     xi = 0.0;
   } else {
-    FCTN(x, xi2, &xi);
+    FCTN(x, info, xi2, &xi);
   }
 
   for (k=0, d=0; d<dim; d++) {
-    h[d] = u[d] - x[d];
+    ///  h[d] = u[d] - x[d]; // 22.12.20
+    h[d] = x[d] - u[d];
   }
 
   hSxh = 0.0;
@@ -991,11 +990,7 @@ void do_shapestp(model *cov, gen_storage *s) {
 
 
   BUG; /// what to do with the next line?
-  // info->logdens = DefList[phi->nr].logmixdens(ZERO, q[AVESTP_LOGV], phi);
 
-
-  //info->radius = RF_INF;
-  // info-sd s.o.
 }
 
 
@@ -1003,44 +998,39 @@ void do_shapestp(model *cov, gen_storage *s) {
 
 /* nsst */
 /* Tilmann Gneiting's space time models, part I */
-void nsst(double *x, model *cov, double *v) {
+void nsst(double *x, int *info, model *cov, double *v) {
   model *subphi = cov->sub[0];
   model *subpsi = cov->sub[1];
   double v1, v2, psi, y;
-  
-  COV(ZERO(subpsi), subpsi, &v1);
-  COV(x + 1, subpsi, &v2);
+  Zero(subpsi, &v1);
+  COV(x + 1, info, subpsi, &v2);
   psi = SQRT(1.0 + v1 - v2);  // C0 : C(0) oder 0 // Cx : C(x) oder -gamma(x)
   y = x[0] / psi;
-  COV(&y, subphi, v);
+  COV(&y, info, subphi, v);
   *v *= POW(psi, -P0(NSST_DELTA));
 }
 
-void Dnsst(double *x, model *cov, double *v) {
+void Dnsst(double *x, int *info, model *cov, double *v) {
   model *subphi = cov->sub[0];
   model *subpsi = cov->sub[1];
   double v1, v2, psi, y;
-
-  COV(ZERO(subpsi), subpsi, &v1);
-  COV(x + 1, subpsi, &v2);
+  Zero(subpsi, &v1);
+  COV(x + 1, info, subpsi, &v2);
   psi = SQRT(1.0 + v1 - v2);  // C0 : C(0) oder 0 // Cx : C(x) oder -gamma(x)
   y = x[0] / psi;
-  Abl1(&y, subphi, v);
+  Abl1(&y, info, subphi, v);
   *v *= POW(psi, -P0(NSST_DELTA) - 1.0);
 }
 
-void TBM2nsst(double *x, model *cov, double *v) {
+void TBM2nsst(double *x, int*info, model *cov, double *v) {
   model *subphi = cov->sub[0];
   model *subpsi = cov->sub[1];
   double v1, v2, psi, y;
-
-  assert(false);
-
-  COV(ZERO(subpsi), subpsi, &v1);
-  COV(x + 1, subpsi, &v2);
+  Zero(subpsi, &v1);
+  COV(x + 1, info, subpsi, &v2);
   psi = SQRT(1.0 + v1 - v2);  // C0 : C(0) oder 0 // Cx : C(x) oder -gamma(x)
   y = x[0] / psi;
-  TBM2CALL(&y, subphi, v);
+  TBM2CALL(&y, info, subphi, v);
   *v *= POW(psi, -P0(NSST_DELTA));
 }
 
@@ -1093,7 +1083,7 @@ void kappa_gennsst_intern(int i, model VARIABLE_IS_NOT_USED *cov, int *nr, int *
   *nc = *nr = i == 0 ? SIZE_NOT_DETERMINED : -1;
 }
 
-void gennsst_intern(double *x, model *cov, double *v) {
+void gennsst_intern(double *x, int*info, model *cov, double *v) {
   model *next = cov->sub[0];
   double  det, z,
     *A = P(GENNSST_INTERN_A);
@@ -1110,7 +1100,7 @@ void gennsst_intern(double *x, model *cov, double *v) {
   }
   
   z = SQRT(z);
-  COV(&z, next, v);
+  COV(&z, info, next, v);
   *v /= SQRT(det);
 }
 
@@ -1157,49 +1147,47 @@ void range_gennsst_intern(model VARIABLE_IS_NOT_USED *cov,
 
 
 #define GENNSST_DIM_U 0
-void gennsst(double *x,  model *cov, double *v) {
+void gennsst(double *x, int *info, model *cov, double *v) {
   model *subphi = cov->key;
   model *subpsi = cov->sub[1];
   int 
-    totaldim = ANYDIM, 
+    totaldim = OWNXDIM(0), 
     udim = P0INT(GENNSST_DIM_U),
     hdim = totaldim - udim,
     hdimSq = hdim * hdim;
     
-  COV(x + hdim, subpsi, PARAM(subphi, GENNSST_INTERN_A));
+  COV(x + hdim, info, subpsi, PARAM(subphi, GENNSST_INTERN_A));
   if (isnowVariogram(subpsi)) {
     TALLOC_X1(z, hdimSq);
-    double *zero = ZERO(subpsi),
-      *p = PARAM(subphi, GENNSST_INTERN_A);
-    COV(zero, subpsi, z);
+    double *p = PARAM(subphi, GENNSST_INTERN_A);
+    Zero( subpsi, z);
     for (int i=0; i<hdimSq; i++) p[i] = z[i] - p[i];
     END_TALLOC_X1;
   } else if (!equalsnowNegDef(subpsi)) BUG;
 
-  COV(x, subphi, v);
+  COV(x, info, subphi, v);
   if (ISNAN(*v)) ERR("error occuredin 'GetEu2Dinv'");
 }
 
-void nonstatgennsst(double *x,double *y, model *cov, double *v) {
+void nonstatgennsst(double *x,double *y, int*info, model *cov, double *v) {
   model *subphi = cov->key;
   model *subpsi = cov->sub[1];
   int 
-    totaldim = ANYDIM, 
+    totaldim = OWNXDIM(0), 
     udim = P0INT(GENNSST_DIM_U),
     hdim = totaldim - udim,
     hdimSq = hdim * hdim;
-    
-  NONSTATCOV(x + hdim, y + hdim, subpsi, PARAM(subphi, GENNSST_INTERN_A));
+
   TALLOC_X1(z, hdimSq);
+  NONSTATCOV(x + hdim, y + hdim, info, subpsi, PARAM(subphi, GENNSST_INTERN_A));
   if (isnowVariogram(subpsi)) {
-    double *zero = ZERO(subpsi),
-      *p = PARAM(subphi, GENNSST_INTERN_A);
-    NONSTATCOV(zero, zero, subpsi, z);
+    double  *p = PARAM(subphi, GENNSST_INTERN_A);
+    Zero(subpsi, z);
     for (int i=0; i<hdimSq; i++) p[i] = z[i] - p[i];
   } else if (!equalsnowNegDef(subpsi)) BUG;
   
   for (int d=0; d<hdim; d++) z[d] = x[d] - y[d];
-  COV(z, subphi, v);
+  COV(z, info, subphi, v);
   END_TALLOC_X1;
   if (ISNAN(*v)) ERR("error occuredin 'GetEu2Dinv'");
  }
@@ -1246,7 +1234,8 @@ int checkgennsst(model *cov) {
   while (true) {
     if ((err = CHECK(subpsi, udim, udim, NegDefType, type,
 		     OWNISO(0), hdim, cov->frame)) == NOERROR) break;
-    if (type == XONLY) type = KERNEL; else RETURN_ERR(err);
+    if (equalsXonly(type) && !equalsXonly(OWNDOM(0))) type = KERNEL;
+	else RETURN_ERR(err);
   }
   
   if ((!equalsSpaceIsotropic(OWNISO(0)) ||
@@ -1262,7 +1251,7 @@ int checkgennsst(model *cov) {
   VDIM0 = VDIM1 = 1;
   
   
-  COV_DELETE(cov->sub + 0, cov);
+  COV_DELETE(cov->sub + 0, cov); 
   if ((err = covcpy(cov->sub + 0, cov->key->sub[0])) != NOERROR) BUG;
   SET_CALLING(cov->sub[0], cov);
  

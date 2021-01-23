@@ -33,6 +33,7 @@
 ## FUNCTION-END*************************************************************************************
 
 
+
 ##OneTo <- function(n) return(if (n < 1) NULL else 1:n)
 OneTo <- function(n) return(if (length(n) > 1) stop("invalid end of for loop") else if (n < 1) NULL else 1:n)
 
@@ -69,26 +70,24 @@ XXXextractVarNames <- function(model) {
 }
 
 
-earth_coordinate_names<- function(names) {
+earth_coord_names<- function(names, opt) {
   ## Earth coordinates + possibly radius
   n <- substr(tolower(names), 1, 6)
   nc <- nchar(n)
   lon <- lat <- logical(length(n))
   for (i in 1:length(n)) {
-    lon[i] <- substr(COORD_NAMES_EARTH[1], 1, nc[i]) == n[i]
-    lat[i] <- substr(COORD_NAMES_EARTH[2], 1, nc[i]) == n[i]
+    lon[i] <- substr(opt$earth_coord_names[1], 1, nc[i]) == n[i]
+    lat[i] <- substr(opt$earth_coord_names[2], 1, nc[i]) == n[i]
   }
   lonORlat <- lon | lat  
   earth <- all(nc[lonORlat] >= 2) && sum(lon==1) && sum(lat == 1)
-  
-  return(if (length(names)==2 | !earth) earth else         
-         if ( (lo <- which(lon)) < (la <- which(lat)))
-         which(lonORlat[]))
+  if (!earth || (lo <- which(lon)) > (la <- which(lat))) return(NULL)
+  c(lo, la)
 }
 
-cartesian_coordinate_names <- function(names) {
-  n <- substr(tolower(names), 1, 1)
-  coords <- COORD_NAMES_CART[c(4, 1:3)] # c("T", "x", "y", "z")
+cartesian_coord_names <- function(names, opt) {
+  n <- tolower(names)
+  coords <- tolower(opt$cartesian_names[c(4, 1:3)]) # c("T", "x", "y", "z")
   Txyz <- outer(n, coords, "==")
   cs <- colSums(Txyz)
   if (any(cs > 1) || sum(cs[1:2]) == 0 || any(diff(cs[-1]) > 0))
@@ -101,71 +100,103 @@ cartesian_coordinate_names <- function(names) {
 }
 
 
-
-general_coordinate_names <- function(names) {
+general_coord_names <- function(names) {
   n <- substr(tolower(names), 1, 5)
   return(which(n == "coord"))
 }
 
 
-extractFromNames <- function(varidx, varnames, RFopt, cn) {
+extractFromNames <- function(what="var", RFopt, cn, ncol=length(cn)) {
   ## this function partially interprets RFoptions$coords$varnames/varidx,
   ## namely when varnames is not NA
+  ##  Print(cn)
 
-  if (length(varnames) == 0) {
-    is.data <- varidx
-    if (is.na(is.data[2])) is.data[2] <- ncol(data)
-    return(is.data[1] : is.data[2])
-  } 
+  varidx <- RFopt$coord[[paste0(what, "idx")]]
+  if (!is.na(varidx[1])) {
+    is.var <- varidx
+    if (is.na(is.var[2])) is.var[2] <- ncol
+    ans <- is.var[1] : is.var[2]
+    if (length(cn) != 0) names(ans) <- cn[ans]
+    return(ans)
+  }
+  if (length(cn) == 0) return(NULL)
   
-  if (RFopt$general$vdim_close_together)
-    stop("'vdim_close_together' must be FALSE")
-  l <- list()
-  vdim <- length(varnames)
-  for (v in 1:vdim)
-    l[[v]] <- substring(cn, 1, nchar(varnames[v])) == varnames[v]
-  repet <- sapply(l, sum)
-  if (repet[1] == 0) return(NULL)
-  if (any(repet != repet[1]))
-    stop("detected repetitions are not equal for all components")
-  m <- matrix(unlist(l), ncol=vdim)
-  if (any(rowSums(m) > 1))
-    stop("names of multivariate components not unique")
-  return(as.vector(t(apply(m, 2, which))))
+  varnames <- RFopt$coords[[paste0(what, "names")]]
+  ans <- NULL
+  if (what == "var") { 
+    if ((vdim <- length(varnames)) >  0) {
+      if (RFopt$general$vdim_close_together)
+        stop("'vdim_close_together' must be FALSE")
+      l <- vector("list", vdim)
+      for (v in 1:vdim)
+        l[[v]] <- substring(cn, 1, nchar(varnames[v])) == varnames[v]
+      repet <- sapply(l, sum)
+      if (repet[1] > 0) {
+        if (any(repet != repet[1]))
+          stop("detected repetitions are not equal for all components")
+        m <- matrix(unlist(l), ncol=vdim)
+        if (any(rowSums(m) > 1))
+          stop("names of multivariate components not unique")
+        ans <- t(apply(m, 2, which))
+        rownames(ans) <- varnames
+      }
+    }
+    if (length(ans) == 0) {
+      cnlow <- tolower(cn)
+      ans <- which(substr(cnlow, 1, 4) == "data" |
+                       substr(cnlow, 1, 4) == "value" |
+                       substr(cnlow, 1, 8) == "variable")
+      ##  Print(cn, cnlow , cn[ans], ans, strsplit(cn[ans], ".", fixed=TRUE))
+
+      if (length(ans) == 0) return(NULL)
+      s <- strsplit(cn[ans], ".", fixed=TRUE)
+      if (length(s[[1]]) > 1) { ## check for repeated measurments
+        cn <- sapply(s, function(x) paste0(x[-length(x)], collapse=".")) # cut last part
+        if ((rep <- sum(cn[1] == cn)) > 1) {
+          size <- ncol / rep
+          if (size == as.integer(size) && all(cn == cn[1 : size])) {
+            dim(ans) <- c(size, rep)
+            rownames(ans) <- cn[1 : size]
+          }
+        }
+      }
+    }
+  } else { ## "coord"
+    ans <- which(cn %in% varnames)
+    if (length(ans) == 0 &&
+        length(ans <- earth_coord_names(cn, opt=RFopt$coords)) != 2 &&
+        length(ans <- cartesian_coord_names(cn, opt=RFopt$coords)) == 0)
+      ans <- general_coord_names(cn)
+
+    if (length(ans) > 1 && length(unique(cn[ans])) < length(ans))
+      stop("column names in the data frame that indicate coordinates may not be doubled")
+  }
+  
+ ## Print(what, ans, cn, length(ans) > 0  && !is.matrix(ans))
+  stopifnot(all(ans <= length(cn)))
+  if(length(ans) > 0  && !is.matrix(ans)) names(ans) <- cn[ans]  
+##  print(ans)
+  return(ans)
 }
 
 
-
-covariate.names <- function(m) {
-  n <- sapply(m, function(x) {
-    if (x[[1]] == RM_COVARIATE) x[[COVARIATE_NAME_NAME]]
-    else if (x[[1]] %in% RM_PLUS) covariate.names(x[-1])
-    else NULL})
-  unique(unlist(n))
-}
 
 S <- function(x) if (length(x) > 1) "s" else ""
 ARE <- function(x) if (length(x) > 1) "are" else "is"
 
 
-DetectionNote <- function(...) {
-  dn <- RFoptions(GETOPTIONS="internal")$detection_note
-  if (is.na(dn)) {
-    message("Hint: the message below upon the interpretation of the columns of the data frame can be suppressed by 'RFoptions(internal.detection_notes=FALSE)'. (This hint appears only once per session.)")
-    RFoptions(internal.detection_note=TRUE)
-    dn <- TRUE
-  }
-  if (dn) message(...)
-}
-
-data.columns <- function(data, model=NULL, force=FALSE, halt=TRUE,
-			 RFopt=RFoptions(), vdim=0, ..., params=NULL,
-                         xdim=0) {
-  
-  ##  Print(data, force)
+data.columns <- function(data, model=NULL, xdim=0, x=NULL,
+                         RFopt=getRFoptions(),
+                         force=FALSE, halt=TRUE, 
+			 vdim=0, ...,
+                         params=NULL, 
+                         only.data=FALSE,
+                         return_transform = FALSE) {
+##  Print(data, force, model, xdim)
   ##  Print(halt, vdim,  xdim)
   ##  Print(list(...))
-        
+
+##  Print(data, x)
   
   ## out of the model only the trend part is needed here
   ## so model can be the trend only
@@ -174,127 +205,104 @@ data.columns <- function(data, model=NULL, force=FALSE, halt=TRUE,
   ## also if varnames is NA
   ## gives the columns in the original data
 
-  ## Print("data.columns")
-  #print(model)
-  #Print(data, model, force, halt, vdim, xdim, list(...))
-
-  ##  Print("vdim", vdim)
-  
   PL <-  as.integer(RFopt$basic$printlevel)
-  info <- RFopt$coords
+  coord.opt <- RFopt$coords
+  orig.data <- data
 
-  is.data <- is.x <- is.factor <- M <- NULL
   if (length(xdim) == 0) xdim <- 0
-  if (data.only <- is.na(xdim)) xdim <- 0
-  DATA <- if (is(data, "RFsp")) data@data else data
-  cn <- cleanNames <- colnames(DATA)
-  data.info <- "guess"
-  x.given <- hasArg("x") || hasArg("distances")
-  if (x.given) {
+  data <- if (is.list(data) && !is.data.frame(data)) data[[1]] else data
+  data <- if (is(data, "RFsp")) data@data else data
+  cn <- colnames(data)
+  data.info <- "safe"
+  if (x.given <- hasArg("x") || hasArg("distances")) {
+    ## besser mit ...names, so dass missing(param) nicht zu einem Fehler fuehrt
     L <- list(...)
     x.given <- length(L$x) + length(L$distances) > 0
   }
-
+  searching.for.x <- !only.data && !x.given
+  if (length(vdim) == 0) vdim <- 0
+  repet <- 0
   if (!missing(model) && !is.null(model)) {
-    if (is(data, "RFsp") && data@.RFparams$n > 1)
-      cleanNames <-
-        sapply(cleanNames,
-               ## AUTHOR: Sebastian Gross, 26.08.2011
-               FUN= function(x) strsplit(x, "\\.n[[:digit:]]+$")[[1]][1]
-               )
-
-    M <- PrepareModel2(model=model, params=params, ...,
-                       data=data, coord.opt=info, xdim=xdim)
-    
-   if (length(M$data.coordnames) > 0) {
-      is.x <- match(M$data.coordnames, cleanNames)
-      if (length(is.x)>0 && x.given) stop("bug in 'data.matrix'")
-      if (PL > 0)
-	DetectionNote("Formula uses the following coordinates: ",
-                       paste(cleanNames[is.x], collapse=", "), ".")
+    M <- PrepareModel2(model=model, params=params,
+                       x=x, ...,  data=orig.data, xdim=xdim,
+                       return_transform = return_transform)
+    components <- c("is.x", "is.factor", "is.var", "is.covariate",
+                    "is.unclear")
+    for (i in components) assign(i, c(M[[i]]))# resolve in case of matrix
+    if (length(is.x) > 0 && x.given) stop("bug in 'data.matrix'")
+    if (M$repet > 0) repet <- M$repet
+    if (M$vdim > 0) {
+      if (vdim > 0 && vdim != M$vdim)
+        stop("the given value for 'vdim=", vdim,
+             "' does not match the detected value: vdim=", M$vdim)
     }
 
-    if (length(M$data.factornames) > 0) {
-      is.factor <- match(M$data.factornames, cleanNames)
-      if (PL > 0)
-	DetectionNote("Formula uses the following factors: ",
-                       paste(cleanNames[is.factor], collapse=", "), ".")
+    for (i in components) {
+      if (length(M[[i]]) > 0) {
+        if (i == "is.unclear")
+          Note("detection", "the model does not use '",
+               paste(M[[i]], collapse="', '"), "'.")
+        else  Note("detection", "the model uses the following ",
+                   switch(i, "is.x"="coordinate",
+                          "is.factor"="factor",
+                          "is.var"="variable",
+                          "is.covariate"="covariate",
+                          stop(CONTACT)),
+                   S(M[[i]]),  ": '",
+                   paste(M$data.names[M[[i]]], collapse="', '"), "'.")
+      }
     }
-    
-    if (length(varnames <- M$data.varnames) > 0) {
-      data.info <- "safe"
-      is.data <- match(varnames, cleanNames)
-      if (any(is.na(is.data)))
-	stop("response variable names could not be found in colnames ",
-	     "of the data") 
-      if (PL > 0)
-	DetectionNote("Formula uses the following dependent variables: ",
-		paste(cleanNames[is.data], collapse=", "), ".")
-      names(is.data) <- varnames
+  } else { ## model not given
+    is.var <- extractFromNames(RFopt=RFopt, cn=cn, ncol=ncol(data))
+    if (is.matrix(is.var)) {
+      if (vdim != 0 && vdim != nrow(is.var))
+        stop("multivariate dimension of data unclear")
+      repet <- ncol(is.var)
+      vdim <- nrow(is.var)
+      is.var <- as.vector(is.var)
     }
-  }
+    is.x <- if (!searching.for.x) NULL
+            else extractFromNames("coord", RFopt=RFopt, cn=cn, ncol=ncol(data))
 
-  
-  ##  Print(vdim, is.data, M, data.only, x.given)
+    is.unclear <- if (length(cn) > 0) cn[-c(is.var, is.x)]
+    is.factor <- is.covariate <- NULL
 
-  if (is.null(is.data)) {
-    is.data <-
-	 if (ncol(DATA) == 1) 1L
-	 else if (length(vdim) == 1 && vdim > 0 && ncol(DATA) == vdim) 1:vdim
-    data.info <- "safe"
-  }
-
-  if (length(is.data) == 0 &&
-      (length(info$varnames) > 0 || !is.na(info$varidx[1]))) {
-    is.data <- extractFromNames(info$varidx, info$varnames, RFopt, cn)
-    data.info <- "safe"
+    M <- list()
   }
   
-  if (length(is.data) == 0 && !is.null(cn)) {
-    cnlow <- tolower(cn)
-    is.data <- which(substr(cnlow, 1, 4) == "data" |
-		    substr(cnlow, 1, 4) == "value" |
-		    substr(cnlow, 1, 8) == "variable")
+  if (length(is.var) == 0) {
+    is.var <- if (ncol(data) == 1) 1L
+              else if (vdim > 0 && ncol(data) == vdim) 1:vdim
+  }
 
-    ##    Print(is.data, data, x.given)
-    
-    if (length(is.data) > 0) {
-      if (is.data[1] > 1 && (length(vdim) == 0 || length(is.data) != vdim)) {
-        d <- sort(c(is.data, which(cn == "")))
-        is.data <- is.data[1] : ncol(DATA)  #coords am Anfang
-        ##     dann wird Rest alles als data angenommen, egal welcher Name
-        
-        if (length(d) == length(is.data) && all(d == is.data))
-          data.info <-"safe"
-        else {
-          data.info <- "1stsafe"
-          if (!missing(model) && is(model, "formula")) {
-            covariates <- covariate.names(M$model)
-            del <- which(is.data %in% which(cn %in% covariates))
-            if (length(del) > 0) is.data <- is.data[-del]
-            if (length(is.data) == 1) data.info <- "safe"
-          }
-        }
-      } else data.info <- "safe"
-
-      if (length(is.data) > 0) {
-        if (length(is.data) < 20) {
-          DetectionNote("The column",S(is.data), " ",
-                         if (length(cn) == 0) paste(is.data, collapse=",")
-                         else paste("'", cn[is.data],"'", sep="",collapse=", "),
-                         " ", ARE(is.data), " considered as ",
-                         if (data.info=="1stsafe") "potential ",
-                         "data column",S(is.data), ".")
+  if ((n <- length(is.var)) > 0) {
+    d <- min(c(is.var, which(cn == "")))
+    m <- max(0, is.x, is.covariate, is.factor)
+    if (m < d) {
+      if (is.var[1] == 1 && vdim  == 0) is.var <- d : ncol(data) 
+      else if ((ncol(data) - d + 1) %% vdim == 0 &&
+               (max(is.var) - min(is.var) + 1) <= vdim) {
+        if (repet == 0) repet <- (ncol(data) - d + 1) /  vdim
+        is.var <- is.var + ((0:(repet-1)) * vdim)
+      }
+      data.info <-  "1stsafe"      
+      if (n != length(is.var)) {
+        if (length(is.var) < 20) {
+          Note("detection", "The column",S(is.var), " ",
+               if (length(cn) == 0) paste(is.var, collapse=",")
+               else paste("'", cn[is.var],"'", sep="",collapse=", "),
+               " ", ARE(is.var), " considered as ",
+               if (data.info=="1stsafe") "potential ",
+               "data column",S(is.var), ".")
         } else {
           nnn <- 2
-          show.data <- is.data[c(1:nnn, length(is.data) + 1 - (nnn:1))] 
+          show.data <- is.var[c(1:nnn, length(is.var) + 1 - (nnn:1))] 
           if (length(cn) > 0) show.data <- paste0("'", cn[show.data],"'")
-          DetectionNote("The columns ", paste(show.data[1:nnn], collapse=","),
-                         ", ..., ",
-                         paste(show.data[-1:-nnn], collapse=","),
-                         " are considered as ",
-                         if (data.info=="1stsafe") "potential ",
-                         "data columns.")
+          Note("detection", "The columns ",
+               paste(show.data[1:nnn], collapse=","), ", ..., ",
+             paste(show.data[-1:-nnn], collapse=","),
+             " are considered as ", if (data.info=="1stsafe") "potential ",
+             "data columns.")
         }
       }
     }
@@ -306,139 +314,123 @@ data.columns <- function(data, model=NULL, force=FALSE, halt=TRUE,
             else if (is(data, "SpatialGridDataFrame") ||
 		     is(data, "RFgridDataFrame")) length(data@grid@cells.dim)
 	    else stop("unknown class for 'data'")  
-  } else if (!(data.only || x.given)) {
-    if (xdim > 0 && xdim >= ncol(DATA)) stop("not enough columns in 'data'.")
-    if (length(is.x) == 0 &&
-        (length(info$coordnames) > 0 || !is.na(info$coordidx[1]))) 
-      is.x <- extractFromNames(info$coordidx, info$coordnames, RFopt, cn)
-
-
-    ##    Print(is.x, is.data, xdim, info, data.info)
-    
-    if (length(is.x)==0 && !is.null(cn)) {
-      if (length(is.x <- earth_coordinate_names(cn)) == 2) {
-        txt <- paste0("keywords for earth coordinates (", 
-                      paste(cn[is.x], collapse=","), ") are")
-      } else if (length(is.x <- cartesian_coordinate_names(cn)) > 0) {
-        txt <- paste0("keyword",S(is.x),
-                      " for cartesian coordinates (", sep="",
-                      paste(cn[is.x], collapse=","), ") ", ARE(is.x))
-      } else if  (length(is.x <- general_coordinate_names(cn)) > 0) {
-        txt <- paste0("standard keyword", S(is.x),
-                      "for cartesian coordinates (",
-                      paste(cn[is.x], collapse=","), ") ", ARE(is.x))
-      }
-
-##      Print(length(is.data), data.info=="safe", data.info)
-      if (length(is.x) > 0) {
-        if (length(is.data) > 0 && data.info=="safe")
-          is.x <- setdiff(is.x, is.data)
-        if (PL > 0) 
-          DetectionNote("column",S(is.x), " ", paste(is.x, collapse=","), " ",
-                         ARE(is.x), " assumed to define the coordinate",S(is.x),
-                         ", since ", txt, " recognized.\n")
-      } else if (PL > 1)
-        DetectionNote("None of the column names belong to the default ",
-                       "coordinate names of RandomFields.")
-    }
+  } else if (searching.for.x) {
+    if (xdim > 0 && xdim >= ncol(data)) stop("not enough columns in 'data'.")
+    if ((len <- length(is.x)) > 0) {
+      if (length(is.var) > 0 && data.info=="safe")
+        is.x <- setdiff(is.x, is.var)
+      if (length(is.x) < len)
+        Note("detection", "column", S(is.x), " ", paste(is.x, collapse=",")," ",
+             ARE(is.x), " assumed to define the coordinate",S(is.x),
+             ", since the following keyword",S(is.x),
+             "for coordinates ", ARE(is.x),
+             " recognized: ", paste(names(is.x), collapse=","), "\n")
+    } else if (PL >= PL_SUBIMPORTANT)
+      Note("detection", "None of the column names belong to the default ",
+           "coordinate names of RandomFields.")
   }
 
-  ##  Print(is.data, is.x, x.given)
-  if (length(is.data)==0 && length(is.x)==0) {
+
+  ######### NOTPROGRAM ###############
+  ##
+  if (length(is.var)==0 && length(is.x)==0) {
+    data.info <- "guess"
     if (is.null(cn) && !x.given) {
       if (!force) {
           if (halt)
             stop(if (is.null(cn)) "colnames of data argument must contain"
                  else 'no colname starts with', ' "data" or "variable"')
-          else return(list(is.data=TRUE, is.x=NULL));
+          else return(list(is.var=TRUE, is.x=NULL));
       }
-      is.data <- (xdim+1):ncol(DATA)
+      is.var <- (xdim+1):ncol(data)
     } else {
-      if (data.only || x.given) is.data <- 1:ncol(DATA)
+      if (!searching.for.x) is.var <- 1:ncol(data)
       else stop("data name(s) could not be found in the column names")
     }
-    if (!(data.only || x.given))
-      DetectionNote("taking column", S(is.data), paste(is.data, collapse=","),
-                     " as data column", S(is.data))
+    if (searching.for.x)
+      Note("detection", "taking column", S(is.var),
+           paste(is.var, collapse=","),
+           " as data column", S(is.var))
   }
-    
+
   if (!x.given) {
     if (length(is.x) == 0) {
-      if (!(data.only || x.given) && !isRFsp) {
-        is.x <- (1:ncol(DATA))[-c(is.data, is.factor)]
+      if (searching.for.x && !isRFsp) {
+        is.x <- (1:ncol(data))[-c(is.var, is.factor)]
         if (xdim > 0) {
           if (length(is.x) < xdim)
             stop("not enough columns for coordinates found ")
           if (xdim < length(is.x) && PL >= PL_SUBIMPORTANT)
-            DetectionNote("column(s) ",
+            Note("detection", "column(s) ",
                     paste("'", is.x[-1:-xdim], "'", , sep="", collapse=", "),
                     "in data frame unused.\n")
           is.x <- is.x[1:xdim]
-        }    
-        DetectionNote("Using ",
-                if (length(cn)>0) paste("'", cn[is.x], "'", sep="", collapse=", ")
-                else paste("column(s) ", paste(is.x, collapse=",")),
-                " as coordinate(s).")
+        }
+        if (length(is.x) > 0)
+          Note("detection", "Using ",
+               if (length(cn)>0) paste("'", cn[is.x], "'", sep="",collapse=", ")
+               else paste("column(s) ", paste(is.x, collapse=",")),
+               " as coordinate(s).")
       }
     } else if (xdim > 0 && xdim != length(is.x))
       stop("expected dimension of coordinates does not match the found coordinates")
   }
 
-  ##  Print(x.given, is.x, is.data)
   
-  if (length(is.data) == 0) {  #  (all(is.na(info$varnames))) 
-    is.data <- (1:ncol(DATA))[-is.x]
-    if (length(is.data) == 0) stop("no columns for data found")
+  if (length(is.var) == 0) {  #  (all(is.na(info$varnames))) 
+    is.var <- (1:ncol(data))[-is.x]
+    if (length(is.var) == 0) stop("no columns for data found")
   } else {
-    if (any(is.x %in% is.data)) stop("column names and data names overlap.")
-    if ( (isRFsp && length(is.data) < ncol(DATA)) ||
-	 (!isRFsp && length(is.x) + length(is.data) < ncol(DATA)) ) {
+    if (any(is.x %in% is.var)) stop("column names and data names overlap.")
+    if ( (isRFsp && length(is.var) < ncol(data)) ||
+	 (!isRFsp && length(is.x) + length(is.var) < ncol(data)) ) {
       if (PL >= PL_SUBIMPORTANT)
-	DetectionNote("column(s) ",
-                       paste((1:ncol(DATA))[-c(is.x, is.data, is.factor)],
-                             collapse=", "),
-                       " unused.\n")
+	Note("detection", "column(s) ",
+             paste((1:ncol(data))[-c(is.x, is.var, is.factor)],
+                   collapse=", "), " unused.\n")
     }
   }
 
-  if (length(vdim) > 0 && vdim > 1 && length(is.data) %% vdim != 0)
+  if (length(vdim) > 0 && vdim > 1 && length(is.var) %% vdim != 0)
     stop("recognized data columns not a multiple a multiple does not match the multivariate model")
 
   if (length(cn) > 0) {
-    names(is.data) <- cn[is.data]
+    if (length(is.var) > 0) names(is.var) <- cn[is.var] 
     if (length(is.x) > 0) names(is.x) <- cn[is.x]
   }
 
-#  Print(list(is.data=is.data, is.x=is.x, is.factor=is.factor,
-#              data.info=data.info, newmodel=M))
- 
-  return(list(is.data=is.data, is.x=is.x, is.factor=is.factor,
-              data.info=data.info, newmodel=M))
+                                        #  Print("basic.fctn.R", M)
+
+#  Print(is.var=is.var, is.x=is.x, is.factor=is.factor,
+ #             vdim=vdim, repet = repet,
+  #            data.info=data.info, model=M)
+
+  return(list(is.var=is.var, is.x=is.x, is.factor=is.factor,
+              vdim=vdim, repet = repet,
+              data.info=data.info, model=M))
 }
 
 
     
-SystemCoordNames <- function(locinfo, RFopt = RFopt) {
+SystemCoordNames <- function(locinfo, opt) {
   ## this function tries to combine all information available on
   ## coordinate names and variable names und returns the names if
   ## ensured that the names are the correct one.
   has.time.comp <- locinfo$has.time.comp
   tsdim <- locinfo$spatialdim + locinfo$has.time.comp
-
  
-  system <- RFopt$coords$coord_system
+  system <- opt$coord_system
   if (system == "earth") {
-    coordnames <- if (tsdim == 4) COORD_NAMES_EARTH
-		  else if (tsdim == 2) COORD_NAMES_EARTH[1:2]
-		  else if (tsdim == 3) c(COORD_NAMES_EARTH[1:2], "HeightOrTime")
+    coordnames <- if (tsdim == 4) opt$earth_coord_names
+		  else if (tsdim == 2) opt$earth_coord_names[1:2]
+		  else if (tsdim == 3) c(opt$earth_coord_names[1:2], "HeightOrTime")
   } else if (system == "cartesian" && tsdim <= 4) {
-    coordnames <- COORD_NAMES_CART[1:tsdim]
-    if (has.time.comp) coordnames[tsdim] <- COORD_NAMES_CART[3 + 1]
+    coordnames <- opt$cartesian_names[1:tsdim]
+    if (has.time.comp) coordnames[tsdim] <- opt$cartesian_names[3 + 1]
   } else {
     coordnames <- paste(COORD_NAMES_GENERAL[1], 1:tsdim, sep="")
     if (has.time.comp) coordnames[tsdim] <- COORD_NAMES_GENERAL[2]
   }
-
   return(coordnames)
 }
 

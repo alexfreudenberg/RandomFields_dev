@@ -49,21 +49,28 @@ struct solve_storage {
   errorstring_type err_msg;
   InversionMethod method, newMethods[SOLVE_METHODS];
   usr_bool sparse;
-  int SICH_n, MM_n, workspaceD_n, workspaceU_n, VT_n, U_n, D_n, 
-    iwork_n, work_n, w2_n, ipiv_n, workLU_n, pivotsparse_n,
-    xlnz_n, snode_n, xsuper_n, xlindx_n, invp_n, 
-    cols_n, rows_n, DD_n, lindx_n, xja_n,
-    diagonal_n,
-     lnz_n, w3_n, result_n,
-     nsuper, nnzlindx, size, actual_size, actual_pivot,
+  int
+  //   SICH_n, MM_n, VT_n, U_n, D_n, 
+  //    work_n, w2_n, lnz_n, w3_n, result_n,  nsuper, nnzlindx,
+    size, actual_size, actual_pivot,
+    nsuper,
+    main_n, rhs_n, w2_n, U_n, D_n, w3_n, lnz_n, result_n, 
+    
     *pivot_idx, pivot_idx_n, 
-    *iwork, *ipiv,
-    *pivotsparse, *xlnz, *snode, *xsuper, *xlindx, 
-    *invp, *cols, *rows, *lindx, *xja; //*t_cols, *t_rows;
-  double *workspaceD, *workspaceU,
-    *VT, *work, *w2, *U, *D, *workLU, *diagonal,
-    *lnz, *DD, *w3, *result,
-    *to_be_deleted; //, *t_DD;
+    *iwork, iwork_n, //eigen, svd, LU, spam
+    *pivotsparse, pivotsparse_n, *xlnz,xlnz_n, //spam
+    *snode,snode_n, *xsuper, xsuper_n,*invp,invp_n,   // spam
+    *cols,cols_n, *rows,rows_n, *lindx, lindx_n, // spam
+    *xja,  xja_n; // chol, eigen, spam
+  double 
+  *main, *rhs,// diagonal, general -- FORBIDDEN for further use
+    *w2, // eigen, svd, LU, QR, pivot
+    *U, // eigen, svd, pivot
+    *D, // eigen, svd, cholesky, spam, pivot
+    *w3, // spam, QR, svd
+    *lnz, // spam
+    *result,  // sqrtPosDefFree
+    *to_be_deleted; 
 } solve_storage;
 
 #define SOLVE 0

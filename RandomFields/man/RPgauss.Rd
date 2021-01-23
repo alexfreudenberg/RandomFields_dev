@@ -59,7 +59,7 @@ RPgauss(phi, boxcox, stationary_only)
  or variogram models, see \code{\link{RFgetModelNames}(intern=FALSE)}.
 
 By default, all Gaussian random fields have zero mean. 
- Simulating with trend can be done by including \command{\link{RMtrend}}
+ Simulating with trend can be done by including \command{\link{RMshape}}
  in the model. 
  
 \command{\link{RPgauss}} allows to simulate different classes of random fields,
@@ -104,6 +104,6 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 model <- RMexp()
 x <- seq(0, 10, 0.02)
 plot(model)
-plot(RFsimulate(model, x=x, seed=0))
-plot(RFsimulate(RPgauss(model), x=x, seed=0), col=2) ## the same
+plot(RFsimulate(model, x=x))
+plot(RFsimulate(RPgauss(model), x=x), col=2) ## the same
 \dontshow{FinalizeExample()}}

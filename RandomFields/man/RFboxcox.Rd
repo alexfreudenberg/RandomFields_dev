@@ -82,36 +82,15 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
 data(soil)
-str(soil)
-soil <- RFspatialPointsDataFrame(
- coords = soil[ , c("x.coord", "y.coord")],
- data = soil[ , c("moisture", "NO3.N", "Total.N", "NH4.N", "DOC", "N20N")],
- RFparams=list(vdim=6, n=1)
-)
-dta <- soil["moisture"]
-\dontshow{if (RFoptions()$internal$examples_red) {
-  warning("data have been reduced !")
-  All <- 1:7
-  rm(soil)
-  data(soil)
-  soil <- RFspatialPointsDataFrame(
-     coords = soil[All, c("x.coord", "y.coord")],
-     data = soil[All, c("moisture", "NO3.N", "Total.N",
-      "NH4.N", "DOC", "N20N")],
-      RFparams=list(vdim=6, n=1)
-  )
-  dta <- soil["moisture"]
-}}
 
-model <- ~1 + RMplus(RMwhittle(scale=NA, var=NA, nu=NA), RMnugget(var=NA))
+if (interactive()) {
+  model <- moisture ~ 1 + RMwhittle(scale=NA, var=NA, nu=NA) + RMnugget(var=NA)
+} else model <- moisture ~ 1 + RMnugget(var=NA)
 
-\dontshow{\dontrun{
-## Assuming log-Gaussian Data
-print(fit <- RFfit(model, data=dta, loggaus=TRUE))
-}}
 
 ## main Parameter in the Box Cox transformation to be estimated
-print(fit <- RFfit(model, data=dta, boxcox=NA))
+print(fit <- RFfit(model, data=soil, boxcox=NA,
+                   coordnames=c("x.coord", "y.coord")))
 
 \dontshow{FinalizeExample()}}
 

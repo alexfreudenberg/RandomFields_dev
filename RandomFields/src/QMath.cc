@@ -2,74 +2,75 @@
 #include <R.h>
 #include <Rmath.h>
 #include "questions.h"
-#include "primitive.others.h"
 #include "startGetNset.h"
-void MathACos(double *x, model *cov, double *v){
+#include "QMath.h"
+
+
+void MathACos(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 *v = ACOS(w[0]); 
 }
 
 
-void MathASin(double *x, model *cov, double *v){
+void MathASin(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 *v = ASIN(w[0]); 
 }
 
 
-void MathATan(double *x, model *cov, double *v){
+void MathATan(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 *v = ATAN(w[0]); 
 }
 
 
-void MathAtan2(double *x, model *cov, double *v){
+void MathAtan2(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 *v = ATAN2(w[0], w[1]); 
 }
 
 
-void MathCos(double *x, model *cov, double *v){
+void MathCos(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 *v = COS(w[0]); 
 }
 
-void MathSin(double *x, model *cov, double *v){
+void MathSin(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 *v = SIN(w[0]); 
 }
 
 
-void MathTan(double *x, model *cov, double *v){
+void MathTan(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 *v = TAN(w[0]); 
 }
 
 
-void MathAcosh(double *x, model *cov, double *v){
+void MathAcosh(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 #if defined _GLIBCXX_CMATH
-  *v = acosh(w[0]); // ACOSH()
+  *v = ACOSH(w[0]); 
 #else
  *v = LOG(w[0] + SQRT(w[0] * w[0] - 1.0));
 #endif
 }
 
 
-void MathAsinh(double *x, model *cov, double *v){
+void MathAsinh(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 #if defined _GLIBCXX_CMATH
-  *v = asinh(w[0]); // ASINH()
-// printf("%10g %10g\n", *v,  LOG(w[0] + SQRT(w[0] * w[0] + 1.0)));
+  *v = ASINH(w[0]); 
 #else
  *v = LOG(w[0] + SQRT(w[0] * w[0] + 1.0));
 #endif
 }
 
 
-void MathAtanh(double *x, model *cov, double *v){
+void MathAtanh(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 #if defined _GLIBCXX_CMATH
-  *v = atanh(w[0]); // ATANH()
+  *v = ATANH(w[0]); 
 #else
  *v = 0.5 * LOG( (1 + w[0]) / (1 - w[0]) );
 #endif
@@ -77,78 +78,76 @@ MATH_DEFAULT
 }
  
 
-void MathCosh(double *x, model *cov, double *v){
+void MathCosh(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 *v = COSH(w[0]); 
 }
 
 
-void MathSinh(double *x, model *cov, double *v){
+void MathSinh(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 *v = SINH(w[0]); 
 }
 
 
-void MathTanh(double *x, model *cov, double *v){
+void MathTanh(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 *v = TANH(w[0]); 
 }
 
 
-void MathExp(double *x, model *cov, double *v){
+void MathExp(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 *v = EXP(w[0]); 
 }
 
 
-void MathLog(double *x, model *cov, double *v){
+void MathLog(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 *v = LOG(w[0]); 
 }
 
 
-void MathExpm1(double *x, model *cov, double *v){
+void MathExpm1(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT 
 #if defined _GLIBCXX_CMATH 
-  *v = expm1(w[0]); // EXPM1()
+  *v = EXPM1(w[0]);
 #else
  *v = EXP(w[0]) - 1.0;
 #endif
 }
 
 
-void MathLog1p(double *x, model *cov, double *v){
+void MathLog1p(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 #if defined _GLIBCXX_CMATH 
-  *v = log1p(w[0]); // LOG1P()
+  *v = LOG1P(w[0]);
 #else
  *v = LOG(1.0 + w[0]);
 #endif
 }
 
 
-void MathLogb(double *x, model *cov, double *v){
-MATH_DEFAULT
-  *v = LOGB(w[0]);
-//  printf("logb %10g\t%10g\n", *v, logb(w[0]));
-}
+//void MathLogb(double *x, int *info, model *cov, double *v){
+//MATH_DEFAULT
+//  *v = LOGB(w[0]);
+//}
 
 
-void MathExp2(double *x, model *cov, double *v){
+void MathExp2(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 *v = EXP2(w[0]);
-// printf("e %10g\t%10g\n", *v, EXP2(w[0])); 
 }
 
 
-void MathLog2(double *x, model *cov, double *v){
+void MathLog2(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 *v = LOG_BASE2(w[0]);
 // printf("e %10g\t%10g\n", *v, LOG_BASE2(w[0]));  
 }
 
 
-void MathPow(double *x, model *cov, double *v){
+void MathPow(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 *v = POW(w[0], w[1]); 
 }
@@ -173,13 +172,13 @@ int check_Pow(model *cov){
   RETURN_ERR(checkMath(cov));
 }
 
-void MathSqrt(double *x, model *cov, double *v){
+void MathSqrt(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 *v = SQRT(w[0]); 
 }
 
 
-void MathHypot(double *x, model *cov, double *v){
+void MathHypot(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 #if defined _GLIBCXX_CMATH
   *v = hypot(w[0], w[1]);
@@ -189,32 +188,32 @@ MATH_DEFAULT
 }
 
 
-void MathCbrt(double *x, model *cov, double *v){
+void MathCbrt(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 *v = CBRT(w[0]);
 // printf("e %10g\t%10g\n", *v, CBRT(w[0])); 
 }
 
 
-void MathCeil(double *x, model *cov, double *v){
+void MathCeil(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 *v = CEIL(w[0]); 
 }
 
 
-void MathFABS(double *x, model *cov, double *v){
+void MathFABS(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 *v = FABS(w[0]); 
 }
 
 
-void MathFloor(double *x, model *cov, double *v){
+void MathFloor(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 *v = FLOOR(w[0]); 
 }
 
 
-void MathFmod(double *x, model *cov, double *v){
+void MathFmod(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
   *v = FMOD(w[0], w[1]); 
 //printf("e %10g\t%10g\n", *v, FMOD(w[0], w[1]));
@@ -222,13 +221,13 @@ MATH_DEFAULT
 
 
 
-void MathRound(double *x, model *cov, double *v){
+void MathRound(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 *v = ROUND(w[0]); 
 }
 
 
-void MathTrunc(double *x, model *cov, double *v){
+void MathTrunc(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 *v = TRUNC(w[0]); 
 }
@@ -236,105 +235,103 @@ MATH_DEFAULT
 
 /*
 
-void Mathnearbyint(double *x, model *cov, double *v){
+void Mathnearbyint(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
   *v = std::nearbyint(w[0]); 
 }
 
-void MathLrint(double *x, model *cov, double *v){
+void MathLrint(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
   *v = std::lrint(w[0]); 
 }
 
 
-void MathLlrint(double *x, model *cov, double *v){
+void MathLlrint(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 *v = llrint(w[0]); 
 }
 
-void MathLRound(double *x, model *cov, double *v){
+void MathLRound(double *x, int *info, model *cov, double *v){
   MATH_DEFAULT
   *v = l ROUND(w[0]); 
 }
 
 
-void MathLLRound(double *x, model *cov, double *v){
+void MathLLRound(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 *v = ll ROUND(w[0]); 
 }
 
-void MathCopysign(double *x, model *cov, double *v){
+void MathCopysign(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 *v = copysign(w[0], w[1]); 
 }
 
-void MathRint(double *x, model *cov, double *v){
+void MathRint(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 *v = rint(w[0]); 
 }
 
-void MathNextafter(double *x, model *cov, double *v){
+void MathNextafter(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 *v = nextafter(w[0], w[1]); 
 }
 
 
-void MathNexttoward(double *x, model *cov, double *v){
+void MathNexttoward(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 *v = nexttoward(w[0], w[1]); 
 }
 */
 
-void MathErf(double *x, model *cov, double *v){
+void MathErf(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
  *v = 1.0 - 2.0 * pnorm(w[0], 0.0, INVSQRTTWO, 0, 0);
 }
 
 
-void MathErfc(double *x, model *cov, double *v){
+void MathErfc(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
   *v = 2.0 * pnorm(w[0], 0.0, INVSQRTTWO, 0, 0);
 }
 
 
 
-void MathGGamma(double *x, model *cov, double *v){
+void MathGGamma(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
   *v = gammafn(w[0]); 
 }
 
-void MathGamma(double *x, model *cov, double *v){
+void MathGamma(double *x, int *info, model *cov, double *v){
   if (*x <= 0.0) ERR("for non-positive arguments use 'ggamma'");
-  MathGGamma(x, cov, v);
+  MathGGamma(x, info, cov, v);
 }
 
 
-void MathLgamma(double *x, model *cov, double *v){
+void MathLgamma(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
   *v = lgammafn(w[0]);
 }
 
 
-void MathRemainder(double *x, model *cov, double *v){
+void MathRemainder(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 *v = REMAINDER(w[0], w[1]);
 // printf("e %10g\t%10g\t%10g\n", *v, REMAINDER(w[0], w[1]), fr ound(w[1], 0));
 }
 
 
-void MathFdim(double *x, model *cov, double *v){
+void MathFdim(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
-*v = FDIM(w[0], w[1]);
-// printf("e %10g\t%10g\n", *v, FDIM(w[0], w[1]));
-
+  *v = FDIM(w[0], w[1]);
 }
 
 
-void MathFmax(double *x, model *cov, double *v){
+void MathFmax(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 *v = FMAX(w[0], w[1]);
- 
 }
+
 int check_Fmax(model *cov){
   int err;
   for (int i=0; i<=1; i++) {
@@ -348,7 +345,7 @@ int check_Fmax(model *cov){
   RETURN_ERR(checkMath(cov));
 }
 
-void MathFmin(double *x, model *cov, double *v){
+void MathFmin(double *x, int *info, model *cov, double *v){
 MATH_DEFAULT
 *v = FMIN(w[0], w[1]); 
 }
@@ -378,7 +375,7 @@ bool allowedImaths(model *cov) {
 
 
 #define ADDCOV(X)				\
-  addCov(X, NULL, NULL);			\
+  addCov(X);			\
   AddVariant(TrendType, PREVMODEL_I);		\
   setDI(NULL, allowedImaths, NULL);
 

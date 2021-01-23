@@ -86,7 +86,7 @@ void calculate_means(int method, int vdim, int nbin, int totaln,
 
  
 
-SEXP empirical(SEXP  X, SEXP Dim, SEXP Lx, 
+SEXP empirical(SEXP  X, SEXP Dim, 
 	       SEXP Values, SEXP Repet, SEXP Grid, 
 	       SEXP Bin, SEXP Nbin, 
 	       // note that within the subsequent algorithm
@@ -113,9 +113,9 @@ SEXP empirical(SEXP  X, SEXP Dim, SEXP Lx,
 {
   //printf("entering empvari.c");
   int dim = INTEGER(Dim)[0],
-    lx = INTEGER(Lx)[0],
     repet = INTEGER(Repet)[0],
     grid = INTEGER(Grid)[0],
+    lx = grid ? 3 : nrows(X),
     nbin = INTEGER(Nbin)[0],
     vdim = INTEGER(Vdim)[0];
   double 
@@ -127,7 +127,6 @@ SEXP empirical(SEXP  X, SEXP Dim, SEXP Lx,
     *sumtail = NULL,
     alpha = REAL(Alpha)[0];
   int totaln = nbin * vdim * vdim,
-    L = length(Values),
     nidx = totaln * EV_N,
     evidx = totaln * EV_EV,
     sdSqidx = totaln * EV_SDSQ,
@@ -140,6 +139,10 @@ SEXP empirical(SEXP  X, SEXP Dim, SEXP Lx,
   double  * xx[MAXVARIODIM], // maxdist[MAXVARIODIM],// dd, 
     * BinSq = NULL,
     alphahalf = 0.5 * alpha;
+  int
+    lD = nrows(Values),
+    nDta = length(Values);
+  
   bool dist_notgiven = !LOGICAL(Distgiven)[0];
   SEXP Res;
   // res contains the variogram (etc), variance of the variogram,
@@ -204,15 +207,15 @@ SEXP empirical(SEXP  X, SEXP Dim, SEXP Lx,
   if (grid) {    
     int d1, d2, head, tail; 
     double p1[MAXVARIODIM], p2[MAXVARIODIM], dx[MAXVARIODIM]; 
-    Long indextail[MAXVARIODIM], indexhead[MAXVARIODIM],
-      segmentbase[MAXVARIODIM]; //SegmentbaseTwo[MAXVARIODIM],
+    Long indextail[MAXVARIODIM], indexhead[MAXVARIODIM];
+      //   segmentbase[MAXVARIODIM]; //SegmentbaseTwo[MAXVARIODIM],
       //SegmentbaseFour[MAXVARIODIM];
 
-    // does not work!! :
-    //GetGridSize(x, y, z, dim, &(gridpoints[0]), &(gridpoints[1]), &(gridpoints[2])); 
-    // totalpoints = gridpoints[0] * gridpoints[1] * gridpoints[2]; 
-    //
-    // instead :
+      // does not work!! :
+      //GetGridSize(x, y, z, dim, &(gridpoints[0]), &(gridpoints[1]), &(gridpoints[2])); 
+      // totalpoints = gridpoints[0] * gridpoints[1] * gridpoints[2]; 
+      //
+      // instead :
       //    dd = 0.0;
     totalpoints = 1;
     for (int i = 0; i <= dimM1; i++) {
@@ -221,20 +224,13 @@ SEXP empirical(SEXP  X, SEXP Dim, SEXP Lx,
       // maxdist[i] = (gridpoints[i] - 1) * xx[i][XSTEP]; 
       //      dd += maxdist[i] * maxdist[i]; 
     }
+    if (totalpoints != lD) ERR("likely a bug: inconstent data and coordinates\n");
+  
     totalpointsvdim = totalpoints * vdim;
     
     for (int i = 0; i <= dimM1; i++) { dx[i] = xx[i][XSTEP] * 0.99999999; }
-    totalpointsrepetvdim = totalpointsvdim * repet; 
-    segmentbase[0] = 1; // here x runs the fastest;  
-    //    SegmentbaseTwo[0] = segmentbase[0] << 1; 
-    //SegmentbaseFour[0] = segmentbase[0] << 2
-      ; 
-    for (int i = 1; i <= dimM1; i++) { 
-      segmentbase[i] = segmentbase[i - 1] * gridpoints[i - 1]; 
-      //      SegmentbaseTwo[i] = segmentbase[i] << 1; 
-      // SegmentbaseFour[i] = segmentbase[i] << 2; 
-    }
-    
+    totalpointsrepetvdim = totalpointsvdim * repet;
+   
     for (int i = 0; i <= dimM1; i++) {indexhead[i] = 0; p1[i] = 0.0; }
        
     // loop through all pair of points, except (head, tail) for head=tail, 
@@ -246,12 +242,12 @@ SEXP empirical(SEXP  X, SEXP Dim, SEXP Lx,
 
     /*
       NOTE: first last dimensions is used for ordering, then 
-       the first, the second, until last dimension minus 1
-       This ordering is important for asymmetric models
-     */
+      the first, the second, until last dimension minus 1
+      This ordering is important for asymmetric models
+    */
 
     
-#define FOR(DO)							\
+#define FOR(DO)								\
     for (head = 0; head<totalpoints; ) {				\
       for (int i = 0; i <= dimM1; i++) {				\
 	indextail[i] = 0;						\
@@ -287,11 +283,10 @@ SEXP empirical(SEXP  X, SEXP Dim, SEXP Lx,
 	      Long endHead = Head + totalpointsrepetvdim;		\
 	      for (Long Tail = tail; Head < endHead;			\
 		   Head += totalpointsvdim, Tail += totalpointsvdim){	\
-		assert(Head + Row < L && Head + Col < L && Tail + Row < L && Tail + Col < L); \
 		DO;							\
 		if (ISNA(x2)) continue;					\
 		assert(curbin + evidx < 3 * totaln && curbin + sdSqidx < 3 * totaln && 	curbin + nidx < 3 * totaln); \
-		res[curbin + evidx] += x2;	\
+		res[curbin + evidx] += x2;				\
 		res[curbin + sdSqidx] += x2 * x2;			\
 		res[curbin + nidx]++;					\
 	      }								\
@@ -332,33 +327,40 @@ SEXP empirical(SEXP  X, SEXP Dim, SEXP Lx,
     }								       
 
     //printf("%d meth=%d %d %f\n", method, PSEUDOMADOGRAM, VARIOGRAM, alpha);
-//assert(method == VARIOGRAM);
+    //assert(method == VARIOGRAM);
 
     switch(method){
     case PSEUDO:     // pseudo variogram
-      FOR(double x2 = values[Head + Row] - values[Tail + Col]; x2 *= x2);
+      FOR(assert(Head+Row < nDta && Tail + Col < nDta);
+	  double x2 = values[Head + Row] - values[Tail + Col]; x2 *= x2);
       break;
     case VARIOGRAM:  // cross variogram
-      FOR(double x2 = (values[Head + Row] - values[Tail + Row]) *
+      FOR(assert(Head+Row < nDta && Tail + Col < nDta && Head+Col < nDta && Tail + Row < nDta);
+	  double x2 = (values[Head + Row] - values[Tail + Row]) *
 	  (values[Head + Col] - values[Tail + Col]));	    
       break;
     case COVARIANCE:
-      FOR(double x2 = values[Head + Row] * values[Tail + Col];
+      FOR(assert(Head+Row < nDta && Tail + Col < nDta);
+	  double x2 = values[Head + Row] * values[Tail + Col];
 	  sumhead[curbin] += values[Head + Row];
 	  sumtail[curbin] += values[Tail + Col]);
       break;
     case PSEUDOMADOGRAM:      // pseudo madogram
-      FOR(double x2 = FABS(values[Head + Row] - values[Tail + Col]));
+      FOR(assert(Head+Row < nDta && Tail + Col < nDta);
+	  double x2 = FABS(values[Head + Row] - values[Tail + Col]));
       break;
     case ALPHAPSEUDOMADOGRAM:      // alpha pseudo madogram
-      FOR(double x2 = POW(FABS(values[Head + Row]- values[Tail + Col]), alpha));
+      FOR(assert(Head+Row < nDta && Tail + Col < nDta);
+	  double x2 = POW(FABS(values[Head + Row]- values[Tail + Col]), alpha));
       break;
     default:
-     PRINTF("empirical:\n");
-     err = TOOLS_METHOD; goto ErrorHandling;
+      PRINTF("empirical:\n");
+      err = TOOLS_METHOD; goto ErrorHandling;
     }
   } else {
-    ////////////////////////////////////  ARBITRARY /////////////////////////////
+    //////////////////////////////////  ARBITRARY /////////////////////////////
+    //    printf("LX %d %d\n", lx, lD);
+    if (lx != lD) ERR("Likely a bug: coordinates and data are inconsistent.");
     totalpoints =  lx;
     totalpointsvdim = totalpoints * vdim;
     totalpointsrepetvdim = totalpointsvdim * repet;
@@ -421,28 +423,33 @@ SEXP empirical(SEXP  X, SEXP Dim, SEXP Lx,
     switch(method){
     case PSEUDO:
       // pseudo variogram
-      FORARB(double x2 = values[Head + Row] - values[Tail + Col]; x2 *= x2);
+      FORARB(assert(Head+Row < nDta && Tail + Col < nDta);
+	     double x2 = values[Head + Row] - values[Tail + Col]; x2 *= x2);
       break;
     case VARIOGRAM:
       // cross variogram
-      FORARB(double x2 = (values[Head + Row] - values[Tail + Row])
+      FORARB(assert(Head+Row < nDta && Tail + Col < nDta && Head+Col < nDta && Tail + Row < nDta);
+	     double x2 = (values[Head + Row] - values[Tail + Row])
 	     * (values[Head + Col] - values[Tail + Col]));	  
       break;
     case COVARIANCE:
-      FORARB(double x2 = (values[Head + Row] * values[Tail + Col]);
+      FORARB(assert(Head+Row < nDta && Tail + Col < nDta);
+	     double x2 = (values[Head + Row] * values[Tail + Col]);
 	     if (ISNA(x2)) continue;	
 	     sumhead[curbin] += values[Head + Row];
 	     sumtail[curbin] += values[Tail + Col]);
       break;
     case PSEUDOMADOGRAM:
       // pseudo madogram
-      FORARB(double x2 = FABS(values[Head + Row] - values[Tail + Col]));
+      FORARB(assert(Head+Row < nDta && Tail + Col < nDta);
+	     double x2 = FABS(values[Head + Row] - values[Tail + Col]));
       break;
-   case ALPHAPSEUDOMADOGRAM:
+    case ALPHAPSEUDOMADOGRAM:
       // pseudo madogram
-     FORARB(double x2 = POW(FABS(values[Head + Row]-values[Tail + Col]),alpha));
+      FORARB(assert(Head+Row < nDta && Tail + Col < nDta);
+	     double x2 = POW(FABS(values[Head + Row]-values[Tail + Col]),alpha));
       break;
-   default:
+    default:
       PRINTF("final emp. vario: %d\n", method);
       err = TOOLS_METHOD; goto ErrorHandling;
     }
@@ -467,7 +474,6 @@ SEXP empirical(SEXP  X, SEXP Dim, SEXP Lx,
 
 
 SEXP empvarioXT(SEXP Xsexp, SEXP Tsexp, 
-		SEXP Lx, 
 	        SEXP Values, SEXP Repet, SEXP Grid,
 		SEXP Bin, SEXP Nbin, 
 		SEXP Phi,    // vector of a real and an integer
@@ -494,11 +500,13 @@ SEXP empvarioXT(SEXP Xsexp, SEXP Tsexp,
  */
 { 
   //  printf("entering empvariXT.c");
- // turning SEXP to c++ variable
-  int lx = INTEGER(Lx)[0], repet = INTEGER(Repet)[0],
+  // turning SEXP to c++ variable
+  int repet = INTEGER(Repet)[0],
     grid = INTEGER(Grid)[0],
+    lx = grid ? 3 : nrows(Xsexp),
     nbin = INTEGER(Nbin)[0],
-    *dT = INTEGER(DT), vdim = INTEGER(Vdim)[0];
+    *dT = INTEGER(DT),
+    vdim = INTEGER(Vdim)[0];
   double *X = REAL(Xsexp),
     *T = REAL(Tsexp),
     *values = REAL(Values),
@@ -508,17 +516,24 @@ SEXP empvarioXT(SEXP Xsexp, SEXP Tsexp,
     alpha = REAL(Alpha)[0],
     *res = NULL;
 
+  int
+    lD = nrows(Values),
+    nDta = length(Values);
+  //  printf("len data %d\n", length(Values));
 
+ 
   Long rep;
   int i ,gridpoints[4], totalbins, totalspatialbins,
-    twoNphi, twoNphiNbin, Ntheta, nbinNphiNtheta, maxi[4], mini[4], ix, iy, iz,
-    it, endX, startX, endY, startY, endZ, startZ, endT, low, cur, up, totaln,
+    twoNphi, twoNphiNbin, Ntheta, nbinNphiNtheta, maxi[4], mini[4], 
+    endX, startX, endY, startY, endZ, startZ, endT, low, cur, up, totaln,
     nidx, evidx, sdSqidx,
-    ktheta, kphi, nstepTstepT, vec[4], deltaT, x, y, z, t,  j, stepT, nstepT,
+    ktheta, kphi, nstepTstepT, vec[4], stepT, nstepT,
     method = ALPHAPSEUDOMADOGRAM,
     halfnbin = nbin / 2,
     err  = NOERROR; 
-  double *xx[4], *BinSq, maxbinsquare, step[4], delta[4], psq[4], dx[4],
+  double *xx[4] = { NULL },
+    *BinSq = NULL,
+    maxbinsquare, step[4], delta[4], psq[4], dx[4],
     startphi, invsegphi, starttheta, invsegtheta, thetadata, phidata,
     zylinderradius,
     *sumhead = NULL,
@@ -532,7 +547,7 @@ SEXP empvarioXT(SEXP Xsexp, SEXP Tsexp,
     dx[0] = dx[1] = dx[2] = dx[3] = 0.0;
   }
 
- // alpha in [0,4]:
+  // alpha in [0,4]:
   // 0 : covariance
   // (0,2] : pseudo
   // (2,4] : Matheron true alpha: alpha - 2.0
@@ -572,7 +587,6 @@ SEXP empvarioXT(SEXP Xsexp, SEXP Tsexp,
   PROTECT(Res = allocMatrix(REALSXP, totaln, 3));
   res = REAL(Res);
 
-  BinSq = NULL;
   for (rep=i=0; i<3; i++, rep += lx) xx[i]=&(X[rep]);
   xx[3] = T;
 
@@ -583,7 +597,9 @@ SEXP empvarioXT(SEXP Xsexp, SEXP Tsexp,
    
   if ((BinSq = (double *) MALLOC(sizeof(double)* (nbin + 1)))==NULL) {
     err=ERRORMEMORYALLOCATION; goto ErrorHandling; 
-  } 
+  }
+
+  //  printf("totaln %d\n", totaln);
 
   if(method == COVARIANCE) {
     if( (sumhead = (double *) CALLOC(totaln, sizeof(double))) == NULL) {
@@ -597,38 +613,48 @@ SEXP empvarioXT(SEXP Xsexp, SEXP Tsexp,
   // res contains the variogram, sd and n.bin (res gets returned to function)
   // first column is of res is the variogram
   // second column is the sd^2 and the third n.bin (number of data per bin)
-  //printf("total %d %d %d %d \n", nstepT,  twoNphi, *nbin,  Ntheta);
+  //
+
+  //  printf("total %d %d %d %d %d \n", nstepT,  twoNphi, nbin,  Ntheta, grid);
 
   for(i = 0; i < totaln * 3; res[i++] = 0); 
   for (i=0; i<= nbin; i++){if (bin[i]>0) BinSq[i]=bin[i] * bin[i]; 
     else BinSq[i]=bin[i];
   }
 
+  //  printf("jher %d\n", grid);
+
   assert(NEARBY(atan2(-1.0, 0.0) + PIHALF) == 0.0);
   assert(atan2(0.0, 0.0) == 0.0);
   maxbinsquare = BinSq[nbin];
 
+ 
   //////////////////////////////////// GRID ////////////////////////////////////
   if (grid) {
-    int segmentbase[6];
-    Long totalpoints = 1;
-    segmentbase[0]=1; // here x runs the fastest;
+    int segmentbase[7];
+     segmentbase[0]=1; // here x runs the fastest;
     
     for (i=0; i<=3; i++) {
       step[i] = xx[i][XSTEP];
-      gridpoints[i] = (int) xx[i][XLENGTH];
-      totalpoints *= (gridpoints[i] > 0) ? gridpoints[i] : 1;
+      gridpoints[i] = MAX(1, (int) xx[i][XLENGTH]);
       maxi[i] = (int) (SQRT(maxbinsquare) / step[i] + 0.1);
       if (maxi[i] >= gridpoints[i]) maxi[i] = gridpoints[i] - 1;
       mini[i] = -maxi[i];
-      //      if (maxi[i]==0)  maxi[i] = 1; wrong 22.11.03
       segmentbase[i+1] =  segmentbase[i] * gridpoints[i];
+      //      printf("i=%d %d %d\n", i, segmentbase[i+1], gridpoints[i]);
     }
-    segmentbase[4] *= vdim;
-    segmentbase[5] = segmentbase[4] * repet;
+    //    printf("%d\n", lD);
+    if (segmentbase[4] != lD)
+      ERR("likely a bug: inconstent data & coordinates\n");
+    segmentbase[5] =segmentbase[4] *  vdim;
+    segmentbase[6] = segmentbase[5] * repet;
+    
+    //    printf("i=%d %d %d\n", 4, segmentbase[i+1], vdim);
+    //    printf("i=%d %d %d\n", 5, segmentbase[i+1], repet);
 
-    //printf("\n");
-    //for(int i=totalpoints;i<2*totalpoints;i+=100){
+  
+    //    printf("AAAA\n");
+    //for(int i=segmentbase[4];i<2*segmentbase[4];i+=100){
     //  printf("%10g ", values[i]);
     //}
     //printf("\n");
@@ -637,20 +663,21 @@ SEXP empvarioXT(SEXP Xsexp, SEXP Tsexp,
     //  [5] : l(x) * l(y) * l(z) * l(T) * repet
 
     // define needed so there is no if needed before each calculation (grid)
-#define FORXT(DO)								\
-    for (ix=mini[0]; ix <= maxi[0]; ix++) {				\
+#define FORXT(DO)							\
+    for (int ix=mini[0]; ix <= maxi[0]; ix++) {				\
       delta[0] = ix * step[0];						\
       if ((psq[0] = delta[0] * delta[0]) > maxbinsquare) continue;	\
 									\
       vec[0] = ix;							\
       if (ix>=0) {							\
 	endX = gridpoints[0] - ix;					\
+	/* eigentlich  (gridpoints[0] - ix) * segmentbase[0] + 0 */	\
 	startX = 0;							\
       } else {								\
 	endX = gridpoints[0];						\
 	startX = -ix;							\
       }									\
-      for (iy= mini[1]; iy <= maxi[1];  iy++) {				\
+      for (int iy= mini[1]; iy <= maxi[1];  iy++) {			\
 	delta[1] = iy * step[1];					\
 	if ((psq[1] = delta[1] * delta[1] + psq[0]) > maxbinsquare) continue; \
 	vec[1] = vec[0] + iy * segmentbase[1];				\
@@ -661,15 +688,15 @@ SEXP empvarioXT(SEXP Xsexp, SEXP Tsexp,
 	kphi = nbin * (int) (phidata * invsegphi);			\
 									\
 									\
-	for (iz=mini[2]; iz <= maxi[2]; iz++) {				\
+	for (int iz=mini[2]; iz <= maxi[2]; iz++) {			\
 	  delta[2] = iz * step[2];					\
-	  if ((psq[2] = delta[2] * delta[2] + psq[1]) > maxbinsquare) continue;\
+	  if ((psq[2] = delta[2] * delta[2] + psq[1]) > maxbinsquare) continue;	\
 	  vec[2] = vec[1] + iz * segmentbase[2];			\
 									\
 	  {								\
 	    low=0; up= nbin; /* */ cur= halfnbin;			\
 	    while(low!=up){						\
-	      if (psq[2] > BinSq[cur]) {low=cur;} else {up=cur-1;}/*( . ; . ]*/\
+	      if (psq[2] > BinSq[cur]) {low=cur;} else {up=cur-1;}/*( . ; . ]*/	\
 	      cur=(up+low+1)/2;						\
 	    }								\
 	  }	/* low*/						\
@@ -681,45 +708,54 @@ SEXP empvarioXT(SEXP Xsexp, SEXP Tsexp,
 									\
 	  low += kphi + ktheta * twoNphiNbin;				\
 									\
-	  for (deltaT=0, it=low; deltaT<=nstepTstepT;			\
-	       deltaT+=stepT, it+=nbinNphiNtheta) {			\
+	  for (int deltaT=0, ib=low; deltaT<=nstepTstepT;		\
+	       deltaT+=stepT, ib+=nbinNphiNtheta) {			\
 	    vec[3] = vec[2] + deltaT * segmentbase[3];			\
 									\
 	    assert(startX>=0);						\
-	    for (x=startX; x<endX; x++) {				\
+	    for (int x=startX; x<endX; x++) {				\
 	      if (iy>=0) {						\
-		endY = gridpoints[1]  * segmentbase[1] - vec[1];	\
+		endY = (gridpoints[1] - iy) * segmentbase[1] + x;	\
 		startY = x;						\
+		/* eigentlich 0 * segmentbase[1] + x */			\
 	      } else {							\
-		endY = gridpoints[1] * segmentbase[1];			\
+		endY = segmentbase[2] + x;				\
+		/* eigntlich gridpoints[1] * segmentbase[1] + ix */	\
 		startY = x - iy * segmentbase[1];			\
+		/* eigntlich (0 - iy) * segmentbase[1] + x */		\
 	      }								\
 	      assert(startY>=0);					\
-	      for (y=startY; y<endY; y+=segmentbase[1]) {		\
+	      for (int y=startY; y<endY; y+=segmentbase[1]) {		\
 		if (iz>=0) {						\
-		  endZ = gridpoints[2] * segmentbase[2] - vec[2];	\
+		  endZ = (gridpoints[2]  - iz) * segmentbase[2] + y;	\
 		  startZ = y;						\
 		} else {						\
-		  endZ = gridpoints[2] * segmentbase[2];		\
+		  endZ = segmentbase[3] + x;				\
 		  startZ = y - iz * segmentbase[2];			\
 		}							\
                 assert(startZ>=0);					\
-		for (z=startZ; z<endZ; z+=segmentbase[2]) {		\
-		  endT = gridpoints[3] * segmentbase[3] - vec[3];	\
-		  Long Row = 0;						\
-		  for (t=z; t<endT; t+=segmentbase[3]) {		\
-		    for(int row = 0; row < vdim; row++, Row+=totalpoints) { \
+		for (int z=startZ; z<endZ; z+=segmentbase[2]) {		\
+		  /* deltaT > 0 => startT = z, */			\
+		  /* endT = segmentbase[4] - deltaT * segmentbase[3] + z */ \
+		  endT = segmentbase[4] - deltaT * segmentbase[3] + z;	\
+		  for (int t=z; t<endT; t+=segmentbase[3]) {		\
+		    /* printf("x=%d %d %d %d; %d %d %d %d eT=%d s3=%d %d %d vec %d %d %d %d\n", x, y, z, t, ix, iy, iz, deltaT, endT, segmentbase[3], stepT, nstepT, vec[0], vec[1], vec[2], vec[3]); // */ \
+		    Long Row = 0;					\
+		    for(int row = 0; row < vdim; row++, Row+=segmentbase[4]) { \
 		      Long Col = 0;					\
-		      for(int col = 0; col < vdim; col++, Col+=totalpoints){ \
-			int curbin = it + totalbins * (vdim * row + col);\
-			for (rep = t; rep < segmentbase[5];		\
-			     rep += segmentbase[4]) {			\
-			  int rv;					\
+		      for(int col = 0; col < vdim; col++, Col+=segmentbase[4]){ \
+			int curbin = ib + totalbins * (vdim * row + col); \
+			for (rep = t; rep < segmentbase[6];		\
+			     rep += segmentbase[5]) {			\
+			  int rv; if (false) continue;			\
 			  rv = rep + vec[3];				\
-			  assert(rv < segmentbase[5] && rv >=0);	\
-			  /* inserts calculation from switch below */	\
+			  /* printf("%d %d rep=%ld m=%d; %ld %ld %ld %ld; v=%d\n", row, col, rep, method, rv + Row,rv + Col,rep + Row,rep + Col, vec[3]); //*/ \
+			  /* inserts calculation from switch below  */	\
 			  DO;						\
 			  if (ISNA(x2)) continue;			\
+			  assert(curbin + evidx < totaln * 3)	;	\
+			  assert(curbin + sdSqidx < totaln * 3)	;	\
+			  assert(curbin + nidx < totaln * 3)	;	\
 			  res[curbin + evidx] += x2;			\
 			  res[curbin + sdSqidx] += x2 * x2;		\
 			  res[curbin + nidx]++;				\
@@ -729,47 +765,57 @@ SEXP empvarioXT(SEXP Xsexp, SEXP Tsexp,
 		  } /* t */						\
 		} /* z */						\
 	      } /* y */							\
-	    } /* x */							\
-	  } /* deltaT */						\
-	} /* iz */							\
-      } /* iy */							\
-    } /* ix */
+	} /* x */							\
+    } /* deltaT */							\
+  } /* iz */								\
+} /* iy */								\
+ } /* ix */
 
     // checks which method shoud be used (gets inserted above)
-   
+
     switch(method) {
-    case PSEUDO:
-      // pseudo variogram
-      FORXT(double x2 = values[rep + Row] - values[rv + Col]; x2 *= x2);
-      break;
+  case PSEUDO:
+    // pseudo variogram
+    FORXT(assert(rep+Row < nDta && rv + Col < nDta);
+    double x2 = values[rep + Row] - values[rv + Col]; x2 *= x2);
+    break;
     case VARIOGRAM:
       // cross variogram
-      FORXT(double x2 = (values[rep + Row] - values[rv + Row])
+      FORXT(assert(rep+Row < nDta && rv + Col < nDta && rep+Col < nDta && rv + Row < nDta);
+	    double x2 = (values[rep + Row] - values[rv + Row])
 	    * (values[rep + Col] - values[rv + Col]));	  
       break;
     case COVARIANCE:
-      FORXT(double x2 = (values[rep + Row] * values[rv + Col]);
+      FORXT(assert(rep+Row < nDta && rv + Col < nDta);
+	    double x2 = (values[rep + Row] * values[rv + Col]);
 	    if (ISNA(x2)) continue;	
-	  sumhead[curbin] += values[rep + Row];
-	  sumtail[curbin] += values[rv + Col]);
+	    sumhead[curbin] += values[rep + Row];
+	    sumtail[curbin] += values[rv + Col]);
       break;
     case PSEUDOMADOGRAM:
       // pseudo madogram
-      FORXT(double x2 = FABS(values[rep + Row] - values[rv + Col]));
+      FORXT(assert(rep+Row < nDta && rv + Col < nDta);
+	    double x2 = FABS(values[rep + Row] - values[rv + Col]));
       break;
     case ALPHAPSEUDOMADOGRAM:
       // pseudo madogram
-      FORXT(double x2 = POW(FABS(values[rep + Row]-values[rv + Col]),alpha));
+      FORXT(assert(rep+Row < nDta && rv + Col < nDta);double x2 = POW(FABS(values[rep + Row]-values[rv + Col]),alpha));
       break;
-  default:
-     PRINTF("emvarioXT:\n");
-     err = TOOLS_METHOD; goto ErrorHandling;
+    default:
+      PRINTF("emvarioXT:\n");
+      err = TOOLS_METHOD; goto ErrorHandling;
     }
+
+    //    printf("done\n");
     
   } else {
-    ////////////////////////////////////  ARBITRARY /////////////////////////////
+    //////////////////////////////////  ARBITRARY /////////////////////////////
     // rows : x, columns : T 
-    Long totalpoints, totalpointsrepetvdim, totalpointsvdim, spatial,  jj;
+
+    //    printf("LX %d %d\n", lx, lD);
+    if (lx != lD) ERR("Likely a bug: coordinates and data are inconsistent.");
+
+ Long totalpoints, totalpointsrepetvdim, totalpointsvdim, spatial,  jj;
     spatial = lx;
     i = 3;
     step[i] = xx[i][XSTEP];
@@ -777,12 +823,16 @@ SEXP empvarioXT(SEXP Xsexp, SEXP Tsexp,
     totalpoints = spatial * gridpoints[i];
     totalpointsvdim = totalpoints * vdim;
     totalpointsrepetvdim = totalpoints * repet;
-    
+
+    //    printf("%ld %ld %ld; %ld != %d\n", spatial, totalpoints, totalpointsvdim, totalpointsrepetvdim, nDta);
+    if (totalpointsrepetvdim != nDta) BUG;
+
+    //    printf("hier\n");
     // define needed so there is no if needed before each calculation (arbitrary)
 #define FORARBXT(DO)							\
     for (i=0;i<spatial;i++) { /* to have a better performance for large*/ \
       /*                  data sets, group the data first into blocks*/	\
-      for (j=0; j<spatial; j++) {					\
+      for (int j=0; j<spatial; j++) {					\
 	double distSq;							\
 	if (dist_notgiven) {						\
 	  dx[0] = xx[0][j] - xx[0][i];					\
@@ -802,10 +852,12 @@ SEXP empvarioXT(SEXP Xsexp, SEXP Tsexp,
 									\
 	if ((distSq>BinSq[0]) && (distSq<=BinSq[nbin])) {		\
 	  low=0; up=nbin; cur=halfnbin;					\
-	  while (low!=up) {						\
+	  while (low != up) {						\
 	    if (distSq> BinSq[cur]) {low=cur;} else {up=cur-1;} /* ( * ; * ]*/ \
 	    cur=(up+low+1)/2;						\
 	  }								\
+	  /*	  printf("low %d %d\n", low, nbin);//*/			\
+	  assert(low < nbin && low >= 0);				\
 									\
 	  /* angles */							\
 	  phidata = NEARBY(atan2(dx[1], dx[0]) - startphi);		\
@@ -815,15 +867,16 @@ SEXP empvarioXT(SEXP Xsexp, SEXP Tsexp,
 	  thetadata = NEARBY(atan2(dx[2], zylinderradius) - starttheta); \
 	  thetadata = Mod(thetadata, PI);				\
 	  ktheta = (int) (thetadata * invsegtheta);			\
-									\
+	  								\
 	  low += kphi + twoNphiNbin * ktheta;				\
+/*	  printf("low %d %d\n",  low, totalspatialbins);//*/		\
 	  assert(low>=0 && low<totalspatialbins);			\
-									\
-	  for (deltaT=0; deltaT<= nstepTstepT; deltaT+=stepT,		\
+	  								\
+	  for (int deltaT=0; deltaT<= nstepTstepT; deltaT+=stepT,	\
 		 low+=totalspatialbins) {				\
 	    jj = j + deltaT * spatial;					\
 	    endT= totalpoints - deltaT * spatial;			\
-	    for (t=0; t<endT; t+=spatial) {				\
+	    for (int t=0; t<endT; t+=spatial) {				\
 	      Long Row = 0;						\
 	      for(int row = 0; row < vdim; row++, Row+=totalpoints) {	\
 		Long Col = 0;						\
@@ -836,6 +889,10 @@ SEXP empvarioXT(SEXP Xsexp, SEXP Tsexp,
 		    /* inserts calculation from switch below */		\
 		    DO;							\
 		    if (ISNA(x2)) continue;				\
+		  /*  printf("curbin %d %d\n", curbin + evidx,totaln*3); //*/ \
+		    assert(curbin + evidx < totaln * 3)	;		\
+		    assert(curbin + sdSqidx < totaln * 3)	;	\
+		    assert(curbin + nidx < totaln * 3)	;		\
 		    res[curbin + evidx] += x2;				\
 		    res[curbin + sdSqidx] += x2 * x2;			\
 		    res[curbin + nidx]++;				\
@@ -848,30 +905,38 @@ SEXP empvarioXT(SEXP Xsexp, SEXP Tsexp,
       } /* j */								\
     } /* i */
    
-    // checks which method shoud be used (gets inserted above) 
+    // checks which method shoud be used (gets inserted above)
+
+     
     switch(method) {
     case PSEUDO:
       // pseudo variogram
-      FORARBXT(double x2 = values[Head + Row] - values[Tail + Col]; x2 *= x2);
+      FORARBXT(//printf("%ld+%ld < %d;  %ld+%ld < %d; %d %d\n",Head, Row, nDta, Tail, Col, nDta, totalpointsvdim, endHead);
+	       assert(Head+Row < nDta && Tail + Col < nDta);
+	       double x2 = values[Head + Row] - values[Tail + Col]; x2 *= x2);
       break;
     case VARIOGRAM:
       // cross variogram
-      FORARBXT(double x2 = (values[Head + Row] - values[Tail + Row])
+      FORARBXT(assert(Head+Row < nDta && Tail + Col < nDta && Head+Col < nDta && Tail + Row < nDta);
+	       double x2 = (values[Head + Row] - values[Tail + Row])
 	       * (values[Head + Col] - values[Tail + Col]));	  
       break;
     case COVARIANCE:
-      FORARBXT(double x2 = (values[Head + Row] * values[Tail + Col]);
+      FORARBXT(assert(Head+Row < nDta && Tail + Col < nDta);
+	       double x2 = (values[Head + Row] * values[Tail + Col]);
 	       if (ISNA(x2)) continue;	
 	       sumhead[curbin] += values[Head + Row];
 	       sumtail[curbin] += values[Tail  + Col]);
       break;
     case PSEUDOMADOGRAM:
       // pseudo madogram
-      FORARBXT(double x2 =FABS(values[Head + Row] - values[Tail + Col]));
+      FORARBXT(assert(Head+Row < nDta && Tail + Col < nDta);
+	       double x2 =FABS(values[Head + Row] - values[Tail + Col]));
       break;
       case ALPHAPSEUDOMADOGRAM:
       // pseudo madogram
-	FORARBXT(double x2=POW(FABS(values[Head+Row]-values[Tail+Col]),alpha));
+	FORARBXT(assert(Head+Row < nDta && Tail + Col < nDta);
+		 double x2=POW(FABS(values[Head+Row]-values[Tail+Col]),alpha));
       break;
     default:
      PRINTF("final emvarioXT:\n");

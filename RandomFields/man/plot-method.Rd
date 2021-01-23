@@ -221,9 +221,9 @@ RFplotSimulation1D(x, y, nmax=6,
     \code{speed}. As temporary files \code{file__###.png}  
     of size \code{width.pixel} x \code{height.pixel} are created.
   }
-  \item{...}{arguments to be passed to methods; mainly graphical
-    arguments, or further models in case of class \code{CLASS_CLIST},
-    see Details.
+  \item{...}{arguments to be passed to methods; only graphical
+    arguments and further models in case of class \code{CLASS_CLIST},
+    see Details. \command{\link{RFoptions}} cannot be passed.
   }
 %  \item{f i tmethod}{character; only for \code{class(x)=="RFfit"}; a
 %    vector of slot names for which the fitted covariance or variogram
@@ -314,7 +314,7 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
 ## define the model:
-model <- RMtrend(mean=0.5) + # mean
+model <- RMshape(mean=0.5) + # mean
          RMstable(alpha=1, var=4, scale=10) + # see help("RMstable")
                                         ## for additional arguments
          RMnugget(var=1) # nugget
@@ -363,16 +363,16 @@ plot(sim3D, MARGIN=c(2,3), MARGIN.slices=1, n.slices=4)
 ## empirical variogram plots
 
 x <- seq(0, 10, 0.05)
-bin <- seq(from=0, by=.2, to=3)
+bins <- seq(from=0, by=.2, to=3)
 
 model <- RMexp()
 X <- RFsimulate(model, x=cbind(x))
-ev1 <- RFvariogram(data=X, bin=bin)
+ev1 <- RFvariogram(data=X, bins=bins)
 plot(ev1)
 
 model <- RMexp(Aniso = cbind(c(10,0), c(0,1)))
 X <- RFsimulate(model, x=cbind(x,x))
-ev2 <- RFvariogram(data=X, bin=bin, phi=3)
+ev2 <- RFvariogram(data=X, bins=bins, phi=3)
 plot(ev2, model=list(exp = model))
 
 \dontshow{\dontrun{

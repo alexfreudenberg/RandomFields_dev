@@ -67,7 +67,7 @@ regression <- function(x, y, main, scr,
     lines(sm$x, sm$y, col=col.smooth)
     if (mode=="interactive") {
       repeat {
-        loc <- Try(locator(2), silent=TRUE)
+        loc <- Try(locator(2))
         if (is(loc, "try-error")) loc <- NULL
         if (length(loc)==0) break;
         r <- range(loc$x)
@@ -115,6 +115,9 @@ RFhurst <- function(x, y = NULL, z = NULL, data, sort=TRUE,
                    printlevel=RFoptions()$basic$printlevel,
                    height=3.5,
                    ... ) {
+  ## Fctn darf intern nicht aufgerufen werden!
+  internalRFoptions(COPY=TRUE)
+   default.screen <- RFoptions()$graphics$grDefault
   l.method <- eval(formals()$method)
   pch <- rep(pch, len=length(l.method))
   cex <- rep(cex, len=length(l.method))
@@ -217,7 +220,7 @@ RFhurst <- function(x, y = NULL, z = NULL, data, sort=TRUE,
   {
     cat("\nuse left mouse for locator and right mouse to exit\n")
     plots <- do.dfa + do.fft + do.var
-    if (!RFoptions()$graphics$grDefault)
+    if (!default.screen)
       ScreenDevice(height=height, width=height * plots)
     par(bg="white")
     screens <- seq(0, 1, len=plots+1)
@@ -290,8 +293,7 @@ RFhurst <- function(x, y = NULL, z = NULL, data, sort=TRUE,
 }
 
 
-RFfractaldim <-
-  function(x, y = NULL, z = NULL, data, grid, 
+RFfractaldim <- function(x, y = NULL, z = NULL, data, grid, 
            bins=NULL,
            vario.n=5,
            sort=TRUE,
@@ -310,6 +312,9 @@ RFfractaldim <-
            printlevel = RFoptions()$basic$printlevel,
            height=3.5,
            ...) {
+  ## Fctn darf intern nicht aufgerufen werden!
+  internalRFoptions(COPY=TRUE)
+  default.screen <- RFoptions()$graphics$grDefault
   l.method <- eval(formals()$method)
   pch <- rep(pch, len=length(l.method))
   cex <- rep(cex, len=length(l.method))
@@ -371,7 +376,7 @@ RFfractaldim <-
         } else {          
           if (printlevel>PL_IMPORTANT) cat("locations not on a grid.\n")
           dim <- ct$has.time.comp + ct$spatialdim
-          inv.lambda <- prod(edge.lengths) / ct$restotal
+          inv.lambda <- prod(edge.lengths) / ct$totpts
           step <- inv.lambda^(1 / dim) # Ann: glm Gitter
           ## Ann: Poisson Punktprozess, Leerwk != p (heuristisch =0.5)
           ##      nach radius R aufgeloest (heuristisch mit 2 multipliziert)
@@ -498,7 +503,7 @@ RFfractaldim <-
 
   if (any(mode=="plot" | mode=="interactive")) {
     plots <- do.vario + do.box + do.range + do.fft
-    if (!RFoptions()$graphics$grDefault)
+    if (!default.screen)
       ScreenDevice(height=height, width = height * min(3.4, plots))
     par(bg="white")
     screens <- seq(0, 1, len=plots+1)

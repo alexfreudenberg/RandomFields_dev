@@ -19,11 +19,6 @@
 ## along with this program; if not, write to the Free Software
 ## Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
 
-
-COORD_NAMES_CART <- c("x", "y", "z", "T")
-COORD_NAMES_GENERAL <- c("coords.x", "coords.T") ## check general_coordinates if changed
-COORD_NAMES_EARTH <- c("longitude", "latitude", "height", "time")
-
 SYMBOL_L_PAR <- "("
 SYMBOL_R_PAR <- ")"
 SYMBOL_PLUS <- '+'
@@ -34,7 +29,7 @@ RM_PLUS <- c("RMplus", SYMBOL_PLUS)
 RM_MULT <- c("RMmult", SYMBOL_MULT)
 #RM_MIXED <- c( "RMmixed", "mixed") 
 ##RM_INTERNALMIXED <- "internalRMmixed"
-RM_TREND <- c("RMtrend", "trend")
+RM_TREND <- c("RMshape", "trend")
 RM_DISTR <- c('RRdistr', 'Distr')
 RM_USER <- c('RMuser', 'U')
 RM_NUGGET <- c("RMnugget", "nugget")
@@ -48,17 +43,12 @@ R_CONST <- "R.const"
 ##R_CC <- c(R_C, R_CONST)
 RM_MATRIX <- "RMmatrix"
 
-
-
 CLASS_CLIST <- 'RMmodel'
 CLASS_RM <- 'RMmodelgenerator'
 CLASS_SINGLEFIT <- 'RMmodelFit'
 CLASS_FITLIST <- 'RFfit'
 CLASS_EMPIR <- "RFempVariog"
 CLASS_PLOT <- "RFplot"
-
-ERRMIXED <- "Please use 'RMmixed' and not '@' from version 3.1.54 on"
-syntaxError <- "Malformed model expression -- maybe you have used a wrong or obsolete definition, or just used an incorrect option name or incorrect ordering of the arguments. See ?RMmodel for the model definition. Check manual for further information (RMmodel, RFsimulate)"
 
  
 isPosDef <- function(type) {
@@ -71,6 +61,8 @@ isVariogram <- function(type) {
   ##  .C(C_isNefDef, as.integer(type))$type
   isPosDef(type) | type == VariogramType
 }
+
+VOID <- "..void.."
 
 
 ## if names are changed fitgauss.R, weights, must be changed
@@ -97,8 +89,6 @@ PL_ERRORS 	<- as.integer(6)
 PL_FCTN_DETAILS 	<- as.integer(7)
 PL_FCTN_SUBDETAILS 	<- as.integer(8)
 
-PL_COV_STRUCTURE 	<- as.integer(7)
-PL_DIRECT_SEQU 	<- as.integer(8)
 PL_DETAILS 	<- as.integer(9)
 PL_SUBDETAILS 	<- as.integer(10)
 

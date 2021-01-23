@@ -205,8 +205,7 @@ model <- ~  RMexp(sc=sc1, var=var) + RMgauss(var=var2, sc=sc2) +
 p.fit <- list(sc1 = NA, var=NA, var2=~2 * u, sc2 = NA, u=NA)
 lower <- list(sc1=20, u=5)
 upper <- list(sc2=1.5, sc1=100, u=15)
-print(f <- RFfit(model, data=z, params=p.fit, lower = lower, upper = upper
-                 ))
+print(f <- RFfit(model, data=z, params=p.fit, lower = lower, upper = upper))
 
 \dontshow{FinalizeExample()}
 

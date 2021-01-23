@@ -731,13 +731,13 @@ L570:
 
 
 /*
-static int old_n = 0;
-static int NFAC[21];
-static int *nfac = NFAC + 1;
-static int m_fac;
-static int kt;
-static int maxf;
-static int maxp;
+s tatic int old_n = 0;
+s tatic int NFAC[21];
+s tatic int *nfac = NFAC + 1;
+s tatic int m_fac;
+s tatic int kt;
+s tatic int maxf;
+s tatic int maxp;
 */
 
 /* At the end of factorization,	 

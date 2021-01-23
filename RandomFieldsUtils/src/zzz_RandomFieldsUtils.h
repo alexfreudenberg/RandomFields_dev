@@ -57,6 +57,8 @@ extern "C" {
   */
 
   
+  DECLARE1(void, utilsparam_DELETE, utilsparam *, S)
+  DECLARE1(void, utilsparam_NULL, utilsparam *, S)
   DECLARE1(void, solve_DELETE, solve_storage**, S)
   DECLARE1(void, solve_NULL, solve_storage*, x)
   DECLARE7(int, solvePosDef, double*, M, int, size, bool, posdef, 

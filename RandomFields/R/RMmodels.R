@@ -3,7 +3,6 @@
 
 
 RMplus <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, trend, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(C0)) submodels[['C0']] <- C0
   if (hasArg(C1)) submodels[['C1']] <- C1
@@ -48,7 +47,6 @@ RMplus <- new(CLASS_RM,
 
 
 RMmult <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(C0)) submodels[['C0']] <- C0
   if (hasArg(C1)) submodels[['C1']] <- C1
@@ -91,7 +89,6 @@ RMmult <- new(CLASS_RM,
 
 
 RMS  <- function(phi, var, scale, Aniso, proj, anisoT) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -128,7 +125,6 @@ RMS <- new(CLASS_RM,
 
 
 RMave <- function(phi, A, z, spacetime, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -168,7 +164,6 @@ RMave <- new(CLASS_RM,
 
 
 RMbcw <- function(alpha, beta, const, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -207,7 +202,6 @@ RMbcw <- new(CLASS_RM,
 
 
 RMlsfbm <- function(alpha, const, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -244,7 +238,6 @@ RMlsfbm <- new(CLASS_RM,
 
 
 RMbessel <- function(nu, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('nu') && !is.null(subst <- substitute(nu))) 
@@ -279,7 +272,6 @@ RMbessel <- new(CLASS_RM,
 
 
 RMbigneiting <- function(kappa, mu, s, sred12, gamma, cdiag, rhored, c, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('kappa') && !is.null(subst <- substitute(kappa))) 
@@ -328,7 +320,6 @@ RMbigneiting <- new(CLASS_RM,
 
 
 RMbernoulli <- function(phi, threshold, correlation, centred, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -368,7 +359,6 @@ RMbernoulli <- new(CLASS_RM,
 
 
 RMbiwm <- function(nudiag, nured12, nu, s, cdiag, rhored, c, notinvnu, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('nudiag') && !is.null(subst <- substitute(nudiag))) 
@@ -417,7 +407,6 @@ RMbiwm <- new(CLASS_RM,
 
 
 RMbistable <- function(alpha, s, cdiag, rho, rhored, betared, alphadiag, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -464,7 +453,6 @@ RMbistable <- new(CLASS_RM,
 
 
 RMblend <- function(multi, blend, thresholds, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(multi)) submodels[['multi']] <- multi
   if (hasArg(blend)) submodels[['blend']] <- blend
@@ -501,7 +489,6 @@ RMblend <- new(CLASS_RM,
 
 
 RMbrownresnick <- function(phi, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -535,7 +522,6 @@ RMbrownresnick <- new(CLASS_RM,
 
 
 RMbr2bg <- function(phi, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -569,7 +555,6 @@ RMbr2bg <- new(CLASS_RM,
 
 
 RMbr2eg <- function(phi, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -603,7 +588,6 @@ RMbr2eg <- new(CLASS_RM,
 
 
 RMbubble <- function(phi, scaling, z, weight, minscale, barycentre, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(scaling)) submodels[['scaling']] <- scaling
@@ -646,7 +630,6 @@ RMbubble <- new(CLASS_RM,
 
 
 RMcauchy <- function(gamma, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('gamma') && !is.null(subst <- substitute(gamma))) 
@@ -680,8 +663,261 @@ RMcauchy <- new(CLASS_RM,
 
 
 
-RMcircular <- function(var, scale, Aniso, proj) {
+RMcauchyUnif1 <- function(eps, b, var, scale, Aniso, proj) {
+  submodels <- par.general <- par.model <- list() 
   
+  if (hasArg('eps') && !is.null(subst <- substitute(eps))) 
+	par.model[['eps']] <- CheckArg(eps, subst, TRUE)
+  if (hasArg('b') && !is.null(subst <- substitute(b))) 
+	par.model[['b']] <- CheckArg(b, subst, TRUE)
+    if (hasArg('var') && !is.null(subst <- substitute(var))) 
+	par.general[['var']] <- CheckArg(var, subst, TRUE)
+    if (hasArg('scale') && !is.null(subst <- substitute(scale))) 
+	par.general[['scale']] <- CheckArg(scale, subst, TRUE)
+    if (hasArg('Aniso') && !is.null(subst <- substitute(Aniso))) 
+	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
+    if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
+	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
+  model <- methods::new(CLASS_CLIST, name = 'RMcauchyUnif1', 
+  		submodels = submodels, 
+  		par.model = par.model, par.general = par.general)
+  return(model)
+}
+
+RMcauchyUnif1 <- new(CLASS_RM, 
+	.Data = RMcauchyUnif1,
+	type = c('positive definite'),
+	isotropy = c('symmetric'),
+	domain = c('single variable'),
+	operator = FALSE,
+	monotone = 'not monotone',
+	finiterange = FALSE,
+	simpleArguments = TRUE,
+	maxdim = Inf,
+	vdim = 2
+	)
+
+
+
+RMcauchyUnif2 <- function(eps, b, var, scale, Aniso, proj) {
+  submodels <- par.general <- par.model <- list() 
+  
+  if (hasArg('eps') && !is.null(subst <- substitute(eps))) 
+	par.model[['eps']] <- CheckArg(eps, subst, TRUE)
+  if (hasArg('b') && !is.null(subst <- substitute(b))) 
+	par.model[['b']] <- CheckArg(b, subst, TRUE)
+    if (hasArg('var') && !is.null(subst <- substitute(var))) 
+	par.general[['var']] <- CheckArg(var, subst, TRUE)
+    if (hasArg('scale') && !is.null(subst <- substitute(scale))) 
+	par.general[['scale']] <- CheckArg(scale, subst, TRUE)
+    if (hasArg('Aniso') && !is.null(subst <- substitute(Aniso))) 
+	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
+    if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
+	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
+  model <- methods::new(CLASS_CLIST, name = 'RMcauchyUnif2', 
+  		submodels = submodels, 
+  		par.model = par.model, par.general = par.general)
+  return(model)
+}
+
+RMcauchyUnif2 <- new(CLASS_RM, 
+	.Data = RMcauchyUnif2,
+	type = c('positive definite'),
+	isotropy = c('symmetric'),
+	domain = c('single variable'),
+	operator = FALSE,
+	monotone = 'not monotone',
+	finiterange = FALSE,
+	simpleArguments = TRUE,
+	maxdim = Inf,
+	vdim = 2
+	)
+
+
+
+RMcauchyUnif3 <- function(eps, b, var, scale, Aniso, proj) {
+  submodels <- par.general <- par.model <- list() 
+  
+  if (hasArg('eps') && !is.null(subst <- substitute(eps))) 
+	par.model[['eps']] <- CheckArg(eps, subst, TRUE)
+  if (hasArg('b') && !is.null(subst <- substitute(b))) 
+	par.model[['b']] <- CheckArg(b, subst, TRUE)
+    if (hasArg('var') && !is.null(subst <- substitute(var))) 
+	par.general[['var']] <- CheckArg(var, subst, TRUE)
+    if (hasArg('scale') && !is.null(subst <- substitute(scale))) 
+	par.general[['scale']] <- CheckArg(scale, subst, TRUE)
+    if (hasArg('Aniso') && !is.null(subst <- substitute(Aniso))) 
+	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
+    if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
+	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
+  model <- methods::new(CLASS_CLIST, name = 'RMcauchyUnif3', 
+  		submodels = submodels, 
+  		par.model = par.model, par.general = par.general)
+  return(model)
+}
+
+RMcauchyUnif3 <- new(CLASS_RM, 
+	.Data = RMcauchyUnif3,
+	type = c('positive definite'),
+	isotropy = c('symmetric'),
+	domain = c('single variable'),
+	operator = FALSE,
+	monotone = 'not monotone',
+	finiterange = FALSE,
+	simpleArguments = TRUE,
+	maxdim = Inf,
+	vdim = 2
+	)
+
+
+
+RMlatentCauchy1 <- function(a, b, var, scale, Aniso, proj) {
+  submodels <- par.general <- par.model <- list() 
+  
+  if (hasArg('a') && !is.null(subst <- substitute(a))) 
+	par.model[['a']] <- CheckArg(a, subst, TRUE)
+  if (hasArg('b') && !is.null(subst <- substitute(b))) 
+	par.model[['b']] <- CheckArg(b, subst, TRUE)
+    if (hasArg('var') && !is.null(subst <- substitute(var))) 
+	par.general[['var']] <- CheckArg(var, subst, TRUE)
+    if (hasArg('scale') && !is.null(subst <- substitute(scale))) 
+	par.general[['scale']] <- CheckArg(scale, subst, TRUE)
+    if (hasArg('Aniso') && !is.null(subst <- substitute(Aniso))) 
+	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
+    if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
+	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
+  model <- methods::new(CLASS_CLIST, name = 'RMlatentCauchy1', 
+  		submodels = submodels, 
+  		par.model = par.model, par.general = par.general)
+  return(model)
+}
+
+RMlatentCauchy1 <- new(CLASS_RM, 
+	.Data = RMlatentCauchy1,
+	type = c('positive definite'),
+	isotropy = c('symmetric'),
+	domain = c('single variable'),
+	operator = FALSE,
+	monotone = 'not monotone',
+	finiterange = FALSE,
+	simpleArguments = TRUE,
+	maxdim = Inf,
+	vdim = 2
+	)
+
+
+
+RMlatentCauchy2 <- function(a, b, var, scale, Aniso, proj) {
+  submodels <- par.general <- par.model <- list() 
+  
+  if (hasArg('a') && !is.null(subst <- substitute(a))) 
+	par.model[['a']] <- CheckArg(a, subst, TRUE)
+  if (hasArg('b') && !is.null(subst <- substitute(b))) 
+	par.model[['b']] <- CheckArg(b, subst, TRUE)
+    if (hasArg('var') && !is.null(subst <- substitute(var))) 
+	par.general[['var']] <- CheckArg(var, subst, TRUE)
+    if (hasArg('scale') && !is.null(subst <- substitute(scale))) 
+	par.general[['scale']] <- CheckArg(scale, subst, TRUE)
+    if (hasArg('Aniso') && !is.null(subst <- substitute(Aniso))) 
+	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
+    if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
+	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
+  model <- methods::new(CLASS_CLIST, name = 'RMlatentCauchy2', 
+  		submodels = submodels, 
+  		par.model = par.model, par.general = par.general)
+  return(model)
+}
+
+RMlatentCauchy2 <- new(CLASS_RM, 
+	.Data = RMlatentCauchy2,
+	type = c('positive definite'),
+	isotropy = c('symmetric'),
+	domain = c('single variable'),
+	operator = FALSE,
+	monotone = 'not monotone',
+	finiterange = FALSE,
+	simpleArguments = TRUE,
+	maxdim = Inf,
+	vdim = 2
+	)
+
+
+
+RMlatentCauchy3 <- function(a, b, var, scale, Aniso, proj) {
+  submodels <- par.general <- par.model <- list() 
+  
+  if (hasArg('a') && !is.null(subst <- substitute(a))) 
+	par.model[['a']] <- CheckArg(a, subst, TRUE)
+  if (hasArg('b') && !is.null(subst <- substitute(b))) 
+	par.model[['b']] <- CheckArg(b, subst, TRUE)
+    if (hasArg('var') && !is.null(subst <- substitute(var))) 
+	par.general[['var']] <- CheckArg(var, subst, TRUE)
+    if (hasArg('scale') && !is.null(subst <- substitute(scale))) 
+	par.general[['scale']] <- CheckArg(scale, subst, TRUE)
+    if (hasArg('Aniso') && !is.null(subst <- substitute(Aniso))) 
+	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
+    if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
+	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
+  model <- methods::new(CLASS_CLIST, name = 'RMlatentCauchy3', 
+  		submodels = submodels, 
+  		par.model = par.model, par.general = par.general)
+  return(model)
+}
+
+RMlatentCauchy3 <- new(CLASS_RM, 
+	.Data = RMlatentCauchy3,
+	type = c('positive definite'),
+	isotropy = c('symmetric'),
+	domain = c('single variable'),
+	operator = FALSE,
+	monotone = 'not monotone',
+	finiterange = FALSE,
+	simpleArguments = TRUE,
+	maxdim = Inf,
+	vdim = 2
+	)
+
+
+
+RMlatentCauchy4 <- function(a, b, gamma, var, scale, Aniso, proj) {
+  submodels <- par.general <- par.model <- list() 
+  
+  if (hasArg('a') && !is.null(subst <- substitute(a))) 
+	par.model[['a']] <- CheckArg(a, subst, TRUE)
+  if (hasArg('b') && !is.null(subst <- substitute(b))) 
+	par.model[['b']] <- CheckArg(b, subst, TRUE)
+  if (hasArg('gamma') && !is.null(subst <- substitute(gamma))) 
+	par.model[['gamma']] <- CheckArg(gamma, subst, TRUE)
+    if (hasArg('var') && !is.null(subst <- substitute(var))) 
+	par.general[['var']] <- CheckArg(var, subst, TRUE)
+    if (hasArg('scale') && !is.null(subst <- substitute(scale))) 
+	par.general[['scale']] <- CheckArg(scale, subst, TRUE)
+    if (hasArg('Aniso') && !is.null(subst <- substitute(Aniso))) 
+	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
+    if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
+	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
+  model <- methods::new(CLASS_CLIST, name = 'RMlatentCauchy4', 
+  		submodels = submodels, 
+  		par.model = par.model, par.general = par.general)
+  return(model)
+}
+
+RMlatentCauchy4 <- new(CLASS_RM, 
+	.Data = RMlatentCauchy4,
+	type = c('positive definite'),
+	isotropy = c('symmetric'),
+	domain = c('single variable'),
+	operator = FALSE,
+	monotone = 'not monotone',
+	finiterange = FALSE,
+	simpleArguments = TRUE,
+	maxdim = Inf,
+	vdim = 2
+	)
+
+
+
+RMcircular <- function(var, scale, Aniso, proj) {
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('var') && !is.null(subst <- substitute(var))) 
@@ -714,7 +950,6 @@ RMcircular <- new(CLASS_RM,
 
 
 RMconstant <- function(M, var) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('M') && !is.null(subst <- substitute(M))) 
@@ -742,10 +977,8 @@ RMconstant <- new(CLASS_RM,
 
 
 
-iRMfixcov <- function(norm, M, x, raw, var, proj) {
-  
+iRMfixcov <- function(M, x, raw, givenM, var, proj) {
   submodels <- par.general <- par.model <- list() 
-  if (hasArg(norm)) submodels[['norm']] <- norm
   
   if (hasArg('M') && !is.null(subst <- substitute(M))) 
 	par.model[['M']] <- CheckArg(M, subst, TRUE)
@@ -753,6 +986,8 @@ iRMfixcov <- function(norm, M, x, raw, var, proj) {
 	par.model[['x']] <- CheckArg(x, subst, TRUE)
   if (hasArg('raw') && !is.null(subst <- substitute(raw))) 
 	par.model[['raw']] <- CheckArg(raw, subst, TRUE)
+  if (hasArg('givenM') && !is.null(subst <- substitute(givenM))) 
+	par.model[['givenM']] <- CheckArg(givenM, subst, TRUE)
     if (hasArg('var') && !is.null(subst <- substitute(var))) 
 	par.general[['var']] <- CheckArg(var, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
@@ -768,7 +1003,7 @@ iRMfixcov <- new(CLASS_RM,
 	type = c('positive definite', 'positive definite', 'positive definite'),
 	isotropy = c('non-dimension-reducing', 'isotropic', 'earth isotropic'),
 	domain = c('kernel'),
-	operator = TRUE,
+	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
 	simpleArguments = FALSE,
@@ -779,7 +1014,6 @@ iRMfixcov <- new(CLASS_RM,
 
 
 RMcoxisham <- function(phi, mu, D, beta, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -819,7 +1053,6 @@ RMcoxisham <- new(CLASS_RM,
 
 
 RMcubic <- function(var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('var') && !is.null(subst <- substitute(var))) 
@@ -852,7 +1085,6 @@ RMcubic <- new(CLASS_RM,
 
 
 RMcurlfree <- function(phi, which, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -888,7 +1120,6 @@ RMcurlfree <- new(CLASS_RM,
 
 
 RMcutoff <- function(phi, diameter, a, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -926,7 +1157,6 @@ RMcutoff <- new(CLASS_RM,
 
 
 RMdagum <- function(beta, gamma, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('beta') && !is.null(subst <- substitute(beta))) 
@@ -963,7 +1193,6 @@ RMdagum <- new(CLASS_RM,
 
 
 RMdampedcos <- function(lambda, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('lambda') && !is.null(subst <- substitute(lambda))) 
@@ -998,7 +1227,6 @@ RMdampedcos <- new(CLASS_RM,
 
 
 RMderiv <- function(phi, which, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -1034,7 +1262,6 @@ RMderiv <- new(CLASS_RM,
 
 
 RMdewijsian <- function(alpha, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -1069,7 +1296,6 @@ RMdewijsian <- new(CLASS_RM,
 
 
 RMdivfree <- function(phi, which, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -1105,7 +1331,6 @@ RMdivfree <- new(CLASS_RM,
 
 
 RMepscauchy <- function(alpha, beta, eps, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -1144,7 +1369,6 @@ RMepscauchy <- new(CLASS_RM,
 
 
 RMexp <- function(var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('var') && !is.null(subst <- substitute(var))) 
@@ -1177,7 +1401,6 @@ RMexp <- new(CLASS_RM,
 
 
 RMexponential <- function(phi, n, standardised, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -1215,7 +1438,6 @@ RMexponential <- new(CLASS_RM,
 
 
 RMschlather <- function(phi, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -1249,7 +1471,6 @@ RMschlather <- new(CLASS_RM,
 
 
 RMfractdiff <- function(alpha, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -1284,7 +1505,6 @@ RMfractdiff <- new(CLASS_RM,
 
 
 RMflatpower <- function(alpha, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -1319,7 +1539,6 @@ RMflatpower <- new(CLASS_RM,
 
 
 RMfbm <- function(alpha, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -1354,7 +1573,6 @@ RMfbm <- new(CLASS_RM,
 
 
 RMfractgauss <- function(alpha, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -1389,7 +1607,6 @@ RMfractgauss <- new(CLASS_RM,
 
 
 RMgauss <- function(var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('var') && !is.null(subst <- substitute(var))) 
@@ -1421,8 +1638,75 @@ RMgauss <- new(CLASS_RM,
 
 
 
-RMgenfbm <- function(alpha, beta, var, scale, Aniso, proj) {
+RMgaussgauss <- function(nu, var, scale, Aniso, proj) {
+  submodels <- par.general <- par.model <- list() 
   
+  if (hasArg('nu') && !is.null(subst <- substitute(nu))) 
+	par.model[['nu']] <- CheckArg(nu, subst, TRUE)
+    if (hasArg('var') && !is.null(subst <- substitute(var))) 
+	par.general[['var']] <- CheckArg(var, subst, TRUE)
+    if (hasArg('scale') && !is.null(subst <- substitute(scale))) 
+	par.general[['scale']] <- CheckArg(scale, subst, TRUE)
+    if (hasArg('Aniso') && !is.null(subst <- substitute(Aniso))) 
+	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
+    if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
+	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
+  model <- methods::new(CLASS_CLIST, name = 'RMgaussgauss', 
+  		submodels = submodels, 
+  		par.model = par.model, par.general = par.general)
+  return(model)
+}
+
+RMgaussgauss <- new(CLASS_RM, 
+	.Data = RMgaussgauss,
+	type = c('positive definite'),
+	isotropy = c('symmetric'),
+	domain = c('single variable'),
+	operator = FALSE,
+	monotone = 'not monotone',
+	finiterange = FALSE,
+	simpleArguments = TRUE,
+	maxdim = Inf,
+	vdim = 2
+	)
+
+
+
+RMgaussGammalike <- function(m, var, scale, Aniso, proj) {
+  submodels <- par.general <- par.model <- list() 
+  
+  if (hasArg('m') && !is.null(subst <- substitute(m))) 
+	par.model[['m']] <- CheckArg(m, subst, TRUE)
+    if (hasArg('var') && !is.null(subst <- substitute(var))) 
+	par.general[['var']] <- CheckArg(var, subst, TRUE)
+    if (hasArg('scale') && !is.null(subst <- substitute(scale))) 
+	par.general[['scale']] <- CheckArg(scale, subst, TRUE)
+    if (hasArg('Aniso') && !is.null(subst <- substitute(Aniso))) 
+	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
+    if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
+	par.general[['proj']] <- CheckMixed(proj, subst, PROJECTION_NAMES)
+  model <- methods::new(CLASS_CLIST, name = 'RMgaussGammalike', 
+  		submodels = submodels, 
+  		par.model = par.model, par.general = par.general)
+  return(model)
+}
+
+RMgaussGammalike <- new(CLASS_RM, 
+	.Data = RMgaussGammalike,
+	type = c('positive definite'),
+	isotropy = c('symmetric'),
+	domain = c('single variable'),
+	operator = FALSE,
+	monotone = 'not monotone',
+	finiterange = FALSE,
+	simpleArguments = TRUE,
+	maxdim = Inf,
+	vdim = 2
+	)
+
+
+
+RMgenfbm <- function(alpha, beta, var, scale, Aniso, proj) {
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -1459,7 +1743,6 @@ RMgenfbm <- new(CLASS_RM,
 
 
 RMgencauchy <- function(alpha, beta, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -1496,7 +1779,6 @@ RMgencauchy <- new(CLASS_RM,
 
 
 RMbicauchy <- function(alpha, beta, s, rho, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -1537,7 +1819,6 @@ RMbicauchy <- new(CLASS_RM,
 
 
 RMgengneiting <- function(kappa, mu, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('kappa') && !is.null(subst <- substitute(kappa))) 
@@ -1560,8 +1841,8 @@ RMgengneiting <- function(kappa, mu, var, scale, Aniso, proj) {
 
 RMgengneiting <- new(CLASS_RM, 
 	.Data = RMgengneiting,
-	type = c('positive definite', 'positive definite', 'positive definite', 'positive definite', 'positive definite', 'positive definite'),
-	isotropy = c('isotropic', 'spherical isotropic', 'isotropic', 'spherical isotropic', 'isotropic', 'spherical isotropic'),
+	type = c('positive definite', 'positive definite', 'positive definite', 'positive definite'),
+	isotropy = c('isotropic', 'spherical isotropic', 'isotropic', 'spherical isotropic'),
 	domain = c('single variable'),
 	operator = FALSE,
 	monotone = 'monotone',
@@ -1574,7 +1855,6 @@ RMgengneiting <- new(CLASS_RM,
 
 
 RMgneiting <- function(orig, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('orig') && !is.null(subst <- substitute(orig))) 
@@ -1609,7 +1889,6 @@ RMgneiting <- new(CLASS_RM,
 
 
 RMgennsst <- function(phi, psi, dim_u, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(psi)) submodels[['psi']] <- psi
@@ -1646,7 +1925,6 @@ RMgennsst <- new(CLASS_RM,
 
 
 RMhyperbolic <- function(nu, lambda, delta, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('nu') && !is.null(subst <- substitute(nu))) 
@@ -1685,7 +1963,6 @@ RMhyperbolic <- new(CLASS_RM,
 
 
 RMiaco <- function(nu, lambda, delta, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('nu') && !is.null(subst <- substitute(nu))) 
@@ -1724,7 +2001,6 @@ RMiaco <- new(CLASS_RM,
 
 
 RMidmodel <- function(phi, vdim, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -1760,7 +2036,6 @@ RMidmodel <- new(CLASS_RM,
 
 
 RMkolmogorov <- function(var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('var') && !is.null(subst <- substitute(var))) 
@@ -1793,7 +2068,6 @@ RMkolmogorov <- new(CLASS_RM,
 
 
 RMlgd <- function(alpha, beta, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -1830,7 +2104,6 @@ RMlgd <- new(CLASS_RM,
 
 
 RMmastein <- function(phi, nu, delta, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -1868,7 +2141,6 @@ RMmastein <- new(CLASS_RM,
 
 
 RMma <- function(phi, alpha, theta, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -1906,7 +2178,6 @@ RMma <- new(CLASS_RM,
 
 
 RMintexp <- function(phi, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -1940,7 +2211,6 @@ RMintexp <- new(CLASS_RM,
 
 
 RMmatrix <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, M, vdim, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(C0)) submodels[['C0']] <- C0
   if (hasArg(C1)) submodels[['C1']] <- C1
@@ -1987,7 +2257,6 @@ RMmatrix <- new(CLASS_RM,
 
 
 RMmatern <- function(nu, notinvnu, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('nu') && !is.null(subst <- substitute(nu))) 
@@ -2024,7 +2293,6 @@ RMmatern <- new(CLASS_RM,
 
 
 RMmqam <- function(phi, C1, C2, C3, C4, C5, C6, C7, C8, C9, theta, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(C1)) submodels[['C1']] <- C1
@@ -2069,7 +2337,6 @@ RMmqam <- new(CLASS_RM,
 
 
 RMmultiquad <- function(delta, tau, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('delta') && !is.null(subst <- substitute(delta))) 
@@ -2106,7 +2373,6 @@ RMmultiquad <- new(CLASS_RM,
 
 
 RMnatsc <- function(phi, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -2140,7 +2406,6 @@ RMnatsc <- new(CLASS_RM,
 
 
 RMnsst <- function(phi, psi, delta, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(psi)) submodels[['psi']] <- psi
@@ -2177,7 +2442,6 @@ RMnsst <- new(CLASS_RM,
 
 
 RMnugget <- function(tol, vdim, var, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('tol') && !is.null(subst <- substitute(tol))) 
@@ -2212,7 +2476,6 @@ RMnugget <- new(CLASS_RM,
 
 
 RMparswm <- function(nudiag, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('nudiag') && !is.null(subst <- substitute(nudiag))) 
@@ -2247,7 +2510,6 @@ RMparswm <- new(CLASS_RM,
 
 
 RMpenta <- function(var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('var') && !is.null(subst <- substitute(var))) 
@@ -2280,7 +2542,6 @@ RMpenta <- new(CLASS_RM,
 
 
 RMaskey <- function(alpha, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -2315,7 +2576,6 @@ RMaskey <- new(CLASS_RM,
 
 
 RMpower <- function(phi, alpha, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -2351,7 +2611,6 @@ RMpower <- new(CLASS_RM,
 
 
 RMprod <- function(phi, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -2385,7 +2644,6 @@ RMprod <- new(CLASS_RM,
 
 
 RMqam <- function(phi, C1, C2, C3, C4, C5, C6, C7, C8, C9, theta, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(C1)) submodels[['C1']] <- C1
@@ -2430,7 +2688,6 @@ RMqam <- new(CLASS_RM,
 
 
 RMqexp <- function(alpha, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -2465,7 +2722,6 @@ RMqexp <- new(CLASS_RM,
 
 
 RMscale <- function(phi, scaling, penalty, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(scaling)) submodels[['scaling']] <- scaling
@@ -2501,7 +2757,6 @@ RMscale <- new(CLASS_RM,
 
 
 RMschur <- function(phi, M, diag, rhored, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -2541,7 +2796,6 @@ RMschur <- new(CLASS_RM,
 
 
 RMdelay <- function(phi, s, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -2577,7 +2831,6 @@ RMdelay <- new(CLASS_RM,
 
 
 RMsinepower <- function(alpha, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -2612,7 +2865,6 @@ RMsinepower <- new(CLASS_RM,
 
 
 RMspheric <- function(var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('var') && !is.null(subst <- substitute(var))) 
@@ -2645,7 +2897,6 @@ RMspheric <- new(CLASS_RM,
 
 
 RMstable <- function(alpha, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
@@ -2680,7 +2931,6 @@ RMstable <- new(CLASS_RM,
 
 
 RMintrinsic <- function(phi, diameter, rawR, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -2718,7 +2968,6 @@ RMintrinsic <- new(CLASS_RM,
 
 
 RMstein <- function(nu, zeta, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('nu') && !is.null(subst <- substitute(nu))) 
@@ -2755,7 +3004,6 @@ RMstein <- new(CLASS_RM,
 
 
 RMstp <- function(xi, phi, S, z, M, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(xi)) submodels[['xi']] <- xi
   if (hasArg(phi)) submodels[['phi']] <- phi
@@ -2796,7 +3044,6 @@ RMstp <- new(CLASS_RM,
 
 
 RMtbm <- function(phi, fulldim, reduceddim, layers, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -2836,7 +3083,6 @@ RMtbm <- new(CLASS_RM,
 
 
 RMsum <- function(phi, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -2870,7 +3116,6 @@ RMsum <- new(CLASS_RM,
 
 
 iRMcov <- function(gamma, x, a, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(gamma)) submodels[['gamma']] <- gamma
   
@@ -2908,7 +3153,6 @@ iRMcov <- new(CLASS_RM,
 
 
 RMvector <- function(phi, a, Dspace, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -2946,7 +3190,6 @@ RMvector <- new(CLASS_RM,
 
 
 RMwave <- function(var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('var') && !is.null(subst <- substitute(var))) 
@@ -2979,7 +3222,6 @@ RMwave <- new(CLASS_RM,
 
 
 RMwhittle <- function(nu, notinvnu, var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('nu') && !is.null(subst <- substitute(nu))) 
@@ -3015,21 +3257,20 @@ RMwhittle <- new(CLASS_RM,
 
 
 
-RMtrend <- function(mean) {
-  
+RMshape <- function(mean) {
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('mean') && !is.null(subst <- substitute(mean))) 
 	par.model[['mean']] <- CheckArg(mean, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, name = 'RMtrend', 
+  model <- methods::new(CLASS_CLIST, name = 'RMshape', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
 }
 
-RMtrend <- new(CLASS_RM, 
-	.Data = RMtrend,
+RMshape <- new(CLASS_RM, 
+	.Data = RMshape,
 	type = c('trend'),
 	isotropy = c('parameter dependent'),
 	domain = c('single variable'),
@@ -3044,7 +3285,6 @@ RMtrend <- new(CLASS_RM,
 
 
 RMangle <- function(angle, lat.angle, ratio, diag) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('angle') && !is.null(subst <- substitute(angle))) 
@@ -3078,7 +3318,6 @@ RMangle <- new(CLASS_RM,
 
 
 RMball <- function(var, scale, Aniso, proj) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('var') && !is.null(subst <- substitute(var))) 
@@ -3110,10 +3349,8 @@ RMball <- new(CLASS_RM,
 
 
 
-iRMcovariate <- function(norm, data, x, raw, addNA, factor, name, var) {
-  
+iRMcovariate <- function(data, x, raw, extra_data, addNA, factor, name, var) {
   submodels <- par.general <- par.model <- list() 
-  if (hasArg(norm)) submodels[['norm']] <- norm
   
   if (hasArg('data') && !is.null(subst <- substitute(data))) 
 	par.model[['data']] <- CheckArg(data, subst, TRUE)
@@ -3121,6 +3358,8 @@ iRMcovariate <- function(norm, data, x, raw, addNA, factor, name, var) {
 	par.model[['x']] <- CheckArg(x, subst, TRUE)
   if (hasArg('raw') && !is.null(subst <- substitute(raw))) 
 	par.model[['raw']] <- CheckArg(raw, subst, TRUE)
+  if (hasArg('extra_data') && !is.null(subst <- substitute(extra_data))) 
+	par.model[['extra_data']] <- CheckArg(extra_data, subst, TRUE)
   if (hasArg('addNA') && !is.null(subst <- substitute(addNA))) 
 	par.model[['addNA']] <- CheckArg(addNA, subst, TRUE)
   if (hasArg('factor') && !is.null(subst <- substitute(factor))) 
@@ -3140,7 +3379,7 @@ iRMcovariate <- new(CLASS_RM,
 	type = c('shape function', 'shape function', 'shape function', 'trend'),
 	isotropy = c('non-dimension-reducing', 'isotropic', 'earth isotropic', 'non-dimension-reducing'),
 	domain = c('single variable'),
-	operator = TRUE,
+	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
 	simpleArguments = FALSE,
@@ -3151,7 +3390,6 @@ iRMcovariate <- new(CLASS_RM,
 
 
 RMeaxxa <- function(E, A) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('E') && !is.null(subst <- substitute(E))) 
@@ -3181,7 +3419,6 @@ RMeaxxa <- new(CLASS_RM,
 
 
 RMetaxxa <- function(E, A, alpha) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('E') && !is.null(subst <- substitute(E))) 
@@ -3213,7 +3450,6 @@ RMetaxxa <- new(CLASS_RM,
 
 
 RMidcoord <- function() {
-  
   submodels <- par.general <- par.model <- list() 
   
 
@@ -3239,7 +3475,6 @@ RMidcoord <- new(CLASS_RM,
 
 
 RMtrafo <- function(phi, new) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -3268,7 +3503,6 @@ RMtrafo <- new(CLASS_RM,
 
 
 RMpolygon <- function(lambda) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('lambda') && !is.null(subst <- substitute(lambda))) 
@@ -3296,7 +3530,6 @@ RMpolygon <- new(CLASS_RM,
 
 
 RMrational <- function(A, a) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('A') && !is.null(subst <- substitute(A))) 
@@ -3326,7 +3559,6 @@ RMrational <- new(CLASS_RM,
 
 
 RMrotat <- function(speed, phi) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('speed') && !is.null(subst <- substitute(speed))) 
@@ -3356,7 +3588,6 @@ RMrotat <- new(CLASS_RM,
 
 
 RMrotation <- function(phi) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('phi') && !is.null(subst <- substitute(phi))) 
@@ -3384,7 +3615,6 @@ RMrotation <- new(CLASS_RM,
 
 
 RMsign <- function(phi, p) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -3413,7 +3643,6 @@ RMsign <- new(CLASS_RM,
 
 
 RMm2r <- function(phi) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -3440,7 +3669,6 @@ RMm2r <- new(CLASS_RM,
 
 
 RMm3b <- function(phi) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -3467,7 +3695,6 @@ RMm3b <- new(CLASS_RM,
 
 
 RMmps <- function(phi) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -3494,7 +3721,6 @@ RMmps <- new(CLASS_RM,
 
 
 RMtruncsupport <- function(phi, radius) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -3523,7 +3749,6 @@ RMtruncsupport <- new(CLASS_RM,
 
 
 RRdeterm <- function(mean) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('mean') && !is.null(subst <- substitute(mean))) 
@@ -3551,7 +3776,6 @@ RRdeterm <- new(CLASS_RM,
 
 
 RRgauss <- function(mu, sd, log) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('mu') && !is.null(subst <- substitute(mu))) 
@@ -3583,7 +3807,6 @@ RRgauss <- new(CLASS_RM,
 
 
 RRloc <- function(phi, mu, scale, pow) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -3615,8 +3838,7 @@ RRloc <- new(CLASS_RM,
 
 
 
-RRmcmc <- function(phi, mcmc_n, sigma, normed, maxdensity, rand.loc, gibbs) {
-  
+RRmcmc <- function(phi, mcmc_n, sigma, normed, maxdensity, rand_loc, gibbs) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -3628,8 +3850,8 @@ RRmcmc <- function(phi, mcmc_n, sigma, normed, maxdensity, rand.loc, gibbs) {
 	par.model[['normed']] <- CheckArg(normed, subst, FALSE)
   if (hasArg('maxdensity') && !is.null(subst <- substitute(maxdensity))) 
 	par.model[['maxdensity']] <- CheckArg(maxdensity, subst, FALSE)
-  if (hasArg('rand.loc') && !is.null(subst <- substitute(rand.loc))) 
-	par.model[['rand.loc']] <- CheckArg(rand.loc, subst, FALSE)
+  if (hasArg('rand_loc') && !is.null(subst <- substitute(rand_loc))) 
+	par.model[['rand_loc']] <- CheckArg(rand_loc, subst, FALSE)
   if (hasArg('gibbs') && !is.null(subst <- substitute(gibbs))) 
 	par.model[['gibbs']] <- CheckArg(gibbs, subst, FALSE)
   
@@ -3655,7 +3877,6 @@ RRmcmc <- new(CLASS_RM,
 
 
 RRrectangular <- function(phi, safety, minsteplen, maxsteps, parts, maxit, innermin, outermax, mcmc_n, normed, approx, onesided) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -3704,7 +3925,6 @@ RRrectangular <- new(CLASS_RM,
 
 
 RRspheric <- function(spacedim, balldim, R) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('spacedim') && !is.null(subst <- substitute(spacedim))) 
@@ -3736,7 +3956,6 @@ RRspheric <- new(CLASS_RM,
 
 
 RRunif <- function(min, max, normed) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('min') && !is.null(subst <- substitute(min))) 
@@ -3768,7 +3987,6 @@ RRunif <- new(CLASS_RM,
 
 
 RMmppplus <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, p) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(C0)) submodels[['C0']] <- C0
   if (hasArg(C1)) submodels[['C1']] <- C1
@@ -3806,7 +4024,6 @@ RMmppplus <- new(CLASS_RM,
 
 
 iRFsimulate <- function(phi, checkonly, setseed, env) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -3839,7 +4056,6 @@ iRFsimulate <- new(CLASS_RM,
 
 
 iRFcovariance <- function(phi) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -3866,7 +4082,6 @@ iRFcovariance <- new(CLASS_RM,
 
 
 iRFcovmatrix <- function(phi) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -3893,7 +4108,6 @@ iRFcovmatrix <- new(CLASS_RM,
 
 
 iRFloglikelihood <- function(phi, data, estimate_variance, betas_separate, ignore_trend) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -3928,7 +4142,6 @@ iRFloglikelihood <- new(CLASS_RM,
 
 
 iRFpseudovariogra <- function(phi) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -3955,7 +4168,6 @@ iRFpseudovariogra <- new(CLASS_RM,
 
 
 iRFpseudomadogram <- function(phi, alpha) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -3984,7 +4196,6 @@ iRFpseudomadogram <- new(CLASS_RM,
 
 
 iRFmadogram <- function(phi, alpha) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -4013,7 +4224,6 @@ iRFmadogram <- new(CLASS_RM,
 
 
 iRFvariogram <- function(phi) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -4040,7 +4250,6 @@ iRFvariogram <- new(CLASS_RM,
 
 
 RPtrend <- function(phi, mean) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -4069,7 +4278,6 @@ RPtrend <- new(CLASS_RM,
 
 
 RPaverage <- function(phi, shape, boxcox, intensity, method) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(shape)) submodels[['shape']] <- shape
@@ -4103,7 +4311,6 @@ RPaverage <- new(CLASS_RM,
 
 
 RPcoins <- function(phi, shape, boxcox, intensity, method) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(shape)) submodels[['shape']] <- shape
@@ -4137,7 +4344,6 @@ RPcoins <- new(CLASS_RM,
 
 
 RPcirculant <- function(phi, boxcox, force, mmin, strategy, maxGB, maxmem, tolIm, tolRe, trials, useprimes, dependent, approx_step, approx_maxgrid) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -4190,7 +4396,6 @@ RPcirculant <- new(CLASS_RM,
 
 
 RPcutoff <- function(phi, boxcox, force, mmin, strategy, maxGB, maxmem, tolIm, tolRe, trials, useprimes, dependent, approx_step, approx_maxgrid, diameter, a) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -4247,7 +4452,6 @@ RPcutoff <- new(CLASS_RM,
 
 
 RPintrinsic <- function(phi, boxcox, force, mmin, strategy, maxGB, maxmem, tolIm, tolRe, trials, useprimes, dependent, approx_step, approx_maxgrid, diameter, rawR) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -4304,7 +4508,6 @@ RPintrinsic <- new(CLASS_RM,
 
 
 RPdirect <- function(phi, boxcox) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -4333,7 +4536,6 @@ RPdirect <- new(CLASS_RM,
 
 
 RPhyperplane <- function(phi, boxcox, superpos, maxlines, mar_distr, mar_param, additive) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -4372,7 +4574,6 @@ RPhyperplane <- new(CLASS_RM,
 
 
 RPnugget <- function(phi, boxcox, tol, vdim) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -4405,7 +4606,6 @@ RPnugget <- new(CLASS_RM,
 
 
 RPsequential <- function(phi, boxcox, back_steps, initial) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -4438,7 +4638,6 @@ RPsequential <- new(CLASS_RM,
 
 
 RPspectral <- function(phi, boxcox, sp_lines, sp_grid, prop_factor, sigma) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -4475,7 +4674,6 @@ RPspectral <- new(CLASS_RM,
 
 
 RPspecific <- function(phi, boxcox) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -4504,7 +4702,6 @@ RPspecific <- new(CLASS_RM,
 
 
 RPtbm <- function(phi, boxcox, fulldim, reduceddim, layers, lines, linessimufactor, linesimustep, center, points) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -4549,7 +4746,6 @@ RPtbm <- new(CLASS_RM,
 
 
 RPloggaussnormed <- function(variogram, prob, optimize_p, nth, burn.in, rejection) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(variogram)) submodels[['variogram']] <- variogram
   
@@ -4586,7 +4782,6 @@ RPloggaussnormed <- new(CLASS_RM,
 
 
 RPbrorig <- function(phi, tcf, xi, mu, s) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(tcf)) submodels[['tcf']] <- tcf
@@ -4620,7 +4815,6 @@ RPbrorig <- new(CLASS_RM,
 
 
 RPbrmixed <- function(phi, tcf, xi, mu, s, meshsize, vertnumber, optim_mixed, optim_mixed_tol, lambda, areamat, variobound) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(tcf)) submodels[['tcf']] <- tcf
@@ -4668,7 +4862,6 @@ RPbrmixed <- new(CLASS_RM,
 
 
 RPbrshifted <- function(phi, tcf, xi, mu, s) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(tcf)) submodels[['tcf']] <- tcf
@@ -4702,7 +4895,6 @@ RPbrshifted <- new(CLASS_RM,
 
 
 RPbrownresnick <- function(phi, tcf, xi, mu, s) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(tcf)) submodels[['tcf']] <- tcf
@@ -4736,7 +4928,6 @@ RPbrownresnick <- new(CLASS_RM,
 
 
 RPbernoulli <- function(phi, stationary_only, threshold) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -4767,7 +4958,6 @@ RPbernoulli <- new(CLASS_RM,
 
 
 RPgauss <- function(phi, boxcox, stationary_only) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -4798,7 +4988,6 @@ RPgauss <- new(CLASS_RM,
 
 
 RPpoisson <- function(shape, phi, intensity, support) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(shape)) submodels[['shape']] <- shape
   if (hasArg(phi)) submodels[['phi']] <- phi
@@ -4830,7 +5019,6 @@ RPpoisson <- new(CLASS_RM,
 
 
 RPschlather <- function(phi, tcf, xi, mu, s) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(tcf)) submodels[['tcf']] <- tcf
@@ -4864,7 +5052,6 @@ RPschlather <- new(CLASS_RM,
 
 
 RPopitz <- function(phi, xi, mu, s, alpha) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -4899,7 +5086,6 @@ RPopitz <- new(CLASS_RM,
 
 
 RPsmith <- function(shape, tcf, xi, mu, s) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(shape)) submodels[['shape']] <- shape
   if (hasArg(tcf)) submodels[['tcf']] <- tcf
@@ -4933,7 +5119,6 @@ RPsmith <- new(CLASS_RM,
 
 
 RPchi2 <- function(phi, boxcox, f) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -4964,7 +5149,6 @@ RPchi2 <- new(CLASS_RM,
 
 
 RPt <- function(phi, boxcox, nu) {
-  
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -4995,7 +5179,6 @@ RPt <- new(CLASS_RM,
 
 
 R.minus <- function(x, y, factor) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5027,7 +5210,6 @@ R.minus <- new(CLASS_RM,
 
 
 R.plus <- function(x, y, factor) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5059,7 +5241,6 @@ R.plus <- new(CLASS_RM,
 
 
 R.div <- function(x, y, factor) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5091,7 +5272,6 @@ R.div <- new(CLASS_RM,
 
 
 R.mult <- function(x, y, factor) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5123,7 +5303,6 @@ R.mult <- new(CLASS_RM,
 
 
 R.const <- function(x, name) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5153,7 +5332,6 @@ R.const <- new(CLASS_RM,
 
 
 iR.p <- function(proj, new, factor, name) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
@@ -5187,7 +5365,6 @@ iR.p <- new(CLASS_RM,
 
 
 iR.c <- function(a, b, c, d, e, f, g, h, i, j, l, m, n, o, p, q, ncol, factor) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('a') && !is.null(subst <- substitute(a))) 
@@ -5249,7 +5426,6 @@ iR.c <- new(CLASS_RM,
 
 
 R.is <- function(x, is, y) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5281,7 +5457,6 @@ R.is <- new(CLASS_RM,
 
 
 R.asin <- function(x) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5309,7 +5484,6 @@ R.asin <- new(CLASS_RM,
 
 
 R.atan <- function(x) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5337,7 +5511,6 @@ R.atan <- new(CLASS_RM,
 
 
 R.atan2 <- function(y, x) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('y') && !is.null(subst <- substitute(y))) 
@@ -5367,7 +5540,6 @@ R.atan2 <- new(CLASS_RM,
 
 
 R.cos <- function(x) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5395,7 +5567,6 @@ R.cos <- new(CLASS_RM,
 
 
 R.sin <- function(x) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5423,7 +5594,6 @@ R.sin <- new(CLASS_RM,
 
 
 R.tan <- function(x) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5451,7 +5621,6 @@ R.tan <- new(CLASS_RM,
 
 
 R.asinh <- function(x) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5479,7 +5648,6 @@ R.asinh <- new(CLASS_RM,
 
 
 R.atanh <- function(x) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5507,7 +5675,6 @@ R.atanh <- new(CLASS_RM,
 
 
 R.cosh <- function(x) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5535,7 +5702,6 @@ R.cosh <- new(CLASS_RM,
 
 
 R.sinh <- function(x) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5563,7 +5729,6 @@ R.sinh <- new(CLASS_RM,
 
 
 R.tanh <- function(x) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5591,7 +5756,6 @@ R.tanh <- new(CLASS_RM,
 
 
 R.log <- function(x) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5619,7 +5783,6 @@ R.log <- new(CLASS_RM,
 
 
 R.expm1 <- function(x) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5647,7 +5810,6 @@ R.expm1 <- new(CLASS_RM,
 
 
 R.log1p <- function(x) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5675,7 +5837,6 @@ R.log1p <- new(CLASS_RM,
 
 
 R.exp2 <- function(x) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5703,7 +5864,6 @@ R.exp2 <- new(CLASS_RM,
 
 
 R.log2 <- function(x) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5731,7 +5891,6 @@ R.log2 <- new(CLASS_RM,
 
 
 R.hypot <- function(x, y) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5761,7 +5920,6 @@ R.hypot <- new(CLASS_RM,
 
 
 R.cbrt <- function(x) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5789,7 +5947,6 @@ R.cbrt <- new(CLASS_RM,
 
 
 R.ceil <- function(x) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5817,7 +5974,6 @@ R.ceil <- new(CLASS_RM,
 
 
 R.floor <- function(x) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5845,7 +6001,6 @@ R.floor <- new(CLASS_RM,
 
 
 R.fmod <- function(x, y) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5875,7 +6030,6 @@ R.fmod <- new(CLASS_RM,
 
 
 R.round <- function(x) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5903,7 +6057,6 @@ R.round <- new(CLASS_RM,
 
 
 R.trunc <- function(x) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5931,7 +6084,6 @@ R.trunc <- new(CLASS_RM,
 
 
 R.erfc <- function(x) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5959,7 +6111,6 @@ R.erfc <- new(CLASS_RM,
 
 
 R.lgamma <- function(x) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -5987,7 +6138,6 @@ R.lgamma <- new(CLASS_RM,
 
 
 R.remainder <- function(x, y) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -6017,7 +6167,6 @@ R.remainder <- new(CLASS_RM,
 
 
 R.fdim <- function(x, y) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -6047,7 +6196,6 @@ R.fdim <- new(CLASS_RM,
 
 
 R.fmax <- function(x, y) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -6077,7 +6225,6 @@ R.fmax <- new(CLASS_RM,
 
 
 R.fmin <- function(x, y) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -6107,7 +6254,6 @@ R.fmin <- new(CLASS_RM,
 
 
 R.gamma <- function(x) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -6135,7 +6281,6 @@ R.gamma <- new(CLASS_RM,
 
 
 R.ggamma <- function(x) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -6163,7 +6308,6 @@ R.ggamma <- new(CLASS_RM,
 
 
 R.exp <- function(x) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -6191,7 +6335,6 @@ R.exp <- new(CLASS_RM,
 
 
 R.erf <- function(x) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -6219,7 +6362,6 @@ R.erf <- new(CLASS_RM,
 
 
 R.fabs <- function(x) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -6247,7 +6389,6 @@ R.fabs <- new(CLASS_RM,
 
 
 R.acos <- function(x) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -6275,7 +6416,6 @@ R.acos <- new(CLASS_RM,
 
 
 R.acosh <- function(x) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -6303,7 +6443,6 @@ R.acosh <- new(CLASS_RM,
 
 
 R.pow <- function(x, y) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 
@@ -6333,7 +6472,6 @@ R.pow <- new(CLASS_RM,
 
 
 R.sqrt <- function(x) {
-  
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('x') && !is.null(subst <- substitute(x))) 

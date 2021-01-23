@@ -7,8 +7,8 @@
  implicite by the user and is made explicit by the package.
 }
 \usage{
-RMcovariate(formula=NULL, data, x, y=NULL, z=NULL, T=NULL, grid,
-            raw, norm, addNA, factor)
+RMcovariate(formula=NULL, data, x, y=NULL, z=NULL, T=NULL, grid, raw, %norm,
+            addNA, factor, extra_data)
 }
 \arguments{
   \item{formula, data}{formula and by which the data should be modelled,
@@ -32,7 +32,7 @@ RMcovariate(formula=NULL, data, x, y=NULL, z=NULL, T=NULL, grid,
 %    estimated through ML
 %  }
   \item{raw}{\argRaw }
-  \item{norm}{\argNorm}
+%  \item{norm}{\argNorm}
   \item{addNA}{
     If \code{addNA} is \code{TRUE}, then an additional
     (linear) factor is estimated in an estimation framework.
@@ -40,7 +40,16 @@ RMcovariate(formula=NULL, data, x, y=NULL, z=NULL, T=NULL, grid,
     passes several covariates.
   }
   \item{factor}{real value. From user's point of view very much the same
-  as setting the argument \code{var}}.
+    as setting the argument \code{var}.}
+  \item{extra_data}{logical. If covariates are used and kriging is
+    performed a set of covariates is needed for the given data and for
+    the locations where prediction is performed. In this case a matrix
+    must be passed with two columns where the second column refers to
+    the given data and must have \code{".."} as column names. (The
+    shorter of the two covariate vectors has to be filled with \code{NA}s.)
+    In the multivariate case, columns for the given data and the for the
+    other locations alternate.  
+  }
 }
 \note{
   \itemize{
@@ -52,7 +61,13 @@ RMcovariate(formula=NULL, data, x, y=NULL, z=NULL, T=NULL, grid,
 
 
 \details{
-  The function interpolates (nearest neighbour) between the values if \code{raw=FALSE}.
+  The function interpolates (nearest neighbour) between the values if
+  \code{raw=FALSE}.
+
+  If \code{x} is not given, it is assumed that the globally given
+  coordinates
+
+%  \NormDetails
 }
 \value{
   Formally, \command{\link{RMcovariate}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
@@ -61,7 +76,7 @@ RMcovariate(formula=NULL, data, x, y=NULL, z=NULL, T=NULL, grid,
 \seealso{
  \command{\link{RMfixcov}},
  \command{\link{RMmodel}},
- \command{\link{RMtrend}}
+ \command{\link{RMshape}}
 }
 \examples{\dontshow{StartExample(reduced = FALSE)}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set

@@ -1,9 +1,9 @@
 \name{Hierarchical Modelling}
 \alias{Bayesian}
+\alias{Hierarchical Modelling}
 \alias{bayesian}
 \alias{Bayesian Modelling}
 \alias{Hierarchical}
-\alias{Hierarchical Modelling}
 \title{Bayesian Spatial Modelling}
 \description{
   \pkg{RandomFields} provides Bayesian modelling to some extend:
@@ -85,8 +85,10 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 
 ## the following model defines the argument nu of the Whittle-Matern
 ## model to be an exponential random variable with rate 5.
-model <- ~ 1 + RMwhittle(scale=NA, var=NA, nu=exp(rate=5)) + RMnugget(var=NA)
-\dontshow{if (!interactive()) model <- 1 + RMwhittle(scale=NA, var=NA, nu=exp(rate=5))}%ok
+if (interactive()) {
+  model <- ~ 1 + RMwhittle(scale=NA, var=NA, nu=exp(rate=5)) + RMnugget(var=NA)
+} else model <- 1 + RMwhittle(scale=NA, var=NA, nu=exp(rate=5))
+
 data(soil)
 fit <- RFfit(model, x=soil$x, y=soil$y, data=soil$moisture, modus="careless")
 print(fit)

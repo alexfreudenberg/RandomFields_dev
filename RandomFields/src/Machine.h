@@ -133,9 +133,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define DEFLASTSYSTEM LASTSYSTEM(DEF)
 
 
-#define SET_OUT_OF(D) (D)->lpx[GLOBAL.general.set]
-#define NROW_OUT_OF(D) (D)->nrow[GLOBAL.general.set]
-#define NCOL_OUT_OF(D) (D)->ncol[GLOBAL.general.set]
+#define SET_OUT_OF(D) (D)->lpx[(cov)->base->set]
+#define NROW_OUT_OF(D) (D)->nrow[(cov)->base->set]
+#define NCOL_OUT_OF(D) (D)->ncol[(cov)->base->set]
 
 #define P(IDX) PARAM(cov, IDX) 
 #define PINT(IDX) PARAMINT(cov, IDX)
@@ -169,7 +169,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
   if (DefList[MODELNR(Cov)].kappatype[IDX] < LISTOF) {		\
     UNCONDFREE((Cov)->px[IDX]);				\
   } else {						\
-    LIST_DELETE( (listoftype **) ((Cov)->px + IDX));	\
+    LIST_DELETE( (listoftype **) ((Cov)->px + IDX));  \
   }							\
   (Cov)->ncol[IDX] = (Cov)->nrow[IDX] = 0;			\
   }
@@ -243,29 +243,127 @@ void set_xdim_intern(system_type *sys, int i, int value);
 
 
 
-#define LocLoc(loc) ((loc) != NULL ? (loc)[GLOBAL.general.set % (loc)[0]->len]\
-		     : NULL)
-#define Loc(cov) ((cov)->ownloc!=NULL ? LocLoc((cov)->ownloc) : \
-		  LocLoc((cov)->prevloc))
-#define PLoc(cov) ((cov)->ownloc != NULL ? (cov)->ownloc : (cov)->prevloc)
-#define PrevLoc(cov)						\
+#define LocLocSets(loc) ((loc)->len)
+#define LocLocHasY(loc) ((loc)->totalpointsY != 0)
+#define LocLoctsdim(loc) ((loc)->timespacedim)
+#define LocLocspatialdim(loc) ((loc)->spatialdim)
+#define LocLoctime(loc) ((loc)->Time)
+#define LocLocxdimOZ(loc) ((loc)->xdimOZ)
+#define LocLocDist(loc) ((loc)->distances)
+//#define LocLoc(loc) ((loc)->)
+
+#define LocPSets(Loc) ((Loc)[0]->len)
+#define LocPY(loc) ((Loc)[0]->totalpointsY != 0)
+#define LocPtsdim(Loc) ((Loc)[0]->timespacedim)
+#define LocPspatialdim(Loc) ((Loc)[0]->spatialdim)
+#define LocPtime(Loc) ((Loc)[0]->Time)
+#define LocPxdimOZ(Loc) ((Loc)[0]->xdimOZ)
+#define LocPDist(Loc) ((Loc)[0]->distances)
+//#define LocLoc(Loc) ((Loc)[0]->)
+
+#define LocLoc(Loc, cov)((Loc)!=NULL					\
+			 ? (Loc)[(cov)->base->set % LocPSets(Loc)] : NULL)
+#define Loc(cov) ((cov)->ownloc!=NULL ? LocLoc((cov)->ownloc, cov) :	\
+		  LocLoc((cov)->prevloc, cov))
+#define LocP(cov) ((cov)->ownloc != NULL ? (cov)->ownloc : (cov)->prevloc)
+#define LocPrev(cov)						\
   ((cov)->prevloc == NULL ? NULL :				\
-   (cov)->prevloc[GLOBAL.general.set % (cov)->prevloc[0]->len])
-#define OwnLoc(cov) ((cov)->ownloc == NULL ? NULL : \
-		     (cov)->ownloc[GLOBAL.general.set % (cov)->ownloc[0]->len])
-#define Getgrid(cov) (PLoc(cov) != NULL ? Loc(cov)->grid : false)
-#define GetTime(cov) (PLoc(cov) != NULL ? Loc(cov)->Time : false)
-#define GetLoctsdim(cov) (PLoc(cov) != NULL ? Loc(cov)->timespacedim : 0)
-#define GetLocxdimOZ(cov) (PLoc(cov) != NULL ? Loc(cov)->xdimOZ : 0)
-#define GetLocspatialdim(cov) (PLoc(cov) != NULL ? Loc(cov)->spatialdim : 0)
-#define Gettotalpoints(cov) (PLoc(cov) != NULL ? Loc(cov)->totalpoints : 0)
-#define DistancesGiven(cov) (PLoc(cov) != NULL ? Loc(cov)->distances : false)
-#define Getspatialpoints(cov) (PLoc(cov) != NULL ? Loc(cov)->spatialtotalpoints\
-			       : 0)
-#define Getcaniso(cov) (PLoc(cov) != NULL ? Loc(cov)->caniso : NULL)
-#define Getxgr(cov) (PLoc(cov) != NULL ? Loc(cov)->xgr : NULL)
-#define Getx(cov) (PLoc(cov) != NULL ? Loc(cov)->x : NULL)
-#define GET_LOC_SETS(cov) (PLoc(cov) != NULL ? PLoc(cov)[0]->len : 0)
+   (cov)->prevloc[(cov)->base->set % LocPSets((cov)->prevloc)])
+#define LocOwn(cov) ((cov)->ownloc == NULL ? NULL :			\
+		     (cov)->ownloc[(cov)->base->set %			\
+				   LocPSets((cov)->ownloc)])
+
+// 28.12.20  TO DO: unklar warum nachfolgend PLOC == NULL abgepruft wird
+// durch static inline + assert ersetzen
+#define Locgrid(cov) (LocP(cov) != NULL ? Loc(cov)->grid : false)
+#define LocTime(cov) (LocP(cov) != NULL ? Loc(cov)->Time : false)
+#define Loctsdim(cov) (LocP(cov) != NULL ? Loc(cov)->timespacedim : 0)
+#define LocxdimOZ(cov) (LocP(cov) != NULL ? Loc(cov)->xdimOZ : 0)
+#define Locspatialdim(cov) (LocP(cov) != NULL ? Loc(cov)->spatialdim : 0)
+#define Loctotalpoints(cov) (LocP(cov) != NULL ? Loc(cov)->totalpoints : 0)
+#define LocDist(cov) (LocP(cov) != NULL ? Loc(cov)->distances : false)
+#define Locspatialpoints(cov) (LocP(cov) != NULL ? \
+			       Loc(cov)->spatialtotalpoints : 0)
+#define Loccaniso(cov) (LocP(cov) != NULL ? Loc(cov)->caniso : NULL)
+#define Locxgr(cov) (LocP(cov) != NULL ? Loc(cov)->xgr : NULL)
+#define Locx(cov) (LocP(cov) != NULL ? Loc(cov)->x : NULL)
+#define LocAniso(cov) (Loc(cov)->caniso)
+#define LocSets(cov) (LocP(cov) != NULL ? LocLocSets(Loc(cov)) : 0)
+#define LocT(cov) (Loc(cov)->T)
+#define LocIndexed(cov) (Loc(cov)->rawidx != NULL)
+
+#define LocHasY(cov) LocLocHasY(Loc(cov))
+
+static inline int LoctotalpointsY(model *cov) {
+  location_type *loc = Loc(cov);
+  return LocLocHasY(loc) ? loc->totalpointsY : loc->totalpoints; 
+}
+
+static inline int LocspatialpointsY(model *cov) {
+  location_type *loc = Loc(cov);
+  return LocLocHasY(loc) ? loc->spatialtotalpointsY : loc->spatialtotalpoints; 
+  }
+
+static inline bool LocgridY(model *cov) {
+  location_type *loc = Loc(cov);
+  return LocLocHasY(loc) ? loc->gridY : loc->grid;
+  }
+
+static inline coord_type LocgrY(model *cov) {
+  location_type *loc = Loc(cov);
+  return LocLocHasY(loc) ? loc->grY : loc->xgr;
+  }
+
+static inline double * LocY(model *cov) {
+  location_type *loc = Loc(cov);
+  return LocLocHasY(loc) ? loc->Y : loc->x;
+}
+
+static inline double * LocTY(model *cov) {
+  location_type *loc = Loc(cov);
+  return LocLocHasY(loc) ? loc->TY : loc->T;
+}
+
+static inline int LoctotalpointsY(location_type *loc, bool ignore_y) {
+  return !ignore_y && LocLocHasY(loc) ? loc->totalpointsY : loc->totalpoints; 
+}
+
+static inline int LoctotalpointsY(model *cov, bool ignore_y) {
+  return LoctotalpointsY(Loc(cov), ignore_y); 
+}
+
+static inline int LocspatialpointsY(model *cov, bool ignore_y) {
+  location_type *loc = Loc(cov);
+  return !ignore_y && LocLocHasY(loc) ? loc->spatialtotalpointsY
+    : loc->spatialtotalpoints;
+}
+
+static inline bool LocgridY(model *cov, bool ignore_y) {
+  location_type *loc = Loc(cov);
+  return !ignore_y && LocLocHasY(loc) ? loc->gridY : loc->grid;
+}
+
+static inline coord_type LocgrY(location_type *loc, bool ignore_y) {
+  return !ignore_y && LocLocHasY(loc) ? loc->grY : loc->xgr;
+}
+
+static inline coord_type LocgrY(model *cov, bool ignore_y) {
+  return LocgrY(Loc(cov), ignore_y);
+}
+
+static inline double * LocY(location_type *loc, bool ignore_y) {
+  return !ignore_y && LocLocHasY(loc) ? loc->Y : loc->x;
+}
+
+static inline double * LocY(model *cov, bool ignore_y) {
+  return LocY(Loc(cov), ignore_y);
+}
+
+static inline double * LocTY(model *cov, bool ignore_y) {
+  location_type *loc = Loc(cov);
+  return !ignore_y && LocLocHasY(loc) ? loc->TY : loc->T;	
+}
+
 
 
 
@@ -280,7 +378,7 @@ void set_xdim_intern(system_type *sys, int i, int value);
 #define ASSERT_GATTER(Cov) 
 #define ASSERT_CHECKED(Cov) assert((Cov)->checked)
 #define ASSERT_LOC_GIVEN \
-  if (loc != NULL) { } else {PMI(cov); LOC_NOT_INITIALISED;}
+  if (Loc(cov) != NULL) { } else {PMI(cov); LOC_NOT_INITIALISED;}
 #define ASSERT_CARTESIAN  if (isCartesian(OWN)) {} else RETURN_ERR(ERRORCARTESIAN)
 #define ASSERT_QUASIONESYSTEM if (QuasiOneSystem(cov)) { } else BUG;
 #define ASSERT_ONESYSTEM {						\
@@ -303,7 +401,5 @@ void set_xdim_intern(system_type *sys, int i, int value);
 		  gaussmethod[cov->method] -				\
 		  DefList[gaussmethod[cov->method]].internal].nick	\
 	  ) }
-
-
 
 #endif

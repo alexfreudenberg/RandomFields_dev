@@ -32,7 +32,7 @@ RPspecific(phi, boxcox)
     \item{\command{\link{RMplus}}}{
       is able to simulate separately
       the fields given by its summands. This is necessary, e.g., when
-      a trend model \command{\link{RMtrend}} is involved.
+      a trend model \command{\link{RMshape}} is involved.
     }
 
     \item{\command{\link{RMmult}}} {
@@ -60,7 +60,7 @@ RPspecific(phi, boxcox)
     }
     \item{\command{\link{RMmppplus}}}{
     }
-    \item{\command{\link{RMtrend}}}{
+    \item{\command{\link{RMshape}}}{
     }
     % \item{\command{\link{RM}}}{}
   }

@@ -52,7 +52,10 @@ setReplaceMethod(f="[", signature = CLASS_RM,accessReplaceSlotsByName)
 
 ## summing up RMmodels
 setMethod('c', signature=c(CLASS_CLIST),
-          function(x, ..., recursive = FALSE) R.c(x, ...) )
+          function(x, ..., recursive = FALSE) {
+##            Print("c hier")
+            R.c(x, ...)
+            })
 
 
 ## funktioniert im speziellen Modus nicht, allgemein schon
@@ -327,10 +330,13 @@ str.RMmodel <-
            drop.deparse.attr = strO$drop.deparse.attr,
            formatNum = strO$formatNum, list.len = 99, ...) 
 {
-  if (is.list(object)) {
-    class(object) <- NULL
-    str(object) # ok
-  }
+  cl <- class(object)
+  if (isS4(object)) object <- as.list.RMmodel(object)
+  else class(object) <- NULL
+  str(object, indent.str = indent.str) #
+  cat(indent.str, "(S", 3 + isS4(object), " class '", cl, "')\n", sep="")
+  return()
+  
   strO <- strOptions()
   #str1 <- getOption("str"); if (length(str1)>0) strO <- modifyList(str0, str1)
 
@@ -406,14 +412,39 @@ str.RMmodel <-
   }
 }
 
+
+as.list.RMmodel <- function(x, ...) {
+  if (!isS4(x)) return(x)
+  ans <- list(x@name)
+  if (length(x@submodels) > 0)
+    ans[names(x@submodels)] <- lapply(x@submodels, as.list.RMmodel)
+  if (length(x@par.model) > 0)
+    ans[names(x@par.model)] <-
+      lapply(x@par.model,
+             function(p) if (is(p, CLASS_CLIST)) as.list.RMmodel(p) else p)
+  if (length(x@par.general) > 0)
+    ans[names(x@par.general)] <-
+      lapply(x@par.general,
+             function(p) if (is(p, CLASS_CLIST)) as.list.RMmodel(p) else p)
+  return(ans)
+}
+
 summary.RMmodel <- function(object, max.level=5, ...) {
-  if (isS4(object)) 
-    summary(PrepareModel2(object, ..., return_transform=FALSE)$model,
-            max.level=max.level)
-  else {
-    class(object) <- "summary.RMmodel"
-    object
+  if (isS4(object)) {
+##    print("hier")
+    model <- try(PrepareModel2(object, ..., xdim=1)$model, silent=TRUE) # OK
+##    print("ende")
+##    Print(model)
+    if (is(model, "try-error")) {
+      warning("The model might be incomplete or too complicated to be dealt with in a simple summary.")
+      return(as.list.RMmodel(object))
+    } else {
+        class(model) <- NULL
+        object <- model
+      }
   }
+  class(object) <- "summary.RMmodel"
+  object
 }
 
 print.summary.RMmodel <- function(x, max.level=5, ...) {
@@ -462,22 +493,27 @@ setMethod("show", signature=CLASS_RM,
 
 
 ConvertRMlist2string <- function(model) {
-  subi <- sapply(model,
-                    function(x) is.list(x) && (x[[1]] %in% DOLLAR ||
-                                               x[[1]] %in% list2RMmodel_Names))
-  pari <- which(!subi)[-1] ## not the name
+  subi <- sapply(model, function(x)
+    is.list(x) && (x[[1]] %in% DOLLAR || x[[1]] %in% list2RMmodel_Names))
+  pari <- !subi & !sapply(model, function(x) is.language(x) || is.environment(x)
+                          || is.list(x))
+  pari <- which(pari)[-1] ## not the name
+
   sub <- if (any(subi)) sapply(model[subi], ConvertRMlist2string) else NULL
+  
   par <- paste(names(model)[pari], sep="=",
                sapply(model[pari], function(x) paste0(if (length(x) > 1) "(",
                                                       paste(x, collapse=","),
                                                       if (length(x) > 1) ")")))
 
-  if (model[[1]] %in% DOLLAR && !(model[[which(subi)]][[1]] %in%
-                                  c(RM_PLUS, RM_MULT, DOLLAR))) {
+  if (model[[1]] %in% DOLLAR &&
+      length(sub) == 1 && ## may be scale or var are given by models
+      !(model[subi][[1]] %in% c(RM_PLUS, RM_MULT, DOLLAR))) {
     n <- nchar(sub)
-     return(paste0(substring(sub, 1, n - 1),
+    return(paste0(substring(sub, 1, n - 1),
                   if (substring(sub, n - 1, n - 1) != "(") ", ",
-                  par, ")"))
+                  par, ")")
+           )
   } else if (model[[1]] %in% RM_PLUS && !any(pari))
     return(paste(sub, collapse=" + "))
   else if (model[[1]] %in% RM_MULT && !any(pari)) {
@@ -497,7 +533,7 @@ rfConvertRMmodel2string <- function(model){
   
   stopifnot(isS4(model))
   par <- c(model@par.model, model@par.general)
-  idx.random <- unlist(lapply(par, FUN=isRMmodel))
+  idx.random <- unlist(lapply(par, function(x) isS4(x) && is(x, CLASS_CLIST)))
   if (is.null(idx.random)){
     param.string <- ""
     param.random.string <- ""
@@ -534,18 +570,16 @@ singleplot <- function(cov, dim, distance=NULL, distanceY=NULL,
   if (dim==1) {
     D <- distance             
     iszero <- D == 0
-    if (plotmethod == "matplot")  {
-        plotpoint <- any(iszero) && diff(range(dots$ylim)) * 1e-3 <
-          diff(range(cov)) - diff(range(cov[!iszero]))
-        if (plotpoint) D[iszero] <- NA
+    if (plotmethod == "matplot" && any(iszero))  {
+      r <- diff(range(cov))
+      plotpoint <- is.finite(r) &&
+        diff(range(dots$ylim)) * 1e-3 < r - diff(range(cov[cov != 0]))
+      if (!is.na(plotpoint) && plotpoint) D[iszero] <- NA
     } else plotpoint <- FALSE
     liXY <-
       if (plotmethod=="plot.xy") list(xy = xy.coords(x=D, y=cov)) ## auch D ?
       else list(x=D, y=cov)
-    
-    ##    Print(plotmethod, args=c(dots, liXY))
-    ## Print(cov, iszero)
-    
+
     do.call(plotmethod, args=c(dots, liXY))   
     if (plotpoint) {
       for (i in 1:ncol(cov))
@@ -580,26 +614,23 @@ singleplot <- function(cov, dim, distance=NULL, distanceY=NULL,
 ## empvario is(x, CLASS_FITLIST) || is(x, CLASS_EMPIR)
 ## model: keine Daten
 
-
 calculateRFplot <- function(x, y, dim=1,
                             fctn.type=NULL,
                             MARGIN, fixed.MARGIN, ...,
                             params=NULL, RFopt=RFopt, plotmethod) {
 
-#  Print("OK")
-#  Print(RFopt, missing(MARGIN), missing(fixed.MARGIN))
-
-  RFopt <- RFoptions(GETOPTIONS=c("internal", "graphics"))
+  RFopt <- RFoptions(GETOPTIONS=c("internal", "graphics", "basic"))
   graphics <- RFopt$graphics  ##
-  plotmethods <- c("plot.xy", "image", "matplot", "contour", "none")
+  plotMethods <- c("plot.xy", "image", "matplot", "contour", "persp", "none")
   if (is.contour <- is.character(plotmethod)) { # else a function
-    pm <- pmatch(plotmethod, plotmethods)
-      if (is.na(pm)) stop("possible values for 'plotmethods' are",
-                          paste(plotmethods, collapse=", "))
-      plotmethod <- plotmethods[pm]  
+    pm <- pmatch(plotmethod, plotMethods)
+      if (is.na(pm)) stop("possible values for 'plotMethods' are ",
+                          paste(plotMethods, collapse=", "),
+                          "; got ", plotmethod)
+      plotmethod <- plotMethods[pm]  
     is.contour <- plotmethod == "contour"
   }
-  n.points <- graphics$n.points[1 + (dim==1 || is.contour)]
+  n.points <- graphics$n_points[1 + (dim==1 || is.contour)]
   if (ex.red <- RFopt$internal$examples_reduced) {
     message("number of points has been reduced according to RFoptions(examples_reduced)")
     n.points <- as.integer(min(n.points, ex.red - 2))
@@ -625,8 +656,7 @@ calculateRFplot <- function(x, y, dim=1,
   dotnames <- names(dots)
   models <- substr(dotnames, 1, 5) == "model"
 
-  #Print(model, dots)
-  
+                                       
   x <- c(list(x), dots[models])
 
   dotnames <- names(dots) ## alles namen werden gebraucht
@@ -634,29 +664,25 @@ calculateRFplot <- function(x, y, dim=1,
   ylim <- dots$ylim
   xlim <- dots$xlim
 
-#  Print(x, dots)
-
-  types <- c("Covariance", "Variogram", "Fctn")
-  verballist <- paste("'", types, "'", sep="", collapse="")
+  fctnTypes <- c("Covariance", "Variogram", "Fctn")
+  verballist <- paste("'", fctnTypes, "'", sep="", collapse="")
   if (!missing(fctn.type) && length(fctn.type) > 0) {
     if (is.character(fctn.type)) {
-      p <- pmatch(fctn.type, types)
+      p <- pmatch(fctn.type, fctnTypes)
       if (any(is.na(p)))
-        stop("fctn.type must be NULL or of the types ", verballist)    
-      types <- types[p]
+        stop("fctn.type must be NULL or of type ", verballist)    
+      fctnTypes <- fctnTypes[p]
     } else {
       if (!is.numeric(fctn.type)) stop("unknown type for fctn.type")
       if (length(fctn.type) != 1) stop("'fctn.type' must be a scalar")
       alpha <- fctn.type
       if (fctn.type == as.integer(fctn.type)) {
-        types <- FCTN_TYPE_NAMES[fctn.type + 3]
+        fctnTypes <- FCTN_TYPE_NAMES[fctn.type + 3]
       } else {
-        types <- "Pseudovariogram"
+        fctnTypes <- "Pseudovariogram"
       }
     }
   }
-
-#  Print(fctn.type, alpha, types); kkk
 
   fctncall <- vector("list", length(x))
   all.vdim <- numeric(length(x))
@@ -665,16 +691,12 @@ calculateRFplot <- function(x, y, dim=1,
   mnames[idx] <- substring(mnames[idx], 2)
   no.dot <- which(!idx)
 
-#  print(mnames)
-#  Print(dotnames, dotnames[models])
-  
   for (i in 1:length(x)) {
-    fctn.type <- types
+    fctn.type <- fctnTypes
     m0 <- x[[i]]
     if (is(m0, CLASS_SINGLEFIT)) m0 <- if (isS4(m0)) m0@model else m0$model
-    m <- list("", PrepareModel2(m0, xdim=dim, params=params,
-                                return_transform=FALSE)$model)
- #  Print(m)
+    m <- list("", PrepareModel2(m0, xdim=dim, params=params)$model)
+    ##    Print(m, i, no.dot)
     if (i %in% no.dot) {
       mnames[i] <- rfConvertRMmodel2string(m[[2]])
       nmn <- nchar(mnames[i]) - 1 
@@ -684,22 +706,32 @@ calculateRFplot <- function(x, y, dim=1,
       msplit <- strsplit(mnames[i], "RM")[[1]]
       if (length(msplit) == 2 && msplit[1]=="") mnames[i] <- msplit[2]
     }
-   
-    while (length(fctn.type) > 0 &&
-           { m[[1]] <- fctn.type[1];
-           !is.numeric(vdim <- rawTry( InitModel(MODEL_AUX, m, dim)))
-	   })
+    
+    X <- matrix(nrow=3, ncol=dim, as.double(1:3))
+    while (length(fctn.type) > 0) {
+      m[[1]] <- fctn.type[1];
+      for (y in list(double(0), matrix(nrow=3, ncol=dim, as.double(1:3)))) {
+        vdim <- rawTry(rfInit(model=m,
+                              x=UnifyXT(x=X, y=y, grid=FALSE, y.ok=TRUE),
+                              reg=MODEL_AUX, RFopt=RFopt, NAOK=FALSE))
+        ## !! result of MODEL_AUX may not be used for model evaluation !!
+        ## since RMcovariate is wrongly evaluated !!
+        if (is.numeric(vdim)) break
+        if (RFopt$basic$printlevel >= PL_ERRORS)
+          cat(strsplit(vdim$ message, "\n")[[1]][2], "\n")
+      }
+      if (is.numeric(vdim)) break
       fctn.type <- fctn.type[-1]
-    if (!is.numeric(vdim)) stop(attr(vdim, "condition")$message)
+    }
+    ##  stop("model could not be initialized")
+    if (!is.numeric(vdim)) stop(vdim$message, " in ", vdim$call)
     if (vdim[1] != vdim[2]) stop("only simple models can be plotted")
     all.vdim[i] <- vdim[1]
     fctncall[[i]] <- fctn.type[1]
   }
+ 
 
-  
-   
-
-  maxchar <- RFopt$graphics$maxchar
+  maxchar <- graphics$maxchar
 #  print(mnames)
   if (any(idx <- maxchar < nchar(mnames))) {
     mn <- strsplit(substr(mnames[idx], 1, maxchar), "(", fixed=TRUE)
@@ -710,12 +742,13 @@ calculateRFplot <- function(x, y, dim=1,
     r <- sapply(opening - closing, function(x) paste0(rep(")", x), collapse=""))
     mnames[idx] <- paste0(mn, ifelse(opening == 1, "", "..."), r)
   }
+
   
   if (!all(all.vdim == all.vdim[1]))
     stop("models have different multivariability")
   
   if (is.null(xlim))
-    xlim <-  c(-(dim > 1 || all.vdim[1] > 1), 1) * RFopt$graphics$xlim
+    xlim <-  c(-(dim > 1 || all.vdim[1] > 1), 1) * graphics$xlim
   distance <- seq(xlim[1], xlim[2], length=n.points)  
   if (prod(xlim) <= 0)
     distance <- sort(c(if (!any(distance==0)) 0, 1e-5, distance))
@@ -748,7 +781,7 @@ calculateRFplot <- function(x, y, dim=1,
                              fctncall=fctncall[[i]])
     } 
   }
-  
+
   dimvalue <- c( if (is.vector(value[[1]])) length(value[[1]])
                                else dim(value[[1]]), length(value))
   value <- unlist(value)
@@ -788,13 +821,9 @@ RFplotModel <- function(x, y, dim=1,
 
   if (is(x, CLASS_PLOT)) {
     Dots <- list(...)
-##    Print(Dots, dots)
     dots[names(Dots)] <- Dots
-##    Print(dots)
   }
 
-##  Print(dots)
-  
   dimvalue <- dim(value)
   mnames <- dimnames(value)[[length(dimvalue)]]
   n.models <- length(mnames)
@@ -836,8 +865,6 @@ RFplotModel <- function(x, y, dim=1,
                    stop("method only implemented for ", verballist))
           } else "f(distance)"
 
-##  Print(ylab, fctncall, alpha, L)
-  
   lab <- if (dim == 1) xylabs("distance", ylab) else xylabs("", "")
   if (!("main" %in% dotnames)) {
     main <- paste("plot for ",
@@ -886,7 +913,6 @@ RFplotModel <- function(x, y, dim=1,
     figs <- dimvalue[c(-1, -length(dimvalue))]
     if (plotmethod != "plot.xy") ArrangeDevice(graphics, figs)
                                         #plot(Inf, Inf, axes=FALSE, xlim=c(0,1), ylim=c(0,1))
- #   Print(value, figs)
     par(oma=dots$oma)
     scr <- matrix(split.screen(erase=!FALSE, figs=figs), ncol=dimvalue[2],
                   byrow=TRUE)
@@ -931,9 +957,9 @@ RFplotModel <- function(x, y, dim=1,
 
 
 points.RMmodel <- function(x, ..., type="p")  
-  RFplotModel(x, ...,type=type,  plotmethod="plot.xy")
+  RFplotModel(x, ..., type=type,  plotmethod="plot.xy")
 lines.RMmodel <- function(x, ..., type="l")
-  RFplotModel(x, ...,type=type,  plotmethod="plot.xy")
+  RFplotModel(x, ..., type=type,  plotmethod="plot.xy")
 
 
 
@@ -984,7 +1010,7 @@ list2RMmodel <- function(x) {
 
 plot.RFplot <- RFplotModel
 setMethod(f="plot", signature(x=CLASS_CLIST, y="missing"),
-          function(x, ...) RFplotModel(x, ...))
+          function(x, y, ...) RFplotModel(x, ...))
 #setMethod(f="plot", signature(x=CLASS_PLOT, y="missing"),
 #          function(x, ...) RFplotModel(x, ...))
 setMethod(f="lines", signature(x=CLASS_CLIST),

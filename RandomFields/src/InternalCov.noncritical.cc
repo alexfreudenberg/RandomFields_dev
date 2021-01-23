@@ -35,6 +35,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "Processes.h"
 #include "families.h"
 #include "Coordinate_systems.h"
+#include "startGetNset.h"
 //#include <R_ext/Lapack.h>
 //#include <R_ext/Applic.h>
 //#include <R_ext/Utils.h>     
@@ -42,6 +43,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 void kdefault(model *cov, int i, double v) {
+  utilsparam *global_utils = &(cov->base->global_utils);
 
   defn *C = DefList + COVNR; // nicht gatternr
   if (PisNULL(i)) {
@@ -69,7 +71,7 @@ void kdefault(model *cov, int i, double v) {
       BUG;
     }
     cov->nrow[i] = cov->ncol[i] = 1;
-  } else if (!GLOBAL_UTILS->basic.skipchecks) {    
+  } else if (!global_utils->basic.skipchecks) {    
     if (cov->nrow[i] != 1 || cov->ncol[i] != 1) { 
       LPRINT("%d %s %d nrow=%d, ncol=%d\n", 
 	     COVNR, NAME(cov), i, cov->nrow[i], cov->ncol[i]);
@@ -356,9 +358,9 @@ int INIT_intern(model *cov, int moments, gen_storage *s) { // kein err
 
   defn *C = DefList + COVNR;
   int err = NOERROR;
-  KEY_type *KT = cov->base;
+  char *error_location = cov->base->error_location;  
 
-  SPRINTF(KT->error_loc, "initializing %.50s", NICK(cov));
+  SPRINTF(error_location, "initializing %.50s", NICK(cov));
 
   // printf("Iintern %s = %d mom=%d, vdim=%d\n", NAME(cov), cov->mpp.moments, moments, VDIM0);
   
@@ -374,7 +376,7 @@ int INIT_intern(model *cov, int moments, gen_storage *s) { // kein err
 	    C->maxmoments, NICK(cov), moments);
   }
   
-  SPRINTF(KT->error_loc, "%.50s", cov->calling == NULL ? "initiating the model"
+  SPRINTF(error_location, "%.50s", cov->calling == NULL ? "initiating the model"
 	  : NICK(cov->calling));
   ASSERT_GATTER(cov);
   if ((err = DefList[GATTERNR].Init(cov, s)) != NOERROR) {
@@ -422,9 +424,9 @@ int INIT_RANDOM_intern(model *cov, int moments, gen_storage *s, // kein err
   if (!cov->checked) BUG;
   if (!cov->initialised) {
     int err = NOERROR;
-    KEY_type *KT = cov->base;
+    char *error_location = cov->base->error_location;  
 
-    SPRINTF(KT->error_loc, "initializing %.50s", NICK(cov));
+    SPRINTF(error_location, "initializing %.50s", NICK(cov));
      
     assert(cov != NULL);
     if (moments < 0) SERR("moments expected to be positive");
@@ -438,8 +440,8 @@ int INIT_RANDOM_intern(model *cov, int moments, gen_storage *s, // kein err
       if (cov->mpp.moments == PARAM_DEP) cov->mpp.moments = moments;
     }
     
-    SPRINTF(KT->error_loc, "%.50s", cov->calling == NULL ? "initiating the model"
-	    : NICK(cov->calling));
+    SPRINTF(error_location, "%.50s", cov->calling == NULL
+	    ? "initiating the model" : NICK(cov->calling));
     ASSERT_GATTER(cov);
     if ((err = DefList[GATTERNR].Init(cov, s)) != NOERROR) RETURN_ERR(err);   
     if (ISNAN(cov->mpp.mM[moments])) {
@@ -478,12 +480,14 @@ void stat2_Intern(double *x, model *cov, double **Z) {
   TALLOC_DOUBLE(z1);
   int trafonr = TRAFONR;
   bool trafo = cov->calling != NULL && trafonr != UNSET;
-  if (trafo) {
+  DEFAULT_INFO(info);
+
+   if (trafo) {
     TALLOC_GATTER_GLOBAL(z1, GATTERTOTALXDIM);
-    DefList[trafonr].cov(x, cov, z1);
+    DefList[trafonr].cov(x, info, cov, z1); // Trafo-FCTN() call
     x = z1;
   }
-
+ 
   int n = GATTERLASTSYSTEM;
   //  PMI0(cov);  printf("n=%d\n", n);
   assert(n == 0); // **Z is a workaround for more complicated systems (i_nrow)
@@ -545,7 +549,34 @@ void stat2_Intern(double *x, model *cov, double **Z) {
   FREE_TALLOC(z1);
 }
 
-void stat2(double *x, model *cov, double *v) {
+//
+
+#ifdef SCHLATHERS_MACHINE
+#define INFO_TRACE(where, info, cov)
+void INFO_TRACEX(const char *where, int *info, model *cov) {
+  if (parallel()) BUG;
+  static int oldcovnr = UNSET; // ok, da nur schlathers machine
+  if (COVNR != oldcovnr && (COVNR < FIRSTDOLLAR || COVNR > LASTDOLLAR)) { 
+    oldcovnr = COVNR;
+    model *calling = cov->calling;
+    if (calling != NULL && (CALLINGNR >= FIRSTDOLLAR && CALLINGNR<=LASTDOLLAR)){
+      PRINTF("%s", NAME(calling));
+    }
+    PRINTF("%s%s (%d i=%d e=%d) [INFO_TRACE]\n", NAME(cov), where,
+	   info[INFO_N_X], info[INFO_IDX_X], info[INFO_EXTRA_DATA_X]);
+  }
+}
+#else
+#define INFO_TRACE(where, info, cov)
+#endif
+
+
+
+void stat2(double *x, int *info, model *cov, double *v) {
+  //  if (!equalsXonly(PREVDOM(0))) { PMI0(cov); crash(); }
+  assert(equalsXonly(PREVDOM(0)));
+ // printf("stat2\n");
+  INFO_TRACE("2", info, cov);
   TALLOC_GATTER(z, OWNTOTALXDIM);
   double **z1 = &z;
   stat2_Intern(x, cov, z1);
@@ -555,20 +586,24 @@ void stat2(double *x, model *cov, double *v) {
   //  printf("stat2: %s\n", NAME(cov));
 
   
-  DefList[COVNR].cov(*z1, cov, v);// nicht gatternr
+  DefList[COVNR].cov(*z1, info, cov, v);// nicht gatternr
   END_TALLOC_z; // very crucial that not z is freed!
 }
 
-void logstat2(double *x, model *cov, double *v, double *Sign) {
+void logstat2(double *x, int *info, model *cov, double *v, double *Sign) {
+  assert(equalsXonly(PREVDOM(0)));
+  INFO_TRACE("2L", info, cov);
   TALLOC_GATTER(z, OWNTOTALXDIM);
   double **z1 = &z;
   stat2_Intern(x, cov, z1);
-  DefList[COVNR].log(*z1, cov, v, Sign);// nicht gatternr
+  DefList[COVNR].log(*z1, info, cov, v, Sign);// nicht gatternr
   END_TALLOC_z;
 }
 
 
 void nonstat2stat(double *x, double *y, model *cov, double *z) {
+  assert(PREVDOM(0) == KERNEL);
+  // printf("nonstat2stat\n");
   int n = GATTERLASTSYSTEM;
   for (int s=0; s<=n; s++) {
     int gnr = NRi(GATTER[s]), // OK
@@ -590,7 +625,13 @@ void nonstat2stat(double *x, double *y, model *cov, double *z) {
       break;
     }
     case S2S :case SId:
-      for (int d=0; d<dim; d++) z[d] = x[d] - y[d];
+      // printf("d=%d ", dim);
+      for (int d=0; d<dim; d++) {
+	//	printf("%d\n", d);
+	//	printf("%d x=%f; ", d, x[d]);
+	//	printf("%d y=%f; ", d, y[d]);
+	z[d] = x[d] - y[d];
+      }
       break;
     case S2SP :{
       double b = 0.0;
@@ -603,12 +644,12 @@ void nonstat2stat(double *x, double *y, model *cov, double *z) {
       z[1] = FABS(x[dimM1] - y[dimM1]);
       break;
     }    
-    case E2EIso : NonstatEarth2EarthIso(x, y, cov, z); break;
-      //    case E2E : NonstatEarth2Earth(x, y, cov, z); break;
-    case E2SphIso : NonstatEarth2SphereIso(x, y, cov, z); break;
-      //    case E2Sph : NonstatEarth2Sphere(x, y, cov, z); break;
-    case Sph2SphIso : NonstatSphere2SphereIso(x, y, cov, z); break;     
-      //    case Sph2Sph : NonstatSphere2Sphere(x, y, cov, z); break;  
+    case E2EIso : nonstatEarth2EarthIso(x, y, cov, z); break;
+      //    case E2E : nonstatEarth2Earth(x, y, cov, z); break;
+    case E2SphIso : nonstatEarth2SphereIso(x, y, cov, z); break;
+      //    case E2Sph : nonstatEarth2Sphere(x, y, cov, z); break;
+    case Sph2SphIso : nonstatSphere2SphereIso(x, y, cov, z); break;     
+      //    case Sph2Sph : nonstatSphere2Sphere(x, y, cov, z); break;  
     default : //e.g. SId, E2E, ...
       // S2FORBIDDEN :
       //      printf("gnr=%d\n", gnr);
@@ -619,40 +660,48 @@ void nonstat2stat(double *x, double *y, model *cov, double *z) {
     x += dim;
     y += dim;
   }
-
 }
 
-void nonstat2(double *x, double *y, model *cov, double *v) {
+void nonstat2(double *x, double *y, int *info, model *cov, double *v) {
+  //  if (PREVDOM(0) != KERNEL) {PMI0(cov); crash(); }
+  assert(PREVDOM(0) == KERNEL);
+  //  printf("nonsat2 !!\n");
+  INFO_TRACE("N2", info, cov);
   //  *v = 1.0; return;
   TALLOC_DOUBLE(z1);
   TALLOC_DOUBLE(z2);
-  int nr = TRAFONR;
+  int nr = TRAFONR; 
   if (cov->calling != NULL && nr != UNSET) {
-    int xdim = GATTERTOTALXDIM;
+    //    printf("earth trafo:\n");
+    int
+      prevdim = PREVXDIM(0),
+      xdim = GATTERTOTALXDIM;
     TALLOC_GATTER_GLOBAL(z1, xdim);
     TALLOC_GATTER_GLOBAL(z2, xdim);
-    DefList[nr].cov(x, cov, z1);
-    DefList[nr].cov(y, cov, z2);
+    DefList[nr].cov(x, info, cov, z1);  // Trafo-FCTN() call 
+    DefList[nr].cov(y, info, cov, z2); // Trafo-FCTN() call 
     x = z1;
     y = z2;
   }
   if (equalsKernel(OWNDOM(0))) {
     assert(DefList[COVNR].nonstat_cov != nonstat2);
-    DefList[COVNR].nonstat_cov(x, y, cov, v);// nicht gatternr
+    DefList[COVNR].nonstat_cov(x, y, info, cov, v);// nicht gatternr
   } else {
-    //  printf("> %s ", NAME(cov));
+    // printf("> %s ", NAME(cov));
     // kernel2xonly:
     TALLOC_GATTER(z, OWNTOTALXDIM);
     nonstat2stat(x, y, cov, z);
-    DefList[COVNR].cov(z, cov, v);// nicht gatternr 
+    DefList[COVNR].cov(z, info, cov, v);// nicht gatternr 
     END_TALLOC_z;
   }
   FREE_TALLOC(z1);
   FREE_TALLOC(z2);
 }
 
-void lognonstat2(double *x, double *y, model *cov,
+void nonstat_log2(double *x, double *y, int *info, model *cov,
 		       double *v, double *Sign) {
+  assert(PREVDOM(0) == KERNEL);
+  INFO_TRACE("NL2", info, cov);
   TALLOC_DOUBLE(z1);
   TALLOC_DOUBLE(z2);
   int nr = TRAFONR;
@@ -660,19 +709,19 @@ void lognonstat2(double *x, double *y, model *cov,
     int xdim = GATTERTOTALXDIM;
     TALLOC_GATTER_GLOBAL(z1, xdim);
     TALLOC_GATTER_GLOBAL(z2, xdim);
-    DefList[nr].cov(x, cov, z1);
-    DefList[nr].cov(y, cov, z2);
+    DefList[nr].cov(x, info, cov, z1); // Trafo-FCTN() call 
+    DefList[nr].cov(y, info, cov, z2); // Trafo-FCTN() call 
     x = z1;
     y = z2;
   }
   if (equalsKernel(OWNDOM(0))) {
-    DefList[COVNR].nonstatlog(x, y, cov, v, Sign);// nicht gatternr
+    DefList[COVNR].nonstatlog(x, y, info, cov, v, Sign);// nicht gatternr
     return;
   } else {
     // kernel2xonly:
     TALLOC_GATTER(z, OWNTOTALXDIM);
     nonstat2stat(x, y, cov, z);
-    DefList[COVNR].log(z, cov, v, Sign);// nicht gatternr
+    DefList[COVNR].log(z, info, cov, v, Sign);// nicht gatternr
     END_TALLOC_z;
   }
   FREE_TALLOC(z1);
@@ -680,7 +729,8 @@ void lognonstat2(double *x, double *y, model *cov,
 }
 
 
-void D_2(double *x, model *cov, double *v){  
+void D_2(double *x, int *info, model *cov, double *v){  
+  INFO_TRACE("D", info, cov);
   assert(everyCoord(isSpaceIsotropic, cov));
   defn *C = DefList + COVNR;// nicht gatternr
   int dim = GATTERXDIM(0); // frueher prevxdim
@@ -692,25 +742,26 @@ void D_2(double *x, model *cov, double *v){
     // dollar + scale // aniso > 0 und dim = 1
     // nach tbm eigentlich auch nicht
 
-    C->D(&y, cov, v);// nicht gatternr
+    C->D(&y, info, cov, v);// nicht gatternr
   } else {
     assert(dim == 2);
     if (OWNTOTALXDIM == 1) {
       assert(equalsIsotropic(OWNISO(0)));
-      double y=SQRT(x[0] * x[0] + x[1] * x[1]);    
-      C->D(&y, cov, v);
-      if (y!=0.0) *v *= x[0] / y;
+      double r=SQRT(x[0] * x[0] + x[1] * x[1]);    
+      C->D(&r, info, cov, v);
+      if (r!=0.0) *v *= x[0] / r;
     } else {
       assert(OWNTOTALXDIM == 2);
       double y[2];
       y[0] = FABS(x[0]);
       y[1] = FABS(x[1]);
-      C->D(y, cov, v); 
+      C->D(y, info, cov, v); 
     }
   }
 }
 
-void DD_2(double *x, model *cov, double *v) {
+void DD_2(double *x, int *info, model *cov, double *v) {
+  INFO_TRACE("D2", info, cov);
   assert(everyCoord(isSpaceIsotropic, cov));
   defn *C = DefList + COVNR;// nicht gatternr
   assert(everyCoord(isIsotropic, cov));
@@ -721,40 +772,123 @@ void DD_2(double *x, model *cov, double *v) {
     // iso2iso ueberpruefen !!!
     // dollar + scale // aniso > 0 und dim = 1
     // nach tbm eigentlich auch nicht
-    C->D2(&y, cov, v);// nicht gatternr
+    C->D2(&y, info, cov, v);// nicht gatternr
   } else {
     //   assert(PREVTOTALXDIM == 2);
     assert(dim == 2);
     system_type *def = DEF;
     if (isIsotropic(def)) {
-      double w,
-	xSq = x[0] * x[0],
-	tSq = x[1] * x[1],
-	ySq = xSq + tSq,
-	y   = SQRT(ySq); 
+      double
+	x2 = x[0] * x[0],
+	t2 = x[1] * x[1],
+	r2 = x2 + t2,
+	r   = SQRT(r2); 
       
       // (c'(r) * x/r)' = c''(r) * x^2/r^2 + c'(r) [ 1/r - x^2 / r^3]
-      C->D2(&y, cov, v);// nicht gatternr
-      if (y != 0.0) {
-	C->D(&y, cov, &w);
-	w /= y;
-	*v = (*v - w) * xSq / ySq + w;
-      } else {    
-	// nothing to do ?
-	// *v = x[0] / y;
-      }
+      C->D2(&r, info, cov, v);// nicht gatternr
+      if (r != 0.0) {
+	double w;
+	C->D(&r, info, cov, &w);
+	w /= r;
+	*v = (*v - w) * x2 / r2 + w;
+      }// else nothing to do
     } else if (equalsSpaceIsotropic(def)) {
       double y[2];
       y[0] = FABS(x[0]);
       y[1] = FABS(x[1]);
-      C->D2(y, cov, v); // nicht gatternr
+      C->D2(y, info, cov, v); // nicht gatternr
     } else BUG;
   }
 }
 
-void DD_3(double VARIABLE_IS_NOT_USED *x, model VARIABLE_IS_NOT_USED *cov, double VARIABLE_IS_NOT_USED *v) {
+void D3_2(double *x, int *info, model *cov, double *v) {
+  INFO_TRACE("D3", info, cov);
   assert(everyCoord(isSpaceIsotropic, cov));
-  ERR("DD_3 to be programmed\n");
+  defn *C = DefList + COVNR;// nicht gatternr
+  assert(everyCoord(isIsotropic, cov));
+  int dim = GATTERXDIM(0);
+  if (dim == 1) {
+    double y = FABS(*x);
+    // iso2iso ueberpruefen !!!
+    // dollar + scale // aniso > 0 und dim = 1
+    // nach tbm eigentlich auch nicht
+    C->D3(&y, info, cov, v);// nicht gatternr
+  } else {
+    //   assert(PREVTOTALXDIM == 2);
+    assert(dim == 2);
+    system_type *def = DEF;
+    if (isIsotropic(def)) {
+      double 
+	x2 = x[0] * x[0],
+	t2 = x[1] * x[1],
+	r2 = x2 + t2,
+	r   = SQRT(r2); 
+      
+      C->D3(&r, info, cov, v);
+      if (r != 0.0) {
+	double D1, D2,
+	  u = x[0] / r,
+	  u2 = u * u,
+	  w = x[0] / r2;
+	C->D(&r, info, cov, &D1);
+	C->D2(&r, info, cov, &D2);       
+	*v =  *v * u * u2 + 3.0 * (1 - u2) * w * (D2 - D1 / r);
+      } 
+    } else if (equalsSpaceIsotropic(def)) {
+      double y[2];
+      y[0] = FABS(x[0]);
+      y[1] = FABS(x[1]);
+      C->D3(y, info, cov, v); // nicht gatternr
+    } else BUG;
+  }
+
+}
+
+
+void D4_2(double *x, int *info, model *cov, double *v) {
+  INFO_TRACE("D4", info, cov);
+ assert(everyCoord(isSpaceIsotropic, cov));
+  defn *C = DefList + COVNR;// nicht gatternr
+  assert(everyCoord(isIsotropic, cov));
+  int dim = GATTERXDIM(0);
+  if (dim == 1) {
+    double y = FABS(*x);
+    // iso2iso ueberpruefen !!!
+    // dollar + scale // aniso > 0 und dim = 1
+    // nach tbm eigentlich auch nicht
+    C->D4(&y, info, cov, v);// nicht gatternr
+  } else {
+    //   assert(PREVTOTALXDIM == 2);
+    assert(dim == 2);
+    system_type *def = DEF;
+    if (isIsotropic(def)) {
+      double 
+	x2 = x[0] * x[0],
+	t2 = x[1] * x[1],
+	r2 = x2 + t2,
+	r   = SQRT(r2); 
+      
+      C->D4(&r, info, cov, v);
+      if (r != 0.0) {
+	double D1, D2, D3,
+	  u = x[0] / r,
+	  u2 = u * u,
+	  u4 = u2 * u2,
+	  w = x2 / r;
+	C->D(&r, info, cov, &D1);
+	C->D2(&r, info, cov, &D2);       
+	C->D3(&r, info, cov, &D3);       
+	*v = *v * u4 + 6.0 * D3 * u * w * (1 - u2) 
+	  + 3.0 * (1 - 6 * u2 + 5 * u4) * (D2  - D1 / r) / r2;
+      } 
+    } else if (equalsSpaceIsotropic(def)) {
+      double y[2];
+      y[0] = FABS(x[0]);
+      y[1] = FABS(x[1]);
+      C->D4(y, info, cov, v); // nicht gatternr
+    } else BUG;
+  }
+
 }
 
 
@@ -764,13 +898,13 @@ void inverse2(double *x, model *cov, double *v) {
 }
    
 
-void nonstatinverse2(double *v, model *cov, double *x, double *y){
+void inverse_nonstat2(double *v, model *cov, double *x, double *y){
   defn *C = DefList + COVNR;// nicht gatternr
 
-  C->nonstat_inverse(v, cov, x, y);//  nicht gatternr
+  C->inverse_nonstat(v, cov, x, y);//  nicht gatternr
 }
 
-void nonstat_loginverse2(double *v, model *cov, double *x, double *y){
+void inverse_log_nonstat2(double *v, model *cov, double *x, double *y){
   defn *C = DefList + COVNR;// nicht gatternr
 
   C->nonstat_loginverse(v, cov, x, y);//  nicht gatternr
@@ -781,26 +915,25 @@ void nonstat_loginverse2(double *v, model *cov, double *x, double *y){
 int struct2(model *cov, model **newmodel) {
   int err;
   errorloc_type errloc_save;
-  KEY_type *KT = cov->base;
+  char *error_location = cov->base->error_location;  
 
   if (!cov->checked) {
     BUG;
   }
-  STRCPY(errloc_save, KT->error_loc);
-  SPRINTF(KT->error_loc, "setting up %.50s", NICK(cov));
+  STRCPY(errloc_save, error_location);
+  SPRINTF(error_location, "setting up %.50s", NICK(cov));
  
   err = DefList[COVNR].Struct(cov, newmodel);
    if (newmodel != NULL && (*newmodel) != NULL) {
     SET_CALLING(*newmodel, cov->calling != NULL ? cov->calling : cov);
   }
  
-  if (err == NOERROR) STRCPY(KT->error_loc, errloc_save);
+  if (err == NOERROR) STRCPY(error_location, errloc_save);
 
   RETURN_ERR(err);
 }
 
-int init2(model *cov, gen_storage *s){ // s wird durchgereicht!
-
+int init2(model *cov, gen_storage *s){ // s wird durchgereicht!  
   defn *C = DefList + COVNR; //  nicht gatternr
   model
     *calling = cov->calling == NULL ? cov : cov->calling;
@@ -808,8 +941,8 @@ int init2(model *cov, gen_storage *s){ // s wird durchgereicht!
     err = NOERROR,
     kappas = DefList[COVNR].kappas;
   errorloc_type errloc_save;
-  KEY_type *KT = cov->base;
-  STRCPY(errloc_save, KT->error_loc);
+  char *error_location = cov->base->error_location;  
+  STRCPY(errloc_save, error_location);
    
   //  PrInL++;
 
@@ -826,7 +959,7 @@ int init2(model *cov, gen_storage *s){ // s wird durchgereicht!
 
   if (cov->method == Forbidden) { cov->method = calling->method; }
   
-  SPRINTF(KT->error_loc, "Initializing %.50s", NICK(cov));
+  SPRINTF(error_location, "Initializing %.50s", NICK(cov));
   if (!equalsBernoulliProcess(cov)) {
     switch(cov->frame) {
     case GaussMethodType :
@@ -857,9 +990,9 @@ int init2(model *cov, gen_storage *s){ // s wird durchgereicht!
   
  ErrorHandling :
   //  PrInL--;
-  if (err == NOERROR) STRCPY(KT->error_loc, errloc_save);
+  if (err == NOERROR) STRCPY(error_location, errloc_save);
   cov->initialised = err == NOERROR;
-  SPRINTF(KT->error_loc, "'%.50s'", NICK(calling));//  nicht gatternr   
+  SPRINTF(error_location, "'%.50s'", NICK(calling));//  nicht gatternr   
   RETURN_ERR(err);
 }
 
@@ -887,6 +1020,25 @@ void dorandom2(model *cov, double *v){
 
 
 
+void nonstat2statcov(double *x, double *y, int*info, model *cov, double *v) {
+  assert(equalsXonly(OWNDOM(0)));
+  int dim = PREVTOTALXDIM;
+  TALLOC_GATTER(z, PREVTOTALXDIM);
+  for (int i=0; i<dim; i++) z[i] = x[i] - y[i];  
+  COV(z, info, cov, v);
+  END_TALLOC_z;
+}
+
+
+void lognonstat2statcov(double *x, double *y, int*info, model *cov, double *v,
+			double *sign) {
+  assert(equalsXonly(OWNDOM(0)));
+  int dim = PREVTOTALXDIM;
+  TALLOC_GATTER(z, PREVTOTALXDIM);
+  for (int i=0; i<dim; i++) z[i] = x[i] - y[i];
+  LOGCOV(z, info, cov, v, sign);
+  END_TALLOC_z;
+}
 
 
 /*
@@ -945,6 +1097,9 @@ bool allowedD(model *cov) {
   assert(!isSubModelD(C) || C->Dallowed != NULL);
   if ((C->Dallowed != NULL)) {
     //printf("subi\n");
+    model *calling = cov->calling;
+    assert(calling != NULL);
+    cov->prevloc = LocP(calling);
     return C->Dallowed(cov);
   }
 
@@ -980,6 +1135,7 @@ bool allowedItrue(model *cov) {
 
 
 bool allowedI(model *cov) {
+  //  printf("all %s\n", NAME(cov));
   // if (cov->IallowedDone) return false; // 20.10.19 auskommentiert wegen wiederholten aufruf bei iso=PREVMODEL_I
 
   //printf("allowedI:%s %d\n", NAME(cov), cov->zaehler);
@@ -991,9 +1147,17 @@ bool allowedI(model *cov) {
   int variants = C->variants;
   bool *I = cov->allowedI;
 
-  cov->variant=0;
+  //  printf("hiere %d \n", C->Iallowed != NULL);
+
+ cov->variant=0;
   assert(!isSubModelI(C) || C->Iallowed != NULL);
-  if (C->Iallowed != NULL) return C->Iallowed(cov);
+  if (C->Iallowed != NULL) {
+    model *calling = cov->calling;
+    assert(calling != NULL);
+    cov->prevloc = LocP(calling);
+    return C->Iallowed(cov);
+  }
+
   
   for (int i=(int) FIRST_ISOUSER; i<=(int) LAST_ISOUSER; I[i++] = false);
   
@@ -1050,13 +1214,19 @@ bool allowedIsubs(model *cov, model **sub, int z){
     if (++j >= z) return allowedItrue(cov);
   }
   MEMCOPY(I, sub[j]->allowedI, sizeof(allowedI_type));
-  //for (int i=(int) FIRST_ISOUSER; i<=(int) LAST_ISOUSER; i++)  printf("%d \n", I[i]);
-  //printf("%s j=%d\n", NAME(sub[j]), j);  printI(sub[j]);
+  //  for (int i=(int) FIRST_ISOUSER; i<=(int) LAST_ISOUSER; i++)  printf("%d \n", I[i]);
+  //  printf("%s j=%d\n", NAME(sub[j]), j);  printI(sub[j]);
       
   while (idx_C <= (int) CARTESIAN_COORD && !I[idx_C]) idx_C++;
   while (idx_E <= (int) EARTH_COORD && !I[idx_E]) idx_E++;
   while (idx_S <= (int) SPHERICAL_COORD && !I[idx_S]) idx_S++;
   //PMI(sub[j]);
+  //  if (!(idx_C <= (int) CARTESIAN_COORD || idx_E <= (int) EARTH_COORD ||
+  //	 idx_S <= (int) SPHERICAL_COORD)) {
+    //    PMI(cov);    printI(cov);    printI(cov->sub[0]);
+    //    printf("allowIsub %s %d<%d %d<%d %d<%d\n", NAME(cov), idx_C,CARTESIAN_COORD, idx_E, EARTH_COORD ,idx_S,SPHERICAL_COORD);
+    //crash();
+  //  }
   assert(idx_C <= (int) CARTESIAN_COORD || idx_E <= (int) EARTH_COORD ||
 	 idx_S <= (int) SPHERICAL_COORD);
   if (idx_C > CARTESIAN_COORD) {

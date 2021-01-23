@@ -58,12 +58,11 @@ SEXP countneighbours(SEXP Xdim, SEXP Parts, SEXP Squarelength,
   int d,  totcumlen, relstart, y, e,
     dim = INTEGER(Xdim)[0],
     *nb = (int*) MALLOC(sizeof(int) * dim), 
-    *loc = (int*) MALLOC(sizeof(int) * dim), 
+    *location = (int*) MALLOC(sizeof(int) * dim), 
     x = 0,
     sum = 0,
     sl = INTEGER(Squarelength)[0],
       boundary = (sl - 1) / 2,
-    //   total = cumgridlen[dim],
     maxn = INTEGER(MAXN)[0],
     *parts = INTEGER(Parts),
     *cumgridlen = INTEGER(Cumgridlen),
@@ -75,7 +74,7 @@ SEXP countneighbours(SEXP Xdim, SEXP Parts, SEXP Squarelength,
  
   totcumlen = 0;
   for (d=0; d<dim; d++) {
-    loc[d] = -boundary; 
+    location[d] = -boundary; 
     nb[d] = 0;
     totcumlen += cumgridlen[d];
     //print("%d %d %d\n", d, totcumlen, cumgridlen[d]);
@@ -96,24 +95,24 @@ SEXP countneighbours(SEXP Xdim, SEXP Parts, SEXP Squarelength,
       bool inside = true;
       int j;
       for (j=0; j<dim; j++) {
-	int abs = loc[j] + nb[j];
-	//printf("j=%d loc=%d nb=%d abs=%d >= %d ?\n", j, loc[j], nb[j], abs, parts[j]);
+	int abs = location[j] + nb[j];
+	//printf("j=%d loc=%d nb=%d abs=%d >= %d ?\n", j, location[j], nb[j], abs, parts[j]);
 	if (abs < 0 || abs>=parts[j]) {inside=false; break;}
       }
       if (inside) {
-	//   	printf("inside %d (%d, %d)\n", y, loc[0], loc[1]);
+	//   	printf("inside %d (%d, %d)\n", y, location[0], location[1]);
 	sum += boxes[y];
 	neighbours[x]++;
       }
       e = 0;	
-      loc[e]++;
+      location[e]++;
       y++;
-      // printf("loc[e]=%d > %d ?\n", loc[e], boundary);
-      while (loc[e] > boundary) {
-	loc[e] = -boundary; 
+      // printf("location[e]=%d > %d ?\n", location[e], boundary);
+      while (location[e] > boundary) {
+	location[e] = -boundary; 
 	y -= cumgridlen[e] * sl;
 	if (++e >= dim) break;
-	loc[e]++;
+	location[e]++;
 	y += cumgridlen[e];
       }
       //print("e=%d\n", e);
@@ -148,7 +147,7 @@ SEXP countneighbours(SEXP Xdim, SEXP Parts, SEXP Squarelength,
  ErrorHandling:
   UNPROTECT(1);
   FREE(nb);
-  FREE(loc);
+  FREE(location);
   return Neighbours;
 }
 
@@ -226,7 +225,7 @@ SEXP getneighbours(SEXP Xdim, SEXP Parts, SEXP Squarelength,
     err = NOERROR,
     dim = INTEGER(Xdim)[0],    
     *nb = (int*) MALLOC(sizeof(int) * dim), 
-    *loc = (int*) MALLOC(sizeof(int) * dim), 
+    *location = (int*) MALLOC(sizeof(int) * dim), 
     *parts = INTEGER(Parts),
     sl = INTEGER(Squarelength)[0],
     *cumgridlen = INTEGER(Cumgridlen),
@@ -256,7 +255,7 @@ SEXP getneighbours(SEXP Xdim, SEXP Parts, SEXP Squarelength,
   x = 0;
   totcumlen = 0;
   for (d=0; d<dim; d++) {
-    loc[d] = -boundary; 
+    location[d] = -boundary; 
     nb[d] = 0;
     totcumlen += cumgridlen[d];
   }
@@ -271,7 +270,7 @@ SEXP getneighbours(SEXP Xdim, SEXP Parts, SEXP Squarelength,
       bool inside = true;
       int j;
       for (j=0; j<dim; j++) {
-        int abs = loc[j] + nb[j];
+        int abs = location[j] + nb[j];
 	if (abs < 0 || abs>=parts[j]) {inside=false; break;}
       }
       if (inside) {
@@ -280,13 +279,13 @@ SEXP getneighbours(SEXP Xdim, SEXP Parts, SEXP Squarelength,
       }
 
       e = 0;	
-      loc[e]++;
+      location[e]++;
       y++;
-      while (loc[e] > boundary) {
-	loc[e] = -boundary; 
+      while (location[e] > boundary) {
+	location[e] = -boundary; 
 	y -= cumgridlen[e] * sl;
 	if (++e >= dim) break;
-	loc[e]++;
+	location[e]++;
 	y += cumgridlen[e];
       }
     }
@@ -323,7 +322,7 @@ SEXP getneighbours(SEXP Xdim, SEXP Parts, SEXP Squarelength,
  
 
  ErrorHandling :
-  FREE(loc);
+  FREE(location);
   FREE(nb);
   if (neighb != NULL) {
     for (i=0; i<total; i++) FREE(neighb[i]);

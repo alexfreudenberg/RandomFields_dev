@@ -36,7 +36,7 @@ int check_specificGauss(model *cov) {
     *next= cov->sub[0];
   int err ,
     dim = ANYDIM; // taken[MAX DIM],
-  //  direct_param *gp  = &(GLOBAL.direct); //
+  //  direct_param *gp  = &(globa l->direct); //
 
   FRAME_ASSERT_GAUSS_INTERFACE;
    
@@ -100,7 +100,6 @@ int check_specificGauss(model *cov) {
 int struct_specificGauss(model *cov, model VARIABLE_IS_NOT_USED **newmodel) {
   model 
     *next = cov->sub[0];
-  // location_type *loc = PrevLoc(cov);
   int err;
   if (next->pref[Specific] == PREF_NONE) {
     RETURN_ERR(ERRORPREFNONE);
@@ -122,7 +121,7 @@ int struct_specificGauss(model *cov, model VARIABLE_IS_NOT_USED **newmodel) {
   }
   //  PMI0(cov->key); 
 
- 
+
   SET_NR(cov->key, DefList[MODELNR(cov->key)].Specific);
   //  printf("reset modelnr\n");
   // check_passtf hier funktioniert nicht wegen plus, was zuerst
@@ -136,10 +135,12 @@ int struct_specificGauss(model *cov, model VARIABLE_IS_NOT_USED **newmodel) {
   set_type(PREVSYSOF(cov->key), 0, GaussMethodType);
   set_type(SYSOF(cov->key), 0, GaussMethodType);
 
-  
+ 
   if ((err = STRUCT(cov->key, NULL)) != NOERROR) RETURN_ERR(err);
 
-  //  printf("ok\n");
+
+  //APMI(cov);
+   //  printf("ok\n");
 
   if ((err = CHECK_PASSTF(cov->key, GaussMethodType, VDIM0, GaussMethodType))
       != NOERROR) {

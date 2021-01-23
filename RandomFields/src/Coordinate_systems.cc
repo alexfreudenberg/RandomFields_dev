@@ -104,12 +104,13 @@ double latmod(double x, double modulus) {
 
 
 #define STATMOD(Z, X, lon, lat)				\
-    STATMODE_BASE(X, Z, lon, lat);				\
+    STATMOD_BASE(X, Z, lon, lat);				\
     for (int d = 2; d < dim; d++) X[d] = Z[d]
+  
 
 void statmod2(double *x, double lon, double lat, double *y) {
   //STATMOD(y, x, lon, lat);
-  STATMODE_BASE(x, y, lon, lat);
+  STATMOD_BASE(x, y, lon, lat);
 }
 	
 
@@ -126,8 +127,8 @@ void statmod2(double *x, double lon, double lat, double *y) {
   double xx[2] = {x[0], x[1]},						\
     yy[2] = {y[0], y[1]},						\
     cosine = SIN(xx[1]) * SIN(yy[1]) +					\
-             (cos(xx[0]) * cos(yy[0]) + SIN(xx[0]) * SIN(yy[0])) *      \
-             cos(xx[1]) * cos(yy[1]);				       	\
+             (COS(xx[0]) * COS(yy[0]) + SIN(xx[0]) * SIN(yy[0])) *      \
+             COS(xx[1]) * COS(yy[1]);				       	\
     cosine = cosine <= 1.0 ? (cosine < -1.0 ? -1.0 : cosine) : 1.0;	\
     X[0] = ACOS(cosine);						\
     for (int s=1; s<last; s++) {					\
@@ -141,20 +142,20 @@ void statmod2(double *x, double lon, double lat, double *y) {
 
 
 void EarthIso2EarthIso(double *x) { x[0]=isomod(x[0], 180); }
-void Earth2Earth(double *x) { STATMODE_BASE(x, x, 360, 180); }
+void Earth2Earth(double *x) { STATMOD_BASE(x, x, 360, 180); }
 
-void NonstatEarth2EarthIso(double *x, double *y, model *cov, 
+void nonstatEarth2EarthIso(double *x, double *y, model *cov, 
 			   double *X) {
   ESnonstat2iso(piD180 * x, piD180 * y);
   X[0] *= H80Dpi;
 }
 
 
-void NonstatEarth2Earth(double *x, double *y, model *cov, 
+void nonstatEarth2Earth(double *x, double *y, model *cov, 
 			double *X, double *Y) {
   int dim=PREVTOTALXDIM;					
   STATMOD(x, X, 360, 180);					
-  STATMOD(y, Y, 360, 180);					
+  STATMOD(y, Y, 360, 180);
 }
 
 
@@ -168,18 +169,18 @@ void EarthIso2SphereIso(double *x, model *cov, double *X) {
   ISOMOD(piD180 * x, X, M_PI);
 }
 
-void NonstatEarth2SphereIso(double *x, double *y, model *cov, double *X) {
+void nonstatEarth2SphereIso(double *x, double *y, model *cov, double *X) {
   ESnonstat2iso(piD180 * x, piD180 * y);
 }
 
 
 void Earth2Sphere(double *x, model *cov, double *X) {
   int dim=PREVTOTALXDIM;			       
-  STATMODE_BASE(X, piD180 * x, M_2_PI, M_PI);
+  STATMOD_BASE(X, piD180 * x, M_2_PI, M_PI);
   for (int d = 2; d < dim; d++) X[d] = x[d];
 }
 
-void NonstatEarth2Sphere(double *x, double *y, model *cov, 
+void nonstatEarth2Sphere(double *x, double *y, model *cov, 
 			 double *X, double *Y) {
   int dim=PREVTOTALXDIM;	
   STATMOD(piD180 * x, X, M_2_PI, M_PI);
@@ -187,14 +188,14 @@ void NonstatEarth2Sphere(double *x, double *y, model *cov,
 }
 
 void SphereIso2SphereIso(double *x) {x[0]=isomod(x[0], M_PI); }
-void Sphere2Sphere(double *x) { STATMODE_BASE(x, x, M_2_PI, M_PI); }
+void Sphere2Sphere(double *x) { STATMOD_BASE(x, x, M_2_PI, M_PI); }
 
-void NonstatSphere2SphereIso(double *x, double *y, model *cov,
+void nonstatSphere2SphereIso(double *x, double *y, model *cov,
 			     double *X) {
   ESnonstat2iso(x, y);
 }
 
-void NonstatSphere2Sphere(double *x, double *y, model *cov, 
+void nonstatSphere2Sphere(double *x, double *y, model *cov, 
 			  double *X, double *Y) {
   int dim=PREVTOTALXDIM;			       
   STATMOD(x, X, M_2_PI, M_PI);
@@ -267,17 +268,17 @@ assert(PREVXDIM(0) == 2 || PREVXDIM(0) == 3);	\
   } else {								\
     EARTH_TRAFO(X, x, RAEQU, RPOL);					\
   }									\
-  for (int d=base; d<dim; d++) X[d - base + 3] = x[d]
+ for (int d=base; d<dim; d++) X[d - base + 3] = x[d]
 
 
 void Earth2Cart(model *cov, double RAEQU, double RPOL, double *yy){
+  // only used by structtrafoproc
   ASSERT_EARTH;								
-  location_type *loc = Loc(cov);
   bool height = hasEarthHeight(PREV);
   double  Rcos, X[4],
-    *x = loc->x;
-  int spatialdim = loc->spatialdim,
-    spatialpts = loc->spatialtotalpoints,
+    *x = Locx(cov);
+  int spatialdim = Locspatialdim(cov),
+    spatialpts = Locspatialpoints(cov),
     base = 2 + (int) height,
     restdim = spatialdim - base,
     bytes = restdim * sizeof(double);
@@ -302,22 +303,23 @@ void Earth2Cart(model *cov, double RAEQU, double RPOL, double *yy){
       }
     }
   }								
-}
+} 
 
-void EarthKM2CartStat(double *x, model *cov, double *X) {
+void EarthKM2CartStat(double *x, INFO, model *cov, double *X) {
   earth2cartInnerStat(radiuskm_aequ, radiuskm_pol);
 }
 
-void EarthKM2Cart(double *x, double *y, model *cov, double *X, double *Y) {
+void EarthKM2Cart(double *x, double *y, INFO, model *cov, double *X, double *Y){
   earth2cartInner(radiuskm_aequ, radiuskm_pol);
 }
 
 
-void EarthMiles2CartStat(double *x, model *cov, double *X) {
+void EarthMiles2CartStat(double *x, INFO, model *cov, double *X) {
   earth2cartInnerStat(radiusmiles_aequ, radiusmiles_pol);
 }
 
-void EarthMiles2Cart(double *x, double *y, model *cov, double *X, double*Y){
+void EarthMiles2Cart(double *x, double *y, INFO,
+		     model *cov, double *X, double*Y){
   earth2cartInner(radiusmiles_aequ, radiusmiles_pol);
 }
 
@@ -325,7 +327,11 @@ void EarthMiles2Cart(double *x, double *y, model *cov, double *X, double*Y){
 #define QZenit 9
 #define Qtotal 12
 int checkEarth(model *cov){
-  // ACHTUNG! KEIN AUFRUF VON SUB[0] !
+   globalparam *global = &(cov->base->global);
+
+   // printf("checkEarch %d %d %d %f %f %ld %ld\n", TRAFONR, EARTHKM2GNOMONIC, EARTHMILES2GNOMONIC, global->coords.zenit[0], global->coords.zenit[1], global, GLOBAL);
+   
+ // ACHTUNG! KEIN AUFRUF VON SUB[0] !
   if (equalsXonly(PREVDOM(0)) // 20.2.14: warum war es vorher OWNDOM(0) == X ONLY?
       && isSymmetric(PREVISO(0))) {
     //darf nie auf "X ONLY-stat" transformiert sein. Es kann aber zB bei 'shape'
@@ -338,11 +344,7 @@ int checkEarth(model *cov){
   if (!isEarth(PREVISO(0))) SERR("earth system expected in first component");
   if (TRAFONR >= FIRST_PLANE && TRAFONR <= LAST_PLANE) {
     assert(GATTERXDIM(0) == 2 && GATTERXDIM(0) == GATTERLOGDIM(0));
-    if (!R_FINITE(GLOBAL.coords.zenit[0]) || !R_FINITE(GLOBAL.coords.zenit[1])){
-      //if (GLOBAL.internal.warn_zenit) {
-	//	GLOBAL.internal.warn_zenit = false;
-	//	WARN1("tried to use non-finite values of '%.50s' in a coordinate transformation. Is the zenit set?\n", coords[ZENIT]);
-      //}
+    if (!R_FINITE(global->coords.zenit[0]) || !R_FINITE(global->coords.zenit[1])){
       SERR1("Tried to use non-finite values of '%.50s' in a coordinate transformation. Is the zenit set?", coords[ZENIT]);
     }
     
@@ -351,9 +353,9 @@ int checkEarth(model *cov){
      double Rcos, X[4];
      assert(cov->Searth != NULL);
      if (TRAFONR == EARTHKM2GNOMONIC) {
-	EARTH_TRAFO(X, GLOBAL.coords.zenit, radiuskm_aequ, radiuskm_pol); 
+	EARTH_TRAFO(X, global->coords.zenit, radiuskm_aequ, radiuskm_pol); 
       } else {
- 	EARTH_TRAFO(X, GLOBAL.coords.zenit, radiusmiles_aequ, radiusmiles_pol);
+ 	EARTH_TRAFO(X, global->coords.zenit, radiusmiles_aequ, radiusmiles_pol);
       }
       double Rsq = 0.0,
 	*zenit = cov->Searth->cart_zenit;
@@ -362,8 +364,8 @@ int checkEarth(model *cov){
 	zenit[d] = X[d] / Rsq; // achtung! nicht s q r t(Rsq) !
       }
     }
-    double Zenit[2] = { GLOBAL.coords.zenit[0] * pi180, 
-			GLOBAL.coords.zenit[1] * pi180},
+    double Zenit[2] = { global->coords.zenit[0] * pi180, 
+			global->coords.zenit[1] * pi180},
       sin0 = SIN(Zenit[0]),
       sin1 = SIN(Zenit[1]),
       cos0 = COS(Zenit[0]),
@@ -425,14 +427,15 @@ int checkEarth(model *cov){
   for (int d = 2; d<dim; d++) {U[d] = x[d]; V[d] = y[d];}
 
 
-void EarthKM2OrthogStat(double *x, model *cov, double *U) {
+void EarthKM2OrthogStat(double *x, INFO, model *cov, double *U) {
   assert(TRAFONR == EARTHKM2ORTHOGRAPHIC);
   orthDefStat;
   earth2cartInnerStat(radiuskm_aequ, radiuskm_pol); // results in X[0], X[1]
   orthTrafoStat;
+  //  printf("Ustat[0] %e %e <= x=%e %e\n", U[0], U[1], x[0], x[1]);
  }
 
-  void EarthKM2Orthog(double *x, double *y, model *cov, double *U, 
+void EarthKM2Orthog(double *x, double *y, INFO, model *cov, double *U, 
 		      double *V) {
   assert(TRAFONR == EARTHKM2ORTHOGRAPHIC);
   orthDef;
@@ -440,15 +443,14 @@ void EarthKM2OrthogStat(double *x, model *cov, double *U) {
   orthTrafo;
 }
  
-
-void EarthMiles2OrthogStat(double *x, model *cov, double *U) {
+void EarthMiles2OrthogStat(double *x, INFO, model *cov, double *U) {
   assert(TRAFONR == EARTHMILES2ORTHOGRAPHIC);
   orthDefStat;
   earth2cartInnerStat(radiusmiles_aequ, radiusmiles_pol);//results in X[0], X[1]
   orthTrafoStat;
 }
 
- void EarthMiles2Orthog(double *x, double *y, model *cov, 
+void EarthMiles2Orthog(double *x, double *y, INFO, model *cov, 
 			double *U, double *V) {
   assert(TRAFONR == EARTHMILES2ORTHOGRAPHIC);
    orthDef;
@@ -464,9 +466,11 @@ void EarthMiles2OrthogStat(double *x, model *cov, double *U) {
 #define GnomonicStat						\
   double factor = 0.0,						\
     *cart_zenit = cov->Searth->cart_zenit;				\
-  for (int d=0; d<3; d++) factor += cart_zenit[d] * X[d];		\
+  for (int d=0; d<3; d++) {\
+   factor += cart_zenit[d] * X[d]; \
+  }\
   if (factor <= 0.0)						\
-    ERR1("locations not on the half-sphere given by the '%.50s'.", \
+    ERR1("Locations not on the half-sphere given by the '%.50s'.", \
 	 coords[ZENIT]);					   \
   for (int d=0; d<3; d++) X[d] /= factor
 
@@ -488,7 +492,7 @@ void EarthMiles2OrthogStat(double *x, model *cov, double *U) {
 
 
 
-void Earth2GnomonicStat(double *x, model *cov, double *U) {
+void Earth2GnomonicStat(double *x, INFO, model *cov, double *U) {
   assert(TRAFONR == EARTHKM2GNOMONIC || TRAFONR == EARTHMILES2GNOMONIC);
   orthDefStat; 
   earth2cartInnerStat(1.0, radiuskm_pol / radiuskm_aequ);//Umwandlung in CartSys
@@ -496,7 +500,8 @@ void Earth2GnomonicStat(double *x, model *cov, double *U) {
   orthTrafoStat; // Projektion dieser Ebene auf R^2
 }
 
- void Earth2Gnomonic(double *x, double *y, model *cov, double *U, double*V){
+void Earth2Gnomonic(double *x, double *y, INFO,
+		    model *cov, double *U, double*V){
   assert(TRAFONR == EARTHKM2GNOMONIC || TRAFONR == EARTHMILES2GNOMONIC);
   orthDef;
   earth2cartInner(1.0, radiuskm_pol / radiuskm_aequ);
@@ -525,6 +530,7 @@ SEXP GetCoordSystem(SEXP keynr, SEXP oldsystem, SEXP newsystem) {
 
   if (knr>=0 && knr <= MODEL_MAX && key[knr] != NULL) {
     cov = key[knr];
+    globalparam *global = &(cov->base->global);
     coord_sys_enum
       os = (coord_sys_enum) GetName(oldsystem, CS[0], 
 				    COORD_SYS_NAMES, nr_coord_sys, coord_auto),
@@ -537,16 +543,16 @@ SEXP GetCoordSystem(SEXP keynr, SEXP oldsystem, SEXP newsystem) {
       n_s = SearchCoordSystem(cov, os, n_s); 
     }
 
-    if (n_s == coord_mix && GLOBAL.internal.warn_coord_change) {    
+    if (n_s == coord_mix && cov->base->global.messages.warn_coord_change) {    
       WARN1("the covariance model relies on at least two different coordinate systems. Use RFgetModelInfo(level=6) and check that this is not due to misspecification of the covariance model. To avoid this warning set 'RFoptions(%.50s=FALSE)'", // OK
-	      internals[INTERNALS_COORD_CHANGE]);
-      GLOBAL.internal.warn_coord_change = false;
+	    messages[MESSAGES_COORD_CHANGE]);
+      cov->base->global.messages.warn_coord_change = false;
     }
 
     bool warn = ((os != coord_auto && os != cartesian) ||
 		 (n_s != coord_keep && n_s != os));
 
-    switch (GLOBAL.general.reportcoord) {
+    switch (global->general.reportcoord) {
     case reportcoord_none :  return R_NilValue;
     case reportcoord_warnings_orally : 
       if (warn) {

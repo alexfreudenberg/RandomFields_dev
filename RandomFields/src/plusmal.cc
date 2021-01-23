@@ -31,8 +31,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "Processes.h"
 #include "startGetNset.h"
 #include "variogramAndCo.h"
+#include "QMath.h"
 //#include "shape.h"
-#include "primitive.others.h"
 
 
 
@@ -65,13 +65,13 @@ int checkplusmal(model *cov) {
     *conform = cov->Splus == NULL ? NULL : cov->Splus->conform;;
   Types covtype = OWNTYPE(0),
     frame = fullXdim ? EvaluationType : cov->frame; // see also below exception:
+  // LikelihoodType is passed downwards if sub is plus!
 
 
   //if (PREVISO(0) == SYMMETRIC) APMI(cov);
-  // LikelihoodType is passed downwards if sub is plus!
   
   /*
-  domain_type covdom = trend ? XONLY : OWNDOM(0);
+  domain_type covdom = trend ? X ONLY : OWNDOM(0);
   int trendiso = U pgradeToCoordinateSystem(OWNISO(0));
   if (trendiso == ISO_MISMATCH) trendiso = OWNISO(0);
   assert(trendiso != ISO_MISMATCH);
@@ -84,8 +84,7 @@ int checkplusmal(model *cov) {
 
   //  if (OWNDOM(0) == XONLY && OWNISO(0) == EARTH_COORD && OWNTYPE(0) == NegDefType && false) { APMI0(cov);}
   // PMI0(cov);
-    
-  
+
   cov->matrix_indep_of_x = true;
   //  printf("checking plus A\n");
   for (int i=0; i<cov->nsub; i++) { 
@@ -95,7 +94,9 @@ int checkplusmal(model *cov) {
       SERR("+ or *: named submodels are not given in a sequence!");
 
     if (plus) {
-      if (top && equalsnowMathDef(sub) && isNegDef(type)) continue;
+      //  if (top && equalsnowMathDef(sub) && isNegDef(type)) // 16.1.21
+      // wird nie erfuellt, sowie undefiniert da qualsnowMa erst nach
+      //
     } else {
       if (equalsVariogram(type)) type=PosDefType; // mult: no multiplication
     }
@@ -112,7 +113,8 @@ int checkplusmal(model *cov) {
       COPYALLSYSTEMS(PREVSYSOF(sub), OWN, false);
       for (int s=0; s<=last; s++) {	
 	set_type(PREVSYSOF(sub), s, type);
-	if (j != 0) set_type(PREVSYSOF(sub), s, TrendType);
+	if (j != 0) set_type(PREVSYSOF(sub), s, TrendType); // iff j == 1
+	//	printf("plus %s %d %s j=%d (%d) %d\n", NAME(cov), i, NAME(sub), j, possibilities,  equalsTrend(type));
 	if (equalsTrend(type)) {
 	  //if (!equalsCoordinateSystem(OWNISO(s))) RETURN_ERR(ERRORWRONGISO);
 	  set_dom(PREVSYSOF(sub), s, XONLY);
@@ -140,12 +142,15 @@ int checkplusmal(model *cov) {
       //     A      PMI0(cov);
 
       // incorrect :
-
       
       if ((err = CHECK_GEN(sub, SUBMODEL_DEP, SUBMODEL_DEP,
 	        	   plus && isPlus(sub) && fullXdim ? LikelihoodType
-			   : type == TrendType ? TrendType : frame, true))
+			   : type == TrendType ? TrendType : frame, //FRAME!!
+			   true))
 	  == NOERROR) break;
+
+      //      printf("err=%d %s\n", err, TYPE_NAMES[type]);      MER R(err);
+      
 
       // 26.2.19; 13.6. wieder geloescht, da durch CanHaveBoth abgedeckt
       // if ((!isNegDef(type) && !isProcess(type)) || isTrend(type)) break;
@@ -204,8 +209,10 @@ int checkplusmal(model *cov) {
     cov->matrix_indep_of_x &= sub->matrix_indep_of_x;
     if (conform != NULL)
       conform[i] = !isBad(TypeConsistency(covtype, SUBTYPE(0)));
+    // printf("i=%d %d %s: %s %s\n",i, conform[i], NAME(sub),
+    //	   TYPE_NAMES[covtype], TYPE_NAMES[SUBTYPE(0)]);
   } // i, nsub
-
+  
   VDIM0 = vdim[0];
   VDIM1 = vdim[1];
 
@@ -223,21 +230,21 @@ int checkplusmal(model *cov) {
 
 
 // see private/old.code/operator.cc for some code including variable locations
-void select(double *x, model *cov, double *v) {
+void select(double *x, int *info, model *cov, double *v) {
   int len,
     *element = PINT(SELECT_SUBNR);
   model *sub = cov->sub[*element];
   assert(VDIM0 == VDIM1);
   if (*element >= cov->nsub) ERR("select: element out of range");
-  COV(x, sub, v);
+  COV(x, info, sub, v);
   if ( (len = cov->nrow[SELECT_SUBNR]) > 1) {
     int i, m,
       vdim = VDIM0,
       vsq = vdim * vdim;
-    TALLOC_XX1(z, vsq);
+    TALLOC_XX1(z, vsq); 
     for (i=1; i<len; i++) {
       sub = cov->sub[element[i]];
-      COV(x, sub, z);
+      COV(x, info, sub, z);
       for (m=0; m<vsq; m++) v[m] += z[m]; 
     }
     END_TALLOC_XX1;
@@ -245,15 +252,15 @@ void select(double *x, model *cov, double *v) {
 }
   
 
-void covmatrix_select(model *cov, double *v) {
+void covmatrix_select(model *cov, bool ignore_y, double *v) {
   int len = cov->nrow[SELECT_SUBNR];
   
   if (len == 1) {
     int element = P0INT(SELECT_SUBNR);
     model *next = cov->sub[element];
     if (element >= cov->nsub) ERR("select: element out of range");
-    DefList[NEXTNR].covmatrix(next, v);
-  }  else StandardCovMatrix(cov, v);
+    DefList[NEXTNR].covmatrix(next, ignore_y, v);
+  } else StandardCovMatrix(cov, ignore_y, v);
 }
 
 char iscovmatrix_select(model VARIABLE_IS_NOT_USED *cov) {  return 2; }
@@ -269,6 +276,7 @@ int checkselect(model *cov) {
   int  i,
     nsub = cov->nsub;
   ONCE_NEW_STORAGE(plus);
+  ONCE_NEWSTOMODEL;
   bool *conform = cov->Splus->conform;
 
   if ((err = checkplusmal(cov)) != NOERROR) {
@@ -314,7 +322,7 @@ void rangeselect(model VARIABLE_IS_NOT_USED *cov, range_type *range){
 
 
 
-void plusStat(double *x, model *cov, double *v){
+void plus(double *x, int *info, model *cov, double *v){
   model *sub;
   int i, m,
     nsub=cov->nsub,
@@ -332,8 +340,9 @@ void plusStat(double *x, model *cov, double *v){
     if (conform[i]) {
       //printf("i=%d\n", i);
       //PMI(cov);
-      
-      FCTN(x, sub, z);
+      //printf("plus i=%d %d %s: %s %s\n",i, conform[i], NAME(sub), TYPE_NAMES[OWNTYPE(0)], TYPE_NAMES[SUBTYPE(0)]);
+        
+      FCTN(x, info, sub, z);
 
       //     TREE0(cov);
       //     PMI(cov);
@@ -351,7 +360,7 @@ void plusStat(double *x, model *cov, double *v){
   END_TALLOC_XX1;
 }
 
-void plusNonStat(double *x, double *y, model *cov, double *v){
+void nonstat_plus(double *x, double *y, int *info, model *cov, double *v){
   model *sub;
   int i, m,
     nsub=cov->nsub,
@@ -363,8 +372,11 @@ void plusNonStat(double *x, double *y, model *cov, double *v){
   for(i=0; i<nsub; i++) {
     sub = cov->sub[i];
     if (conform[i]) {
+      //printf("nonstat plus i=%d %d %s: %s %s\n",i, conform[i], NAME(sub),
+      //       TYPE_NAMES[OWNTYPE(0)], TYPE_NAMES[SUBTYPE(0)]);
+  
       //   if (Type Consistency(cov->typus, sub->typus)) {
-      NONSTATCOV(x, y, sub, z);
+      NONSTATCOV(x, y, info, sub, z);
       if (sub->vdim[0] == 1) for (m=0; m<vsq; m++) v[m] += z[0]; 
       else for (m=0; m<vsq; m++) v[m] += z[m]; 
     }
@@ -372,7 +384,7 @@ void plusNonStat(double *x, double *y, model *cov, double *v){
   END_TALLOC_XX1;
 }
 
-void Dplus(double *x, model *cov, double *v){
+void Dplus(double *x, int *info, model *cov, double *v){
   model *sub;
   int nsub = cov->nsub, i,
     vsq = VDIM0 * VDIM1;
@@ -382,7 +394,7 @@ void Dplus(double *x, model *cov, double *v){
   for (i=0; i<nsub; i++) { 
     sub = cov->sub[i];
     if (conform[i]) {
-      Abl1(x, sub, z);
+      Abl1(x, info, sub, z);
       if (sub->vdim[0] == 1) for (int m=0; m<vsq; m++) v[m] += z[0]; 
       else for (int m=0; m<vsq; m++) v[m] += z[m]; 
     }
@@ -390,7 +402,7 @@ void Dplus(double *x, model *cov, double *v){
   END_TALLOC_XX1;
 }
 
-void DDplus(double *x, model *cov, double *v){
+void DDplus(double *x, int *info, model *cov, double *v){
   model *sub;
   int nsub = cov->nsub, i,
     vsq = VDIM0 * VDIM1;
@@ -400,7 +412,7 @@ void DDplus(double *x, model *cov, double *v){
   for (i=0; i<nsub; i++) { 
     sub = cov->sub[i];
    if (conform[i]) {
-     Abl2(x, sub, z);
+     Abl2(x, info, sub, z);
       if (sub->vdim[0] == 1) for (int m=0; m<vsq; m++) v[m] += z[0]; 
       else for (int m=0; m<vsq; m++) v[m] += z[m]; 
     }
@@ -416,6 +428,7 @@ int checkplus(model *cov) {
   int err, 
     nsub = cov->nsub;
   ONCE_NEW_STORAGE(plus);
+  ONCE_NEWSTOMODEL;
   bool *conform = cov->Splus->conform;
   model *sub = cov->sub[0];
 
@@ -425,7 +438,7 @@ int checkplus(model *cov) {
   //	   (PisNULL(PLUS_TREND)));
   //PMI0(sub);}
   
-  if (cov->nsub == 1 && isPlus(sub) &&
+  if (cov->nsub == 1 && isPlus(sub) && sub->ownloc == NULL &&
       (PisNULL(PLUS_TREND) || PARAMisNULL(sub, PLUS_TREND) ||
        PARAM0INT(sub, PLUS_TREND) ==  P0INT(PLUS_TREND))) {
     
@@ -436,8 +449,8 @@ int checkplus(model *cov) {
     cov->nsub = sub->nsub;
     if (!PARAMisNULL(sub, PLUS_TREND))
       kdefault(cov, PLUS_TREND, PARAM0INT(sub, PLUS_TREND));
-    COV_DELETE_WITHOUTSUB(&sub, cov);
-   }
+    COV_DELETE_WITHOUTSUB(&sub, cov); // OK, da sub->ownloc == NULL
+  }
 
  
   if (!PisNULL(PLUS_TREND) && (P0INT(PLUS_TREND) xor isnowTrend(cov)))  {
@@ -492,9 +505,12 @@ void rangeplus(model VARIABLE_IS_NOT_USED *cov, range_type *range){
 
 bool allowedDplus(model *cov) {
   //assert(COVNR == MULT);
-  model **sub = cov->Splus != NULL && cov->Splus->keys_given
-    ? cov->Splus->keys : cov->sub;
- 
+  model **sub = cov->sub;
+  if (cov->Splus != NULL && cov->Splus->keys_given) {
+    GETSTOMODEL;
+    sub = STOMODEL->keys;
+  }
+
   bool *D = cov->allowedD;
   int nsub = MAXSUB, // cov->nsub,
     j=0,
@@ -541,7 +557,7 @@ bool allowedIplus(model *cov) {
   if (CanHaveBothTrendAndCov(cov)) {
     //printf("can have both\n");
     for(int i=FIRST_ISOUSER; i<= LAST_ISOUSER; i++) I[i] = false;
-    if (DistancesGiven(cov) && GetLocxdimOZ(cov) == 1)
+    if (LocDist(cov) && LocxdimOZ(cov) == 1)
       I[ISOTROPIC] = I[SPHERICAL_ISOTROPIC] = I[EARTH_ISOTROPIC] = true;
     else {
       isotropy_type previso = CONDPREVISO(0); 
@@ -551,18 +567,21 @@ bool allowedIplus(model *cov) {
     return false;
   }
   //ssert(COVNR == MULT);
-  model **Sub = cov->Splus != NULL  && cov->Splus->keys_given
-    ? cov->Splus->keys : cov->sub;
-  //  bool *I = cov->allowedI;
+ 
+  model *sub[MAXSUB]; // llowedIsubs schreibt hier hinein!
   int nsub = cov->nsub,
-    z = 0;
-
-  model *sub[MAXSUB];
+   z = 0;
+  model **Sub=cov->sub;
+  if (cov->Splus != NULL && cov->Splus->keys_given) {
+    GETSTOMODEL;
+    Sub = STOMODEL->keys;
+  }
   for (int i=0; z<nsub; i++) if (Sub[i]!=NULL) sub[z++] = Sub[i];
-  assert(z == nsub);
+  
+  assert(z == nsub); // wenn nicht schlimm -- also nur bei mir testen
   bool allowed = allowedIsubs(cov, sub, z);
   if (COVNR == PLUS) {
-    if (DistancesGiven(cov) && GetLocxdimOZ(cov) == 1) 
+    if (LocDist(cov) && LocxdimOZ(cov) == 1) 
       I[ISOTROPIC] = I[SPHERICAL_ISOTROPIC] = I[EARTH_ISOTROPIC] = true;
     else {
       isotropy_type previso = CONDPREVISO(0); 
@@ -659,7 +678,8 @@ int structplus(model *cov, model VARIABLE_IS_NOT_USED **newmodel){
 
 
 int initplus(model *cov, gen_storage *s){
-  int err,
+  GETSTOMODEL;
+   int err,
     vdim = VDIM0;
   if (VDIM0 != VDIM1) BUG; // ??
 
@@ -674,15 +694,15 @@ int initplus(model *cov, gen_storage *s){
       int nsub = cov->nsub;
       for (int i=0; i<nsub; i++) {
 	model *sub = cov->Splus == NULL || !cov->Splus->keys_given
-	  ? cov->sub[i] : cov->Splus->keys[i];
+	  ? cov->sub[i] : STOMODEL->keys[i];
 	
 	assert(sub != NULL);
 	if (sub->pref[Nothing] > PREF_NONE) { // to do ??
 	  // for spectral plus only
-	  COV(ZERO(sub), sub, var_cum + i);
+	  Zero(sub, var_cum + i);
 	  if (i>0) var_cum[i] += var_cum[i-1];
 	}
-	cov->sub[i]->Sgen = (gen_storage *) MALLOC(sizeof(gen_storage));
+	NEW_COV_STORAGE(cov->sub[i], gen);
 	if ((err = INIT(sub, cov->mpp.moments, s)) != NOERROR) {
 	  //  AERR(err);
 	  RETURN_ERR(err);
@@ -693,7 +713,7 @@ int initplus(model *cov, gen_storage *s){
  
     cov->fieldreturn = (ext_bool) (cov->Splus!=NULL && cov->Splus->keys_given);
     cov->origrf = false;
-    if (cov->fieldreturn) cov->rf = cov->Splus->keys[0]->rf;
+    if (cov->fieldreturn) cov->rf = STOMODEL->keys[0]->rf;
      
     RETURN_NOERROR;
   }
@@ -703,14 +723,14 @@ int initplus(model *cov, gen_storage *s){
     for (int i=0; i<nsub; i++) {
       // e.g. truncsupport( .. + ...) with parts being random
       model *sub = cov->Splus == NULL || !cov->Splus->keys_given
-	? cov->sub[i] : cov->Splus->keys[i];
+	? cov->sub[i] : STOMODEL->keys[i];
       assert(sub != NULL);
       // printf("%s randomkappa=%d moment=%d\n", NAME(sub), sub->randomkappa,cov->mpp.moments);
       if (sub->randomkappa &&
 	  (err = INIT(sub, cov->mpp.moments, s)) != NOERROR) {
-	  //  AERR(err);
-	  RETURN_ERR(err);
-	}
+	//  AERR(err);
+	RETURN_ERR(err);
+      }
     }      
     RETURN_NOERROR;
   }
@@ -721,14 +741,15 @@ int initplus(model *cov, gen_storage *s){
 
 void doplus(model *cov, gen_storage *s) {
   int nsub = cov->nsub;
-  
+  GETSTOMODEL;
+   
   if (hasGaussMethodFrame(cov) && cov->method==SpectralTBM) {
     ERR("error in doplus with spectral");
   }
   
   for (int i=0; i<nsub; i++) {
     model *sub = cov->Splus!=NULL && cov->Splus->keys_given
-      ? cov->Splus->keys[i] : cov->sub[i];
+      ? STOMODEL->keys[i] : cov->sub[i];
     if (sub->randomkappa || isnowRandom(sub)) { // 15.3.19 
       DO(sub, s);
     } // else assert(Defn[MODELNR(sub)]->Do 
@@ -738,11 +759,10 @@ void doplus(model *cov, gen_storage *s) {
 
 
 
-void covmatrix_plus(model *cov, double *v) {
-  location_type *loc = Loc(cov);
+void covmatrix_plus(model *cov, bool ignore_y, double *v) {
   //  defn *C = DefList + COVNR; // nicht gatternr
   Long
-    totalpoints = loc->totalpoints,
+    totalpoints = LoctotalpointsY(cov, ignore_y),
     vdimtot = totalpoints * VDIM0,
     vdimtotSq = vdimtot * vdimtot;
   int
@@ -754,23 +774,19 @@ void covmatrix_plus(model *cov, double *v) {
     // Bei der Berechnung der einzelnen Kovarianzmatrizen, muss darauf
     // geachtet werden, dass u.U. Koord-Trafos stattfinden. Somit
     // wird selectnr aufgerufen
-    if (mem != NULL) {      
-      int j;
-      if (PisNULL(SELECT_SUBNR)) PALLOC(SELECT_SUBNR, 1, 1); // alloc scalar
-      P(SELECT_SUBNR)[0] = 0;
-      DefList[SELECTNR].covmatrix(cov, v);
-      for (int i=1; i<nsub; i++) {
-	if (Loc(cov->sub[i])->totalpoints != totalpoints) BUG;
-	P(SELECT_SUBNR)[0] = i;
-	DefList[SELECTNR].covmatrix(cov, mem);
-	for (j=0; j<vdimtotSq; j++) v[j] += mem[j];
-      }
-      END_TALLOC_X1;
-      return;
+    int nr = 0;
+    model *next = cov->sub[nr];
+    if (LoctotalpointsY(next, ignore_y) != totalpoints) BUG;
+    DefList[NEXTNR].covmatrix(next, ignore_y, v);
+    for (nr=1; nr<nsub; nr++) {
+      next = cov->sub[nr];
+      if (LoctotalpointsY(next, ignore_y) != totalpoints) BUG;
+      DefList[NEXTNR].covmatrix(next, ignore_y, mem);
+      for (int j=0; j<vdimtotSq; j++) v[j] += mem[j];
     }
     END_TALLOC_X1;
   }
-  StandardCovMatrix(cov, v);
+  StandardCovMatrix(cov, ignore_y, v);
 }
 
 char iscovmatrix_plus(model *cov) {
@@ -785,7 +801,7 @@ char iscovmatrix_plus(model *cov) {
 }
 
 
-void malStat(double *x, model *cov, double *v){
+void mal(double *x, int* info, model *cov, double *v){
   model *sub;
   int 
     nsub=cov->nsub,
@@ -797,14 +813,14 @@ void malStat(double *x, model *cov, double *v){
   for (int m=0; m<vsq; v[m++] = 1.0);
   for(int i=0; i<nsub; i++) {
     sub = cov->sub[i];
-    COV(x, sub, z);
+    COV(x, info, sub, z);
     if (sub->vdim[0] == 1) for (int m=0; m<vsq; m++) v[m] *= z[0];
     else for (int m=0; m<vsq; m++) v[m] *= z[m];  
   }
   END_TALLOC_XX1;
 }
 
-void logmalStat(double *x, model *cov, double *v, double *Sign){
+void logmal(double *x, int *info, model *cov, double *v, double *Sign){
   model *sub;
   int 
     nsub=cov->nsub,
@@ -818,7 +834,7 @@ void logmalStat(double *x, model *cov, double *v, double *Sign){
   for (int m=0; m<vsq; m++) {v[m] = 0.0; Sign[m]=1.0;}
   for(int i=0; i<nsub; i++) {
     sub = cov->sub[i];
-    LOGCOV(x, sub, z, zSign);
+    LOGCOV(x, info, sub, z, zSign);
     if (sub->vdim[0] == 1) {
       for (int m=0; m<vsq; m++) {
 	v[m] += z[0]; 
@@ -835,7 +851,7 @@ void logmalStat(double *x, model *cov, double *v, double *Sign){
   END_TALLOC_XX2;
 }
 
-void malNonStat(double *x, double *y, model *cov, double *v){
+void nonstat_mal(double *x, double *y, int* info, model *cov, double *v){
   model *sub;
   int nsub=cov->nsub,
     vdim = VDIM0,
@@ -848,15 +864,15 @@ void malNonStat(double *x, double *y, model *cov, double *v){
   for (int m=0; m<vsq; m++) v[m] = 1.0;
   for(int i=0; i<nsub; i++) {
     sub = cov->sub[i];
-    NONSTATCOV(x, y, sub, z);
+    NONSTATCOV(x, y, info, sub, z);
     if (sub->vdim[0] == 1) for (int m=0; m<vsq; m++) v[m] *= z[0];
     else for (int m=0; m<vsq; m++) v[m] *= z[m];  
   }
   END_TALLOC_XX1;
 }
 
-void logmalNonStat(double *x, double *y, model *cov, double *v, 
-		   double *Sign){
+void nonstat_logmal(double *x, double *y, int *info, model *cov, double *v, 
+		    double *Sign){
   model *sub;
   int  nsub=cov->nsub,
     vdim = VDIM0,
@@ -867,7 +883,7 @@ void logmalNonStat(double *x, double *y, model *cov, double *v,
   for (int m=0; m<vsq; m++) {v[m] = 0.0; Sign[m]=1.0;}
   for(int i=0; i<nsub; i++) {
     sub = cov->sub[i];
-    LOGNONSTATCOV(x, y, sub, z, zSign);
+    LOGNONSTATCOV(x, y, info, sub, z, zSign);
     if (sub->vdim[0] == 1) {
       for (int m=0; m<vsq; m++) {
 	v[m] += z[0]; 
@@ -884,7 +900,7 @@ void logmalNonStat(double *x, double *y, model *cov, double *v,
   END_TALLOC_XX2;
 }
 
-void Dmal(double *x, model *cov, double *v){
+void Dmal(double *x, int* info, model *cov, double *v){
   model *sub;
   int nsub = cov->nsub, 
     vsq = VDIM0 * VDIM1;
@@ -893,8 +909,8 @@ void Dmal(double *x, model *cov, double *v){
 
   for (int i=0; i<nsub; i++) {
     sub = cov->sub[i];
-    COV(x, sub, c + i * vsq);
-    Abl1(x, sub, d + i * vsq);
+    COV(x, info, sub, c + i * vsq);
+    Abl1(x, info, sub, d + i * vsq);
   }
   *v = 0.0;
   for (int i=0; i<nsub; i++) {
@@ -926,7 +942,7 @@ int checkmal(model *cov) {
 
   bool ok = OWNDOM(0) != DOMAIN_MISMATCH &&
     (equalsnowTrend(cov) || equalsnowRandom(cov) ||
-    (isnowShape(cov) && (!isnowNegDef(cov) || isnowPosDef(cov) )));
+     (isnowShape(cov) && (!isnowNegDef(cov) || isnowPosDef(cov) )));
   if (!ok) RETURN_ERR(ERRORNOVARIOGRAM);
    
   // to do istcftype und allgemeiner typ zulassen
@@ -941,7 +957,7 @@ int checkmal(model *cov) {
 	if ((ok =  nr == CONST || nr == BIND)) break;
       }
       if (!ok) SERR2("misuse as a trend function. At least one factor must be a constant (including 'NA') or a vector built with '%.50s(...)' or '%.50s(...).",
-		  DefList[BIND].name,  DefList[BIND].nick);
+		     DefList[BIND].name,  DefList[BIND].nick);
     }
   }
   cov->logspeed = isXonly(OWN) ? 0 : RF_NA;
@@ -994,7 +1010,7 @@ int checkmal(model *cov) {
 Types Typemal(Types required, model *cov, isotropy_type required_iso){
   bool allowed = isShape(required) || isTrend(required) ||
     equalsRandom(required);
-    //||required==ProcessType ||required==GaussMethodType; not yet allowed;to do
+  //||required==ProcessType ||required==GaussMethodType; not yet allowed;to do
   if (!allowed) return BadType;
   int nsub = cov->nsub;
   for (int i=0; i<nsub; i++) {
@@ -1025,7 +1041,8 @@ int initmal(model *cov, gen_storage *s){
     nsub = cov->nsub,
     vdim = VDIM0;
   if (VDIM0 != VDIM1) BUG; // ??
-
+  GETSTOMODEL;
+ 
   int maxv = MIN(vdim, MAXMPPVDIM);
   for (int i=0; i<maxv; i++)cov->mpp.maxheights[i] = RF_NA;
 
@@ -1035,7 +1052,7 @@ int initmal(model *cov, gen_storage *s){
     if (VDIM0 == 1) {
       for (int i=0; i<nsub; i++) {
 	model *sub = cov->Splus == NULL || !cov->Splus->keys_given
-	  ? cov->sub[i] : cov->Splus->keys[i];
+	  ? cov->sub[i] : STOMODEL->keys[i];
 	assert(sub != NULL);
 	if ((err = INIT(sub, cov->mpp.moments, s)) != NOERROR) {
 	  //  AERR(err);
@@ -1054,14 +1071,14 @@ int initmal(model *cov, gen_storage *s){
     for (int i=0; i<nsub; i++) {
       // e.g. truncsupport( .. + ...) with parts being random
       model *sub = cov->Splus == NULL || !cov->Splus->keys_given
-	? cov->sub[i] : cov->Splus->keys[i];
+	? cov->sub[i] : STOMODEL->keys[i];
       assert(sub != NULL);
       // printf("%s randomkappa=%d moment=%d\n", NAME(sub), sub->randomkappa,cov->mpp.moments);
       if (sub->randomkappa &&
 	  (err = INIT(sub, cov->mpp.moments, s)) != NOERROR) {
-	  //  AERR(err);
-	  RETURN_ERR(err);
-	}
+	//  AERR(err);
+	RETURN_ERR(err);
+      }
     }
   }
   RETURN_NOERROR;
@@ -1073,10 +1090,11 @@ void domal(model VARIABLE_IS_NOT_USED *cov,
     ERR("error in 'domal' with spectral");
   }
 
-  int nsub = cov->nsub;
+  GETSTOMODEL;
+   int nsub = cov->nsub;
   for (int i=0; i<nsub; i++) {
     model *sub = cov->Splus!=NULL && cov->Splus->keys_given
-      ? cov->Splus->keys[i] : cov->sub[i];
+      ? STOMODEL->keys[i] : cov->sub[i];
     if (sub->randomkappa || isnowRandom(sub)) { // 15.3.19 
       DO(sub, s);
     } // else assert(Defn[MODELNR(sub)]->Do 
@@ -1128,7 +1146,7 @@ void kappamppplus(int i, model *cov, int *nr, int *nc){
   *nc = i < DefList[COVNR].kappas ? 1 : -1;
 }
 
-void mppplus(double *x, model *cov, double *v) { 
+void mppplus(double *x, int *info, model *cov, double *v) { 
   int
     nsub = cov->nsub,
     vdim = VDIM0,
@@ -1140,7 +1158,7 @@ void mppplus(double *x, model *cov, double *v) {
     for (int m=0; m<vdimSq; m++) v[m] = 0.0;
     for (int n=0; n<nsub; n++, sub++) {
       sub = cov->sub[n];
-      COV(x, sub, z); // urspruenglich : covlist[sub].cov(x, cov, z); ?!
+      COV(x, info, sub, z); // urspruenglich : covlist[sub].cov(x, cov, z); ?!
       for (int i=0; i<vdimSq; i++) v[i] += P(PLUS_P)[n] * z[i];
     }
   } else {
@@ -1152,7 +1170,7 @@ void mppplus(double *x, model *cov, double *v) {
 
 int checkmppplus(model *cov) { 
   ASSERT_ONESYSTEM;
- int err, 
+  int err, 
     size = 1;
   
   SERR("the current version does not support RMmppplus\n");
@@ -1196,16 +1214,18 @@ int struct_mppplus(model *cov, model **newmodel){
   // if (nr == MPPPLUS) return S TRUCT(shape, NULL);
  
   ASSERT_NEWMODEL_NOT_NULL;
-  NEW_STORAGE_WITH_SAVE(plus);
-  plus_storage *s = cov->Splus;
+  NEW_STORAGE(plus);
+  NEW_STORAGE(pgs);
+  NEWSTOMODEL;
+  GETSTOMODEL;
 
   int nsub = cov->nsub;
   for (int i=0; i<nsub; i++) {
-    model *sub = cov->sub[i];          
-    if (s->keys[i] != NULL) COV_DELETE(s->keys + i, cov);    
-    if ((err = covcpy(s->keys + i, sub)) != NOERROR) RETURN_ERR(err);
-    if ((err = addShapeFct(s->keys + i)) != NOERROR) RETURN_ERR(err);
-    SET_CALLING(s->keys[i], cov);
+    model *sub = cov->sub[i];
+    if (STOMODEL->keys[i] != NULL) COV_DELETE(STOMODEL->keys + i, cov);    
+    if ((err = covcpy(STOMODEL->keys + i, sub)) != NOERROR) RETURN_ERR(err);
+    if ((err = addShapeFct(STOMODEL->keys + i)) != NOERROR) RETURN_ERR(err);
+    SET_CALLING(STOMODEL->keys[i], cov);
   }
   RETURN_NOERROR;
 }
@@ -1219,18 +1239,17 @@ int init_mppplus(model *cov, gen_storage *S) {
     vdim = VDIM0;
   if (VDIM0 != VDIM1) BUG;
   if (vdim > MAXMPPVDIM) BUG;
-  pgs_storage *pgs = NULL;
   int maxv = MIN(vdim, MAXMPPVDIM);
   for (int i=0; i<maxv; i++) {
-      maxheight[i] = RF_NEGINF; // maxv
-      M2[i] = M2plus[i] = Eplus[i] = 0.0;
+    maxheight[i] = RF_NEGINF; // maxv
+    M2[i] = M2plus[i] = Eplus[i] = 0.0;
   }
     
-  NEW_STORAGE_WITH_SAVE(pgs);
-  pgs = cov->Spgs;
+  GETSTOMODEL;
+  pgs_storage *pgs = cov->Spgs;
   pgs->totalmass = 0.0;
   
- // loggiven could depend on the realasation; this is determined here
+  // loggiven could depend on the realasation; this is determined here
   // in case the different submodels have different values for loggiven
   // formerly loggiven got the value SUBMODEL_DEP. Now, it gets the
   // value false
@@ -1250,8 +1269,8 @@ int init_mppplus(model *cov, gen_storage *S) {
     else if (cov->fieldreturn != sub->fieldreturn) 
       cov->fieldreturn = (ext_bool) SUBMODEL_DEP;
 
-     pgs->totalmass += sub->Spgs->totalmass * P(PLUS_P)[n];
-     for (int i=0; i<maxv; i++)
+    pgs->totalmass += sub->Spgs->totalmass * P(PLUS_P)[n];
+    for (int i=0; i<maxv; i++)
        if (cov->mpp.maxheights[i] > maxheight[i])  // maxv
 	 maxheight[i] = cov->mpp.maxheights[i]; // maxv
      //  loggiven &= cov->loggiven;
@@ -1332,15 +1351,15 @@ int checkplusmalproc(model *cov) {
   model *sub;
   int err,
     nsub = cov->nsub;
-
+  GETSTOMODEL;
   
   assert(cov->Splus != NULL);
   assert(cov->Splus->keys_given);
   
   for (int i=0; i<nsub; i++) {
 
-    sub = cov->Splus->keys[i];
-     
+    sub = STOMODEL->keys[i];
+    
     if (sub == NULL) 
       SERR("named submodels are not given in a sequence.");
 
@@ -1398,27 +1417,33 @@ int structplusmalproc(model *cov, model VARIABLE_IS_NOT_USED**newmodel){
     dim =  PREVXDIM(0);
   switch(cov->frame) {
   case GaussMethodType : {
-    location_type *loc = Loc(cov);
     ONCE_NEW_STORAGE(plus);
-    plus_storage *s = cov->Splus;
+    ONCE_NEWSTOMODEL;
+    getStorage(s ,     plus);
+    GETSTOMODEL;
     s->keys_given = true;
     int nsub = cov->nsub;
     for (int m=0; m<nsub; m++) {
       model *sub = cov->sub[m];
       bool trend = isnowTrend(sub);
-      if (s->keys[m] != NULL) COV_DELETE(s->keys + m, cov);
-      if ((err =  covcpy(s->keys + m, sub)) != NOERROR) {
+      if (STOMODEL->keys[m] != NULL) COV_DELETE(STOMODEL->keys + m, cov);
+      if ((err =  covcpy(STOMODEL->keys + m, sub)) != NOERROR) {
 	RETURN_ERR(err);
       }
-      assert(s->keys[m] != NULL);
-      assert(s->keys[m]->calling == cov);
+
+
+      //      PMI(cov);
+
+      
+      assert(STOMODEL->keys[m] != NULL);
+      assert(STOMODEL->keys[m]->calling == cov);
       
       if (PL >= PL_STRUCTURE) {
 	LPRINT("plus: trying initialisation of submodel #%d (%s).\n", m+1, 
 	       NICK(sub));
       }
 
-      addModelX(s->keys + m, trend ? TREND_PROC : GAUSSPROC);
+      addModelX(STOMODEL->keys + m, trend ? SHAPE_FCT_PROC : GAUSSPROC);
      
       //printf("isTrend = %d %s\n", isTrend(sub), NAME(sub));
 
@@ -1429,7 +1454,7 @@ int structplusmalproc(model *cov, model VARIABLE_IS_NOT_USED**newmodel){
       //	  RETURN_ERR(err);
       // }
 
-      SET_CALLING(s->keys[m], cov);
+      SET_CALLING(STOMODEL->keys[m], cov);
 
       
 #if MAXSYSTEMS > 1    
@@ -1439,8 +1464,10 @@ int structplusmalproc(model *cov, model VARIABLE_IS_NOT_USED**newmodel){
       	BUG;
       }
 #endif
- 
-      if ((err = CHECK(s->keys[m], loc->timespacedim, loc->timespacedim,
+
+      //PMI0(cov); 
+      int tsdim = Loctsdim(cov);
+      if ((err = CHECK(STOMODEL->keys[m], tsdim, tsdim,
 		       trend ? ProcessType: OWNTYPE(0), XONLY,
 		       PREVISO(0), 
 		       cov->vdim,
@@ -1449,7 +1476,7 @@ int structplusmalproc(model *cov, model VARIABLE_IS_NOT_USED**newmodel){
       }
 
      
-      if ((err = STRUCT(s->keys[m], NULL))  > NOERROR) RETURN_ERR(err);
+      if ((err = STRUCT(STOMODEL->keys[m], NULL))  > NOERROR) RETURN_ERR(err);
       
     }
     
@@ -1482,6 +1509,7 @@ int initplusmalproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
     vdim = VDIM0;
   assert(VDIM0 == VDIM1);
   bool plus = COVNR == PLUS_PROC ;
+ GETSTOMODEL;
 
   int maxv = MIN(vdim, MAXMPPVDIM);
   for (int i=0; i<maxv; i++) cov->mpp.maxheights[i] = RF_NA;
@@ -1491,7 +1519,7 @@ int initplusmalproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
  
     for (int i=0; i<nsub; i++) {
       model *sub = cov->Splus != NULL && cov->Splus->keys_given
-	? cov->Splus->keys[i] : cov->sub[i];
+	? STOMODEL->keys[i] : cov->sub[i];
       if (!plus && 
 	  (SUBNR == CONST 
 	   //|| DefList[sub[0]->nr].check == checkconstant ||
@@ -1499,7 +1527,7 @@ int initplusmalproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
 	   ))
 	continue;
       assert(cov->sub[i]->Sgen==NULL);
-      cov->sub[i]->Sgen = (gen_storage *) MALLOC(sizeof(gen_storage));
+      NEW_COV_STORAGE(cov->sub[i], gen);
       if ((err = INIT(sub, 0, cov->sub[i]->Sgen)) != NOERROR) {
 	RETURN_ERR(err);
       }
@@ -1518,14 +1546,15 @@ int initplusmalproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
 
  
 int initplusproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
-  int err;
-  if ((err = initplusmalproc(cov, s)) != NOERROR) RETURN_ERR(err);
+  GETSTOMODEL;
+ int err;
+ if ((err = initplusmalproc(cov, s)) != NOERROR) RETURN_ERR(err);
 
   if (hasGaussMethodFrame(cov)) {
     cov->fieldreturn = (ext_bool) (cov->Splus!=NULL && cov->Splus->keys_given);
     cov->origrf = false;
     assert(cov->fieldreturn);
-    if (cov->fieldreturn) cov->rf = cov->Splus->keys[0]->rf;
+    if (cov->fieldreturn) cov->rf = STOMODEL->keys[0]->rf;
      
     RETURN_NOERROR;
   }
@@ -1539,11 +1568,12 @@ int initplusproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
 
 
 void doplusproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
+ GETSTOMODEL;
   int
     nsub = cov->nsub,
     total = Loc(cov)->totalpoints * VDIM0;
   double *res = cov->rf;
-  assert(cov->rf == cov->Splus->keys[0]->rf);
+  assert(cov->rf == STOMODEL->keys[0]->rf);
   assert(VDIM0 == VDIM1);
 
   if (hasGaussMethodFrame(cov) && cov->method==SpectralTBM) {
@@ -1552,7 +1582,7 @@ void doplusproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
   assert(cov->Splus != NULL && cov->Splus->keys_given);
 
   for (int m=0; m<nsub; m++) {
-    model *key = cov->Splus->keys[m],
+    model *key = STOMODEL->keys[m],
       *sub = cov->sub[m];
     double *keyrf = key->rf;
     DO(key, sub->Sgen);
@@ -1565,8 +1595,9 @@ void doplusproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
 
 #define MULTPROC_COPIES 0
 int checkmultproc(model *cov) {
+  globalparam *global = &(cov->base->global);
   int err;
-  kdefault(cov, MULTPROC_COPIES, GLOBAL.special.multcopies);
+  kdefault(cov, MULTPROC_COPIES, global->special.multcopies);
   if ((err = checkplusmalproc(cov)) != NOERROR) {
     RETURN_ERR(err);
   }
@@ -1600,6 +1631,7 @@ int initmultproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
 
 
 void domultproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
+  globalparam *global = &(cov->base->global);
   double *res = cov->rf;
   assert(VDIM0 == VDIM1);
   int idx,
@@ -1608,8 +1640,9 @@ void domultproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
    //  vdimSq= vdim * vdim,
     total = Loc(cov)->totalpoints,
    totalvdim = total * vdim,
-   copies = GLOBAL.special.multcopies,
+   copies = global->special.multcopies,
    factors = 0;
+ GETSTOMODEL;
 
   if (hasGaussMethodFrame(cov) && cov->method==SpectralTBM) {
     ERR("error in do_mult with spectral");
@@ -1639,7 +1672,7 @@ void domultproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
 	PRINTF("\rcopies=%d sub=%d\n", c, m);
       }
 
-      model *key = cov->Splus->keys[m],
+      model *key = STOMODEL->keys[m],
 	*sub = cov->sub[m];
       double *keyrf = key->rf;
       if (SUBNR == CONST) {
@@ -1706,11 +1739,11 @@ void rangemultproc(model VARIABLE_IS_NOT_USED *cov, range_type* range){
 
 // $power
 
-void PowSstat(double *x, model *cov, double *v){
-  logPowSstat(x, cov, v, NULL);
+void PowS(double *x, int *info, model *cov, double *v){
+  logPowS(x, info, cov, v, NULL);
 }
 
-void logPowSstat(double *x, model *cov, double *v, double *Sign){
+void logPowS(double *x, int *info, model *cov, double *v, double *Sign){
   model *next = cov->sub[POW_SUB];
   double 
     factor,
@@ -1727,22 +1760,22 @@ void logPowSstat(double *x, model *cov, double *v, double *Sign){
 
   for (i=0; i < xdimown; i++) z[i] = invscale * x[i];
   if (Sign==NULL) {
-    COV(z, next, v);
+    COV(z, info, next, v);
     factor = var * POW(scale, p);
     for (i=0; i<vdimSq; i++) v[i] *= factor; 
   } else {
-    LOGCOV(z, next, v, Sign);
+    LOGCOV(z, info, next, v, Sign);
     factor = LOG(var) + p * LOG(scale);
     for (i=0; i<vdimSq; i++) v[i] += factor; 
   }
   END_TALLOC_X1;
 }
 
-void PowSnonstat(double *x, double *y, model *cov, double *v){
-  logPowSnonstat(x, y, cov, v, NULL);
+void nonstatPowS(double *x, double *y, int *info, model *cov, double *v){
+  nonstat_logPowS(x, y, info, cov, v, NULL);
 }
 
-void logPowSnonstat(double *x, double *y, model *cov, double *v, 
+void nonstat_logPowS(double *x, double *y, int *info, model *cov, double *v, 
 		 double *Sign){
   model *next = cov->sub[POW_SUB];
   double 
@@ -1765,11 +1798,11 @@ void logPowSnonstat(double *x, double *y, model *cov, double *v,
   }
 
   if (Sign==NULL) {
-    NONSTATCOV(z1, z2, next, v);
+    NONSTATCOV(z1, z2, info, next, v);
     factor = var * POW(scale, p);
     for (i=0; i<vdimSq; i++) v[i] *= factor; 
   } else {
-    LOGNONSTATCOV(z1, z2, next, v, Sign);
+    LOGNONSTATCOV(z1, z2, info, next, v, Sign);
     factor = LOG(var) + p * LOG(scale);
     for (i=0; i<vdimSq; i++) v[i] += factor; 
   }
@@ -1790,19 +1823,19 @@ void inversePowS(double *x, model *cov, double *v) {
  assert(VDIM0 == VDIM1);
 
   y = *x / (var * POW(scale, p)); // inversion, so variance becomes scale
-  if (DefList[NEXTNR].inverse == ErrInverse) BUG;
+  if (DefList[NEXTNR].inverse == inverseErr) BUG;
   INVERSE(&y, next, v);
  
   for (i=0; i<vdimSq; i++) v[i] *= scale; 
 }
 
-void nonstatinversePowS(double *x, model *cov, double *left, double *right) {
+void inversenonstatPowS(double *x, model *cov, double *left, double *right) {
   model *next = cov->sub[0];
   int dim = PREVTOTALXDIM;
   if (dim != OWNTOTALXDIM) BUG;
   double s = P0(POWSCALE),
     y = POW(*x, -s);
-  NONSTATINVERSE(&y, next, left, right);
+  INVERSENONSTAT(&y, next, left, right);
   for (int d=0 ; d<dim; d++) {
     left[d] *= s;
     right[d] *= s;

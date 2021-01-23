@@ -38,6 +38,8 @@ RMbubble(phi, scaling, z, weight, minscale, barycentre,
    matrix of the union of all \eqn{z_s}.
    The number of rows equals the dimension of the field.
    If not given, the locations with non-vanishing gradient are taken.
+   (In case of kriging and conditional simulation, the conditioning
+   locations are taken.)
  }
  \item{weight}{vector of weights \eqn{w}
    whose length equals the number of columns of \code{z}.

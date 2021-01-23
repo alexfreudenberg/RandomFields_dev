@@ -6,7 +6,6 @@
  MAXUNITS 	<- as.integer(4)
  MAXCHAR 	<- as.integer(18)
  RFOPTIONS 	<- "RFoptions"
- isGLOBAL 	<- as.integer(NA)
 
  WARN_UNKNOWN_OPTION_ALL 	<- as.integer(3)
  WARN_UNKNOWN_OPTION_SINGLE 	<- as.integer(2)
@@ -91,6 +90,13 @@
  degree 	<- as.integer(1)
 
  last_angle_mode 	<- as.integer(degree)
+
+ noConcerns 	<- as.integer(0)
+ neverRaw 	<- as.integer(1)
+ neverGlobalXT 	<- as.integer(2)
+ ignoreValues 	<- as.integer(3)
+ unsetConcerns 	<- as.integer(4)
+
 
  PARAM_DEP 	<- as.integer(-1)
  PREVMODEL_DEP 	<- as.integer(-2)
@@ -186,8 +192,7 @@ RC_UNREDUCED <- UNREDUCED 	<- as.integer(14)
  MODEL_MLESPLIT 	<- as.integer((FIRST_INTERNAL+5))
  MODEL_LSQ 	<- as.integer((FIRST_INTERNAL+6))
  MODEL_BOUNDS 	<- as.integer((FIRST_INTERNAL+7))
- MODEL_KRIGE 	<- as.integer((FIRST_INTERNAL+8))
- MODEL_PREDICT 	<- as.integer((FIRST_INTERNAL+9))
+ MODEL_PREDICT 	<- as.integer((FIRST_INTERNAL+8))
  MODEL_ERR 	<- as.integer((FIRST_INTERNAL+10))
  MODEL_MAX 	<- as.integer(MODEL_ERR)
 
@@ -230,9 +235,16 @@ RC_UNREDUCED <- UNREDUCED 	<- as.integer(14)
  nOptimiser 	<- as.integer(8)
  nNLOPTR 	<- as.integer(15)
  nLikelihood 	<- as.integer(4)
+ nDuplicatedloc 	<- as.integer(4)
  nNamesOfNames 	<- as.integer(12)
  nVAR2COV_METHODS 	<- as.integer(4)
  nProjections 	<- as.integer(2)
+
+ DUPLICATEDLOC_ERROR 	<- as.integer(0)
+ DUPLICATEDLOC_RISKERROR 	<- as.integer(1)
+ DUPLICATEDLOC_REPEATED 	<- as.integer(2)
+ DUPLICATEDLOC_SCATTER 	<- as.integer(3)
+ DUPLICATEDLOC_LASTERROR 	<- as.integer(DUPLICATEDLOC_RISKERROR)
 
  DetTrendEffect 	<- as.integer(0)
  FixedTrendEffect 	<- as.integer(1)
@@ -313,12 +325,13 @@ RC_UNREDUCED <- UNREDUCED 	<- as.integer(14)
  COVARIATE_C_NAME 	<- "data"
  COVARIATE_X_NAME 	<- "x"
  COVARIATE_RAW_NAME 	<- "raw"
+ COVARIATE_EXTRA_DATA_NAME 	<- "extra_data"
  COVARIATE_ADDNA_NAME 	<- "addNA"
  COVARIATE_NAME_NAME 	<- "name"
 
- CONST_A_NAME 	<- "x"
-
  COVARIATE_DATA_NAME 	<- "data"
+
+ CONST_A_NAME 	<- "x"
 
  MINMAX_PMIN 	<- as.integer(1)
  MINMAX_PMAX 	<- as.integer(2)
@@ -335,17 +348,22 @@ RC_UNREDUCED <- UNREDUCED 	<- as.integer(14)
  MINMAX_ENTRIES 	<- as.integer(MINMAX_COORD)
 
  XLIST_X 	<- as.integer(0)
- XLIST_Y 	<- as.integer(1)
- XLIST_T 	<- as.integer(2)
- XLIST_GRID 	<- as.integer(3)
- XLIST_SPATIALDIM 	<- as.integer(4)
- XLIST_TIME 	<- as.integer(5)
- XLIST_DIST 	<- as.integer(6)
- XLIST_RELEVANT_ELMTS 	<- as.integer((XLIST_DIST+1))
- XLIST_RESTOT 	<- as.integer(7)
- XLIST_L 	<- as.integer(8)
- XLIST_UNITS 	<- as.integer(9)
- XLIST_NEWUNITS 	<- as.integer(10)
+ XLIST_T 	<- as.integer(1)
+ XLIST_GRID 	<- as.integer(2)
+ XLIST_SPATIALDIM 	<- as.integer(3)
+ XLIST_TIME 	<- as.integer(4)
+ XLIST_DIST 	<- as.integer(5)
+ XLIST_Y 	<- as.integer(6)
+ XLIST_TY 	<- as.integer(7)
+ XLIST_GRIDY 	<- as.integer(8)
+ XLIST_RELEVANT_ELMTS 	<- as.integer((XLIST_GRIDY+1))
+
+ XLIST_RESTOT 	<- as.integer(9)
+ XLIST_RESTOTY 	<- as.integer(10)
+ XLIST_UNITS 	<- as.integer(11)
+ XLIST_NEWUNITS 	<- as.integer(12)
+ XLIST_RAWXIDX 	<- as.integer(13)
+ XLIST_RAWSET 	<- as.integer(14)
  XLIST_ENTRIES 	<- as.integer((XLIST_NEWUNITS+1))
 
  PROJ_SPACE 	<- as.integer(-1)
@@ -362,6 +380,7 @@ RC_UNREDUCED <- UNREDUCED 	<- as.integer(14)
 RC_VARIOGRAM <- VARIOGRAM 	<- as.integer(-2)
 RC_MADOGRAM <- MADOGRAM 	<- as.integer(-1)
 RC_COVARIANCE <- COVARIANCE 	<- as.integer(0)
+
 RC_PSEUDOMADOGRAM <- PSEUDOMADOGRAM 	<- as.integer(1)
 RC_PSEUDO <- PSEUDO 	<- as.integer(2)
  TOTAL_FCTN_TYPE 	<- as.integer(5)
@@ -425,6 +444,10 @@ RC_LIKELIHOOD_NAMES <- LIKELIHOOD_NAMES <-
 c( "auto","full","composite","tesselation" )
 
 
+RC_DUPLICATEDLOC_NAMES <- DUPLICATEDLOC_NAMES <-
+c( "error","risk error","regard as repeated","scatter" )
+
+
 RC_ISO_NAMES <- ISO_NAMES <-
 c( "isotropic","space-isotropic","vector-isotropic","symmetric","cartesian system","gnomonic projection","orthographic projection","spherical isotropic","spherical symmetric","spherical system","earth isotropic","earth symmetric","earth system","cylinder system","non-dimension-reducing","framework dependent","submodel dependent","framework or submodel dependent","parameter dependent","<internal keep copy>","<mismatch>" )
 
@@ -469,16 +492,8 @@ c( "","km","miles","<time>","<user defined>" )
 c( "auto","keep","cartesian","earth","sphere","gnomonic","orthographic","coordinate system mix" )
 
 
- COORD_NAMES_CART <-
-c( "x","y","z","T" )
-
-
  COORD_NAMES_GENERAL <-
 c( "coords.x","coords.T" )
-
-
- COORD_NAMES_EARTH <-
-c( "longitude","latitude","height","time" )
 
 
  CARTESIAN_SYS_NAMES <-
@@ -518,9 +533,9 @@ c( "optimized","standard","any" )
 
 
 
-list2RMmodel_Names <- c('R.acos', 'R.acosh', 'R.asin', 'R.asinh', 'R.atan', 'R.atan2', 'R.atanh', 'R.c', 'R.cbrt', 'R.ceil', 'R.const', 'R.cos', 'R.cosh', 'R.div', 'R.erf', 'R.erfc', 'R.exp', 'R.exp2', 'R.expm1', 'R.fabs', 'R.fdim', 'R.floor', 'R.fmax', 'R.fmin', 'R.fmod', 'R.gamma', 'R.ggamma', 'R.hypot', 'R.is', 'R.lat', 'R.lgamma', 'R.log', 'R.log1p', 'R.log2', 'R.lon', 'R.minus', 'R.mult', 'R.p', 'R.plus', 'R.pow', 'R.remainder', 'R.round', 'R.sin', 'R.sinh', 'R.sqrt', 'R.tan', 'R.tanh', 'R.trunc', 'RFboxcox', 'RFcalc', 'RFcov', 'RFcovariance', 'RFcovmatrix', 'RFcrossvalidate', 'RFddistr', 'RFdistr', 'RFearth2cartesian', 'RFearth2dist', 'RFempiricalcovariance', 'RFempiricalmadogram', 'RFempiricalvariogram', 'RFfctn', 'RFfit', 'RFformula', 'RFfractaldim', 'RFgetMethodNames', 'RFgetModel', 'RFgetModelInfo', 'RFgetModelInfo_model', 'RFgetModelInfo_register', 'RFgetModelNames', 'RFgridDataFrame', 'RFgui', 'RFhessian', 'RFhurst', 'RFinterpolate', 'RFlikelihood', 'RFlinearpart', 'RFmadogram', 'RFoldstyle', 'RFpar', 'RFparameters', 'RFpdistr', 'RFplot', 'RFplotEmpVariogram', 'RFplotEmpVariogramX', 'RFplotModel', 'RFplotSimulation', 'RFplotSimulation1D', 'RFpointsDataFrame', 'RFpseudomadogram', 'RFpseudovariogram', 'RFqdistr', 'RFratiotest', 'RFrdistr', 'RFsimulate', 'RFspatialGridDataFrame', 'RFspatialPointsDataFrame', 'RFspDataFrame2conventional', 'RFspDataFrame2dataArray', 'RFvariogram', 'RM_COVARIATE', 'RM_DECLARE', 'RM_DISTR', 'RM_MATRIX', 'RM_MULT', 'RM_NUGGET', 'RM_PLUS', 'RM_TREND', 'RM_USER', 'RMangle', 'RMaskey', 'RMave', 'RMball', 'RMbcw', 'RMbernoulli', 'RMbessel', 'RMbicauchy', 'RMbigneiting', 'RMbistable', 'RMbiwm', 'RMblend', 'RMbr2bg', 'RMbr2eg', 'RMbrownresnick', 'RMbubble', 'RMcardinalsine', 'RMcauchy', 'RMcauchytbm', 'RMchoquet', 'RMcircular', 'RMconstant', 'RMcov', 'RMCOV_X', 'RMcovariate', 'RMcoxisham', 'RMcubic', 'RMcurlfree', 'RMcutoff', 'RMdagum', 'RMdampedcos', 'RMdeclare', 'RMdelay', 'RMderiv', 'RMdewijsian', 'RMdivfree', 'RMeaxxa', 'RMepscauchy', 'RMetaxxa', 'RMexp', 'RMexponential', 'RMfbm', 'RMfixcov', 'RMflatpower', 'RMfractdiff', 'RMfractgauss', 'RMgauss', 'RMgencauchy', 'RMgenfbm', 'RMgengneiting', 'RMgennsst', 'RMgneiting', 'RMgneitingdiff', 'RMhandcock', 'RMhyperbolic', 'RMiaco', 'RMid', 'RMidcoord', 'RMidmodel', 'RMintexp', 'RMintrinsic', 'RMkolmogorov', 'RMlgd', 'RMlsfbm', 'RMm2r', 'RMm3b', 'RMma', 'RMmastein', 'RMmatern', 'RMmatrix', 'RMmodelplus', 'RMmppplus', 'RMmps', 'RMmqam', 'RMmult', 'RMmultiquad', 'RMnatsc', 'RMnsst', 'RMnugget', 'RMparswm', 'RMparswmX', 'RMpenta', 'RMplus', 'RMpolygon', 'RMpolynome', 'RMpower', 'RMpoweredexp', 'RMprod', 'RMqam', 'RMqexp', 'RMrational', 'RMrotat', 'RMrotation', 'RMS', 'RMscale', 'RMschlather', 'RMschur', 'RMsign', 'RMsinepower', 'RMspheric', 'RMstable', 'RMstein', 'RMstp', 'RMsum', 'RMtbm', 'RMtent', 'RMtrafo', 'RMtrend', 'RMtrendplus', 'RMtruncsupport', 'RMuser', 'RMvector', 'RMwave', 'RMwendland', 'RMwhittle', 'RPaverage', 'RPbernoulli', 'RPbrmixed', 'RPbrorig', 'RPbrownresnick', 'RPbrshifted', 'RPchi2', 'RPcirculant', 'RPcoins', 'RPcutoff', 'RPdirect', 'RPgauss', 'RPhyperplane', 'RPintrinsic', 'RPloggaussnormed', 'RPnugget', 'RPopitz', 'RPpoisson', 'RPschlather', 'RPsequential', 'RPsmith', 'RPspecific', 'RPspectral', 'RPt', 'RPtbm', 'RPtrend', 'RRdeterm', 'RRdistr', 'RRgauss', 'RRloc', 'RRmcmc', 'RRrectangular', 'RRspheric', 'RRunif')
+list2RMmodel_Names <- c('iR_P', 'iR.c', 'iR.p', 'iRFcovariance', 'iRFcovmatrix', 'iRFloglikelihood', 'iRFmadogram', 'iRFpseudomadogram', 'iRFpseudovariogra', 'iRFsimulate', 'iRFvariogram', 'iRMcov', 'iRMcovariate', 'iRMfixcov', 'R.acos', 'R.acosh', 'R.asin', 'R.asinh', 'R.atan', 'R.atan2', 'R.atanh', 'R.c', 'R.cbrt', 'R.ceil', 'R.const', 'R.cos', 'R.cosh', 'R.div', 'R.erf', 'R.erfc', 'R.exp', 'R.exp2', 'R.expm1', 'R.fabs', 'R.fdim', 'R.floor', 'R.fmax', 'R.fmin', 'R.fmod', 'R.gamma', 'R.ggamma', 'R.hypot', 'R.is', 'R.lat', 'R.lgamma', 'R.log', 'R.log1p', 'R.log2', 'R.lon', 'R.minus', 'R.mult', 'R.p', 'R.plus', 'R.pow', 'R.remainder', 'R.round', 'R.sin', 'R.sinh', 'R.sqrt', 'R.tan', 'R.tanh', 'R.trunc', 'RFboxcox', 'RFcalc', 'RFcov', 'RFcovariance', 'RFcovmatrix', 'RFcrossvalidate', 'RFddistr', 'RFdistr', 'RFearth2cartesian', 'RFearth2dist', 'RFempiricalcovariance', 'RFempiricalmadogram', 'RFempiricalvariogram', 'RFfctn', 'RFfit', 'RFformula', 'RFfractaldim', 'RFgetMethodNames', 'RFgetModel', 'RFgetModelInfo', 'RFgetModelInfo_model', 'RFgetModelInfo_register', 'RFgetModelNames', 'RFgridDataFrame', 'RFgui', 'RFhessian', 'RFhurst', 'RFinterpolate', 'RFlikelihood', 'RFlinearpart', 'RFmadogram', 'RFoldstyle', 'RFpar', 'RFparameters', 'RFpdistr', 'RFplot', 'RFplotEmpVariogram', 'RFplotEmpVariogramX', 'RFplotModel', 'RFplotSimulation', 'RFplotSimulation1D', 'RFpointsDataFrame', 'RFpseudomadogram', 'RFpseudovariogram', 'RFqdistr', 'RFratiotest', 'RFrdistr', 'RFsimulate', 'RFspatialGridDataFrame', 'RFspatialPointsDataFrame', 'RFspDataFrame2conventional', 'RFspDataFrame2dataArray', 'RFvariogram', 'RM_COVARIATE', 'RM_DECLARE', 'RM_DISTR', 'RM_MATRIX', 'RM_MULT', 'RM_NUGGET', 'RM_PLUS', 'RM_TREND', 'RM_USER', 'RMangle', 'RMaskey', 'RMave', 'RMball', 'RMbcw', 'RMbernoulli', 'RMbessel', 'RMbicauchy', 'RMbigneiting', 'RMbistable', 'RMbiwm', 'RMblend', 'RMbr2bg', 'RMbr2eg', 'RMbrownresnick', 'RMbubble', 'RMcardinalsine', 'RMcauchy', 'RMcauchytbm', 'RMcauchyUnif1', 'RMcauchyUnif2', 'RMcauchyUnif3', 'RMchoquet', 'RMcircular', 'RMconstant', 'RMcov', 'RMCOV_X', 'RMcovariate', 'RMcoxisham', 'RMcubic', 'RMcurlfree', 'RMcutoff', 'RMdagum', 'RMdampedcos', 'RMdeclare', 'RMdelay', 'RMderiv', 'RMdewijsian', 'RMdivfree', 'RMeaxxa', 'RMepscauchy', 'RMetaxxa', 'RMexp', 'RMexponential', 'RMfbm', 'RMfixcov', 'RMflatpower', 'RMfractdiff', 'RMfractgauss', 'RMgauss', 'RMgaussGammalike', 'RMgaussgauss', 'RMgencauchy', 'RMgenfbm', 'RMgengneiting', 'RMgennsst', 'RMgneiting', 'RMgneitingdiff', 'RMhandcock', 'RMhyperbolic', 'RMiaco', 'RMid', 'RMidcoord', 'RMidmodel', 'RMintexp', 'RMintrinsic', 'RMkolmogorov', 'RMlatentCauchy1', 'RMlatentCauchy2', 'RMlatentCauchy3', 'RMlatentCauchy4', 'RMlgd', 'RMlsfbm', 'RMm2r', 'RMm3b', 'RMma', 'RMmastein', 'RMmatern', 'RMmatrix', 'RMmodelplus', 'RMmppplus', 'RMmps', 'RMmqam', 'RMmult', 'RMmultiquad', 'RMnatsc', 'RMnsst', 'RMnugget', 'RMparswm', 'RMparswmX', 'RMpenta', 'RMplus', 'RMpolygon', 'RMpolynome', 'RMpower', 'RMpoweredexp', 'RMprod', 'RMqam', 'RMqexp', 'RMrational', 'RMrotat', 'RMrotation', 'RMS', 'RMscale', 'RMschlather', 'RMschur', 'RMsign', 'RMsinepower', 'RMspheric', 'RMstable', 'RMstein', 'RMstp', 'RMsum', 'RMtbm', 'RMtent', 'RMtrafo', 'RMshape', 'RMshapeplus', 'RMtruncsupport', 'RMuser', 'RMvector', 'RMwave', 'RMwendland', 'RMwhittle', 'RPaverage', 'RPbernoulli', 'RPbrmixed', 'RPbrorig', 'RPbrownresnick', 'RPbrshifted', 'RPchi2', 'RPcirculant', 'RPcoins', 'RPcutoff', 'RPdirect', 'RPgauss', 'RPhyperplane', 'RPintrinsic', 'RPloggaussnormed', 'RPnugget', 'RPopitz', 'RPpoisson', 'RPschlather', 'RPsequential', 'RPsmith', 'RPspecific', 'RPspectral', 'RPt', 'RPtbm', 'RPtrend', 'RRdeterm', 'RRdistr', 'RRgauss', 'RRloc', 'RRmcmc', 'RRrectangular', 'RRspheric', 'RRunif')
 
-list2RMmodel_oldNames <- c('#', '>', '>', '+', '*', '$', '$power', 'ave', 'shape.ave', 'bcw', 'locstatfbm', 'bessel', 'bigneiting', 'bernoulli', 'biWM', 'bistable', 'blend', 'brownresnick', 'br2bg', 'br2eg', 'bubble', 'cauchy', 'circular', 'CDeWijsian', 'constant', 'fixcov', 'coxisham', 'cubic', 'curlfree', 'cutoff', 'dagum', 'dampedcosine', 'deriv', 'DeWijsian', 'divfree', 'epsC', 'exponential', 'Exp', 'extremalgauss', 'FD', 'flatpower', 'fractalB', 'fractgauss', 'gauss', 'genB', 'gencauchy', 'bicauchy', 'gengneiting', 'gengneiting', 'gengneit_intern', 'gneiting', 'gennsst', 'gennsst_intern', 'hyperbolic', 'iacocesare', 'identity', 'kolmogorov', 'lgd1', 'mastein', 'ma1', 'ma2', 'M', 'matern', 'mqam', 'multiquad', 'natsc', 'nsst', 'nugget', 'parsWM', 'penta', 'power', 'Pow', 'prod', 'qam', 'qexponential', 'scale', 'schur', 'shift', 'sinepower', 'spherical', 'stable', 'Stein', 'steinst1', 'stp', 'shape.stp', 'tbm', 'sum', 'U', 'cov', 'vector', 'wave', 'whittle', 'missing', 'null', 'trend', 'select', 'angle', 'ball', 'covariate', 'declare', 'EAxxA', 'EtAxxA', 'idcoord', 'trafo', 'mult_inverse', 'polygon', 'rational', 'rotat', 'Rotat', 'scatter', 'sign', 'setparam', 'm2r', 'm3b', 'r3binner', 'mps', 'truncsupport', 'arcsqrt', 'determ', 'distr', 'normal', 'setDistr', 'loc', 'mcmc', 'rectangular', 'spheric', 'unif', 'MCMC_PGS', 'zhou', 'ballani', 'standardShape', '++', 'statShape', 'Simulate', 'Covariance', 'CovMatrix', 'Dummy', 'get', 'Fctn', 'Distr', 'loglikelihood', 'linearpart', 'predict', 'Pseudovariogram', 'Pseudomadogram', 'Madogram', 'Variogram', '$proc', 'plusproc', 'prodproc', 'trafoproc', 'mppplusproc', 'multproc', 'matrixproc', 'covproc', 'trend', 'average', 'coins', 'averageIntern', 'circulant', 'cutoff', 'cutoffIntern', 'intrinsic', 'intrinsIntern', 'direct', 'hyperplane', 'hyperIntern', 'nugget', 'nuggetIntern', 'sequential', 'spectral', 'spectralIntern', 'specific', 'tbm', 'tbmIntern', 'loggaussnormed', 'brorig', 'brorigIntern', 'brmixed', 'brmixedIntern', 'brshifted', 'brshiftIntern', 'brownresnick', 'binaryprocess', 'gauss.process', 'poisson', 'extremalgauss', 'extremalt', 'smith', 'chi2', 't', 'minus', 'plus', 'div', 'mult', 'const', 'p', 'c', 'is', '.asin', '.atan', '.atan2', '.cos', '.sin', '.tan', '.asinh', '.atanh', '.cosh', '.sinh', '.tanh', '.log', '.expm1', '.log1p', '.exp2', '.log2', '.hypot', '.cbrt', '.ceil', '.floor', '.fmod', '.round', '.trunc', '.erfc', '.lgamma', '.remainder', '.fdim', '.fmax', '.fmin', '.gamma', '.ggamma', '.exp', '.erf', '.fabs', '.acos', '.acosh', '.pow', '.sqrt')
+list2RMmodel_oldNames <- c('#', '>', '>', '+', '*', '$', '$power', 'ave', 'shape.ave', 'bcw', 'locstatfbm', 'bessel', 'bigneiting', 'bernoulli', 'biWM', 'bistable', 'blend', 'brownresnick', 'br2bg', 'br2eg', 'bubble', 'cauchy', 'cauchyUnif1', 'cauchyUnif2', 'cauchyUnif3', 'latentCauchy1', 'latentCauchy2', 'latentCauchy3', 'latentCauchy4', 'circular', 'CDeWijsian', 'constant', 'fixcov', 'coxisham', 'cubic', 'curlfree', 'cutoff', 'dagum', 'dampedcosine', 'deriv', 'DeWijsian', 'divfree', 'epsC', 'exponential', 'Exp', 'extremalgauss', 'FD', 'flatpower', 'fractalB', 'fractgauss', 'gauss', 'gaussgauss', 'gaussGammalike', 'genB', 'gencauchy', 'bicauchy', 'gengneiting', 'gengneit_intern', 'gneiting', 'gennsst', 'gennsst_intern', 'hyperbolic', 'iacocesare', 'identity', 'kolmogorov', 'lgd1', 'mastein', 'ma1', 'ma2', 'M', 'matern', 'mqam', 'multiquad', 'natsc', 'nsst', 'nugget', 'parsWM', 'penta', 'power', 'Pow', 'prod', 'qam', 'qexponential', 'scale', 'schur', 'shift', 'sinepower', 'spherical', 'stable', 'Stein', 'steinst1', 'stp', 'shape.stp', 'tbm', 'sum', 'U', 'cov', 'vector', 'wave', 'whittle', 'missing', 'null', 'trend', 'select', 'angle', 'ball', 'covariate', 'declare', 'EAxxA', 'EtAxxA', 'idcoord', 'trafo', 'mult_inverse', 'polygon', 'rational', 'rotat', 'Rotat', 'scatter', 'sign', 'setparam', 'm2r', 'm3b', 'r3binner', 'mps', 'truncsupport', 'arcsqrt', 'determ', 'distr', 'normal', 'setDistr', 'loc', 'mcmc', 'rectangular', 'spheric', 'unif', 'MCMC_PGS', 'zhou', 'ballani', 'standardShape', '++', 'statShape', 'Simulate', 'Covariance', 'CovMatrix', 'Dummy', 'get', 'Fctn', 'Distr', 'loglikelihood', 'linearpart', 'predict', 'Pseudovariogram', 'Pseudomadogram', 'Madogram', 'Variogram', '$proc', 'plusproc', 'prodproc', 'trafoproc', 'mppplusproc', 'multproc', 'matrixproc', 'covproc', 'trend', 'average', 'coins', 'averageIntern', 'circulant', 'cutoff', 'cutoffIntern', 'intrinsic', 'intrinsIntern', 'direct', 'hyperplane', 'hyperIntern', 'nugget', 'nuggetIntern', 'sequential', 'spectral', 'spectralIntern', 'specific', 'tbm', 'tbmIntern', 'loggaussnormed', 'brorig', 'brorigIntern', 'brmixed', 'brmixedIntern', 'brshifted', 'brshiftIntern', 'brownresnick', 'binaryprocess', 'gauss.process', 'poisson', 'extremalgauss', 'extremalt', 'smith', 'chi2', 't', 'minus', 'plus', 'div', 'mult', 'const', 'p', 'c', 'is', '.asin', '.atan', '.atan2', '.cos', '.sin', '.tan', '.asinh', '.atanh', '.cosh', '.sinh', '.tanh', '.log', '.expm1', '.log1p', '.exp2', '.log2', '.hypot', '.cbrt', '.ceil', '.floor', '.fmod', '.round', '.trunc', '.erfc', '.lgamma', '.remainder', '.fdim', '.fmax', '.fmin', '.gamma', '.ggamma', '.exp', '.erf', '.fabs', '.acos', '.acosh', '.pow', '.sqrt')
 
 rfgui1_Names <- c('RMaskey', 'RMbcw', 'RMbessel', 'RMcauchy', 'RMcauchytbm', 'RMcircular', 'RMcubic', 'RMdampedcos', 'RMepscauchy', 'RMexp', 'RMfractdiff', 'RMfractgauss', 'RMgauss', 'RMgencauchy', 'RMgengneiting', 'RMgneitingdiff', 'RMhyperbolic', 'RMlgd', 'RMparswm', 'RMpenta', 'RMqexp', 'RMspheric', 'RMstable', 'RMwave', 'RMwhittle')
 

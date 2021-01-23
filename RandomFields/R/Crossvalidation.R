@@ -27,8 +27,7 @@ DeleteCoords <- function(coords, nr) {
   if (coords$dist.given) {
     stop("deleting from distances not programmed yet")
   } else {
-    coords$restotal <- coords$restotal - 1
-    coords$l <- coords$l - 1
+    coords$totpts <- coords$totpts - 1
     coords$x <- coords$x[-nr, , drop=FALSE]
   }
   coords
@@ -88,13 +87,11 @@ RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL, data,
                             distances=NULL,
                             dim, ## space time dim -- later a vector of grouped dimensions
                             optim.control=NULL,
-                            transform=NULL,
                             full = FALSE,
                             ...) {
-
-  RFoptOld <- internal.rfoptions(seed=NA, ...)
-  on.exit(RFoptions(LIST=RFoptOld[[1]]))
-  RFopt <- RFoptOld[[2]]
+  .Call(C_setlocalRFutils, NA, NULL)
+  RFopt <- internalRFoptions(...)
+  if (!hasArg("COPY")) on.exit(optionsDelete(RFopt))
   refit <- RFopt$fit$cross_refit
   return.variance <- RFopt$krige$return.variance
   general <- RFopt$general
@@ -136,12 +133,13 @@ RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL, data,
       if (details) fitted <- list(fit)
       refit <- FALSE
     } else if (!refit) {
-      fit <- RFfit(model=model, x=x, y=y, z=z, T=T, grid=grid, data=data,
+      fit <- RFfit(COPY=FALSE,
+                   model=model, x=x, y=y, z=z, T=T, grid=grid, data=data,
                    lower=lower, upper=upper, 
                    methods=methods, sub.methods=sub.methods,
                    optim.control=optim.control, users.guess = users.guess,
                      distances = distances, dim=dim,
-                   transform = transform, params=params,..., spConform=FALSE)
+                   params=params, ..., spConform=FALSE)
       if (details) fitted <- list(fit)
     }
     
@@ -173,13 +171,14 @@ RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL, data,
         if (Coords$dist.given) {
           stop("not programmed yet.", CONTACT) # to do
         } else {
-          fit <- RFfit(model=model,
+          fit <- RFfit(COPY=FALSE, model=model,
+                       params=params, ...,
                        x=coords, grid=grid, data=Daten,
                        lower=lower, upper=upper, 
                        methods=methods, sub.methods=sub.methods,
                        optim.control=optim.control, users.guessP = users.guess,
                        dim=dim,
-                       transform = transform, spConform=FALSE)
+                       spConform=FALSE)
           if (details) fitted[[nr]] <- fit
         }
       }
@@ -189,7 +188,8 @@ RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL, data,
         dummy <- 1:len
         fitCoords <- DeleteCoords(Coords,dummy[-nr])
       
-        interpol <- RFinterpolate(fit, x = fitCoords$x,
+        interpol <- RFinterpolate(COPY=FALSE, # OK
+                                  fit, x = fitCoords$x,
                                 grid=FALSE,
                                 given = coords$x,
                                 data =  Daten,
@@ -202,7 +202,8 @@ RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL, data,
         error <- dta - predicted
         std.error <- 2#error/sqrt(var)   
       } else { ## old 
-        interpol <- RFinterpolate(fit, x = coords,
+        interpol <- RFinterpolate(COPY=FALSE, # OK
+                                  fit, x = coords,
                                   grid=FALSE,
                                   given = coords,
                                   data =  Daten,

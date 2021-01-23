@@ -39,6 +39,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "init.h"
 #include "RF.h"
 #include "QMath.h"
+#include "startGetNset.h"
+#include "rf_interfaces.h"
 
 
 
@@ -57,7 +59,7 @@ int checkNotOK(model VARIABLE_IS_NOT_USED *cov){
   RETURN_ERR(ERRORFAILED);
 }
 
-void ScaleOne(double *x, model VARIABLE_IS_NOT_USED *cov, double *v){ 
+void inverseOne(double *x, model VARIABLE_IS_NOT_USED *cov, double *v){ 
   *v = *x <= 0.05 ? 1.0 : RF_NA;
 } 
 
@@ -83,11 +85,11 @@ void addkappa(int i, const char *n, SEXPTYPE t) {
 }
 
 
-#ifdef SCHLATHERS_MACHINE 
-#define ASSERT_KAPPA(N) assert({defn *C = DefList + currentNrCov - 1; C->kappas == N;})
-#else
-#define ASSERT_KAPPA(N)
-#endif
+bool assertKappa(int N) {
+  defn *C = DefList + currentNrCov - 1;
+  return C->kappas == N;
+}
+#define ASSERT_KAPPA(N) assert(assertKappa(N))
 
 void kappanames(const char* n1, SEXPTYPE t1) {
   ASSERT_KAPPA(1);
@@ -398,7 +400,7 @@ void subnames(const char* n1, const char* n2, const char* n3, const char* n4,
 
 int xxx(int x) {return (int) POW(10, (double) x);}
 
-void ErrCovX(double VARIABLE_IS_NOT_USED *x, model *cov,
+void ErrCovX(double VARIABLE_IS_NOT_USED *x, INFO, model *cov,
 	     double VARIABLE_IS_NOT_USED *v, const char *name) {
   // 
   PRINTF("\nErrCov.%s %s [%d] trafo=%d gatter=%d :\n", name,
@@ -409,12 +411,12 @@ void ErrCovX(double VARIABLE_IS_NOT_USED *x, model *cov,
   }
   ERR("unallowed/undefined call of function");
 }
-void ErrCov(double *x, model *cov, double *v) { ErrCovX(x, cov, v, "Cov");}
-void ErrD(double *x, model *cov, double *v) { ErrCovX(x, cov, v, "D");}
-void ErrRnd(double *x, model *cov, double *v) { ErrCovX(x, cov, v, "Rnd");}
-void ErrInverse(double *x, model *cov, double *v) { ErrCovX(x, cov, v, "Inv");}
+void ErrCov(double *x, int *info, model *cov, double *v) { ErrCovX(x, info, cov, v, "Cov");}
+void ErrD(double *x, int *info, model *cov, double *v) { ErrCovX(x, info, cov, v, "D");}
+void ErrRnd(double *x, int *info, model *cov, double *v) { ErrCovX(x, info, cov, v, "Rnd");}
+void inverseErr(double *x, model *cov, double *v) { DEFAULT_INFO(info); ErrCovX(x, info, cov, v, "Inv");}
 
-void ErrLogCov(double VARIABLE_IS_NOT_USED *x, model *cov, 
+void ErrLogCov(double VARIABLE_IS_NOT_USED *x, INFO, model *cov, 
 	       double VARIABLE_IS_NOT_USED *v, 
 	       double VARIABLE_IS_NOT_USED *Sign) {
   // 
@@ -425,31 +427,31 @@ void ErrLogCov(double VARIABLE_IS_NOT_USED *x, model *cov,
   }
   ERR("unallowed/undefined call of function (log)");
 }
-void ErrCovNonstatX(double VARIABLE_IS_NOT_USED *x, 
-		   double VARIABLE_IS_NOT_USED *y, model *cov, 
+void nonstatXErrCov(double VARIABLE_IS_NOT_USED *x, 
+		    double VARIABLE_IS_NOT_USED *y, INFO, model *cov, 
 		    double VARIABLE_IS_NOT_USED *v, const char *name) {
-  PRINTF("\nErrCovNonstat.%s %s: (%d)\n", name, NICK(cov), COVNR);
+  PRINTF("\nErrCovnonstat.%s %s: (%d)\n", name, NICK(cov), COVNR);
   if (PL >= PL_ERRORS) {
     PMI(cov->calling); //
     crash();
   }
   ERR1("unallowed/undefined call of '%.50s' as a kernel", NICK(cov));
 }
-void ErrCovNonstat(double *x, double *y, model *cov, double *v) { ErrCovNonstatX(x, y, cov, v, "Cov");}
-void ErrDNonstat(double *x, double *y, model *cov, double *v) { ErrCovNonstatX(x,  y,cov, v, "D");}
-void ErrRndNonstat(double *x, double *y, model *cov, double *v) { ErrCovNonstatX(x, y, cov, v, "Rnd");}
-void ErrLogCovNonstat(double VARIABLE_IS_NOT_USED *x, 
-		      double VARIABLE_IS_NOT_USED *y, model *cov,
+void nonstatErrCov(double *x, double *y, int *info, model *cov, double *v) { nonstatXErrCov(x, y, info, cov, v, "Cov");}
+void nonstatErrD(double *x, double *y,int *info,  model *cov, double *v) { nonstatXErrCov(x, y, info, cov, v, "D");}
+void nonstatErrRnd(double *x, double *y, int *info, model *cov, double *v) { nonstatXErrCov(x, y, info, cov, v, "Rnd");}
+void nonstatErrLogCov(double VARIABLE_IS_NOT_USED *x, 
+		      double VARIABLE_IS_NOT_USED *y, INFO, model *cov,
 		      double VARIABLE_IS_NOT_USED *v, 
 		      double VARIABLE_IS_NOT_USED *Sign) {
-  PRINTF("\nErrLogCovNonstat %s: (%d)\n", NICK(cov), COVNR);
+  PRINTF("\nErrLogCovnonstat %s: (%d)\n", NICK(cov), COVNR);
   if (PL >= PL_ERRORS) {
     PMI(cov->calling);//
     crash();
   }
   ERR1("unallowed/undefined call of '%.50s' (log) as a kernel", NICK(cov));
 }
-void Errspectral(model *cov,
+void Errspectral(model *cov, 
 		 gen_storage VARIABLE_IS_NOT_USED *s, 
 		 double VARIABLE_IS_NOT_USED *e) {
 #ifdef SCHLATHERS_MACHINE
@@ -466,12 +468,12 @@ void Errspectral(model *cov,
   ERR("unallowed/undefined call of spectral function");
 } 
 
-void ErrInverseNonstat(double VARIABLE_IS_NOT_USED *v, model *cov,
+void inversenonstatErr(double VARIABLE_IS_NOT_USED *v, model *cov,
 		       double *x, double *y) {
   x[0] = y[0] = RF_NAN;
   return;
 
-  PRINTF("\nErrInverseNonstat %s: (%d)\n", NICK(cov), COVNR);
+  PRINTF("\ninversenonstatErr %s: (%d)\n", NICK(cov), COVNR);
   if (PL >= PL_ERRORS) {
     PMI(cov->calling); //
     crash();
@@ -550,7 +552,7 @@ int init_failed(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
   if (PL >= PL_ERRORS) { PRINTF("init failed cov=%s:\n", NICK(cov));}
   SERR2("'%.50s' cannot be initialised (frame=%50s)", NAME(cov),
 	TYPE_NAMES[cov->frame]);
-  // SERR1("Init failed. Compound Poisson fields are essentially only programmed for simple and isotropic shape functions (not kernels). Error occurred in '%50s'", NAME(cov));
+  // SERR1("Init failed. Compound Poisson fields are essentially only programmed for simple and isotropic shape functions (not kernels). Error occurred in '%.50s'", NAME(cov));
   RETURN_ERR(ERRORFAILED);
 }
 
@@ -577,7 +579,7 @@ int init_statiso(model *cov, gen_storage *s) {
 
   //  PMI(cov);
   
-  SERR1("Call of init: Compound Poisson fields are essentially only programmed for domain and isotropic functions. Error occurred in '%50s'", NAME(cov));
+  SERR1("Call of init: Compound Poisson fields are essentially only programmed for domain and isotropic functions. Error occurred in '%.50s'", NAME(cov));
 
  
   RETURN_NOERROR;
@@ -603,13 +605,13 @@ void doOK(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
 
 void do_failed(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
   if (PL >= PL_ERRORS) {PRINTF("do failed for %s:\n", NAME(cov));}
-  ERR1("call of do: compound Poisson fields are essentially only programmed for isotropic shape functions (not kernels). Error occurred in '%10s'", NAME(cov));
+  ERR1("call of do: compound Poisson fields are essentially only programmed for isotropic shape functions (not kernels). Error occurred in '%.10s'", NAME(cov));
 }
 
 void do_random_failed(model *cov, double VARIABLE_IS_NOT_USED *v) {
   if (PL >= PL_ERRORS) {PRINTF("do_random failed for %s:\n", NAME(cov));}
   //  crash();
-  ERR1("Call of do: Compound Poisson fields are essentially only programmed for isotropic shape functions (not kernels). Error occurred in '%10s'", NAME(cov));
+  ERR1("Call of do: Compound Poisson fields are essentially only programmed for isotropic shape functions (not kernels). Error occurred in '%.10s'", NAME(cov));
 }
 void do_random_ok(model VARIABLE_IS_NOT_USED *cov, double VARIABLE_IS_NOT_USED *v) {
 }
@@ -622,12 +624,11 @@ void do_statiso(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
     // PMI(cov);
     PRINTF("do_statosp failed for '%s' and frame='%s':\n", 
 				NICK(cov), TYPE_NAMES[cov->frame]);
-    if (PL >= PL_ERRORS) ERR1("Call of do_statiso: compound Poisson fields are essentially only programmed for isotropic shape functions (not kernels). Error occurred in '%20s'", NICK(cov));
+    if (PL >= PL_ERRORS) ERR1("Call of do_statiso: compound Poisson fields are essentially only programmed for isotropic shape functions (not kernels). Error occurred in '%.20s'", NICK(cov));
   }
 }
 
 void nickname(const char *name, int nr, int type) {
-  static int badname = UNSET; // ok, since only used in the initialisation
   char dummy[MAXCHAR];
   defn *C = DefList + nr; // nicht gatternr
   int sl = STRLEN(CAT_TYPE_NAMES[type]);  
@@ -636,6 +637,8 @@ void nickname(const char *name, int nr, int type) {
   SPRINTF(C->nick, "%.3s%.*s", CAT_TYPE_NAMES[type], MAXCHAR-4, dummy);
   STRCPY(CovNickNames[nr], C->nick);
 
+#ifdef SCHLATHERS_MACHINE
+  static int badname = UNSET; // ok, since only used in the initialisation
   if ((int) STRLEN(name) >= (int) MAXCHAR - sl) {
     badname = nr;
   } else {
@@ -645,6 +648,7 @@ void nickname(const char *name, int nr, int type) {
     }
     badname = UNSET;
   }
+#endif  
 }
 
 void insert_name(int curNrCov, const char *name, int type) {
@@ -660,13 +664,11 @@ void insert_name(int curNrCov, const char *name, int type) {
   nickname(name, curNrCov, type);
 }
 
-void StandardCovariance(model *cov, double *v){
-  CovVario(cov, true, false, v); 
-}
-void StandardCovMatrix(model *cov, double *v) { 
+
+void StandardCovMatrix(model *cov, bool ignore_y, double *v) { 
   model *calling  = cov->calling;
   int
-    dim = GetLoctsdim(cov),
+    dim = Loctsdim(cov),
     vdim = VDIM0;
    if (calling == NULL ||
       (!equalsnowInterface(calling) && !isnowProcess(calling)))
@@ -674,33 +676,14 @@ void StandardCovMatrix(model *cov, double *v) {
    if (calling->Sfctn == NULL && alloc_fctn(calling, dim, vdim*vdim) !=NOERROR)
     XERR(ERRORMEMORYALLOCATION);
   
-  CovarianceMatrix(cov, v); 
+   CovarianceMatrix(cov, ignore_y, v); 
 }
-void StandardInverseCovMatrix(model *cov, double *inverse, double *det) { 
-  InverseCovMatrix(cov, inverse, det); 
-}
+//void StandardInverseCovMatrix(model *cov, double *inverse, double *det) { 
+//  InverseCovMatrix(cov, inverse, det); 
+//}
 
-void StandardVariogram(model *cov, double *v) {
-  //assert(false);
-  CovVario(cov, false, false, v); 
-}
 
-void StandardPseudomadogram(double alpha, model *cov, double *v) {
-  model *calling = cov->calling;
-  CovVario(cov, false, true, v);
-  if (alpha < 2.0) {
-    location_type *loc = Loc(calling);
-    Long tot = loc->totalpoints,
-      vdim = VDIM0,      
-      end = vdim * vdim * tot;
-    double half = 0.5 * alpha,
-       c = POW(2, alpha - 1) * gammafn(0.5 + half) / SQRTPI;
-    if (alpha == 1.0) for (int i=0; i < end; i++) v[i] = c * SQRT(v[i]);
-    else for (int i=0; i < end; i++) v[i] = c * POW(v[i], half);
-  }
-}
-
-void StandardInverseNonstat(double *v, model *cov,
+void inversenonstatStandard(double *v, model *cov,
 			    double *left, double *right) {
   assert(DefList[COVNR].inverse != NULL);
   double x;
@@ -717,7 +700,7 @@ void StandardInverseNonstat(double *v, model *cov,
   }
 }
 
-void StandardLogInverseNonstat(double *v, model *cov,
+void inverse_log_nonstatStandard(double *v, model *cov,
 			    double *left, double *right) {
   assert(DefList[COVNR].inverse != NULL);
   double x, 
@@ -735,8 +718,8 @@ void StandardLogInverseNonstat(double *v, model *cov,
   }
 }  
 
-void StandardNonLogDistrD(double *x, model *cov, double *D) {
-  VTLG_DLOG(x, cov, D);
+void StandardNonLogDistrD(double *x, int *info, model *cov, double *D) {
+  VTLG_DLOG(x, info, cov, D);
   *D = EXP(*D);
 }
 
@@ -766,15 +749,15 @@ void InverseIsotropic(double *U, model *cov, double *inverse){
     u = *U;
   bool greater;
   int i;
-  
+  DEFAULT_INFO(info);
 
-  COV(&x, cov, v);
+  COV(&x, info, cov, v);
   greater = *v > u;
   *wert = *v;
   x = step;  
   for (i=0; i<max_it; i++) {
     leftinverse = *wert;
-    COV(&x, cov, wert);
+    COV(&x, info, cov, wert);
     if (greater xor (*wert >= u)) break;
     x *= step;
   }
@@ -787,7 +770,7 @@ void InverseIsotropic(double *U, model *cov, double *inverse){
   left = x == step ? 0 : x / step;
   for (i=0; i<max_it; i++) {
     middle = 0.5 * (left + right);
-    COV(&middle, cov, wert);    
+    COV(&middle, info, cov, wert);    
     if (greater xor (*wert >= u)) {
       right = middle;
    } else {
@@ -855,7 +838,7 @@ void createmodel(const char *name, Types type, int kappas, size_fct kappasize,
     stat_iso = equalsXonly(domain) && equalsIsotropic(isotropy);
 
 
-  // printf("%s %d\n", name, currentNrCov); 
+  //  printf("%s %d\n", name, currentNrCov); 
 
   if (PL >= PL_DETAILS) {
     PRINTF("%d %s vdim=%d statiso=%d iso=%d type=%d\n",
@@ -915,7 +898,7 @@ void createmodel(const char *name, Types type, int kappas, size_fct kappasize,
 
   // nachfolgendes unbedingt lassen, da sonst vor Aufruf von Interface
   // reduzierende Gatter gesetzt werden koennten
-  assert(!isInterface(type) ||
+  assert(!isInterface(type) || check == check_dummy || 
 	 (equalsXonly(domain) &&
 	  (equalsUnreduced(isotropy) || equalsParamDepI(isotropy) )));
 
@@ -985,18 +968,17 @@ void createmodel(const char *name, Types type, int kappas, size_fct kappasize,
   C->cov = ErrCov;
   C->logD = C->D = C->D2 = C->D3 = C->D4 =C->tbm2 = C->nabla = C->hess = ErrD;
   C->random = ErrRnd;
-  C->nonstat_inverse =  C->nonstat_loginverse = C->nonstat_inverse_D =
-    ErrInverseNonstat;
+  C->inverse_nonstat =  C->nonstat_loginverse = C->inverse_nonstat_D =
+    inversenonstatErr;
   // printf("log\n");
   //C->density = MISMATCH;
   C->log = ErrLogCov;
   C->F_derivs = C->RS_derivs = isProcess(type) ? 0 :
     isInterface(type) ? MISMATCH : UNSET;
-  C->nonstat_cov  = ErrCovNonstat;
-  C->nonstat_D = ErrDNonstat;
-  C->nonstat_random = ErrRndNonstat;
-  C->nonstatlog = ErrLogCovNonstat;
-  C->aux_cov = NULL;
+  C->nonstat_cov  = nonstatErrCov;
+  C->nonstat_D = nonstatErrD;
+  C->nonstat_random = nonstatErrRnd;
+  C->nonstatlog = nonstatErrLogCov;
   C->coinit = C->ieinit = NULL;
   C->alternative = NULL;
 
@@ -1008,7 +990,7 @@ void createmodel(const char *name, Types type, int kappas, size_fct kappasize,
   //  if (isVariogram(type) || isShape(type) || 
   //    type == MathDefType) C->logD = standard_likelihood;
 
-  C->inverse = ErrInverse;
+  C->inverse = inverseErr;
   C->Struct = struct_failed;
   C->Init = init_failed;
   C->Do = do_failed;
@@ -1031,11 +1013,8 @@ void createmodel(const char *name, Types type, int kappas, size_fct kappasize,
 
   C->hyperplane=NULL;  
   C->primitive = true;
-  C->covariance = StandardCovariance;
   C->covmatrix = StandardCovMatrix;
-  C->inversecovmatrix = StandardInverseCovMatrix;
-  C->variogram = StandardVariogram;
-  C->pseudomadogram = StandardPseudomadogram;
+  //  C->inversecovmatrix = StandardInverseCovMatrix;
   C->is_covmatrix= isFalse;
 
   C->TaylorN = C->TailN = isShape(type) ? UNSET : MISMATCH;
@@ -1176,7 +1155,7 @@ int IncludeModel(const char *name, Types type, int minsub, int maxsub,
 	      range, range_multi,
 	      vdim, pref, maxdim, finiterange, monotonicity);
   assert(!isPrevModelI(isotropy) || maxsub != 0 || isMathDef(type)
-	 || STRCMP("trend", name) == 0
+	 || STRCMP("shape", name) == 0
 	 || STRCMP("U", name) == 0 
 	 || STRCMP("declare", name) == 0 
 	 || STRCMP("whittle", name) == 0 
@@ -1304,8 +1283,7 @@ bool addvariantOK(Types type, isotropy_type iso) {
      systype != type &&  
      !equalsShape(systype) &&
      !isProcess(systype) &&
-     !isMathDef(C) &&
-     C->check != checktrend) 
+     !isMathDef(C)) 
     return false;// see also 
    if (isAnySphericalIso(iso) &&
       ((C->finiterange == wahr && isPosDef(type) && C->vdim == SCALAR)
@@ -1341,12 +1319,31 @@ void AddVariant(Types type, isotropy_type iso) {
 
 #define IMPLEMENTED_SEQUENTIAL (C->vdim <= 1 &&	IMPLEMENTED_CE)
 
-void addCov(int F_derivs, covfct cf, covfct D, covfct D2, covfct inverse,
-	    nonstat_inv nonstat_inverse) {
+//2
+void addCovIntern(int F_derivs, nonstat_covfct cf) {
   int nr = currentNrCov - 1;
+  assert((nr>=0) && (nr<currentNrCov) && cf!=NULL);
+  defn *C = DefList + nr; // nicht gatternr
 
+  C->nonstat_cov = cf;
+  C->implemented[Direct] = true;
+  C->implemented[CircEmbed] = IMPLEMENTED_CE;
+  C->implemented[Sequential] = IMPLEMENTED_SEQUENTIAL;
+
+  if (C->RS_derivs < 0) {
+    C->RS_derivs = 0;
+    C->F_derivs = F_derivs >= 0 ?  F_derivs : C->RS_derivs;
+    assert(C->F_derivs <= C->RS_derivs);
+  }
+}
+//6
+void addCovIntern(int F_derivs, covfct cf, covfct D, covfct D2,
+		  inverse_fct inverse, nonstat_inv inverse_nonstat) {
+   int nr = currentNrCov - 1;
+
+   // printf("nr = %d %d %d\n", nr, cf==NULL, D==NULL);
   
-  assert(nr>=0 && nr<currentNrCov && cf!=NULL);
+  assert(nr>=0 && cf!=NULL);
   defn *C = DefList + nr; // nicht gatternr
   bool stat_iso = isIsotropicXonly(C->systems[0]);
 
@@ -1354,7 +1351,7 @@ void addCov(int F_derivs, covfct cf, covfct D, covfct D2, covfct inverse,
  
   C->cov = cf;  
   if (C->RS_derivs < 0) C->RS_derivs = 0;
-  assert(C->nonstat_cov == ErrCovNonstat);
+  assert(C->nonstat_cov == nonstatErrCov);
 
   if (D != NULL) {
     assert(cf != NULL);
@@ -1373,20 +1370,20 @@ void addCov(int F_derivs, covfct cf, covfct D, covfct D2, covfct inverse,
   }
   if (inverse != NULL) C->inverse = inverse;
   else if (isMonotone(C->Monotone) && isIsotropic(C->systems[0]) && 
-	   C->inverse==ErrInverse)
+	   C->inverse==inverseErr)
     C->inverse = InverseIsoMon;
-  if (stat_iso && C->inverse != ErrInverse) 
-    C->nonstat_loginverse = StandardLogInverseNonstat;
+  if (stat_iso && C->inverse != inverseErr) 
+    C->nonstat_loginverse = inverse_log_nonstatStandard;
 
-  //  if (nonstat_inverse != NULL) printf("nonstat %s\n", C->nick);
+  //  if (inverse_nonstat != NULL) printf("nonstat %s\n", C->nick);
   
-  C->nonstat_inverse = nonstat_inverse!=NULL ? nonstat_inverse :
-    stat_iso && inverse != NULL ? StandardInverseNonstat : ErrInverseNonstat;
+  C->inverse_nonstat = inverse_nonstat!=NULL ? inverse_nonstat :
+    stat_iso && inverse != NULL ? inversenonstatStandard : inversenonstatErr;
 
    
   //  printf("%s %d %d %d\n", C->name, stat_iso, inverse != NULL,
-  //	 C->nonstat_inverse ==ErrInverseNonstat);
-  assert(inverse == NULL || nonstat_inverse != NULL || stat_iso ||
+  //	 C->inverse_nonstat ==inversenonstatErr);
+  assert(inverse == NULL || inverse_nonstat != NULL || stat_iso ||
 	 equalsShape(SYSTYPE(C->systems[0], 0)));
   
   C->implemented[Direct] = cf != NULL;
@@ -1403,35 +1400,12 @@ void addCov(int F_derivs, covfct cf, covfct D, covfct D2, covfct inverse,
   assert(C->F_derivs <= C->RS_derivs);
   assert(C->F_derivs >= 0);
 }
-
-void addCov(covfct cf, covfct D, covfct D2, covfct inverse) {
-  addCov(UNSET, cf, D, D2, inverse, NULL);
-}
-
-void addCov(covfct cf, covfct D, covfct D2, nonstat_inv inverse) {
-  addCov(UNSET, cf, D, D2, NULL, inverse);
-}
-
-void addCov(covfct cf, covfct D, covfct D2, 
-	    covfct inverse, nonstat_inv nonstat_inverse) {
-  addCov(UNSET, cf, D, D2, inverse, nonstat_inverse);
-}
-
-void addCov(int F_derivs, covfct cf, covfct D, covfct inverse) {
-  addCov(F_derivs, cf, D, NULL, inverse, NULL);
-}
-
-
-void addCov(covfct cf, covfct D, covfct inverse) {
-  addCov(UNSET, cf, D, inverse);
-}
-
-
-void addCov(int F_derivs, covfct cf, covfct D, covfct D2, covfct D3, covfct D4,
-	    covfct inverse, nonstat_inv nonstat_inverse) {
+//8
+void addCovIntern(int F_derivs, covfct cf, covfct D, covfct D2, covfct D3,
+		  covfct D4,  inverse_fct inverse, nonstat_inv inverse_nonstat){
   int nr = currentNrCov - 1;
   assert(nr>=0 && nr<currentNrCov);
-  addCov(UNSET, cf, D, D2, inverse, nonstat_inverse);
+  addCovIntern(UNSET, cf, D, D2, inverse, inverse_nonstat);
   defn *C = DefList + nr;
   C->D3 = D3;
   assert(C->RS_derivs == 2 && D3 != NULL);
@@ -1445,55 +1419,57 @@ void addCov(int F_derivs, covfct cf, covfct D, covfct D2, covfct D3, covfct D4,
   assert(C->F_derivs <= C->RS_derivs);
 }
 
-
-void addCov(covfct cf, covfct D, covfct D2, covfct D3, covfct D4,
-	    covfct inverse) {
-  addCov(-1, cf, D, D2, D3, D4, inverse, NULL);
-}
-
-void addCov(covfct cf, covfct D, covfct D2, covfct D3, covfct D4,
-	    covfct inverse, nonstat_inv nonstat_inverse) {
-  addCov(-1, cf, D, D2, D3, D4, inverse, nonstat_inverse);
-}
-
-void Implemented(Methods Meth) {
-  int nr = currentNrCov - 1;
-  assert((nr>=0) && (nr<currentNrCov));
-  defn *C = DefList + nr; // nicht gatternr
-  C->implemented[Meth] = true;
-}
-
-void addCov(int F_derivs, nonstat_covfct cf) {
-  int nr = currentNrCov - 1;
-  assert((nr>=0) && (nr<currentNrCov) && cf!=NULL);
-  defn *C = DefList + nr; // nicht gatternr
-
-  C->nonstat_cov = cf;
-  C->implemented[Direct] = true;
-  C->implemented[CircEmbed] = IMPLEMENTED_CE;
-  C->implemented[Sequential] = IMPLEMENTED_SEQUENTIAL;
-
-  if (C->RS_derivs < 0) {
-    C->RS_derivs = 0;
-    C->F_derivs = F_derivs >= 0 ?  F_derivs : C->RS_derivs;
-    assert(C->F_derivs <= C->RS_derivs);
-  }
-}
+//1
 void addCov(nonstat_covfct cf) {
-  addCov(-1, cf);
+  addCovIntern(-1, cf);
 }
-
-void addCov(aux_covfct auxcf){
-  int nr = currentNrCov - 1;
-  assert((nr>=0) && (nr<currentNrCov) && auxcf!=NULL);
-  defn *C = DefList + nr; // nicht gatternr
-  assert(C->cov == ErrCov && C->nonstat_cov==ErrCovNonstat);
-  C->aux_cov = auxcf;
+void addCov(covfct cf) {
+  addCovIntern(UNSET, cf, NULL, NULL, NULL, NULL);
 }
-
+//2
+void addCov(covfct cf, covfct D) {
+  addCovIntern(UNSET, cf, D, NULL, NULL, NULL);
+}
+//3
+void addCov(covfct cf, covfct D, inverse_fct inverse) {
+  addCovIntern(UNSET, cf, D, NULL, inverse, NULL);
+}
+void addCov(covfct cf, covfct D, covfct D2) {
+  addCovIntern(UNSET, cf, D, D2, NULL, NULL);
+}
+// 4
+void addCov(covfct cf, covfct D, covfct D2, inverse_fct inverse) {
+  addCovIntern(UNSET, cf, D, D2, inverse, NULL);
+}
+void addCov(covfct cf, covfct D, covfct D2, nonstat_inv inverse_nonstat) {
+  addCovIntern(UNSET, cf, D, D2, NULL, inverse_nonstat);
+}
+//5
+void addCov(covfct cf, covfct D, covfct D2, 
+	    inverse_fct inverse, nonstat_inv inverse_nonstat) {
+  addCovIntern(UNSET, cf, D, D2, inverse, inverse_nonstat);
+}
+void addCov(covfct cf, covfct D, covfct D2, covfct D3, covfct D4) {
+  addCovIntern(-1, cf, D, D2, D3, D4, NULL, NULL);
+}
+//6
+void addCov(int F_derivs, covfct cf, covfct D, covfct D2, inverse_fct inverse,
+	    nonstat_inv inverse_nonstat) {
+  addCovIntern(F_derivs, cf, D, D2, inverse, inverse_nonstat);
+}
+void addCov(covfct cf, covfct D, covfct D2, covfct D3, covfct D4,
+	    inverse_fct inverse) {
+  addCovIntern(-1, cf, D, D2, D3, D4, inverse, NULL);
+}
+//7
+void addCov(covfct cf, covfct D, covfct D2, covfct D3, covfct D4,
+	    inverse_fct inverse, nonstat_inv inverse_nonstat) {
+  addCovIntern(-1, cf, D, D2, D3, D4, inverse, inverse_nonstat);
+}
+//8
 void addCov(covfct distrD, covfct logdistrD, nonstat_inv Dinverse,
 	    covfct distrP, nonstat_covfct distrP2sided,
-	    covfct distrQ, covfct distrR, nonstat_covfct distrR2sided) {
+	    inverse_fct distrQ, covfct distrR, nonstat_covfct distrR2sided) {
   int nr = currentNrCov - 1;
   defn *C = DefList + nr; // nicht gatternr
   assert(nr>=0 && nr<currentNrCov);
@@ -1510,7 +1486,7 @@ void addCov(covfct distrD, covfct logdistrD, nonstat_inv Dinverse,
   C->cov = distrP;
   C->D = distrD; 
   C->logD = logdistrD;
-  C->nonstat_inverse_D = Dinverse;
+  C->inverse_nonstat_D = Dinverse;
   C->inverse = distrQ;
   C->random = distrR;
   if (distrP2sided != NULL || distrR2sided !=NULL) {
@@ -1557,7 +1533,7 @@ void addlogD(covfct logD) {
 }
 */
 
-void addlogCov(logfct log, nonstat_logfct nonstatlog, 
+void addlogCov(logfct log, nonstat_logfct nonstatlog,
 	       nonstat_inv nonstat_loginverse) {
   int nr = currentNrCov - 1;
   assert((nr>=0) && (nr<currentNrCov));
@@ -1567,7 +1543,6 @@ void addlogCov(logfct log, nonstat_logfct nonstatlog,
   if (nonstatlog != NULL) C->nonstatlog = nonstatlog;
   if (nonstat_loginverse!=NULL)  C->nonstat_loginverse = nonstat_loginverse;
 }
- 
 
 void addlogCov(logfct log) {
   addlogCov(log, NULL, NULL);
@@ -1577,7 +1552,28 @@ void addlogCov(nonstat_logfct nonstatlog) {
   addlogCov(NULL, nonstatlog, NULL);
 }
 
-int addFurtherCov(int F_derivs, covfct cf, covfct D, covfct D2) {
+int addFurtherCovIntern(int F_derivs, nonstat_covfct cf) {
+// immer mit FIRST UND LAST in init.*.cc arbeiten, siehe DOLLAR oder VECTOR
+  assert(currentNrCov > 0);
+  defn *C = DefList + currentNrCov;
+  MEMCOPY(C, C - 1, sizeof(defn));
+  strcopyN(CovNames[currentNrCov], InternalName, MAXCHAR);
+  C->name[0] = InternalName[0];
+  strcopyN(C->name + 1, DefList[currentNrCov-1].name, MAXCHAR - 1);
+  C->RS_derivs = MISMATCH;
+  if (cf != NULL) {
+    C->nonstat_cov = cf;
+    C->RS_derivs = 0;
+  }
+  C->F_derivs = F_derivs >= 0 ?  F_derivs : C->RS_derivs;
+  assert(C->F_derivs <= C->RS_derivs);
+  C->D = ErrD;
+  C->internal = true; // addCov is used without previous call of IncludeModel
+  currentNrCov++;
+  return currentNrCov - 1;
+}
+
+int addFurtherCovIntern(int F_derivs, covfct cf, covfct D, covfct D2) {
 // immer mit FIRST UND LAST in init.*.cc arbeiten, siehe DOLLAR oder VECTOR
   assert(currentNrCov > 0);
   defn *C = DefList + currentNrCov;
@@ -1613,44 +1609,22 @@ int addFurtherCov(int F_derivs, covfct cf, covfct D, covfct D2) {
   currentNrCov++;
   return currentNrCov - 1;
 }
-int addFurtherCov(covfct cf, covfct D, covfct D2) {
-// immer mit FIRST UND LAST in init.*.cc arbeiten, siehe DOLLAR oder VECTOR
-  return addFurtherCov(-1, cf, D, D2);
-}
-
-int addFurtherCov(covfct cf, covfct D) {
-// immer mit FIRST UND LAST in init.*.cc arbeiten, siehe DOLLAR oder VECTOR
-  return addFurtherCov(cf, D, NULL);
-}
-int addFurtherCov(int F_derivs, covfct cf, covfct D) {
-// immer mit FIRST UND LAST in init.*.cc arbeiten, siehe DOLLAR oder VECTOR
-  return addFurtherCov(F_derivs, cf, D, NULL);
-}
-int addFurtherCov(int F_derivs, nonstat_covfct cf) {
-// immer mit FIRST UND LAST in init.*.cc arbeiten, siehe DOLLAR oder VECTOR
-  assert(currentNrCov > 0);
-  defn *C = DefList + currentNrCov;
-  MEMCOPY(C, C - 1, sizeof(defn));
-  strcopyN(CovNames[currentNrCov], InternalName, MAXCHAR);
-  C->name[0] = InternalName[0];
-  strcopyN(C->name + 1, DefList[currentNrCov-1].name, MAXCHAR - 1);
-  C->RS_derivs = MISMATCH;
-  if (cf != NULL) {
-    C->nonstat_cov = cf;
-    C->RS_derivs = 0;
-  }
-  C->F_derivs = F_derivs >= 0 ?  F_derivs : C->RS_derivs;
-  assert(C->F_derivs <= C->RS_derivs);
-  C->D = ErrD;
-  C->internal = true; // addCov is used without previous call of IncludeModel
-  currentNrCov++;
-  return currentNrCov - 1;
-}
-
+//1
 int addFurtherCov(nonstat_covfct cf) {
 // immer mit FIRST UND LAST in init.*.cc arbeiten, siehe DOLLAR oder VECTOR
-  return addFurtherCov(-1, cf);
+  return addFurtherCovIntern(-1, cf);
 }
+// 2
+int addFurtherCov(covfct cf, covfct D) {
+// immer mit FIRST UND LAST in init.*.cc arbeiten, siehe DOLLAR oder VECTOR
+  return addFurtherCovIntern(-1, cf, D, NULL);
+}
+//3
+int addFurtherCov(covfct cf, covfct D, covfct D2) {
+// immer mit FIRST UND LAST in init.*.cc arbeiten, siehe DOLLAR oder VECTOR
+  return addFurtherCovIntern(-1, cf, D, D2);
+}
+
 
 
 void addTypeFct(type_fct TypeFct) {
@@ -1660,6 +1634,15 @@ void addTypeFct(type_fct TypeFct) {
   //  printf("Typefct: %s\n", C->name);
 }
 
+
+
+
+void Implemented(Methods Meth) {
+  int nr = currentNrCov - 1;
+  assert((nr>=0) && (nr<currentNrCov));
+  defn *C = DefList + nr; // nicht gatternr
+  C->implemented[Meth] = true;
+}
 
 //int addFurtherCov(nonstat_covfct cf, covfct D, covfct D2) {
 //  return addFurtherCov(-1, cf, D, D2);
@@ -1769,8 +1752,7 @@ void addSpecific(int cov, bool copy) {
   assert(//(SYSTYPE(DefList[nr].systems[0], 0) == ProcessType &&
 	  // DefList[nr].kappas == X->kappas) || 
 	 (DefList[nr].kappas == X->kappas || 
-	 ( X->check == checkmal && DefList[nr].check==checkmultproc)  ||
-	  ( X->check == checktrend && DefList[nr].check==checkTrendproc)) );
+	  ( X->check == checkmal && DefList[nr].check==checkmultproc)  ));
   // to do ... und die namen sollten auch gleich sein...
 
   if (copy) {
@@ -1932,41 +1914,13 @@ void addGaussMixture(draw_random drawmix,
   C->logmixdens = logmixdens;
 }
 
-void addReturns(//return_fct Covariance, ext_bool_ret_fct isCovariance, 
-		return_covmat CovMatrix, ext_bool_ret_fct isCovMatrix
-		//tworeturns_fct InverseCovMatrix,
-		//		ext_bool_ret_fct isInverseCovMatrix,
-		//return_fct Variogram, ext_bool_ret_fct isVariogram,
-		//return_fct PseudoVariogram, ext_bool_ret_fct isPseudoVariogram
-		) {
+void addReturns(return_covmat CovMatrix, ext_bool_ret_fct isCovMatrix) {
   int nr = currentNrCov - 1;
   defn *C = DefList + nr; // nicht gatternr
-  /*
-  if (Covariance!=NULL) {
-    C->covariance=Covariance;
-    C->is_covariance = isCovariance==NULL ? isFalse : isCovariance;
-  } else assert(isCovariance==NULL);
-  */
   if (CovMatrix!=NULL) {
     C->covmatrix=CovMatrix;
     C->is_covmatrix = isCovMatrix==NULL ? isFalse : isCovMatrix;
   } else assert(isCovMatrix==NULL);
-  /*
-  if (InverseCovMatrix!=NULL) {
-    C->inversecovmatrix=InverseCovMatrix;
-    C->is_inversecovmatrix =
-      isInverseCovMatrix==NULL ? isFalse : isInverseCovMatrix;
-  } else assert(isInverseCovMatrix==NULL);
-  if (Variogram!=NULL) {
-    C->variogram=Variogram;
-    C->is_variogram = isVariogram==NULL ? isFalse : isVariogram;
-  } else assert(isVariogram==NULL);
-  if (PseudoVariogram!=NULL) {
-    C->pseudovariogram=PseudoVariogram;
-    C->is_pseudovariogram =
-      isPseudoVariogram==NULL ? isFalse : isPseudoVariogram;
-  } else assert(isPseudoVariogram==NULL);
-  */
 }
 
 
@@ -2076,16 +2030,17 @@ Types TypeDefault(Types required, model *cov,
 
 bool allowedIdist(model *cov) {
   bool *I = cov->allowedI,
-    dist = DistancesGiven(cov);
+    dist = LocDist(cov) && LocxdimOZ(cov) == 1;
   MEMSET(I, 0, sizeof(allowedI_type)); // default is false
   if (dist) I[ISOTROPIC] = I[EARTH_ISOTROPIC] = I[SPHERICAL_ISOTROPIC] = true;
-  else I[UNREDUCED] = true;
+  else // I[UNREDUCED] = true;
+    I[CARTESIAN_COORD] =I[EARTH_COORD] = I[SPHERICAL_COORD] = true;
   return false;
 }
 
 
 bool setUnreducedOrDist(model *cov) {
-  bool dist = DistancesGiven(cov);
+  bool dist = LocDist(cov) && LocxdimOZ(cov) == 1;
   isotropy_type iso = CONDPREVISO(0); 
   if (!isFixed(iso)) return false;
   set_type(OWN, 0, DEFTYPE(0));

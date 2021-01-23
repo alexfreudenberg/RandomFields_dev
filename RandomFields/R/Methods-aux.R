@@ -32,7 +32,7 @@ reflection <- function(data, orth, drop=FALSE)
 
 AddUnits <- function(params) {
   ## see also empvario.R and fitgauss.R, if changed
-  coords <- RFoptions()$general
+  coords <- getRFoptions(GETOPTIONS="coords")
   return(c(params, list(coordunits=coords$coordunits,
                         varunits=coords$varunits)))
 }
@@ -151,7 +151,7 @@ brack <- function(x, i=NULL, j=NULL, ..., drop=FALSE) {
   dots = list(...)
   if (length(dots)>0) warning("dots are ignored")
   has.variance <- !is.null(x@.RFparams$has.variance) && x@.RFparams$has.variance
-  j.absent <- is(try(j, silent), "try-error") ## hasArg("j") , missing do not work! ## to fool .bash_alias: tkEntry(
+  j.absent <- is(try(j, silent=TRUE), "try-error") ## hasArg("j") , missing do not work! ## to fool .bash_alias: tkEntry(
   if (j.absent) {
      if (missing(i)) return(x)
     x@data <- x@data[i]#, drop=drop]
@@ -259,7 +259,7 @@ extract.names <- function(names) {
 spatialGridObject2conventional <- function(obj, data.frame=FALSE) {
   check.validity.n.vdim(obj)
 
-  timespacedim <- length(obj@grid@cells.dim)
+  tsdim <- length(obj@grid@cells.dim)
   data <- as.matrix(obj@data)
   names <- colnames(data)
   
@@ -270,7 +270,7 @@ spatialGridObject2conventional <- function(obj, data.frame=FALSE) {
 
   dim(data) <- c(obj@grid@cells.dim, vdimn)
   
-  if (timespacedim > 1) data <- reflection(data, 2, drop=FALSE)
+  if (tsdim > 1) data <- reflection(data, 2, drop=FALSE)
   ## re-ordering of 2nd space dimension since in sp objects, the 2nd dimension
   ## is in decreasing order
 
@@ -284,7 +284,7 @@ spatialGridObject2conventional <- function(obj, data.frame=FALSE) {
   dim(names) <- vdimn
   vdim_close_together <- FALSE
   if (vdim_close_together) {
-    perm <- c(timespacedim+1, 1:timespacedim, timespacedim+2) 
+    perm <- c(tsdim+1, 1:tsdim, tsdim+2) 
     data <- aperm(data, perm=perm)
     names <- aperm(names, perm[-1]) ### ?????
   }
@@ -427,47 +427,6 @@ setMethod("RFspDataFrame2conventional", signature=c("RFpointsDataFrame"),
 
 
 
-prepare4RFspDataFrame <- function(info, RFopt, x, y, z, T, grid=NULL,
-				  coordnames=NULL) {
-  
-   locinfo <- info$loc
-
-  coords <- if (missing(x)) NULL else list(x=x,y=y, z=z, T=T, grid=grid)
-  if (is.null(coordnames))
-    coordnames <- SystemCoordNames(locinfo=locinfo, RFopt=RFopt)
-  
-  ## coords or GridTopology 
-  if (locinfo$grid) {
-    coords <- NULL
-    xgr <- cbind(locinfo$xgr, locinfo$T)
-    colnames(xgr) <- coordnames
-    xgr[is.na(xgr)] <- 0
-    gridTopology <- sp::GridTopology(xgr[1, ], xgr[2, ], xgr[3, ])
-  } else { ## grid == FALSE
-    gridTopology <- NULL
-    
-    # cbind of locations from x-matrix and T (if given)
-    coords <- as.matrix(apply(t(locinfo$x), 2, rep,
-                              times=(locinfo$totpts/locinfo$spatialtotpts)))
-    if (locinfo$has.time.comp) {
-      T <- locinfo$T
-      coords <- cbind(coords, rep(seq(T[1], by=T[2], len=T[3]),
-                                each=locinfo$spatialtotpts))
-    }
-    if (is.matrix(coords)) colnames(coords) <- coordnames
-  }
-
-  if (RFopt$basic$printlevel>=PL_IMPORTANT && RFopt$internal$warn_newstyle) {
-    RFoptions(internal.warn_newstyle = FALSE)
-    message("New output format of RFsimulate: S4 object of class 'RFsp';\n",
-            "for a bare, but faster array format use 'RFoptions(spConform=FALSE)'.")
-  }
-
-  return(list(coords=coords, gridTopology=gridTopology))
-}
-
-
-
 ### ist keine Methode im engeren Sinne. Habe ich aus Methods-RFsp.R
 ### rausgenommen, da bei jeglicher Aenderung in Methods-RFsp.R ich
 ### komplett neu installieren muss. Bei rf.R muss ich es nicht.
@@ -485,12 +444,11 @@ conventional2RFspDataFrame <- function(data, coords=NULL, gridTopology=NULL,
   ## grid case
   if (length(coords) == 0) {# war is.null(coords) -- erfasst coords=list() nicht
     grid <- convert2GridTopology(gridTopology) 
-    timespacedim <- length(grid@cells.dim)
+    tsdim <- length(grid@cells.dim)
 
     ## naechste Zeile eingefuegt !! und (Martin 30.6.13) wieder
     ## auskommentiert. s. Bsp in 'RFsimulate'
     ## if (!is.null(dim(data)) && all(dim(data)[-1]==1)) data <- as.vector(data)
-    
     if (is.null(dim(data))) {      
       d <- c(grid@cells.dim,  if (vdim > 1) vdim,  if (n > 1) n)
       if (is(data, "RFgridDataFrame")) {
@@ -499,37 +457,24 @@ conventional2RFspDataFrame <- function(data, coords=NULL, gridTopology=NULL,
         stopifnot(length(data) == prod(d))
         dim(data) <- d
       }
-      
-      ## stopifnot(1 == timespacedim + (n > 1) + (vdim > 1))               
-      
-    } else {
-      #Print(data, timespacedim, n, vdim)
-      
-      if (length(dim(data)) != timespacedim + (n>1) + (vdim > 1)){
-                                        ##
-       # str(data)
-        stop(paste(length(dim(data)),
-                   "= length(dim(data)) != timespacedim + (n>1) + (vdim>1) =",
-                   timespacedim, '+', (n>1), '+', (vdim > 1)))
-      }
-    }
+    } else if (length(dim(data)) != tsdim + (n>1) + (vdim > 1))
+         stop(paste(length(dim(data)),
+                   "= length(dim(data)) != tsdim + (n>1) + (vdim>1) =",
+                   tsdim, '+', (n>1), '+', (vdim > 1)))
     
     if (vdim>1 && vdim_close_together){
       ## new order of dimensions: space-time-dims, vdim, n
-      perm <- c( 1+(1:timespacedim), 1, if (n>1) timespacedim+2 else NULL)
+      perm <- c( 1+(1:tsdim), 1, if (n>1) tsdim+2 else NULL)
       data <- aperm(data, perm=perm)
-    }
+    }   
     
-    
-    if (timespacedim==1)
-      call <- "RFgridDataFrame"
+    if (tsdim==1) call <- "RFgridDataFrame"
     else {
       ## 3/2015: unclear what to do if 1d space and time: also reflection??
       data <- reflection(data, 2, drop=FALSE)
       call <- "RFspatialGridDataFrame"
     }
   }
-  
   
   ## coords case
   if (is.null(gridTopology)){
@@ -538,35 +483,26 @@ conventional2RFspDataFrame <- function(data, coords=NULL, gridTopology=NULL,
       perm <- c(2:(n.dims - (n>1)), 1, if (n>1) n.dims else NULL)
       data <- aperm(data, perm=perm)
     }
-    if (is.null(dim(coords)) || ncol(coords)==1)
-      call <- "RFpointsDataFrame"
-    else call <- "RFspatialPointsDataFrame"
+    call <- if (is.null(dim(coords)) || ncol(coords)==1) "RFpointsDataFrame"
+            else "RFspatialPointsDataFrame"
   }
-  
-  
+
   ## in both cases:
   dim(data) <- NULL
+#  Print(data, n, vdim, coords)
   data <- as.data.frame(matrix(data, ncol=n*vdim))
   
-  if (is.null(varnames))
-    varnames <- paste("variable", 1:vdim, sep="")
-  if (length(varnames) == n*vdim)
-    names(data) <- varnames
-  else
-    if (length(varnames) == vdim)
-      names(data) <- paste(rep(varnames, times=n),
-                           if (n>1) ".n", if (n>1) rep(1:n, each=vdim),sep="")
-    else names(data) <- NULL
+  if (is.null(varnames)) varnames <- paste("variable", 1:vdim, sep="")
+  names(data) <- if (length(varnames) == n*vdim)  varnames
+                 else if (length(varnames) == vdim)
+                   paste(rep(varnames, times=n),
+                         if (n>1) ".n", if (n>1) rep(1:n, each=vdim),sep="")
   
-  if (is.null(coords)){
-
+  if (is.null(coords))
     do.call(call, args=list(data=data, grid=grid,
-                      RFparams=list(n=n, vdim=vdim, T=T)))
-  } else {
-    
-     do.call(call, args=list(data=data, coords=coords,
-                       RFparams=list(n=n, vdim=vdim, T=T)))
-  }
+                            RFparams=list(n=n, vdim=vdim, T=T)))
+  else do.call(call, args=list(data=data, coords=coords,
+                               RFparams=list(n=n, vdim=vdim, T=T)))
 }
 
 

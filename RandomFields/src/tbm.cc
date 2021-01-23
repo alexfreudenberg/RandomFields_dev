@@ -24,7 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include <Rmath.h>  
-#include <stdio.h>  
+#include <stdio.h> 
 //#include <stdlib.h>
 //#include <sys/timeb.h>
 #include <unistd.h>
@@ -185,6 +185,7 @@ void rangetbmproc(model VARIABLE_IS_NOT_USED *cov, int k, int i, int j,
 
 
 int checktbmproc(model *cov) {
+  globalparam *global = &(cov->base->global);
 
   FRAME_ASSERT_GAUSS_INTERFACE;
 
@@ -202,13 +203,13 @@ int checktbmproc(model *cov) {
   int  err = NOERROR;  // taken[MAX DIM],
   isotropy_type
     isoselect[NSEL]={ISOTROPIC, DOUBLEISOTROPIC};
-  tbm_param *gp  = &(GLOBAL.tbm);
-  KEY_type *KT = cov->base;
-
+  tbm_param *gp  = &(global->tbm);
+  char *error_location = cov->base->error_location;  
+ 
   ASSERT_CARTESIAN;
   ASSERT_ONESYSTEM;
   
-  if (GLOBAL.general.vdim_close_together && VDIM0 > 1)
+  if (global->general.vdim_close_together && VDIM0 > 1)
     SERR1("TBM only allowed if '%.50s=FALSE'", general[GENERAL_CLOSE]);
 
   // printf("%s fulldim %d %d\n", NICK(cov), fulldim, 0);
@@ -271,7 +272,7 @@ int checktbmproc(model *cov) {
     }
 
     if (err != NOERROR) {
-       SPRINTF(KT->error_loc, "%.50s", NICK(cov));
+       SPRINTF(error_location, "%.50s", NICK(cov));
       SERR("Its submodel could not be identified as isotropic or space-isotropic and positive definite function.");
     }
     
@@ -297,7 +298,7 @@ int checktbmproc(model *cov) {
     }
 
     if (COVNR == TBM_PROC_USER) newdim = OWNXDIM(0); 
-    else if ((err = get_subdim(cov, PrevLoc(get_user_input(cov))->Time, &dummy,
+    else if ((err = get_subdim(cov, LocPrev(get_user_input(cov))->Time, &dummy,
 			       &newdim, &dummydim)) != NOERROR) RETURN_ERR(err);
 
     if ((err = CHECK(sub, newdim, newdim, ProcessType, XONLY, CARTESIAN_COORD,
@@ -320,6 +321,8 @@ int checktbmproc(model *cov) {
 
 
 int struct_tbmproc(model *cov, model **newmodel) { 
+  globalparam *global = &(cov->base->global);
+  coord_sys_enum coord = global->coords.coord_system;
   model
     *next = cov->sub[TBM_COV];
   ASSERT_NEWMODEL_NULL;
@@ -330,7 +333,7 @@ int struct_tbmproc(model *cov, model **newmodel) {
   assert(COVNR == TBM_PROC_INTERN);
 
   model *user = get_user_input(cov);
-  location_type *loc_user = PrevLoc(user);
+  location_type *loc_user = LocPrev(user);
 
   double linesimufactor, 
     tbm_linesimustep = P0(TBM_LINESIMUSTEP),
@@ -394,7 +397,7 @@ int struct_tbmproc(model *cov, model **newmodel) {
     SERR("dimension must currently be at least 2 and at most 4 for TBM");
 
   ONCE_NEW_STORAGE(tbm);
-  tbm_storage *s = cov->Stbm;
+getStorage(s ,   tbm);
 
 
   if ((err=get_subdim(cov, loc_user->Time, &ce_dim2, &(s->ce_dim),
@@ -468,25 +471,30 @@ int struct_tbmproc(model *cov, model **newmodel) {
   /*          determine length and resolution of the band         */
   /****************************************************************/
 
-  location_type *loc = Loc(cov);
+ 
   assert(cov->ownloc == NULL);
-  if ((loc->Time && !ce_dim2)) {
+  if ((LocTime(cov) && !ce_dim2)) {
     TransformLoc(cov, ce_dim2, False, false); 
-    loc = Loc(cov);
   }
-
+  // ACHTUNG TransformLoc aendert loc
+  bool Time = LocTime(cov),
+    grid = Locgrid(cov);
+  coord_type gr = Locxgr(cov);
+  double *T = LocT(cov);
+  int totpts = Loctotalpoints(cov);
+ 
   int 
-    dim = GetLoctsdim(cov),
+    dim = Loctsdim(cov),
     spdim = dim - ce_dim2,
-    ens = GLOBAL.general.expected_number_simu;
+    ens = global->general.expected_number_simu;
 
 
   double diameter, min[MAXTBMSPDIM], max[MAXTBMSPDIM], Center[MAXTBMSPDIM],
-    *timecomp = loc->grid ? loc->xgr[dim - 1] : loc->T,
+    *timecomp = grid ? gr[dim - 1] : T,
     min_center = 0.0,
     max_center = 0.0;
   
-  GetDiameter(loc, min, max, Center, true, false, NULL);
+  GetDiameter(Loc(cov), min, max, Center, true, false, NULL);
   for (d=0; d<spdim; d++) { 
     // necessary to calculate for min and max in case of tbm_center is given
     double dummy;
@@ -519,7 +527,7 @@ int struct_tbmproc(model *cov, model **newmodel) {
     } else diameter = (double) *points;
   } 
 
-// print("diam %10g %10g %d %d\n", diameter, linesimufactor, *points, GLOBAL.tbm.points);
+// print("diam %10g %10g %d %d\n", diameter, linesimufactor, *points, global->tbm.points);
 
   if (diameter > MAXNN) {
     SERR("The number of points on the line is too large. Check your parameters and make sure that none of the locations are given twice");
@@ -530,7 +538,7 @@ int struct_tbmproc(model *cov, model **newmodel) {
  
 
   // only needed for nongrid !
-  s->spatialtotalpts = loc->totalpoints;
+  s->spatialtotalpts = totpts;
   if (s->ce_dim == 2) {
     s->spatialtotalpts /= timecomp[XLENGTH];
     //    assert(false);
@@ -544,9 +552,9 @@ int struct_tbmproc(model *cov, model **newmodel) {
   double 
      *tbm_center = P(TBM_CENTER);
   bool setable = !isDollar(cov->calling) && user_dim == dim
-    && user_spatialdim == GetLoctsdim(cov);
+    && user_spatialdim == Loctsdim(cov);
 
-  GetDiameter(loc, min, max, Center, false, false, NULL);
+  GetDiameter(Loc(cov), min, max, Center, false, false, NULL);
 
   if (!ISNAN(tbm_center[0])) {
     assert(cov->calling != NULL);
@@ -566,10 +574,8 @@ int struct_tbmproc(model *cov, model **newmodel) {
 
   for (d=0; d<dim; d++) {
     s->center[d] = Center[d];
-    if (loc->grid) s->center[d] -= loc->xgr[d][XSTART]; 
-    else if (loc->Time && d==dim-1 && ce_dim2) {
-      s->center[d] -= loc->T[XSTART];
-    }
+    if (grid) s->center[d] -= gr[d][XSTART]; 
+    else if (Time && d==dim-1 && ce_dim2) s->center[d] -= T[XSTART];
   }
 
 
@@ -608,7 +614,7 @@ int struct_tbmproc(model *cov, model **newmodel) {
 
     if (s->ce_dim == 2) {
       PARAM(dollar, DANISO)[1] = PARAM(dollar, DANISO)[2] = 0.0;
-      PARAM(dollar, DANISO)[3] = loc->T[XSTEP];
+      PARAM(dollar, DANISO)[3] = T[XSTEP];
     } 
     addModel(modelB1, 0, TBM_OP);
     if (!PisNULL(TBMOP_TBMDIM))
@@ -648,7 +654,7 @@ int struct_tbmproc(model *cov, model **newmodel) {
   model *key = cov->key;
   if (err != NOERROR) goto ErrorHandling;
  
-  GLOBAL.general.expected_number_simu = 100;
+  global->general.expected_number_simu = 100;
   if ((err = CHECK(key, 1 + (int) ce_dim2, 1 + (int) ce_dim2, 
 		   ProcessType, XONLY, CARTESIAN_COORD,
 		   cov->vdim, GaussMethodType)) != NOERROR) {
@@ -681,7 +687,7 @@ int struct_tbmproc(model *cov, model **newmodel) {
 
  ErrorHandling :
   //cov->initialised = err==NOERROR && key->initialised;
-  GLOBAL.general.expected_number_simu = ens;
+  global->general.expected_number_simu = ens;
   RETURN_ERR(err);
 }
 
@@ -692,21 +698,21 @@ int struct_tbmproc(model *cov, model **newmodel) {
 
 
 int init_tbmproc(model *cov, gen_storage *S) {
-  location_type *loc = Loc(cov);
   int err=NOERROR;
   errorloc_type errorloc_save;
+  char *error_location = cov->base->error_location;  
+
   model *key = cov->key; // == NULL ? cov->sub[0] : cov->key;
   assert(key != NULL);  
-  tbm_storage *s = cov->Stbm;
-  KEY_type *KT = cov->base;
+getStorage(s ,   tbm);
    
   assert(s != NULL);
-  assert(KT != NULL);
-  STRCPY(errorloc_save, KT->error_loc);
-  SPRINTF(KT->error_loc, "%.500s %.50s", errorloc_save, NAME(cov));
+  STRCPY(errorloc_save, error_location);
+  SPRINTF(error_location, "%.500s %.50s", errorloc_save, NAME(cov));
   cov->method = TBM;
 
   FRAME_ASSERT_GAUSS;
+  if (LocDist(cov)) RETURN_ERR(ERRORDISTANCES);
 
   if (s->err==NOERROR) {
     err = INIT(key, 0, S); 
@@ -714,10 +720,9 @@ int init_tbmproc(model *cov, gen_storage *S) {
     assert(s->err < NOERROR);
   }
 
-  STRCPY(KT->error_loc, errorloc_save);
+  STRCPY(error_location, errorloc_save);
   if (err != NOERROR) RETURN_ERR(err); 
 
-  if (loc->distances) RETURN_ERR(ERRORDISTANCES);
    
   err = ReturnOwnField(cov);
   cov->simu.active = err == NOERROR;
@@ -808,13 +813,14 @@ void GetE(int fulldim, tbm_storage *s, int origdim, bool Time,
 
 
 void do_tbmproc(model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
+  globalparam *global = &(cov->base->global);
   model 
     *key = cov->key; 
   assert(key != NULL); // == NULL ? cov->sub[0] : cov->key;
   location_type 
     *loc = Loc(cov),
     *keyloc = Loc(key);
-  tbm_storage *s =  cov->Stbm;
+getStorage(s ,   tbm);
 
  int vdim = VDIM0;
  double
@@ -826,7 +832,7 @@ void do_tbmproc(model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
   int
     origdim = loc->caniso == NULL ? ANYDIM : loc->cani_nrow,
     simuspatialdim = s->simuspatialdim, // for non-grids only
-    every = GLOBAL.general.every,
+    every = global->general.every,
     tbm_lines = P0INT(TBM_LINES);
    
   double
@@ -855,7 +861,7 @@ void do_tbmproc(model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
   }
   deltaphi = PI / (double) tbm_lines;// only used for tbm2
   phi = deltaphi * UNIFORM_RANDOM;     // only used for tbm2
-  if (!GLOBAL.tbm.grid) deltaphi = 0.0;
+  if (!global->tbm.grid) deltaphi = 0.0;
 
   if (loc->grid) {
     int nx, ny, nz, gridlenx, gridleny, gridlenz;

@@ -45,6 +45,9 @@ RFdistr(model, x, q, p, n, params, dim=1, ...)
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
+RFoptions(storing = FALSE)
+
+
 ## a very toy example to understand the use
 model <- RRdistr(norm())
 v <- 0.5
@@ -53,8 +56,9 @@ Print(RFdistr(model=model, q=v), pnorm(q=v))
 Print(RFdistr(model=model, p=v), qnorm(p=v))
 
 n <- 10
-r <- RFdistr(model=model, n=n, seed=0)
-set.seed(0); Print(r, rnorm(n=n))
+r <- RFdistr(model=model, n=n)
+set.seed(0)
+Print(r, rnorm(n=n))
 
 
 ## note that a conditional covariance function given the

@@ -29,7 +29,7 @@ RRdistr <- function(name, nrow, ncol,  ## ddistr, pdistr, qdistr, rdistr,
 #  Print(missing(name), if (!missing(name)) name, missing(nrow), if (!missing(nrow)) nrow, missing(ncol), if (!missing(ncol)) ncol,  missing(envir), ...)
   
   if (!missing(name)) {
-    u <- rawTry(isRMmodel(name))
+    u <- rawTry(isS4(name) && is(name, CLASS_CLIST))
     if (is.logical(u) && u) return(name)
   }
 
@@ -240,18 +240,25 @@ RMdeclare <- function(...) {
   left <- names(cl)
   if (length(left) == 0) left <- rep("", length(right))
   ok <- (left == right) | (left == "")
-#  Print(model.name, cl, right, left)
+  ## Print(model.name, cl, right, left, ok)
   if (!all(ok)) {
     left <- left[!ok]
-    stop("argument", S[left],  " ",  paste0("'", left, "'", collapse =","),
-         "do", if (length(left) == 1) "es",
+    stop("argument", S(left),  " ",  paste0("'", left, "'", collapse =","),
+         " do", if (length(left) == 1) "es",
          " not follow the requirements of 'RMdeclare'.")
   }
   par.model <- list()
   par.model[right] <- NA
- # Print(left, right)
-  for (i in 1:length(right)) par.model[[i]] <- base::...elt(i)    
-  model <- new(CLASS_CLIST, name = model.name, submodels = list(), 
+  ##  Print(left, right, par.model)
+  left <- left[left == right]
+  for (i in OneTo(length(left))) {
+##    Print(left[i], base::...elt(i))
+    par.model[[left[i]]] <- base::...elt(i)
+  }
+##   Print(left, par.model)
+  model <- new(CLASS_CLIST,
+               name = model.name, ## == RMdeclare
+               submodels = list(), 
                par.model = par.model, par.general = list())
   
   return(model) 
@@ -273,7 +280,7 @@ RMdeclare <- new(CLASS_RM,
 
 
 RMcovariate <- function(formula=NULL, data, x, y=NULL, z=NULL, T=NULL, grid,
-                        raw, norm, addNA, factor) {
+                        raw, addNA, factor) {
   if (!missing(factor)) {
     if (!missing(addNA) && addNA)
       stop("'addNA' and 'factor' may not be given at the same time.")
@@ -300,7 +307,7 @@ RMcovariate <- function(formula=NULL, data, x, y=NULL, z=NULL, T=NULL, grid,
     if (is.null(formula)) 
       formula <- eval(parse(text=paste("~", paste(names(data), collapse="+"))))
     data <- model.matrix(object=formula, data=data)
-    if (RFoptions()$basic$printlevel > 0)
+    if (RFoptions(GETOPTIONS="basic")$printlevel > 0)
       message("Intercept added to a model component that is a ", N, ".")
   }
   
@@ -308,31 +315,40 @@ RMcovariate <- function(formula=NULL, data, x, y=NULL, z=NULL, T=NULL, grid,
   if (missing(x) && length(T)==0) {
     if (length(y)!=0 || length(T)!=0 || !missing(grid))
       stop("y, z, T, grid may only be given if 'x' is given")
-    ans <- Call(norm=norm, data=data, raw=raw, addNA=addNA)
+    ans <- Call(data=data, raw=raw, addNA=addNA)
   } else {
-    new <- C_UnifyXT(x=x, y=y, z=z, T=T, grid=grid, printlevel=0)
-    ans <- Call(norm=norm, data=data, x=new, raw=raw, addNA=addNA)
+    PL <- getRFoptions(GETOPTIONS="basic")$printlevel
+    .Call(C_setlocalRFutils, NULL, 0)
+    new <- C_UnifyXT(x=x, y=y, z=z, T=T, grid=grid)
+    .Call(C_setlocalRFutils, NULL, PL)
+    ans <- Call(data=data, x=new, raw=raw, addNA=addNA)
   }
   ans
 }
 RMcovariate <- copyProp(RMcovariate, iRMcovariate)
  
-RMfixcov <- function(M, x, y=NULL, z=NULL, T=NULL, grid, var, proj, raw, norm) {
+RMfixcov <- function(M, x, y=NULL, z=NULL, T=NULL, grid, var, proj, raw#, norm
+                     ) {
   Call <- iRMfixcov
   if (missing(x) && length(T)==0) {
     if (length(y)!=0 || length(T)!=0 || !missing(grid))
       stop("y, z, T, grid may only be given if 'x' is given")
-    Call(norm=norm, M=M, raw=raw, var=var, proj=proj)
+    Call(#norm=norm,
+         M=M, raw=raw, var=var, proj=proj)
   } else {
-    new <- C_UnifyXT(x, y, z, T, grid, printlevel=0)
-    Call(norm=norm, M=M, x=new, raw=raw, var=var, proj=proj)
+    PL <- getRFoptions(GETOPTIONS="basic")$printlevel
+    .Call(C_setlocalRFutils, NULL, 0)
+    new <- C_UnifyXT(x, y, z, T, grid)
+    .Call(C_setlocalRFutils, NULL, PL)
+    Call(#norm=norm,
+         M=M, x=new, raw=raw, var=var, proj=proj)
   }
 }
 RMfixcov <- copyProp(RMfixcov, iRMfixcov)
 
 
 RMcov <- function(gamma, x, y=NULL, z=NULL, T=NULL, grid, a,
-                  var, scale, Aniso, proj, raw, norm) {
+                  var, scale, Aniso, proj, raw) {
   Call <- iRMcov
   if (missing(x) && length(T)==0) {
     if (length(y)!=0 || length(T)!=0 || !missing(grid))
@@ -344,7 +360,12 @@ RMcov <- function(gamma, x, y=NULL, z=NULL, T=NULL, grid, a,
     x <- pmatch(x, RMCOV_X)
     if (is.na(x)) stop("unknown choice of 'x'")
     x <- list(as.double(x))
-  } else x <- C_UnifyXT(x, y, z, T, grid, printlevel=0)
+  } else {
+    PL <- getRFoptions(GETOPTIONS="basic")$printlevel
+    .Call(C_setlocalRFutils, NULL, 0)
+    x <- C_UnifyXT(x, y, z, T, grid)
+    .Call(C_setlocalRFutils, NULL, PL)
+  }
   Call(gamma=gamma, x = x, a=a, scale=scale, Aniso=Aniso, proj=proj, var=var)
 }
 RMcov <- copyProp(RMcov, iRMcov)
@@ -446,7 +467,7 @@ xRMranef <- function(formula=NULL, data, x, y=NULL, z=NULL, T=NULL, grid,
        stop("If 'formula' is an 'RMmodel' then only 'var', 'scale', 'Aniso', and 'proj' might be given") 
   }
   if (missing(var)) {
-    if (RFoptions()$basic$printlevel > 0)
+    if (RFoptions(GETOPTIONS="basic")$printlevel > 0)
       message("Note that if 'var' is not given in 'RMranef', 'var' is set to 'NA' i.e., the variance is estimated'.")
     var <- NA
   }
@@ -458,7 +479,7 @@ XXXRMprod <- function(phi, var, scale, Aniso, proj) {
   #RMraneffct(phi, var, scale, Aniso, proj)
 }
 
-RMtrendplus <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9,
+RMshapeplus <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9,
                         add.na=FALSE, var, scale, Aniso, proj) {
   submodels <- par.general <- par.model <- list() 
   
@@ -502,8 +523,8 @@ RMtrendplus <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9,
 }
 
 
-RMtrendplus <- new(CLASS_RM, 
-	.Data = RMtrendplus,
+RMshapeplus <- new(CLASS_RM, 
+	.Data = RMshapeplus,
 	type = c('trend'),
 	isotropy = c('submodel dependent'),
 	domain = c('submodel dependent'),

@@ -26,7 +26,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "startGetNset.h"
 
 //#define xdebug 1
-// #define ydebug 1
+//#define ydebug 1
 
 //  printf("L=%d E=%d cov:err=%d err_lev=%d %s\n", L, X, cov->err,  cov->err_level, NAME(cov));
 
@@ -74,23 +74,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
     errs[dom] = X;						\
     levels[dom] = L;							\
     errorMSG(errs[dom], cov->err_msg, KT, ERRSTR[dom]);			\
-    if (PL > PL_ERRORS) { PRINTF("check level %d failed for %s (%d), %s %s.\n", levels[dom], NAME(cov), errs[dom], KT->error_loc, ERRSTR[dom]);} \
+    if (PL > PL_ERRORS) { PRINTF("check level %d failed for %s (%d), %s %s.\n", levels[dom], NAME(cov), errs[dom], KT->error_location, ERRSTR[dom]);} \
     continue;								\
   }
 
-//if (false) { printf("check level %d failed for %s: %s (%s)\n", levels[dom], NAME(cov), cov->err_msg, KT->error_loc);}
-
-
-#define ShortList 5
-#define ShortN 8
-char kurz_[ShortList][ShortN + 1] = {""};
-
-const char *Short(int i, const char * x) {
-  assert(i < ShortList);
-  strcopyN(kurz_[i], x, ShortN);
-  kurz_[i][ShortN] = '\0';
-  return kurz_[i];
-}
 
 
 int SetXdimLogdim(model *cov, isotropy_type *Iso, int lastsystem);
@@ -131,38 +118,6 @@ int check2passTF(model *cov, system_type* s, Types type, int vdim,
   ASSERT_ONESYSTEM; 
   set_type(PREVSYSOF(cov), 0, type);
   return check2X(cov, vdim, vdim, frame, false);
-}
-
-
-int CheckPos2Neg(model *cov, int vdim, Types frame, int ntype,
-		 domain_type maxdom) {
-  /// genutzt von $
-  // function must be preceeded by COPYALLSYSTEMS
-#define ntype3 3
-  int Err=ERRORFAILED;
-  // statselect[nsel]={STATIONARY, VARIOGRAM, COVARIANCE, GEN_VARIOGRAM};
-  Types typeselect[ntype3] = {PosDefType, VariogramType, NegDefType};
-  assert(LASTi(CALLING[0]) >= 0);
-  COPYALLSYSTEMS(PREV, CALLING, false);
-  domain_type mindom = XONLY;
-  
-  if (isAnySpherical(PREVISO(0))) ntype = 1;// Variogram does not make sense on  the sphere
-  if (isAnyIsotropic(PREVISO(0))) maxdom = XONLY;
-  else if (isEarth(PREVISO(0))) mindom = KERNEL;
-
-  // printf("mindom=%d %d\n", mindom, maxdom);
-  
-  for (int t=0; t<ntype; t++) {
-    for (int s=mindom; s<=maxdom; s++) {
-      //printf("1 statt 0\n");
-      set_system_type(PREV, typeselect[t]); 
-      set_system_domain(PREV, (domain_type) s);
-      if ((Err = check2X(cov, vdim, vdim, frame, true)) == NOERROR) return Err; 
-    }
-  }
-  //printf("maxdom=%d\n", maxdom);  BUG;
-
-  return Err;
 }
 
 
@@ -211,14 +166,30 @@ int check2Xthroughout(model *cov, model *calling,
 }
 
 
+int CheckPosVar(model *cov, Types type, domain_type dom,
+		isotropy_type iso, int vdim, Types frame) {
+  COPYALLSYSTEMS(PREV, CALLING, false);
+  assert(LASTi(CALLING[0]) >= 0);
+  assert(equalsKernel(dom) || !isEarth(PREVISO(0)));
+
+  if (isAnySpherical(PREVISO(0))) type = PosDefType;
+  
+  return check2Xthroughout(cov, cov->calling, type, dom, iso, vdim, frame);
+  
+}
+
+
 // served by macro CHECK // err
 int check2X(model *cov, int logicaldim, int xdimprev,
 	    Types type, domain_type dom, isotropy_type iso,
 	    int vdim0, int vdim1, Types frame, bool coord_trafo) {
+  assert(cov != NULL);
   // genutzt von RMS
 
-  //  PMI(cov->calling);
-  
+  //  PMI0(cov->calling);  PMI0(cov);
+ 
+  //  PMI0(cov->calling);
+ 
   set_system(PREV, 0, logicaldim, UNSET, xdimprev, type, dom,
 	     equalsSpaceIsotropic(iso) ?
 #if MAXSYSTEMS == 1    
@@ -243,6 +214,7 @@ int check2X(model *cov, int logicaldim, int xdimprev,
 
 
 int basic_asserts(model *cov, Types frame, bool *coord_trafo) {
+  globalparam *global = &(cov->base->global);
     // erst bei check unten
   assert(cov != NULL);
  int 
@@ -250,19 +222,15 @@ int basic_asserts(model *cov, Types frame, bool *coord_trafo) {
   model *calling = cov->calling;
   defn //*P = Cov List + prev -> nr, //  nicht gatternr
     *C = DefList + COVNR;        //  nicht gatternr
-  KEY_type *KT = cov->base;
- 
+   char *error_location = cov->base->error_location;  
+
   cov->checked = false;
   assert(cov != NULL);
-  //if (cov->base == NULL) {printf("basic %d %s\n", cov->calling==NULL,NAME(cov)); crash(); BUG;}
-  //  if (cov->base != NULL) crash();
-  //  PMI(cov);
-  // if (cov->base == NULL) BUG;
   assert(cov->base != NULL);
-  SPRINTF(KT->error_loc, "'%.50s'", NICK(cov));
+  SPRINTF(error_location, "'%.50s'", NICK(cov));
   if (PL >= PL_COV_STRUCTURE) { 
     if (calling == NULL) { PRINTF("\n"); }
-    LPRINT("%s\n", KT->error_loc); 
+    LPRINT("%s\n", error_location); 
   }
 
 
@@ -284,7 +252,7 @@ int basic_asserts(model *cov, Types frame, bool *coord_trafo) {
 	 );
   }
   
-  
+
   assert(//equalsVariogramType(frame) ||
 	 // equalsPosDefType(frame) ||
 	 //equalsProcess(frame) ||
@@ -309,7 +277,7 @@ int basic_asserts(model *cov, Types frame, bool *coord_trafo) {
     ERR_RETURN(1, "frame undefined");
   }
 
-   //  printf("'%s' variant = %d %d %d is.interface=%d\n", NAME(cov), cov->variant, frame, BadType, isInterface(cov));
+  //  printf("'%s' variant = %d %d %d is.interface=%d\n", NAME(cov), cov->variant, frame, BadType, isInterface(cov));
  
   
   if (calling != NULL && isInterface(cov)) {
@@ -349,22 +317,13 @@ int basic_asserts(model *cov, Types frame, bool *coord_trafo) {
     
     if (PREVXDIM(s) < 1) ERR_RETURN(5, "dimension less than 1"); 
      
-    if (false && PL > PL_STRUCTURE) {
-      LPRINT("#%d[%s -> %s] requ: %s, %s; has: %s, %s\n", s,
-	     calling == NULL ? "NULL" : NICK(calling), NICK(cov),
-	     Short(0, DOMAIN_NAMES[PREVDOM(s)]), Short(1, ISO_NAMES[curiso]),
-	     PREVDOM(s) == DOM(C->systems[0], 0) 
-	     ? "~" : Short(2, DOMAIN_NAMES[DOM(C->systems[0], 0) ]),  
-	     curiso == ISO(C->systems[0],0)
-	     ? "~" : Short(3,ISO_NAMES[ISO(C->systems[0], 0)])); 
-    }
   }
 
-  // assert(GLOBAL.coords.allow_earth2cart);
+  // assert(glo bal->coords.allow_earth2cart);
   
   if (calling != NULL && isEarth(PREVISO(0))) {
     *coord_trafo = COVNR == TRAFO || 
-      (*coord_trafo && GLOBAL.coords.allow_earth2cart && !isAnyDollar(calling));
+      (*coord_trafo && global->coords.allow_earth2cart && !isAnyDollar(calling));
   } else {
     *coord_trafo = false;
     for (int s=1; s<=prev_lastsystem; s++) 
@@ -376,30 +335,30 @@ int basic_asserts(model *cov, Types frame, bool *coord_trafo) {
 
 
 /*
-check2X : anything concerning OWN, except DOMain (and xdim, logdim if no TRAFO)
+  check2X : anything concerning OWN, except DOMain (and xdim, logdim if no TRAFO)
   PREV has already been set
   COPYALLSYSTEMS(OWN, DEF, true);
   switch owniso 
-    case SubModelI :
-      SetXdimLogdim: sets alwaus iso;  logdim & xdim if prev=EARTH & owniso=CART 
-    case not SubModelI: 
-      case Unreduced :  
-        COPYALLSYSTEMS(OWN, PREV, prev)
-      case isParamDepI : 
-        setDI : all setting of OWN that are parameter specific
-      case not is ParamDepI :
-        none (i.e. own == def)
-	set_own_domain_and_check  
-    setDI
-    c hange_coord_system
-      setgatter_but_nr (trying if possible)
-      sets TRAFO for change of coord. system (inkl. Gatter.xdim,logd,dom,type)
-    sets OWNDOMoop
-    C->check
-    TypeConsistency
-    checkDims (checks vdims and sets max(x)dim)
-    check_within_range
-    SetGatterNr
+  case SubModelI :
+  SetXdimLogdim: sets alwaus iso;  logdim & xdim if prev=EARTH & owniso=CART 
+  case not SubModelI: 
+  case Unreduced :  
+  COPYALLSYSTEMS(OWN, PREV, prev)
+  case isParamDepI : 
+  setDI : all setting of OWN that are parameter specific
+  case not is ParamDepI :
+  none (i.e. own == def)
+  set_own_domain_and_check  
+  setDI
+  c hange_coord_system
+  setgatter_but_nr (trying if possible)
+  sets TRAFO for change of coord. system (inkl. Gatter.xdim,logd,dom,type)
+  sets OWNDOMoop
+  C->check
+  TypeConsistency
+  checkDims (checks vdims and sets max(x)dim)
+  check_within_range
+  SetGatterNr
 */
 
 
@@ -407,11 +366,13 @@ check2X : anything concerning OWN, except DOMain (and xdim, logdim if no TRAFO)
 int check2Xintern(model *cov, int vdim0, int vdim1, Types frame,
 		  bool coord_trafo) {
 
-  //PMI(cov);
-  
-  if (isDollar(cov) && equalsProcess(PREVTYPE(0))) BUG; // crash();
+  //
+  if (isDollar(cov) && equalsProcess(PREVTYPE(0))) {
+    // PMIR(cov); 
+    BUG; // crash();
+  }
 
-  
+   
   //  printf("C HECK2X%s %s(%d) call=%ld root=%ld %ld\n", NAME(cov), TYPE_NAMES[PREVTYPE(0)], PREVTYPE(0), (Long) cov->calling, (Long) cov->root, (Long) cov->base);
   defn //*P = Cov List + prev -> nr, //  nicht gatternr
     *C = DefList + COVNR;        //  nicht gatternr
@@ -431,16 +392,15 @@ int check2Xintern(model *cov, int vdim0, int vdim1, Types frame,
   
 
   assert(vdim0 != 0 && vdim1 != 0);
+  if (calling != NULL) cov->prevloc = LocP(calling);
   if ((Err=basic_asserts(cov, frame, &coord_trafo)) != NOERROR) return Err;
   cov->frame = frame;  
-  if (calling != NULL) cov->prevloc = PLoc(calling);
  
   // collect possibilities for coordinate systems
   // note: always try to keep coordinate system, but always try to 
   // change to a simpler representation within the coordinate system
 
-  // set / try out anything concerning OWN, except DOMain
-
+  // set / try out anything concerning OWN, except DOMain 
   //  PMI(cov);
 
   if (C->Iallowed != NULL) {
@@ -478,7 +438,7 @@ int check2Xintern(model *cov, int vdim0, int vdim1, Types frame,
 
   if (C->Dallowed != NULL && (!cov->DallowedDone || isPrevModelD(C))) {
     cov->DallowedDone = true; 
-    assert(FIRST_DOMAIN == XONLY);
+    assert(equalsXonly(FIRST_DOMAIN));
     if (C->Dallowed(cov)) {
       for(int i=FIRST_DOMAIN ; i<=LAST_DOMAINUSER; cov->allowedD[i++] = false);
       cov->allowedD[PREVDOM(0)] = true;
@@ -512,11 +472,8 @@ int check2Xintern(model *cov, int vdim0, int vdim1, Types frame,
   //if (cov->calling != NULL) crash();
 #endif
 #ifdef ydebug 
-  //PMI0(cov->calling); //
-  // if (cov->Snugget !=NULL) printf("spatial nugget = %d\n", cov->Snugget->spatialnugget);
-  //PMI0(cov);
+  printf("starting loop\n"); //
 #endif
-
 
   for (ext_bool ct=falsch; ct<=(ext_bool) coord_trafo;
        ct=ct == falsch ? wahr : BothOK) { // c*oord-t*rafo
@@ -524,9 +481,9 @@ int check2Xintern(model *cov, int vdim0, int vdim1, Types frame,
     for (cov->variant=0; cov->variant < variants; cov->variant++) {
       //
 #ifdef ydebug
-     PRINTF("variant=%d %d\n", cov->variant, ct);
+      PRINTF("variant=%d %d %d\n", cov->variant, ct, variants);
 #endif     
-     //  PRINTF("C HECKct%s %s(%d)\n", NAME(cov), TYPE_NAMES[PREVTYPE(0)], PREVTYPE(0));
+      //  PRINTF("C HECKct%s %s(%d)\n", NAME(cov), TYPE_NAMES[PREVTYPE(0)], PREVTYPE(0));
       if (C->TypeFct == NULL &&
 	  isBad(TypeConsistency(PREVTYPE(0), DEFTYPE(0)))) {
 	//	
@@ -537,16 +494,22 @@ int check2Xintern(model *cov, int vdim0, int vdim1, Types frame,
 #endif     
 	//     	PMI(cov->calling);
 	//printf("xxx\n");
+#ifdef ydebug
+	printf("err: type inconsistency\n");//
+#endif     
 	Err = ERRORTYPECONSISTENCY;
 	continue;
       }
       if (!left[cov->variant]) continue; // never happens when ct=false
       isotropy_type owniso = DEFISO(0); // OWNISO(0); ///
-      //printf("A here ct = %d %s;  %d %s --> %d %s\n", ct, NAME(cov), PREVISO(0),ISO_NAMES[PREVISO(0)],  owniso, ISO_NAMES[owniso]); 
+      //
       if (isFixed(owniso) && !atleastSpecialised(owniso, PREVISO(0))) {
 	// short cut for most cases
 	Err = ERRORFAILED;
-	//printf("X\n");	
+#ifdef ydebug
+	printf("Err : here ct = %d %s;  %d %s --> %d %s\n", ct, NAME(cov), PREVISO(0),ISO_NAMES[PREVISO(0)],  owniso, ISO_NAMES[owniso]);//
+	PMI0(cov); // 
+#endif     
 	continue;
       }
       
@@ -583,8 +546,6 @@ int check2Xintern(model *cov, int vdim0, int vdim1, Types frame,
 	      BUG;	  // call join_systems(...) here !
 #endif
 	      
-	      // XXXXXX
-	      //printf("XXX\n");
 	      if ((Err = set_own_domain_and_check(cov, vdim0, vdim1, ct))
 		  == NOERROR) { 
 		return Err;
@@ -646,7 +607,11 @@ int check2Xintern(model *cov, int vdim0, int vdim1, Types frame,
 	      //	      : FIRST_LOGCART;
 	      //	    end[s] = LAST_LOGCART;
 	      //	    break;
-	    default: BUG;
+	    default:
+	      //PMI0(cov->calling);
+	      //	      PMI0(cov);
+	      // printf("newiso = %s %s\n", ISO_NAMES[newiso], ISO_NAMES[previso]);
+	      BUG;
 	    }
 	    iso[s] = start[s]; 
 	  }
@@ -674,9 +639,6 @@ int check2Xintern(model *cov, int vdim0, int vdim1, Types frame,
 #ifdef ydebug
 	      PRINTF(" ++++++++++++++= xxxxxx ct=%d [%s]\n", ct, ISO_NAMES[iso[0]]);
 #endif
-	      // XXXX
-	      //PMI0(cov);
-	      // printf("YYY\n");
 	      Err = set_own_domain_and_check(cov, vdim0, vdim1, ct);
 	      //
 #ifdef ydebug
@@ -726,8 +688,6 @@ int check2Xintern(model *cov, int vdim0, int vdim1, Types frame,
 	    nn = PREVLASTSYSTEM;
 	  for (s=0; s<=nn; s++) if (!hasFullXdim(PREVISO(s))) break;
 	  if (s <= nn) RETURN(13, ERRORREDUCED);
-	  //	  printf("CCC  variant %d %d\n", cov->variant, OWNISO(0));
-	  // XXXX
 	  
 	  if ((Err = set_own_domain_and_check(cov, vdim0, vdim1, BothOK))
 	      == NOERROR) return Err;
@@ -858,10 +818,20 @@ int check_rec(model *cov) {
 int check2X(model *cov, int vdim0, int vdim1, Types frame,
 	    bool coord_trafo) {  
   //   int level = cov->err_level;
-  //  printf("initial level%s\n", NAME(cov));
- 
+  //
+
+  #ifdef ydebug
+  printf("initial level%s\n", NAME(cov));//
+#endif
+  
     
   int Err = check2Xintern(cov, vdim0, vdim1, frame, coord_trafo);
+
+
+   #ifdef ydebug
+  printf("XX initial level%s %d\n", NAME(cov), Err); //
+  #endif
+
   model *calling = cov->calling;
   //  printf("out cov=%s (z=%d L=%d E=%d) calling=%s(z=%d, L=%d E=%d) err=%d \n", NAME(cov), cov->zaehler, cov->err_level,  cov->err,  cov->calling == NULL ? "NONE" : NAME(cov->calling),cov->calling == NULL ? -999 : cov->calling->zaehler, cov->calling == NULL ? -999 : cov->calling->err_level, cov->calling == NULL ? -999 : cov->calling->err, Err);
 
@@ -882,6 +852,7 @@ int set_own_domain_and_check(model *cov, int vdim0, int vdim1,
   // printf("entring set_own_domain %s\n", NAME(cov));
 
 
+  utilsparam *global_utils = &(cov->base->global_utils);
   KEY_type *KT = cov->base;
   defn *C = DefList + COVNR;
   Types prevtype = PREVTYPE(0);
@@ -947,7 +918,7 @@ int set_own_domain_and_check(model *cov, int vdim0, int vdim1,
     first_dom = LAST_DOMAIN,
     last_dom = FIRST_DOMAIN,
     defdom = DEFDOM(0); 
-  bool skipchecks = GLOBAL_UTILS->basic.skipchecks;
+  bool skipchecks = global_utils->basic.skipchecks;
   
   //printf("gonna up here (%s) %s \n", NAME(cov), DOMAIN_NAMES[defdom]);
  
@@ -1055,7 +1026,7 @@ int set_own_domain_and_check(model *cov, int vdim0, int vdim1,
 
     errs[dom] = C->check(cov);
     //    PMI0(cov);
-    //printf("!!!! check = %d %s\n", errs[dom], NAME(cov));
+    //    printf("!!!! check = %d %s\n", errs[dom], NAME(cov));
 
     if (errs[dom] != NOERROR) {
       if (errs[dom] >= ERRORM && errs[dom] <= ERRORMEND)
@@ -1069,7 +1040,7 @@ int set_own_domain_and_check(model *cov, int vdim0, int vdim1,
     if (isBad(TypeConsistency(prevtype, cov, previso))) {
       LEVEL(44, ERRORTYPECONSISTENCY);
     }
-    //     printf("DA\n");
+    //    printf("DA\n");
    if (cov->monotone == PARAM_DEP) BUG;
     if ((errs[dom] = checkDims(cov, vdim0, vdim1, ERRSTR[dom])) != NOERROR)
       CONT(45);
@@ -1077,7 +1048,7 @@ int set_own_domain_and_check(model *cov, int vdim0, int vdim1,
     if (!skipchecks &&
 	(errs[dom]=check_within_range(cov, NAOK_RANGE, ERRSTR[dom])) != NOERROR)
       CONT(46);
-    //     printf("FA\n");
+    //   printf("FA\n");
    if ((errs[dom] = SetGatterNr(cov,  ERRSTR[dom])) != NOERROR) CONT(47);
     assert(errs[dom] == NOERROR);
     levels[dom] = LEVEL_LAST;
@@ -1091,14 +1062,14 @@ int set_own_domain_and_check(model *cov, int vdim0, int vdim1,
 	cov->err = errs[dom];
 	cov->err_level = levels[dom];
 	STRCPY(cov->err_msg, ERRSTR[dom]);
-	// printf("up %s %d err_lev=%d err=%d '%s'\n", NAME(cov), cov->zaehler, cov->err_level, cov->err , cov->err_msg);
+	//	printf("up %s %d err_lev=%d err=%d '%s'\n", NAME(cov), cov->zaehler, cov->err_level, cov->err , cov->err_msg);
       }
     }
     
     if (cov->err_level == save_level) {//old err level is not passed, so restore
       cov->err = save_err;
       if (save_copy) STRCPY(cov->err_msg, save_errmsg);
-      // printf("RE %s %d err_lev=%d err=%d '%s'\n", NAME(cov), cov->zaehler, cov->err_level, cov->err , cov->err_msg);
+      //     printf("RE %s %d err_lev=%d err=%d '%s'\n", NAME(cov), cov->zaehler, cov->err_level, cov->err , cov->err_msg);
     }
     //    printf("A\n");
     if (PL > PL_COV_STRUCTURE) { // && calling == NULL) {
@@ -1113,10 +1084,11 @@ int set_own_domain_and_check(model *cov, int vdim0, int vdim1,
     if (PL >= PL_COV_STRUCTURE) {
     LPRINT("Continuing '%s' (no err):\n", Nick(cov));
   }
-  SPRINTF(KT->error_loc, "'%.50s'",
+  SPRINTF(KT->error_location, "'%.50s'",
 	  calling == NULL ? "parsing the model" : Nick(calling));
 
   GATTER_STORAGE;
+  
   cov->checked = true;
   if (isDollar(cov) && cov->finiterange == wahr && 
       isAnySpherical(ISO(PREVSYSOF(cov->sub[0]), 0))) {
@@ -1130,7 +1102,7 @@ int set_own_domain_and_check(model *cov, int vdim0, int vdim1,
 #define MAXEARTHDIM 4 // sphere + height + time
       double rl[MAXEARTHDIM], rr[MAXEARTHDIM];
       if (dim > MAXEARTHDIM) BUG;      
-      NONSTATINVERSE(ZERO(cov), cov, rl, rr);
+      INVERSENONSTAT(ZERO(cov), cov, rl, rr);
       range = rl[0];
       // printf("xxxx= %s %d\n", NAME(cov), dim);
       for (int d=0; d<dim; d++)
@@ -1382,6 +1354,7 @@ int setgatter_but_nr(model *cov, int minp, int maxp, int mino, int maxo,
 
 int change_coord_system(model *cov, ext_bool coordinate_trafo,
 			errorstring_type ERRSTR) {
+  globalparam *global = &(cov->base->global);
   // ACHTUNG!!! FUNKTION DARF NUR IN InternalCov.cc VERWENDET WERDEN !!
   // hier wird das grosse Rad gedreht: Wechsel zwischen den Systemen
   // function itself sets TRAFO, 
@@ -1426,11 +1399,11 @@ int change_coord_system(model *cov, ext_bool coordinate_trafo,
     assert(isogatter >= 0);
     if (isCartesian(isogatter)) {
       if (xdimprev != logdimprev) BUG;
-      if (STRCMP(GLOBAL.coords.newunits[0], UNITS_NAMES[units_km]) == 0){
+      if (STRCMP(global->coords.newunits[0], UNITS_NAMES[units_km]) == 0){
 	set_trafo(equalsGnomonic(isogatter) ? EARTHKM2GNOMONIC
 		  : equalsOrthographic(isogatter) ?  EARTHKM2ORTHOGRAPHIC
 		  : EARTHKM2CART);
-      } else if (STRCMP(GLOBAL.coords.newunits[0], 
+      } else if (STRCMP(global->coords.newunits[0], 
 			UNITS_NAMES[units_miles]) == 0) {
 	set_trafo(equalsGnomonic(isogatter) ? EARTHMILES2GNOMONIC  
 		  : equalsOrthographic(isogatter) ?  EARTHMILES2ORTHOGRAPHIC
@@ -1438,7 +1411,7 @@ int change_coord_system(model *cov, ext_bool coordinate_trafo,
       } else {
 	RERR4("only units '%.50s' and '%.50s' are allowed. Got '%.50s' (user's '%.50s').",
 	      UNITS_NAMES[units_km], UNITS_NAMES[units_miles], 
-	      GLOBAL.coords.newunits[0], GLOBAL.coords.curunits[0]);
+	      global->coords.newunits[0], global->coords.curunits[0]);
       }
       if (isEarthProjection(isogatter)) {
 	set_xdim(GATTER, 0, 2 + additional_xdim);
@@ -1492,6 +1465,8 @@ int SetGatterNr(model *cov, errorstring_type ERRSTR) {
       owniso = OWNISO(s),
       giso = GATTERISO(s);
     int nr;
+
+    //PMI(cov);
     
     if (gdom < owndom) 
       RERR2("Cannot call more complex models ('%.50s') from simpler ones ('%.50s')",
@@ -1712,7 +1687,8 @@ int checkkappas(model *cov, bool errornull, errorstring_type ERRSTR){
  
     C->kappasize(i, cov, &nr, &nc);   
     if ( (nc < 1 && nc != SIZE_NOT_DETERMINED) || 
-	 (nr < 1 && nr != SIZE_NOT_DETERMINED)) { 
+	 (nr < 1 && nr != SIZE_NOT_DETERMINED)) {
+      printf("check of kappas failed: %s %d %d %d\n", NAME(cov), i, nc, nr); //
       BUG;
     }
     
@@ -1726,16 +1702,16 @@ int checkkappas(model *cov, bool errornull, errorstring_type ERRSTR){
     if ((nc > 0 && ncol[i] != nc) || (nr > 0 && nrow[i] != nr)) {
       
       // nc==0, nr==0 is coded as SIZE_NOT_DETERMINED
-      char info[255], info2[255];
-      SPRINTF(info, "not of the required size: (%d, %d) instead of (",
+      char msg[255], msg2[255];
+      SPRINTF(msg, "not of the required size: (%d, %d) instead of (",
 	      nrow[i], ncol[i]);
-      if (nr!=SIZE_NOT_DETERMINED) SPRINTF(info2, "%.50s%d, ", info, nr);
-      else SPRINTF(info2, "%.50sundetermined, ", info);
-      if (nc!=SIZE_NOT_DETERMINED) SPRINTF(info, "%.50s%d)", info2, nc);
-      else SPRINTF(info, "%.50sundetermined)", info2);
-      // printf("info = %s\n", info);
+      if (nr!=SIZE_NOT_DETERMINED) SPRINTF(msg2, "%.50s%d, ", msg, nr);
+      else SPRINTF(msg2, "%.50sundetermined, ", msg);
+      if (nc!=SIZE_NOT_DETERMINED) SPRINTF(msg, "%.50s%d)", msg2, nc);
+      else SPRINTF(msg, "%.50sundetermined)", msg2);
+      // printf("msg = %s\n", msg);
       //      crash();      APMI0(cov);
-      PERR(info);
+      PERR(msg);
     }
     // if nc==0 (nr==0) then this is undetermined.
   } // for i < kappas
@@ -1783,6 +1759,7 @@ int checkDims(model *cov, int vdim0, int vdim1, errorstring_type ERRSTR) {
 
 int check_within_range_multivariate(model *cov, bool NAOK,
 				    errorstring_type ERRSTR) {
+  utilsparam *global_utils = &(cov->base->global_utils);
   defn *C = DefList + COVNR; //nicht gatternr
   // sets also maxdim and finiterange in cov !
   rangefct_multi getrange = C->range_multi;
@@ -1795,7 +1772,7 @@ int check_within_range_multivariate(model *cov, bool NAOK,
   simple_range_type range;
   char Msg[255];
 
-  if (GLOBAL_UTILS->basic.skipchecks) RET_ENR(NOERROR);
+  if (global_utils->basic.skipchecks) RET_ENR(NOERROR);
 
   if (!maxdim_ok(cov)) {
     int s = -maxdim_ok(cov);
@@ -1870,6 +1847,7 @@ int check_within_range_multivariate(model *cov, bool NAOK,
 
 int check_within_range(model *cov, bool NAOK, errorstring_type ERRSTR) {
   // sets also maxdim and finiterange in cov !
+  utilsparam *global_utils = &(cov->base->global_utils);
   defn *C = DefList + COVNR; //nicht gatternr
   rangefct getrange = C->range;
   if (getrange == NULL)
@@ -1887,7 +1865,7 @@ int check_within_range(model *cov, bool NAOK, errorstring_type ERRSTR) {
     value= RF_NA;
 
 
-  if (GLOBAL_UTILS->basic.skipchecks) RET_ENR(NOERROR);
+  if (global_utils->basic.skipchecks) RET_ENR(NOERROR);
 
   getrange(cov, &range); 
 
@@ -1968,9 +1946,8 @@ int check_recursive_range(model *cov, bool NAOK) {  // FOR MLE ONLY !!
      */
   int i, err,
     kappa = DefList[COVNR].kappas;
-  KEY_type *KT = cov->base;
-  
-  SPRINTF(KT->error_loc, "'%.50s'", NICK(cov));
+   
+  SPRINTF(cov->base->error_location, "'%.50s'", NICK(cov));
   if ((err = check_within_range(cov, NAOK, cov->err_msg)) != NOERROR)
     RET_ENR(err);
   for (i=0; i<kappa; i++) {

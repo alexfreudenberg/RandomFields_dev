@@ -26,9 +26,11 @@ RFgetModelInfo_model(model, params, dim = 1, Time = FALSE,
 }
 
 \arguments{
-  \item{...}{See the argument of \command{RFgetModelInfo_register} and
-  \command{RFgetModelInfo_model}; \command{RFgetModelInfo} is an
-  abbreviation for the other two functions.}
+  \item{...}{\command{RFgetModelInfo} is an
+  abbreviation for the other two functions \command{RFgetModelInfo_register} and
+  \command{RFgetModelInfo_model}. So \code{\ldots} takes the arguments
+  of these two functions. Additionally, \command{RFgetModelInfo_model}
+  takes model specifications }
   \item{register}{\eqn{0,...,21} or an evaluating function,
     e.g. \command{\link{RFsimulate}}.
     Place where intermediate calculations are stored.
@@ -159,7 +161,7 @@ RFgetModelInfo_model(model, params, dim = 1, Time = FALSE,
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
-model <- RMexp(scale=4, var=2) + RMnugget(var=3) + RMtrend(mean=1)
+model <- RMexp(scale=4, var=2) + RMnugget(var=3) + RMshape(mean=1)
 z <- RFsimulate(model, 1:4, storing=TRUE)
 RFgetModelInfo()
 

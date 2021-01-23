@@ -32,7 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #ifdef _OPENMP
 #ifndef DO_PARALLEL
-#define DO_PARALLEL 1
+//#define DO_PARALLEL 1
 #endif
 #else
 #ifdef DO_PARALLEL
@@ -62,13 +62,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define WHICH_ERRORSTRING cov->err_msg // wird benoetigt
 #define ERROR_LOC ""
 
-#ifdef DO_PARALLEL
 #define LOCAL_ERRLOC_MSG char ERRMSG[LENERRMSG];
-#else
-#define LOCAL_ERRLOC_MSG 
-#endif
-//cov->base->error_loc
-//
 #define LOCAL_ERRORSTRING
 
 #endif

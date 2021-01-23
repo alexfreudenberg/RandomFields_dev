@@ -75,27 +75,6 @@ void listcpy(listoftype **To, listoftype *p, bool force_allocating) {
 
 
 
-// Achtung! removeonly muss zwingend mit dem originalen SUB + i aufgerufen
-// werden. Der **Cov ueberschrieben wird. Ansonsten muessen die
-// Kommentarzeilen geloescht werden !
-void removeOnly(model **Cov) {
-  model *cov = *Cov,
-    *next = cov->sub[0];
- 
-  if (cov->calling == NULL) next->calling = NULL;  
-  else {
-    model *calling = cov->calling;
-//    for (i=0; i<MAXSUB; i++) if (calling->sub[i] == cov) break;
-//    assert (i<MAXSUB);
-//    calling->sub[i] = cov->sub[0];
-    SET_CALLING(next, calling);
-  }
-  *Cov = next;
-  COV_DELETE_WITHOUTSUB(&cov, next);
-}
-
-
-
 void addModel(model **pcov, int covnr, model *calling, bool nullOK) {
   model *cov;
   int i;
@@ -112,10 +91,7 @@ void addModel(model **pcov, int covnr, model *calling, bool nullOK) {
     calling = calling == NULL ? (*pcov)->calling : calling;
     SET_CALLING(cov, calling);
     (*pcov)->calling = cov; // NOT SET_CALLING, sice pcov->calling already set
-    for (i=0; i<=Forbidden; i++) {	
-      // cov->user[i] = cov->sub[0]->user[i];
-      cov->pref[i] = cov->sub[0]->pref[i];
-    }
+    MEMCOPY(cov->pref, cov->sub[0]->pref, sizeof(pref_shorttype));
   } else {
     SET_CALLING(cov, calling);
   }
@@ -191,11 +167,11 @@ int setgrid(coord_type xgr, double *x, int spatialdim) {
    }
   
   /*
-  if (GLOBAL.internal.examples_reduced) {    
+  if (glob al->internal.examples_reduced) {    
     for (d=0; d<spatialdim; d++) {
-      if (xgr[d][XLENGTH] > GLOBAL.internal.examples_reduced) {
+      if (xgr[d][XLENGTH] > gl obal->internal.examples_reduced) {
 	warning("the size of the example has been reduced");
-	xgr[d][XLENGTH] = GLOBAL.internal.examples_reduced;
+	xgr[d][XLENGTH] = glo bal->internal.examples_reduced;
       }
     }
   }
@@ -204,80 +180,35 @@ int setgrid(coord_type xgr, double *x, int spatialdim) {
   return NOERROR;
 }
 
-int partial_loc_set(location_type *loc, double *x, double *y,
-		    Long lx, Long ly, bool dist, int xdimOZ, double *T,
-		    bool grid, bool cpy){
-  int d, Err;
-  Ulong totalBytes;
 
-  if (lx >= MAXINT ||  ly >= MAXINT) return XERRORTOOMANYLOC;
-
-  if (((loc->x != NULL) && ((loc->y == NULL) xor (ly==0))) ||
-      ((loc->xgr[0] != NULL) && ((loc->ygr[0] == NULL) xor (ly==0))))     
-    FAILED("domain structure of the first and second call do not match");
- 
-
+int partial_loc_set_x(location_type *loc, double *x, Long totalpoints,
+		      bool dist,
+		      int xdimOZ, double *T, bool grid, bool cpy) {
   assert(x != NULL);
-
-  /*
-  if (GLOBAL.internal.examples_reduced) {
-    if (lx > GLOBAL.internal.examples_reduced) {
-      //  lx = GLOBAL.internal.examples_reduced;  
-      warning("The size of the example has been reduced.");
-    }
-
-    if (ly > GLOBAL.internal.examples_reduced) {
-      ly = GLOBAL.internal.examples_reduced;  
-      warning("The size of y-coordinates in the example has been reduced.");
-    }
-  }
-  */
-
-  loc->xdimOZ = xdimOZ; // ohne Zeit !!
-  loc->lx = lx;
-  loc->ly = ly;
-  if (ly  > 0) { 
-    //crash();
-    if (dist) FAILED("distances are not allowed if y is given");
-  }
-
+  loc->spatialtotalpoints = loc->totalpoints = totalpoints;
   loc->grid = grid;
+  loc->xdimOZ = xdimOZ; // ohne Zeit !!
   loc->distances = dist;
-  if (loc->delete_y && loc->y != loc->x) FREE(loc->y); 
-  if (loc->delete_x) FREE(loc->x);
-  loc->delete_x = loc->delete_y = cpy;
-  if (lx == 0) return NOERROR;
+  assert(loc->x == NULL);
+  loc->delete_x = cpy;
+
+  if (totalpoints >= MAXINT) return XERRORTOOMANYLOC;
   
+  int Err = NOERROR;
   if (grid) {
     loc->delete_x = true;
-    assert(lx == 3);
     if ((Err = setgrid(loc->xgr, x, loc->spatialdim)) != NOERROR) return Err;
-    if (ly>0) {
-      if (x == y) {
-	for(d=0; d<loc->spatialdim; d++) loc->ygr[d] = loc->xgr[d];
-	loc->delete_y = false;
-      } else {
-	assert(ly == 3);
-	if ((Err = setgrid(loc->ygr, y, loc->spatialdim)) != NOERROR) return Err;
-      }
-    }
-    
     double len = 1.0;
-    for (d=0; d<loc->spatialdim; d++) {
-      len *= loc->xgr[d][XLENGTH];
-    }
-    // if (len != (int) len) crash();
-    assert(len == (int) len);
+    for (int d=0; d<loc->spatialdim; d++) len *= (double) loc->xgr[d][XLENGTH];
     if (len < MAXINT) loc->totalpoints = loc->spatialtotalpoints = (int) len;
     else return XERRORTOOMANYLOC;
-  } 
+  }
 
-  else if (dist) {
-    // lx : anzahl der Puntke involviert, d.h. x muss die Laenge lx ( lx -1) / 2
-    // haben.
-    if (lx > 0) {
+  else if (dist) {  
+    if (totalpoints > 0) {
       if (cpy) {
-	totalBytes =  sizeof(double) * lx * (lx - 1) / 2 * xdimOZ;
+	Uint totalBytes =
+	  sizeof(double) * totalpoints * (totalpoints - 1) / 2 * xdimOZ;
 	if ((loc->x=(double*) MALLOC(totalBytes))==NULL)
 	  return ERRORMEMORYALLOCATION;
 	MEMCOPY(loc->x, x, totalBytes);
@@ -285,93 +216,146 @@ int partial_loc_set(location_type *loc, double *x, double *y,
 	loc->x = x;
       }
     }
-    loc->totalpoints = loc->spatialtotalpoints = lx;
-    //     (int) (1e-9 + 0.5 * (1.0 + SQRT(1.0 + 8.0 * lx)));
-    //   if (0.5 * (loc->totalpoints * (loc->totalpoints - 1.0)) != lx) {   
-    //printf("tot=%d %d %d\n", loc->totalpoints, (int) ( 0.5 * (loc->totalpoints * (loc->totalpoints - 1.0))), (int) lx); assert(false);
-    //   SERR("distances do not have expected size");
-    //}
   }
   
   else { // not grid, not distances
     if (cpy) {
-      totalBytes =  sizeof(double) * lx * loc->xdimOZ;
-      assert(x != NULL);
-      assert(loc != NULL && loc->x == NULL); 
+      Ulong totalBytes =  sizeof(double) * totalpoints * loc->xdimOZ;
       if ((loc->x=(double*) MALLOC(totalBytes)) == NULL)
 	return ERRORMEMORYALLOCATION; 
       assert(loc->x != NULL);
-
-      // 
       MEMCOPY(loc->x, x, totalBytes);
-      // for (int k=0; k<lx *loc->xdimOZ; k++) loc->x[k] = x[k];
-
-
-      if (loc->ly>0) {
-	if (x == y) {
-	  loc->y = loc->x;
-	  loc->delete_y = false;
-	} else {
-	  totalBytes =  sizeof(double) * ly * loc->xdimOZ;
-	  if ((loc->y=(double*) MALLOC(totalBytes))==NULL)
-	    return ERRORMEMORYALLOCATION; 
-	  MEMCOPY(loc->y, y, totalBytes);	
-	}
-      }
-    } else {
-      loc->x = x;
-      loc->y = y;
-    }
-    
-    loc->totalpoints = loc->spatialtotalpoints = lx;
-    // just to say that considering these values does not make sense
+    } else loc->x = x;    
   }
+
+  //  printf("time %d %d\n", loc->Time, T!=NULL);
   
   if ((loc->Time) xor (T!=NULL)) {    
-    //model *cov;  crash(cov);
-    //  AERR(1);
-    FAILED("partial_loc: time mismatch");
+    FAILED("partial_loc_x: time mismatch");
   }
+  
   if (loc->Time) {
     MEMCOPY(loc->T, T, sizeof(double) * 3);
-    if (grid) {
-      loc->xgr[loc->spatialdim] = loc->T;
-      if (ly>0) loc->ygr[loc->spatialdim] = loc->T;
-    }
-    
+    if (grid) loc->xgr[loc->spatialdim] = loc->T;
     if (loc->T[XLENGTH] <= 0) {
-      //crash();
       FAILED1("The number of temporal points is not positive. Check the triple definition of 'T' in the man pages of '%.50s'.", DefList[SIMULATE].nick);
     }
-
-    /* else if (GLOBAL.internal.examples_reduced &&
-	       loc->T[XLENGTH] > GLOBAL.internal.examples_reduced) {
-      loc->T[XLENGTH] = GLOBAL.internal.examples_reduced;  
-      warning("The length of the tiem component in the example has been reduced.");
-      }
-    */
-
     if ((double) loc->totalpoints * loc->T[XLENGTH] >= MAXINT) 
       FAILED("too many space-time locations");
     loc->totalpoints *= (int) loc->T[XLENGTH];
   }
+  return Err;
+}
 
+
+int partial_loc_set_y(location_type *loc, double *y, Long totalpointsy, 
+		      double *Ty, bool gridy, bool cpy) {
+  int Err = NOERROR;
+  if (loc->totalpoints == 0) ERR("'y' is given, but not 'x'");
+  if (loc->distances) FAILED("distances are not allowed if y is given");
+  if (totalpointsy == 0 && !gridy) BUG;
+  //  xdimOZ muss gleich sein
+  
+  loc->gridY = gridy;
+  loc->delete_y = cpy;
+  loc->totalpointsY = 0;
+  
+  if (gridy) {
+    if (loc->x == y) {
+      assert(loc->grid);
+      for(int d=0; d<loc->spatialdim; d++) loc->grY[d] = loc->xgr[d];
+      loc->delete_y = false;
+    } else {
+      if ((Err = setgrid(loc->grY, y, loc->spatialdim)) != NOERROR)
+	return Err;
+    }
+    double len = 1.0;
+    for (int d=0; d<loc->spatialdim; d++) len *=(double) loc->grY[d][XLENGTH];
+    if (len < MAXINT) loc->totalpointsY = loc->spatialtotalpointsY = (int)len;
+      else return XERRORTOOMANYLOC;
+  } else { // !gridY
+    if (loc->x == y) {
+      assert(!loc->grid);
+      loc->Y = loc->x;
+      loc->delete_y = false;
+    } else if (cpy) {
+      Ulong totalBytes =  sizeof(double) * totalpointsy * loc->xdimOZ;
+      assert(y != NULL);
+      assert(loc != NULL && loc->Y == NULL); 
+      if ((loc->Y=(double*) MALLOC(totalBytes)) == NULL)
+	return ERRORMEMORYALLOCATION; 
+      MEMCOPY(loc->Y, y, totalBytes);
+    } else loc->Y = y;    
+    loc->totalpointsY = loc->spatialtotalpointsY = totalpointsy;     
+  }
+  
+  if (loc->Time xor (Ty != NULL)) { FAILED("partial_loc: time mismatch"); }
+  
+  if (loc-> Time) {
+    MEMCOPY(loc->TY, Ty, sizeof(double) * 3);
+    if (loc->grid) loc->grY[loc->spatialdim] = loc->TY;
+    if (loc->TY[XLENGTH] <= 0) {
+      FAILED1("The number of temporal points is not positive. Check the triple definition of 'T' in the man pages of '%.50s'.", DefList[SIMULATE].nick);
+    }
+    if ((double) loc->totalpointsY * loc->TY[XLENGTH] >= MAXINT) 
+      FAILED("too many space-time locations");
+    loc->totalpointsY *= (int) loc->TY[XLENGTH];      
+  }
+  return NOERROR;
+}
+
+
+int partial_loc_set(location_type *loc, double *x, double *y,
+		    Long totalpoints, Long totalpointsy, bool dist, int xdimOZ,
+		    double *T, double *Ty,
+		    bool grid, bool gridy, bool cpy) {
+  int Err;
+
+  //  printf("dddd %d %d\n", totalpoints, totalpointsy);
+
+  assert(loc != NULL && loc->x == NULL && x != NULL); 
+  if (totalpoints >= MAXINT ||  totalpointsy >= MAXINT) return XERRORTOOMANYLOC;
+
+  if (((loc->x != NULL) && ((loc->Y == NULL) xor (totalpointsy==0))) ||
+      ((loc->xgr[0] != NULL) && ((loc->grY[0] == NULL) xor (totalpointsy==0)))) 
+    FAILED("domain structure of the first and second call do not match");
+ 
+  loc->totalpointsY = loc->spatialtotalpointsY =
+    loc->totalpoints = loc->spatialtotalpoints = 0;
+  if (loc->delete_x) FREE(loc->x);
+  if (loc->delete_y && loc->Y != loc->x) FREE(loc->Y);
+  loc->delete_x = loc->delete_y = false;
+  loc->xdimOZ = xdimOZ; // ohne Zeit !!
+
+  if (totalpoints == 0) {
+    if (totalpointsy > 0) ERR("'y' is given, but not 'x'") else return NOERROR;
+  }
+  
+  if ((Err = partial_loc_set_x(loc, x, totalpoints, dist, xdimOZ, T,
+			       grid, cpy)))
+      return Err;
+
+  //  printf("tot %d\n", loc->totalpoints); assert(loc->totalpoints > 0);
+
+  if (totalpointsy>0 &&
+      (Err = partial_loc_set_y(loc, y, totalpointsy, Ty, gridy, cpy)))
+    return Err;
+  //  printf("XXtot %d\n", loc->totalpoints); assert(loc->totalpoints > 0);
+ 
   return NOERROR; 
 }
 
-int loc_set(double *x, double *y, double *T, 
+int loc_set(double *x, double *y, double *T, double *Ty,
 	    int spatialdim, /* spatial dim only ! */
 	    int xdimOZ,
-	    Long lx, Long ly, bool Time, bool grid,
+	    Long totalpoints, Long totalpointsy,
+	    bool Time, bool grid, bool gridY,
 	    bool distances,
 	    location_type **LLoc) {
   int Err;
   //Ulong totalBytes;
   // preference lists, distinguished by grid==true/false and dimension
   // lists must end with Nothing!
-
-  //  printf("loc T3 = %f\n", Time ?T[2] : RF_NAN);
-
  
   if (xdimOZ < spatialdim) {
     if (distances) {
@@ -380,10 +364,10 @@ int loc_set(double *x, double *y, double *T,
 		   xdimOZ,spatialdim, Time);
   } else if (xdimOZ > spatialdim)
     FAILED3("mismatch of dimensions (xdim=%d > space=%d; Time=%d)",
-	   xdimOZ, spatialdim, Time);
+	    xdimOZ, spatialdim, Time);
 
   //int len = *LLoc == NULL ? 1 : (*LLoc)->len;
-  if (*LLoc != NULL && (*LLoc)->lx > 0) {
+  if (*LLoc != NULL && (*LLoc)->totalpoints > 0) {
     BUG; // OK
     LOC_SINGLE_DELETE(LLoc);
     *LLoc = (location_type*) MALLOC(sizeof(location_type));
@@ -391,7 +375,7 @@ int loc_set(double *x, double *y, double *T,
 
   location_type *loc = *LLoc;
   assert(loc->xgr != NULL && loc->xgr[0] == NULL);
-  assert(loc->ygr != NULL && loc->ygr[0] == NULL);
+  assert(loc->grY != NULL && loc->grY[0] == NULL);
  
   loc->timespacedim = spatialdim + (int) Time;
   loc->spatialdim = spatialdim;
@@ -399,12 +383,15 @@ int loc_set(double *x, double *y, double *T,
 
   if (spatialdim<1) return ERRORDIM;
 
+  //  printf("%ld %ld\n", T, x);
+  //  if (T!= NULL)  printf("%f %f %f\n", T[0], T[1], T[2]);
+  //  if (x == NULL) crash();
   assert(x != NULL);
-
   
-  if ((Err = partial_loc_set(*LLoc, x, y, lx, ly, distances, xdimOZ,
-			     Time ? T : NULL,
-			     grid, true)) != NOERROR) XERR(Err);
+  if ((Err = partial_loc_set(*LLoc, x, y, totalpoints, totalpointsy,
+			     distances, xdimOZ,
+			     Time ? T : NULL, Time ? Ty : NULL,
+			     grid, gridY, true)) != NOERROR) XERR(Err);
  
   return NOERROR;
 }
@@ -412,62 +399,47 @@ int loc_set(double *x, double *y, double *T,
 
 
 
-int loc_set(double *x, double *y, double *T, 
+int loc_set(double *x, double *y, double *T,  double *TY,
 	    int spatialdim, /* spatial dim only ! */
-	    int xdimOZ,
-	    Long lx, Long ly,
-	    bool Time, bool grid,  bool distances,
-	    model *cov) {
-  int Err,
-    store = GLOBAL.general.set;
+	    int xdimOZ,  Long totalpoints, Long totalpointsy,
+	    bool Time, bool grid, bool gridY,
+	    bool distances,  model *cov) {
+  int Err;
   location_type **oldloc = cov->ownloc;
-  GLOBAL.general.set = 0;
+  cov->base->set = 0;
 
   cov->ownloc = LOCLIST_CREATE(1, xdimOZ + (int) Time); // locown
   assert(cov->ownloc != NULL);
-  assert(PLoc(cov) != cov->prevloc);
+  assert(LocP(cov) != cov->prevloc);
 
-  Err = loc_set(x, y, T, spatialdim, xdimOZ, lx, ly, Time, grid,
+  Err = loc_set(x, y, T, TY,
+		spatialdim, xdimOZ, totalpoints, totalpointsy,
+		Time, grid, gridY,
 		distances, cov->ownloc);    
   // Errorhandling:
-  GLOBAL.general.set = store;
-  LOC_DELETE(&oldloc);
+  LOC_DELETE(&oldloc);// OK; oder bei Err>0 cov->ownloc loeschen & ruecksetzen?
   assert(grid xor !Loc(cov)->grid);
   return Err;
 }
 
 
-
-int loc_set(double *x, double *T, 
-	    int spatialdim, // spatial dim only !
-	    int xdimOZ, // original ! 
-	    Long lx, bool Time, bool grid,
-	    bool distances,
-	    location_type **Loc) {
-  return loc_set(x, NULL, T, spatialdim, xdimOZ, lx, 0, Time, grid,
-		 distances, Loc);    
-} 
-
-
-
-
 int loc_set(double *x, double *T, 
 	    int spatialdim, /* spatial dim only ! */
 	    int xdimOZ, /* original ! */
-	    Long lx, bool Time, bool grid,
+	    Long totalpoints, bool Time, bool grid,
 	    bool distances,
 	    model *cov) {
-  return loc_set(x, NULL, T, spatialdim, xdimOZ, lx, 0, Time, grid,
-		 distances, cov);    
+  return loc_set(x, NULL, T, NULL, spatialdim, xdimOZ, totalpoints,
+		 0, Time, grid, grid, distances, cov);    
 } 
 
 
-location_type ** loc_set(SEXP xlist){
+location_type **loc_set(SEXP xlist){
   //  printf("locset\n");
   bool
     listoflists = (TYPEOF(xlist) == VECSXP &&
 		   TYPEOF(VECTOR_ELT(xlist, 0)) == VECSXP);
-  int lx, Err,
+  int Err,
     spatialdim = NA_INTEGER, 
     xdimOZ = UNSET,
     sets = listoflists ? length(xlist) : 1;
@@ -476,18 +448,12 @@ location_type ** loc_set(SEXP xlist){
     distances = false;
   location_type **loc;
 
- 
   for (int i=0; i<sets; i++) {
+    SEXP set = listoflists ? VECTOR_ELT(xlist, i) : xlist,
+      x = VECTOR_ELT(set, XLIST_X),
+      y = VECTOR_ELT(set, XLIST_Y);
+    bool ygiven = length(y) > 0;
  
-    SEXP set = listoflists ? VECTOR_ELT(xlist, i) : xlist;
-
-    //    printf("i=%d ets=%d %d %d len=%d\n", i, sets, listoflists, TYPEOF(set), length(set));
-
-    SEXP
-      xx = VECTOR_ELT(set, XLIST_X),
-      yy = VECTOR_ELT(set, XLIST_Y),
-      TT = VECTOR_ELT(set, XLIST_T);
-
     if (false) {
       for (int k=0; k<length(set); k++) {
 	printf("ok k=%d type=%d \n", k, TYPEOF(VECTOR_ELT(set, k))); //
@@ -499,52 +465,306 @@ location_type ** loc_set(SEXP xlist){
 	     );
     }
     
-    bool
-      ggrid = LOGICAL(VECTOR_ELT(set, XLIST_GRID))[0];
-    // printf("grid=%d\n", ggrid);
+    bool 
+      grid = LOGICAL(VECTOR_ELT(set, XLIST_GRID))[0],
+      gridY = false;
+    if (ygiven) gridY = LOGICAL(VECTOR_ELT(set, XLIST_GRIDY))[0];
   
     int
-      xxdimOZ = ggrid ? ncols(xx) : nrows(xx),
-      llx = ggrid ? 3 : ncols(xx),
-      lly = length(yy) == 0 ? 0 : ggrid ? 3 : ncols(yy);      
+      cur_xdimOZ = grid ? ncols(x) : nrows(x),
+      totalpoints = INTEGER(VECTOR_ELT(set,XLIST_RESTOT))[0],
+      totalpointsy = INTEGER(VECTOR_ELT(set,XLIST_RESTOTY))[0];
     
     if (i==0) {
-      xdimOZ = xxdimOZ;
+      xdimOZ = cur_xdimOZ;
       spatialdim = INTEGER(VECTOR_ELT(set, XLIST_SPATIALDIM))[0];
       Time =  LOGICAL(VECTOR_ELT(set, XLIST_TIME))[0];
       //      printf("time=%d\n", Time);      
-      distances = LOGICAL(VECTOR_ELT(set, XLIST_DIST))[0];  
+      distances = LOGICAL(VECTOR_ELT(set, XLIST_DIST))[0];
+      if (distances && totalpointsy > 0) BUG;
       //      printf("dist time=%d\n", distances);      
       loc = LOCLIST_CREATE(sets, xdimOZ + (int) Time);   
     } else {
-      if (xdimOZ != xxdimOZ ||
+      if (xdimOZ != cur_xdimOZ ||
 	  spatialdim != INTEGER(VECTOR_ELT(set, XLIST_SPATIALDIM))[0] ||
 	  Time != LOGICAL(VECTOR_ELT(set, XLIST_TIME))[0] ||
 	  distances != LOGICAL(VECTOR_ELT(set, XLIST_DIST))[0]
 	  ) BUG;
     }
-  
+
     if (distances) {
-      lx = (int) (1e-9 + 0.5 * (1 + SQRT(1. + 8 * llx)));
-      if (llx != lx * (lx - 1) / 2) 
-	RFERROR("distance length not of form 'n * (n - 1) / 2'");	
+      //      printf("length %d %d %d %d\n", length(x), cur_xdimOZ, totalpoints,
+      //	     cur_xdimOZ * totalpoints * (totalpoints - 1) / 2);
+      if (length(x) != cur_xdimOZ * totalpoints * (totalpoints - 1) / 2)
+	RFERROR("Distance length not of form 'n * (n - 1) / 2'");	
     } else {
-      lx = llx;
-      if (xxdimOZ != xdimOZ) 
-	RFERROR("dimensions of the coordinates are not the same for the different sets");
+      //       printf("grid=%d %d nrow=%d %d tot=%d %d %d\n", grid, gridY,  nrows(x),
+      //      nrows(y), totalpoints,  totalpointsy, REAL(x)==REAL(y));
+     int lx = 0,
+	ly =0;
+      if (length(x) > 0) lx = ncols(x);
+      if (length(y) > 0) ly = ncols(y);
+      //  printf("locset %d %d %d %d %d %d\n", grid, lx, totalpoints, gridY, ly,
+      // totalpointsy   );
+      if ((!grid && lx != totalpoints) || (!gridY && ly != totalpointsy)) BUG;
     }
- 
-   if ((Err = loc_set(REAL(xx), REAL(yy), REAL(TT), spatialdim, xdimOZ, 
-		       lx, lly, Time, ggrid, 
-		       distances, loc + i)) != NOERROR) {
-      LOC_DELETE(&loc); 
+  
+    if ((Err = loc_set(REAL(x), REAL(y), REAL(VECTOR_ELT(set, XLIST_T)),
+		       ygiven ? REAL(VECTOR_ELT(set, XLIST_TY)) : NULL,
+		      spatialdim, xdimOZ, 
+		      totalpoints, totalpointsy,
+		       Time, grid, gridY, distances, loc + i
+		      )) != NOERROR) {
+      LOC_DELETE(&loc); // OK
       XERR(Err);
+    }
+
+    //    printf("oength=%d %d\n", length(set),  XLIST_RAWXIDX);
+    int lenSet = length(set);
+    SEXP comp;
+    if (lenSet > XLIST_RAWXIDX) {
+      SEXP RawIdx = VECTOR_ELT(set, XLIST_RAWXIDX);
+      int len = length(RawIdx),
+	bytes = len * sizeof(int);
+      if (len > 0) {
+	assert(!LocLocHasY(loc[i]));
+	//	printf("len=%d %d\n", len, loc[i]->totalpoints);
+	assert(len == loc[i]->totalpoints);
+	loc[i]->rawidx = (int*) MALLOC(bytes);
+	MEMCOPY(loc[i]->rawidx, INTEGER(RawIdx), bytes);
+      }
+    }
+    if (lenSet > XLIST_RAWSET) {
+     SEXP RawSet = VECTOR_ELT(set, XLIST_RAWSET);
+     if (length(RawSet) > 0) {
+       loc[i]->rawset = INTEGER(RawSet)[0];
+       assert(loc[i]->rawset >= 0 && loc[i]->rawset < sets);
+     }
     }
   }
 
   return loc;
 }
 
+
+location_type ** loc_set(location_type **Loc){
+  assert(Loc != NULL);
+  bool
+    Time = LocPtime(Loc);
+  int
+    spatialdim = LocPspatialdim(Loc), 
+    xdimOZ = LocPxdimOZ(Loc),
+    sets = LocPSets(Loc);
+
+  location_type **newLoc = LOCLIST_CREATE(sets, xdimOZ + (int) Time);
+  for (int i=0; i<sets; i++) {
+    location_type *loc = Loc[i];
+    if (loc_set(loc->grid ? loc->xgr[0] : loc->x,
+		loc->gridY ? loc->grY[0] : loc->Y,
+		loc->T, loc->TY,
+		spatialdim, xdimOZ,
+		loc->totalpoints, loc->totalpointsY,
+		loc->Time, loc->grid, loc->gridY,
+		loc->distances, newLoc + i) != NOERROR) BUG;
+  }
+  return newLoc;
+}
+
+
+int empty_loc_set(model *cov, int dim, Long totalpoints, Long totalpointsy) {
+// no time, no grid, log dim = xdim
+ if (totalpoints >= MAXINT || totalpointsy >= MAXINT) return XERRORTOOMANYLOC;
+  assert(cov->ownloc == NULL);
+  cov->ownloc =  LOCLIST_CREATE(LocSets(cov), dim);
+  location_type *loc = Loc(cov);
+  loc->len = LocSets(cov);
+  if (loc->len > 1) BUG;
+  loc->Time = loc->grid = loc->gridY = loc->distances = false;
+  loc->spatialdim = loc->timespacedim = loc->xdimOZ = dim;
+  loc->delete_x = loc->delete_x = true;
+  loc->totalpoints = loc->spatialtotalpoints = totalpoints;
+  loc->totalpointsY = loc->spatialtotalpointsY = totalpointsy;
+ 
+  int Err = NOERROR;
+  Ulong totalBytes =  sizeof(double) * totalpoints  * loc->xdimOZ;
+  if ((loc->x=(double*) MALLOC(totalBytes)) == NULL)
+    return ERRORMEMORYALLOCATION; 
+  if (totalpointsy > 0) {
+    totalBytes =  sizeof(double) * totalpointsy * loc->xdimOZ;
+    if ((loc->Y=(double*) MALLOC(totalBytes)) == NULL)
+      return ERRORMEMORYALLOCATION; 
+  }
+  RETURN_NOERROR;
+}
+    
+
+ 
+void loc_set_moveXX(SEXP xlist, location_type **Loc){
+  // FALSE VERWENDET LOC_DE LETE UEBETPRUEGEN WEGEN RUECKVERFOLGUNG!!!
+  // move x to y; set x by xlist
+  assert(Loc != NULL);
+  if (LocPY(Loc))
+    ERR("The coordinates may not contain secondary of coordinates.");
+  bool
+    listoflists = (TYPEOF(xlist) == VECSXP &&
+		   TYPEOF(VECTOR_ELT(xlist, 0)) == VECSXP),
+    Time = LocPtime(Loc),
+    dist = LocPDist(Loc);
+  int Err,
+    spatialdim = LocPspatialdim(Loc), 
+    xdimOZ = LocPxdimOZ(Loc),
+    sets = LocPSets(Loc);
+ 
+  if (sets != (listoflists ? length(xlist) : 1))
+    ERR("Number of sets for prediction do not match the number of sets for conditioning.");
+        
+  for (int i=0; i<sets; i++) {
+    SEXP set = listoflists ? VECTOR_ELT(xlist, i) : xlist,
+      x = VECTOR_ELT(set, XLIST_X);
+    if (length(VECTOR_ELT(set, XLIST_Y)) > 0) {
+      LOC_DELETE(&Loc); // OK
+      ERR("The coordinates  may not contain secondary coordinates.");
+    }
+    
+    bool e,
+      grid = LOGICAL(VECTOR_ELT(set, XLIST_GRID))[0];
+  
+    int totalpoints = grid ? 0 : ncols(x);
+    if (totalpoints >= MAXINT) ERR("number of  locations too large.");
+  
+    char msg[200],
+      loctype[2][20] = {"conditioning", "prediction"};
+    
+    if ((e = xdimOZ != (grid ? ncols(x) : nrows(x)))) {
+      PRINTF(msg, "dimensions are different (%d versus %d)",
+	     xdimOZ, grid ? ncols(x) : nrows(x));
+    } else if ((e=spatialdim != INTEGER(VECTOR_ELT(set, XLIST_SPATIALDIM))[0])){
+      PRINTF(msg, "spatial dimensions are different (%d versus %d)",
+	     spatialdim, INTEGER(VECTOR_ELT(set, XLIST_SPATIALDIM))[0]);
+    } else if ((e = Time != LOGICAL(VECTOR_ELT(set, XLIST_TIME))[0])) {
+      PRINTF(msg, "time component is given for %.20s, but not for %.20",
+	     loctype[Time], loctype[!Time]);
+    } else if ((e = dist != LOGICAL(VECTOR_ELT(set, XLIST_DIST))[0])) {
+      PRINTF(msg, "distances are given for %.20s, but not for %.20",
+	     loctype[dist], loctype[!dist]);
+    }
+    if (e) {
+      char msg2[100], msg3[400];
+      if (sets == 1) STRCPY(msg2, "The");
+      else PRINTF(msg2, "In set %d, the", i);
+      PRINTF(msg3, "%.100s coordinates for prediction do not match the conditioning ones: %.200s.", msg2, msg);
+      LOC_DELETE(&Loc); // OK
+      ERR(msg3);
+    }
+
+    location_type *loc = Loc[i];
+    assert(loc->rawidx==NULL);
+    loc->gridY = loc->grid;
+    loc->delete_y = loc->delete_x;
+    loc->grY = loc->xgr;
+    MEMCOPY(loc->TY, loc->T, 3);
+    loc->totalpointsY = loc->totalpoints;
+    loc->spatialtotalpointsY = loc->spatialtotalpoints;
+    loc->Y = loc->x;
+    loc->x = NULL;
+    loc->delete_x = false;
+    loc->xgr = NULL;
+  
+    if ((Err = partial_loc_set_x(loc, REAL(x), totalpoints, dist, xdimOZ,
+				 Time ? REAL(VECTOR_ELT(set, XLIST_T)) : NULL,
+				 LOGICAL(VECTOR_ELT(set, XLIST_GRID))[0],
+				 true)) != NOERROR) {
+      LOC_DELETE(&Loc); // OK
+      XERR(Err);
+    }
+
+    assert(loc->rawidx==NULL);
+    
+  }
+
+  //  printf("sizeofloc = %d\n", (sizeof(location_type)));
+  assert(sizeof(location_type) == 160);
+}
+
+ 
+void loc_set(SEXP ylist, location_type **Loc){
+  assert(Loc != NULL);
+  if (LocPY(Loc))
+    ERR("The coordinates for predicting may not contain secondary of coordinates.");
+  bool
+    listoflists = (TYPEOF(ylist) == VECSXP &&
+		   TYPEOF(VECTOR_ELT(ylist, 0)) == VECSXP),
+    Time = LocPtime(Loc),
+    dist = LocPDist(Loc);
+  int Err,
+    spatialdim = LocPspatialdim(Loc), 
+    xdimOZ = LocPxdimOZ(Loc),
+    sets = LocPSets(Loc);
+ 
+  if (sets != (listoflists ? length(ylist) : 1))
+    ERR("Number of sets for prediction do not match the number of sets for conditioning.");
+        
+  for (int i=0; i<sets; i++) {
+    SEXP set = listoflists ? VECTOR_ELT(ylist, i) : ylist,
+      y = VECTOR_ELT(set, XLIST_X);
+    if (length(VECTOR_ELT(set, XLIST_Y)) > 0) {
+      ERR("The coordinates for conditioning may not contain secondary coordinates.");
+    }
+    
+    bool e,
+      grid = LOGICAL(VECTOR_ELT(set, XLIST_GRID))[0];
+  
+    int totalpointsy = grid ? 0 : ncols(y);
+    if (totalpointsy >= MAXINT)
+      ERR("number of conditioning locations too large.");
+  
+    char msg[200],
+      loctype[2][20] = {"conditioning", "prediction"};
+    
+    if ((e = xdimOZ != (grid ? ncols(y) : nrows(y)))) {
+      PRINTF(msg, "dimensions are different (%d versus %d)",
+	     xdimOZ, grid ? ncols(y) : nrows(y));
+    } else if ((e=spatialdim != INTEGER(VECTOR_ELT(set,XLIST_SPATIALDIM))[0])){
+      PRINTF(msg, "spatial dimensions are different (%d versus %d)",
+	     spatialdim, INTEGER(VECTOR_ELT(set, XLIST_SPATIALDIM))[0]);
+    } else if ((e = Time != LOGICAL(VECTOR_ELT(set, XLIST_TIME))[0])) {
+      PRINTF(msg, "time component is given for %.20s, but not for %.20",
+	     loctype[Time], loctype[!Time]);
+    } else if ((e = dist != LOGICAL(VECTOR_ELT(set, XLIST_DIST))[0])) {
+      PRINTF(msg, "distances are given for %.20s, but not for %.20",
+	     loctype[dist], loctype[!dist]);
+    }
+    if (e) {
+      char msg2[100], msg3[400];
+      if (sets == 1) STRCPY(msg2, "The");
+      else PRINTF(msg2, "In set %d, the", i);
+      PRINTF(msg3, "%.100s coordinates for prediction do not match the conditioning ones: %.200s.", msg2, msg);
+      ERR(msg3);
+    }
+    
+    location_type *loc = Loc[i];
+    assert(loc->rawidx==NULL);
+    assert(loc->totalpointsY == 0 && loc->Y == NULL || loc->grY == NULL);
+   
+    //    printf("hier %d\n", length(VECTOR_ELT(set, XLIST_T)));
+    if ((Err = partial_loc_set_y(loc, REAL(y), totalpointsy, 
+				 Time ? REAL(VECTOR_ELT(set, XLIST_T)) : NULL,
+				 LOGICAL(VECTOR_ELT(set, XLIST_GRID))[0],
+				 true)) != NOERROR) {
+      LOC_SINGLE_DELETE_Y(loc);
+      XERR(Err);
+    }
+
+    assert(loc->rawidx==NULL);
+    
+  }
+
+  if (dist)
+    ERR("distances within prediction currently not programmed"); // TO DO
+
+  //  printf("sizeofloc = %d\n", (sizeof(location_type)));
+  assert(sizeof(location_type) == 152);
+}
 
 
 int getmodelnr(char *name) {
@@ -566,12 +786,13 @@ int getmodelnr(char *name) {
 }
 
 void MultiDimRange(int set, model *cov, double *natscale) {
+  DEFAULT_INFO(info);
   if (isInterface(cov) || isProcess(cov)) cov = cov->sub[0];
   int wave, redxdim, d, idx, 
     xdimprev = PREVTOTALXDIM,
     vdim = VDIM0,
     lastsystem = PREVLASTSYSTEM,
-    store = GLOBAL.general.set,
+    store = cov->base->set,
     err = NOERROR;
   double y, yold, threshold, natsc, factor, Sign,
     newx, xsave, newy, 
@@ -579,13 +800,13 @@ void MultiDimRange(int set, model *cov, double *natscale) {
     *dummy =  NULL,
     rel_threshold = 0.05;
   bool islogcart[MAXSYSTEMS],
-    xonly = isXonly(OWN);
+    xonly = isXonly(PREV);
   //  covfct cf=NULL;
   // nonstat_covfct ncf=NULL;
 
   assert( HaveSameSystems(PREV, OWN));
   redxdim = OWNTOTALXDIM;
-  GLOBAL.general.set = set;    
+  cov->base->set = set;    
 
   //  if (redxdim > xdimprev) {
   //  PMI0(cov);
@@ -595,18 +816,11 @@ void MultiDimRange(int set, model *cov, double *natscale) {
   if (cov->full_derivs < 0) { err=ERRORNOTDEFINED; goto ErrorHandling; }
  
   if ((dummy = (double*) MALLOC(sizeof(double) * vdim * vdim)) == NULL ||
-      (x = (double *) MALLOC(sizeof(double) * redxdim)) == NULL) 
+      (x = (double*) MALLOC(sizeof(double) * redxdim))==NULL) 
     GERR("not enough memory when determining natural scaling.");
- 
+
   if (cov->full_derivs < 0) { err=ERRORNOTDEFINED; goto ErrorHandling; }
-  if (xonly) {
-    // PMI(cov);
-    COV(ZERO(cov), cov, dummy);
-    //printf("%f\n", *dummy); BUG;
-  } else {
-    double *zero = ZERO(cov);
-    NONSTATCOV(zero, zero, cov, dummy);
-  }
+  Zero(cov, dummy);
   threshold = rel_threshold * dummy[0];
   //
   int cumi;
@@ -629,7 +843,8 @@ void MultiDimRange(int set, model *cov, double *natscale) {
     x[idx] = islogcart[idx] ? M_E : 1.0; // wrong compiler warning
 
     //   printf("xonly= %d\n", xonly);
-    if (xonly) COV(x, cov, dummy) else NONSTATCOV(ZERO(cov), x, cov, dummy); 
+    if (xonly) COV(x, info, cov, dummy)
+      else NONSTATCOV(ZERO(cov), x, info, cov, dummy);  // ok
     yold = dummy[0];
     if (ISNAN(yold)) GERR("NA in model evaluation detected");
     if (yold > threshold) {
@@ -642,7 +857,8 @@ void MultiDimRange(int set, model *cov, double *natscale) {
     
     double otherx;
     if (islogcart[idx]) x[idx] = POW(x[idx], factor); else x[idx] *= factor;
-    if (xonly) COV(x, cov, dummy) else NONSTATCOV(ZERO(cov), x, cov, dummy);
+    if (xonly) COV(x, info, cov, dummy)
+      else NONSTATCOV(ZERO(cov), x, info, cov, dummy); // ok
     y = dummy[0];
     
     while (Sign * (y - threshold) > 0) {  
@@ -652,7 +868,8 @@ void MultiDimRange(int set, model *cov, double *natscale) {
       yold = y;
       if (islogcart[idx]) x[idx] = POW(x[idx], factor); else x[idx] *= factor;
       if (x[idx]>1E30) { err=ERRORRESCALING; goto ErrorHandling; }
-      if (xonly) COV(x, cov, dummy) else NONSTATCOV(ZERO(cov), x, cov, dummy);
+      if (xonly) COV(x, info, cov, dummy)
+	else NONSTATCOV(ZERO(cov), x, info, cov, dummy); // ok
       y = dummy[0];
     }
     
@@ -667,7 +884,8 @@ void MultiDimRange(int set, model *cov, double *natscale) {
       else newx = x[idx] + (x[idx] - otherx) * f;
       xsave = x[idx];
       x[idx] = newx;
-      if (xonly) COV(x, cov, dummy) else NONSTATCOV(ZERO(cov), x, cov, dummy);
+      if (xonly) COV(x, info, cov, dummy)
+	else NONSTATCOV(ZERO(cov), x, info, cov, dummy); // ok
       newy = dummy[0];
       x[idx] = xsave;
       
@@ -710,7 +928,7 @@ void MultiDimRange(int set, model *cov, double *natscale) {
   //  printf("range end er=%d\n", err);
   FREE(dummy);
   FREE(x);
-  GLOBAL.general.set = store;
+  cov->base->set = store;
   if (err != NOERROR) XERR(err);
 }
 
@@ -722,6 +940,7 @@ void MultiDimRange(int *model_nr, int *set, double *natscale) {
 void GetNaturalScaling(model *cov, double *natscale)
 { // called also by R 
 
+  globalparam *global = &(cov->base->global);
   // values of naturalscaling:
   //#define NATSCALE_EXACT 1   
   //#define NATSCALE_APPROX 2
@@ -745,14 +964,14 @@ void GetNaturalScaling(model *cov, double *natscale)
   }
   
   if (C->inverse!=NULL) { 
-    C->inverse(&GLOBAL.gauss.approx_zero, cov, natscale);
+    C->inverse(&global->gauss.approx_zero, cov, natscale);
     *natscale = 1.0 / *natscale;
     if (ISNAN(*natscale) || *natscale != 0.0) {
       return;
     }
   }
     
-  if (GLOBAL.general.naturalscaling != NATSCALE_ORNUMERIC)
+  if (global->general.naturalscaling != NATSCALE_ORNUMERIC)
     XERR(ERRORRESCALING); 
 
   if ((C->cov)==nugget)  XERR(ERRORRESCALING); 
@@ -968,17 +1187,24 @@ int covcpy(model **localcov, bool sub, model *cov, // err
       BUG;
     }
     if (!allowCopyingInterface) {
-      PRINTF("\n\n***** unallowed copying ******\n");
+     PRINTF("\n\n***** unallowed copying ******\n");
       BUG;
     }
   }
   
   for (i=0; i<MAXPARAM; i++) {
     int err;
-    current->kappasub[i] = NULL;
+    // cu ?? rrent->kappasub[i] = NULL;
     if (cov->kappasub[i] == NULL || !copy_randomparam) continue;
+
+    //    printf(" **** COPY %s %d\n", NAME(cov), i);
+    
     err = covcpy(current->kappasub + i, true, cov->kappasub[i], 
 		 prevloc, ownloc, copy_lists, copy_randomparam, false);
+
+
+    assert(err == NOERROR);
+    
     if (err != NOERROR) RETURN_ERR(err);
     SET_CALLING(current->kappasub[i], current);
     
@@ -1013,27 +1239,11 @@ int covcpy(model **localcov, model *cov) { //err
     SET_CALLING(*localcov, calling);
   }
   // falls !cov2key && cov->calling == NULL; dann gibt es nur einen Verweis
-  // rueckwaerts! Muss aber sein, da sonst LOC_DELETE bei cov->calling==NULL
+  // rueckwaerts! Muss aber sein, da sonst LOC_DE LETE bei cov->calling==NULL
   // versucht cov->prevloc zu loeschen. oder es muesste prevloc auf NULL
   // gesetzt zu werden. Dies scheint eher contraproduktiv zu sein.
   RETURN_ERR(err);
 }
-
-int covcpyWithoutRandomParam(model **localcov, model *cov) {//err
-  bool cov2key = &(cov->key)==localcov;
-  int 
-    err = covcpy(localcov, true, cov, cov->prevloc, NULL, false, false, false);
-  if (err == NOERROR) {
-    model *calling = cov2key || cov->calling==NULL ? cov : cov->calling;
-    SET_CALLING(*localcov, calling);
-  }
-  // falls !cov2key && cov->calling == NULL; dann gibt es nur einen Verweis
-  // rueckwaerts! Muss aber sein, da sonst LOC_DELETE bei cov->calling==NULL
-  // versucht cov->prevloc zu loeschen. oder es muesste prevloc auf NULL
-  // gesetzt zu werden. Dies scheint eher contraproduktiv zu sein.
-  RETURN_ERR(err);
-}
-
 
 int covcpy(model **localcov, model *cov, bool copy_lists) {//err
   bool cov2key = &(cov->key)==localcov;
@@ -1045,32 +1255,49 @@ int covcpy(model **localcov, model *cov, bool copy_lists) {//err
     SET_CALLING(*localcov, calling);
   }
   // falls !cov2key && cov->calling == NULL; dann gibt es nur einen Verweis
-  // rueckwaerts! Muss aber sein, da sonst LOC_DELETE bei cov->calling==NULL
+  // rueckwaerts! Muss aber sein, da sonst LOC_DE LETE bei cov->calling==NULL
   // versucht cov->prevloc zu loeschen. oder es muesste prevloc auf NULL
   // gesetzt zu werden. Dies scheint eher contraproduktiv zu sein.
   RETURN_ERR(err);
 }
 
 
-int covcpy(model **localcov, model *cov, //err
-	   double *x, double *T, int spatialdim, int xdimOZ, Long lx,
+int covcpyX(model **localcov, model *cov,  // err
+	   double *x, double *T, int spatialdim, int xdimOZ, Long totalpoints,
 	   bool Time,  bool grid, bool distances) {
   bool cov2key = &(cov->key)==localcov;
   int err;
-  location_type **loc = LOCLIST_CREATE(1, xdimOZ + (int) Time);
- model *calling = cov2key || cov->calling==NULL ? cov : cov->calling;
+  location_type **Loc = LOCLIST_CREATE(1, xdimOZ + (int) Time);
+  model *calling = cov2key || cov->calling==NULL ? cov : cov->calling;
 
-  if ((err = loc_set(x, T, spatialdim, xdimOZ, lx, Time, grid, distances, loc))
-      != NOERROR) goto ErrorHandling;
-  if ((err = covcpy(localcov, true, cov, loc, NULL, false, true, false))
-      != NOERROR) goto ErrorHandling;
+  assertNoLocY(cov); 
+  if ((err = loc_set(x, NULL, T, NULL, spatialdim, xdimOZ, totalpoints, 0,
+		     Time, grid, grid, distances, Loc)) 
+      != NOERROR) {
+    LOC_DELETE(&Loc); // OK
+    RETURN_ERR(err);
+  }
+  if ((err = covcpy(localcov, true, cov, Loc, NULL, false, true, false))
+      != NOERROR) RETURN_ERR(err);
   (*localcov)->prevloc = cov->prevloc;
-  (*localcov)->ownloc = loc;
+  (*localcov)->ownloc = Loc;
    SET_CALLING(*localcov, calling);
+ 
+   RETURN_NOERROR;
+}
 
- ErrorHandling:
-  if (err != NOERROR) LOC_DELETE(&loc);
-
+int covcpyWithoutRandomParam(model **localcov, model *cov) {//err
+  bool cov2key = &(cov->key)==localcov;
+  int 
+    err = covcpy(localcov, true, cov, cov->prevloc, NULL, false, false, false);
+  if (err == NOERROR) {
+    model *calling = cov2key || cov->calling==NULL ? cov : cov->calling;
+    SET_CALLING(*localcov, calling);
+  }
+  // falls !cov2key && cov->calling == NULL; dann gibt es nur einen Verweis
+  // rueckwaerts! Muss aber sein, da sonst LOC_DE LETE bei cov->calling==NULL
+  // versucht cov->prevloc zu loeschen. oder es muesste prevloc auf NULL
+  // gesetzt zu werden. Dies scheint eher contraproduktiv zu sein.
   RETURN_ERR(err);
 }
 
@@ -1103,10 +1330,13 @@ void Ssetcpy(model *localcov, model *remotecov, model *cov,
 	    model *rmt) {
   int i;
   if (cov->Sset != NULL) {
-    localcov->Sset = (set_storage*) MALLOC(sizeof(set_storage));
+    NEW_COV_STORAGE(localcov, set)
+    NEW_COV_STORAGE_SAVE(localcov, model);
+    GETSTOMODEL;
     MEMCOPY(localcov->Sset, cov->Sset, sizeof(set_storage));
-    localcov->Sset->remote = getRemote(remotecov, rmt, cov->Sset->remote);
-    if (localcov->Sset->remote == NULL) BUG;
+    assert(localcov->Smodel != NULL);
+    localcov->Smodel->remote = getRemote(remotecov, rmt, STOMODEL->remote);
+    if (localcov->Smodel->remote == NULL) BUG;
   }
   
   for (i=0; i<MAXPARAM; i++) {
@@ -1128,7 +1358,7 @@ void Ssetcpy(model *localcov, model *remotecov, model *cov,
 
 double *getAnisoMatrix(model *cov, bool null_if_id, int *nrow, int *ncol) {
   int 
-    origdim = PrevLoc(cov)->timespacedim;
+    origdim = LocPrev(cov)->timespacedim;
   if (!isAnyDollar(cov) && null_if_id) { // probably not used anymore
     *nrow = *ncol = origdim;
     return NULL;
@@ -1193,8 +1423,8 @@ double GetDiameter(location_type *loc, double *min, double *max,
   int d,
     origdim = loc->timespacedim,  
     spatialdim = loc->spatialdim;
-  double dummy,
-    *lx=NULL, *sx=NULL, 
+  double 
+    *dummy=NULL, *sx=NULL, 
    radiusSq=0.0;
  
   if (loc->grid) {
@@ -1223,22 +1453,23 @@ double GetDiameter(location_type *loc, double *min, double *max,
     }
 
     if (!docaniso || loc->caniso == NULL) {
-      for  (d=0; d<origdim; d++) {   
+      for  (d=0; d<origdim; d++) {
+	double work;
 	center[d] = origcenter[d];
 	min[d] = origmin[d];
 	max[d] = origmax[d];
-	dummy = center[d] - min[d]; // min not max, according to floor above
-	radiusSq += dummy * dummy;
+	work = center[d] - min[d]; // min not max, according to floor above
+	radiusSq +=  work * work;
       }
     } else { // caniso != NULL
       j = (bool*) MALLOC( (origdim + 1) * sizeof(double));
-      lx = (double*) MALLOC(origdim * sizeof(double));
+      dummy = (double*) MALLOC(origdim * sizeof(double));
       sx = (double*) MALLOC(spatialdim * sizeof(double));
       
       xA(origcenter, loc->caniso, origdim, spatialdim, center);
       for (d=0; d<origdim; d++) {
 	j[d]=false;
-	lx[d]=origmin[d];
+	dummy[d]=origmin[d];
       }
       j[origdim] = false;
       
@@ -1250,27 +1481,28 @@ double GetDiameter(location_type *loc, double *min, double *max,
       while(true) {
 	d=0; 
 	while(j[d]) {
-	  lx[d]=origmin[d];
+	  dummy[d]=origmin[d];
 	  j[d++]=false;
 	}
 	if (d==origdim) break;
 	j[d]=true;
-	lx[d]=origmax[d];
-	xA(lx, loc->caniso, origdim, spatialdim, sx);
+	dummy[d]=origmax[d];
+	xA(dummy, loc->caniso, origdim, spatialdim, sx);
 	
 	// suche maximale Distanz von center zu transformierter Ecke
 	double distsq = 0.0;
 	for (d=0; d<spatialdim; d++) {
+	  double work;
 	  if (min[d] > sx[d]) min[d] = sx[d];
 	  if (max[d] < sx[d]) max[d] = sx[d];
-	  dummy = center[d] - sx[d];
-	  distsq += dummy * dummy;	  
+	  work = center[d] - sx[d];
+	  distsq += work * work;	  
 	}
 	if (distsq > radiusSq) radiusSq = distsq;
       }
 
       UNCONDFREE(j);
-      UNCONDFREE(lx);
+      UNCONDFREE(dummy);
       UNCONDFREE(sx);
     }
   
@@ -1313,27 +1545,28 @@ double GetDiameter(location_type *loc, double *min, double *max,
 
     
     for (radiusSq=0.0, d=0; d<origdim; d++) {
+      double work;
       center[d] = 0.5 * (max[d] + min[d]); 
-      dummy = max[d] - center[d];
-      radiusSq += dummy * dummy;
+      work = max[d] - center[d];
+      radiusSq += work * work;
     }
 
     if (center_on_loc) {
-      double rSQ,
+      double rSQ=0,
 	minrSQ = RF_INF;
  
       int minx = -999999;
-     if (loc->Time) {
+      if (loc->Time) {
 	assert(spatialdim == origdim - 1);
 	center[spatialdim] = min[spatialdim] + // do not change floor, see below
 	  FABS(loc->T[XSTEP]) * FLOOR(0.5 * loc->T[XLENGTH]);
-	dummy = center[spatialdim] - min[spatialdim];
       }
 
       for (i=0; i<endfor; ) {
 	for (rSQ = 0.0, d=0; d<spatialdim; d++, i++) {
-	  dummy = xx[i] - center[d];
-	  rSQ += dummy * dummy;
+	  double work;
+	  work = xx[i] - center[d];
+	  rSQ += work * work;
 	}
 	if (rSQ < minrSQ) {
 	  minrSQ = rSQ;
@@ -1341,9 +1574,10 @@ double GetDiameter(location_type *loc, double *min, double *max,
 	}
       }
       for (d=0; d<spatialdim; d++) {
+	double work;
 	center[d] = xx[minx + d];
-	dummy = max[d] - center[d];
-	radiusSq += dummy * dummy;
+	work = max[d] - center[d];
+	radiusSq += work * work;
       }
       if (position != NULL) position[0] = minx / spatialdim;
     }
@@ -1676,19 +1910,33 @@ void TransformLocExt(model *cov,  location_type *loc, bool timesep,
     nrow = UNSET,
     ncol = UNSET,
     origdim = locCani->caniso == NULL ? loc->timespacedim : locCani->cani_nrow,
-    dim = origdim;
+    dim = origdim,
+    spatialdim = loc->spatialdim;
   if (isdollar) {
     if (!PisNULL(DANISO)) dim = cov->ncol[DANISO];
     else if (!PisNULL(DPROJ)) dim = Nproj;
   }
-  double *aniso,
-    *T = loc->T,
-    *x = takeX ? loc->x : loc->y;
-  coord_type 
-    *xgr= takeX ? &(loc->xgr) : &(loc->ygr);
-
   
-  if (x==NULL && (*xgr)[0] ==NULL) ERR("locations are all NULL");
+  double *aniso, *T, *x;
+  int spatialtotalpoints;
+  bool loc_grid;
+  coord_type xgr;
+  if (takeX) {
+    T = loc->T;
+    x = loc->x;
+    spatialtotalpoints = loc->spatialtotalpoints;
+    xgr= loc->xgr;
+    loc_grid = loc->grid;
+  } else {
+    T = loc->TY;
+    x =loc->Y;
+    xgr= loc->grY;
+    spatialtotalpoints = loc->spatialtotalpointsY;
+    loc_grid = loc->gridY;
+  }
+  *Time = loc->Time;
+  
+  if (x==NULL && xgr[0] ==NULL) ERR("locations are all NULL");
  
   *newdim = dim;
   *caniso = NULL;
@@ -1700,7 +1948,7 @@ void TransformLocExt(model *cov,  location_type *loc, bool timesep,
     aniso = getAnisoMatrix(cov, true, &nrow, &ncol); 
   } else {
     aniso = NULL;
-    nrow = ncol = PrevLoc(cov)->timespacedim;
+    nrow = ncol = LocPrev(cov)->timespacedim;
   }
 
   if (locCani->caniso != NULL) {    
@@ -1714,8 +1962,8 @@ void TransformLocExt(model *cov,  location_type *loc, bool timesep,
     } else {
       double *aniso_old = aniso;
       assert(locCani->cani_ncol == nrow);
-      aniso = matrixmult(locCani->caniso, aniso_old, locCani->cani_nrow,
-			 nrow, ncol);
+      aniso = matrixmult(locCani->caniso, aniso_old,
+			 locCani->cani_nrow, nrow, ncol);
       nrow = locCani->cani_nrow;
       UNCONDFREE(aniso_old);
     }
@@ -1723,31 +1971,30 @@ void TransformLocExt(model *cov,  location_type *loc, bool timesep,
 
   type = TypeMiso;
   if (aniso != NULL) type = Type(aniso, origdim, dim);
-  *Time = loc->Time;
   *grid = false;
 
   assert(origdim == nrow);
   assert(dim == ncol);
-  if (loc->grid) {
-    assert(*xgr != NULL);
+  if (loc_grid) {
+    assert(xgr != NULL);
     if (gridexpand==True || (gridexpand==GRIDEXPAND_AVOID && !isMproj(type))) {
       if (timesep && isMtimesep(type) && *Time) {	
 	// space
 	//                             not nrow
-	expandgrid(*xgr, SpaceTime, aniso, nrow - 1, nrow, ncol - 1);	  
+	expandgrid(xgr, SpaceTime, aniso, nrow - 1, nrow, ncol - 1);	  
 	// time
-	grid2grid(*xgr + loc->spatialdim, grani,
+	grid2grid(xgr + spatialdim, grani,
 		  aniso == NULL ? NULL : aniso + nrow * (ncol-1), 
 		  1, 1);
       } else {
 	*Time = false;// time is also expanded, if given
-	expandgrid(*xgr, SpaceTime, aniso, nrow, nrow, ncol); 
+	expandgrid(xgr, SpaceTime, aniso, nrow, nrow, ncol); 
       }
     } else {
       *grid = true;	
       if (isMproj(type) && (!same_nr_of_points || ncol==nrow)) {
 	// grid wird multipliziert und/oder umsortiert
-	grid2grid(*xgr, grani, aniso, nrow, ncol);
+	grid2grid(xgr, grani, aniso, nrow, ncol);
 	*Time = false; // no need to have time extra
       } else { // !gridexpand, !isMproj, but still grid
 	// z.B. plusmalS.cc falls TBM_INTERN
@@ -1756,7 +2003,7 @@ void TransformLocExt(model *cov,  location_type *loc, bool timesep,
 	(*grani) = (double *) MALLOC(sizeof(double) * 3 * origdim);
 	for (k=d=0; d<origdim; d++) {
 	  for (i=0; i<3; i++) {
-	    (*grani)[k++] = (*xgr)[d][i];
+	    (*grani)[k++] = (xgr)[d][i];
 	  }
 	}
 	*caniso = aniso; 
@@ -1767,17 +2014,17 @@ void TransformLocExt(model *cov,  location_type *loc, bool timesep,
     }
   } else { // nogrid
     if (! *Time) { // no grid no time
-      x2x(x, loc->spatialtotalpoints, SpaceTime, aniso, nrow, nrow, ncol); 
+      x2x(x, spatialtotalpoints, SpaceTime, aniso, nrow, nrow, ncol); 
     } else if (timesep && isMtimesep(type)) {  // no grid, but timesep
       if (same_nr_of_points && ncol!=nrow) { // do not reduce
-	x2x(x, loc->spatialtotalpoints, SpaceTime, aniso, nrow, nrow-1, ncol-1);
+	x2x(x, spatialtotalpoints, SpaceTime, aniso, nrow, nrow-1, ncol-1);
 	grid2grid(&T, grani, aniso==NULL ? NULL : aniso + nrow*ncol - 1, 1, 1);	
       } else if (aniso != NULL && R_finite(aniso[nrow * ncol - 1]) &&
 		 aniso[nrow * ncol - 1]==0.0) {//no time comp 
-	x2x(x, loc->spatialtotalpoints, SpaceTime, aniso, nrow, nrow - 1, ncol);
+	x2x(x, spatialtotalpoints, SpaceTime, aniso, nrow, nrow - 1, ncol);
 	*Time = false;
       } else { // both time and space are left, and time is separated
-	x2x(x, loc->spatialtotalpoints, SpaceTime, aniso, nrow, nrow - 1, 
+	x2x(x, spatialtotalpoints, SpaceTime, aniso, nrow, nrow - 1, 
 	    ncol - 1);
 	grid2grid(&T, grani, aniso==NULL ? NULL : aniso + nrow*ncol - 1, 1, 1);
       }
@@ -1789,7 +2036,7 @@ void TransformLocExt(model *cov,  location_type *loc, bool timesep,
       *grid = true;
       grid2grid(&T, grani, aniso==NULL ? NULL : aniso + nrow*ncol - 1, 1, 1);
     } else { // no grid, but time, no timesep || not isMtimesep(type)
-      xtime2x(x, loc->spatialtotalpoints, T, SpaceTime, aniso, nrow, ncol);
+      xtime2x(x, spatialtotalpoints, T, SpaceTime, aniso, nrow, ncol);
       *Time = false;
     }
   }
@@ -1801,41 +2048,49 @@ void TransformLocExt(model *cov,  location_type *loc, bool timesep,
 void TransformCovLoc(model *cov, bool timesep, usr_bool gridexpand, 
 		     bool same_nr_of_points, // in case of projection
 		     bool involvedollar) {
-  location_type *loc = PrevLoc(cov); // transform2nogrid
+  location_type *loc = LocPrev(cov); // transform2nogrid
   assert(loc != NULL);
-  bool Time, grid;
+  bool Time,
+    grid = false,
+    gridY = false, // zwingen da sonst loc_set gry + 3 * spacedim nicht
+    // defniert sein kann!
+    ygiven = LocHasY(cov);
   int err,
     spacedim=UNSET, 
     nrow=UNSET,
     ncol=UNSET;
-  double  *xgr=NULL, 
+  double  *xgr=NULL,
+    *grY = NULL,
     *x = NULL,
+    *Y = NULL,
     *caniso = NULL;
-  if ((loc->y != NULL && loc->y != loc->x) || 
-      (loc->ygr[0] != NULL && loc->ygr[0] != loc->xgr[0])) {
-    ERR("unexpected y coordinates");
-  }
 
   assert(cov->prevloc != NULL);
   TransformLocExt(cov, NULL, timesep, gridexpand,  same_nr_of_points, &xgr, &x, 
 		      &caniso, &nrow, &ncol, &Time, &grid, &spacedim, true,
 		      involvedollar);
-  
+  if (ygiven) 
+    TransformLocExt(cov, NULL, timesep, gridexpand, same_nr_of_points, &grY, &Y,
+		    &caniso, &nrow, &ncol, &Time, &gridY, &spacedim, false,
+		    involvedollar);
+   
   if (Time) spacedim--;
   assert(cov->ownloc == NULL);
   if (spacedim > 0) {
-    err = loc_set(grid ? xgr : x, 
-		  grid ? xgr + 3 * spacedim : xgr, 
-		  spacedim, 
-		  spacedim,
-		  grid ? 3 : loc->spatialtotalpoints, 
-		  Time, grid, false, cov);
+    err = loc_set(grid ? xgr : x,
+		  gridY ? grY : Y,
+		  grid ? xgr + 3 * spacedim : xgr,// Time
+		  gridY ? grY + 3 * spacedim : grY, // Time
+		  spacedim, spacedim,
+		  grid ? 3 : loc->spatialtotalpoints,
+		  gridY ? 3 : loc->spatialtotalpointsY,
+		  Time, grid, gridY, false, cov);
     assert(grid xor !Loc(cov)->grid);
   } else {
     assert(Time);
-    err = loc_set(xgr, NULL, 1, 1, 3, false, true, false, cov);  
+    err = loc_set(xgr, NULL, grY, NULL, 1, 1, 3, ygiven * 3,
+		  false, true, true, false, cov);  
   }
-
 
  
   // falls not gridexpand und nicht diag bzw. proj
@@ -1854,9 +2109,18 @@ void TransformCovLoc(model *cov, bool timesep, usr_bool gridexpand,
 
 void TransformLoc(model *cov, bool timesep, usr_bool gridexpand, 
 		  bool involvedollar) {
-  TransformCovLoc(cov, timesep, gridexpand, true, involvedollar);
+  location_type *loc = LocPrev(cov); 
+  if (((loc->Y != NULL && loc->Y != loc->x) || 
+       (loc->grY[0] != NULL && loc->grY[0] != loc->xgr[0]))) {
+    ERR("unexpected y coordinates");
+  }
+ TransformCovLoc(cov, timesep, gridexpand, true, involvedollar);
 }
 
+void TransformLocXY(model *cov, bool timesep, usr_bool gridexpand, 
+		  bool involvedollar) {
+  TransformCovLoc(cov, timesep, gridexpand, true, involvedollar);
+}
 
 //void TransformLocReduce(model *cov, bool timesep, usr_bool gridexpand, 
 //			bool involvedollar) {
@@ -1864,55 +2128,34 @@ void TransformLoc(model *cov, bool timesep, usr_bool gridexpand,
 //}
 
 
-int TransformLoc(model *cov, location_type *loc, double **xx) {
+int TransformLoc(model *cov, location_type *Loc, double **xx, double **yy,
+		 bool involvedollar) {
+  location_type *loc = Loc == NULL ? Loc(cov) : Loc;
   bool Time, grid;
   int newdim, nrow, ncol;
   double *caniso = NULL,
     *SpaceTime = NULL;
-  assert(!isAnyDollar(cov));
-  TransformLocExt(cov, loc, false, True, true, &SpaceTime, xx, 
-		  &caniso, &nrow, &ncol, &Time, &grid, &newdim, true, false);
+  if (xx != NULL) TransformLocExt(cov, loc, false, // no timesep
+				  True, // gridexpand
+				  true, // same nr of points
+				  &SpaceTime, xx,
+				  &caniso,&nrow, &ncol, &Time, &grid, &newdim,
+				  true, involvedollar);
+  if (yy != NULL) {
+    if (!LocLocHasY(loc)) *yy = NULL;
+    else TransformLocExt(cov, loc, false, True, true, &SpaceTime, yy, 
+			 &caniso, &nrow, &ncol, &Time, &grid, &newdim, false,
+			 involvedollar);
+  }
   assert(!grid)
   assert(caniso == NULL && SpaceTime ==NULL);
   return newdim;
 }
 
-int TransformLoc(model *cov, double **xx, 
-		      bool involvedollar) {
-  bool Time, grid;
-  int newdim, nrow, ncol;
-  double *caniso = NULL,
-    *SpaceTime = NULL;
-  TransformLocExt(cov, NULL, false, True, true, &SpaceTime, xx, 
-		  &caniso, &nrow, &ncol, &Time, &grid, &newdim, true,
-		  involvedollar);
-  assert(!grid)
-  assert(caniso == NULL && SpaceTime ==NULL);
-  return newdim;
+
+int TransformLoc(model *cov, double **xx, bool involvedollar) {
+  return TransformLoc(cov, NULL, xx, NULL, involvedollar);
 }
-
-
-int TransformLoc(model *cov, double **xx, double **yy, 
-		      bool involvedollar) {
-  location_type *loc = Loc(cov);
-  bool Time, grid;
-  int newdim, nrow, ncol;
-  double *caniso = NULL,
-    *SpaceTime = NULL;
-  TransformLocExt(cov, NULL, false, True, true, &SpaceTime, xx,
-		      &caniso,&nrow, &ncol, &Time, &grid, &newdim, true,
-		      involvedollar); 
-  assert(!grid)
-  assert(caniso == NULL && SpaceTime ==NULL);
-  if (loc->y == NULL && loc->ygr[0] == NULL) *yy = NULL;
-  else TransformLocExt(cov, NULL, false, True, true, &SpaceTime, yy, 
-			   &caniso, &nrow, &ncol, &Time, &grid, &newdim, false,
-			   involvedollar);
-  assert(!grid)
-  assert(caniso == NULL && SpaceTime ==NULL);
-  return newdim;
-}
-
 
 
 double *selectlines(double *m, int *sel, int nsel, int nrow, int ncol) {
@@ -2010,7 +2253,7 @@ int get_multi_ranges(model *cov, model *min, model *max,
 	  PARAM(min, K)[idx] = dmin;
 	  PARAM(max, K)[idx] = dmax;
 	  PARAM(pmin, K)[idx] = range.pmin;
-	  PARAM(pmax, K)[idx] = range.max;
+	  PARAM(pmax, K)[idx] = range.pmax;
 	  PARAM(openmin, K)[idx] = dopenmin;
 	  PARAM(openmax, K)[idx] = dopenmax;
 	  break;
@@ -2019,7 +2262,7 @@ int get_multi_ranges(model *cov, model *min, model *max,
 	  PARAMINT(min, K)[idx] = dmin;
 	  PARAMINT(max, K)[idx] = dmax;
 	  PARAMINT(pmin, K)[idx] = range.pmin;
-	  PARAMINT(pmax, K)[idx] = range.max;
+	  PARAMINT(pmax, K)[idx] = range.pmax;
 	  PARAMINT(openmin, K)[idx] = dopenmin;
 	  PARAMINT(openmax, K)[idx] = dopenmax;
 	  break;
@@ -2030,7 +2273,7 @@ int get_multi_ranges(model *cov, model *min, model *max,
 	    qmin[ll][idx] = dmin;
 	    qmax[ll][idx] = dmax;
 	    ppmin[ll][idx] = range.pmin;
-	    ppmax[ll][idx] = range.max;
+	    ppmax[ll][idx] = range.pmax;
 	    omin[ll][idx] = dopenmin;
 	    omax[ll][idx] = dopenmax;
 	  }
@@ -2265,7 +2508,6 @@ int get_ranges(model *cov, model **min, model **max,
 
 
 int ReturnOwnField(model *cov) {
-   location_type *loc = Loc(cov);
   if (cov->rf != NULL) {
     assert(cov->fieldreturn == wahr && cov->origrf);
     if (cov->origrf) {
@@ -2274,7 +2516,7 @@ int ReturnOwnField(model *cov) {
   } 
 
   if ((cov->rf = 
-       (double*) MALLOC(sizeof(double) * loc->totalpoints * VDIM0))
+       (double*) MALLOC(sizeof(double) * Loctotalpoints(cov) * VDIM0))
       == NULL) RETURN_ERR(ERRORMEMORYALLOCATION)
   cov->fieldreturn = wahr;
   cov->origrf = true;
@@ -2291,22 +2533,22 @@ int ReturnOtherField(model *cov, model *which) {
 }
 
 
-void SetLoc2NewLoc(model *cov, location_type **loc) {
+void SetLoc2NewLoc(model *cov, location_type **Loc) {
   int i,
     maxsub =  DefList[COVNR].maxsub;
   if (cov->ownloc != NULL) return;
   
   for (i=0; i<MAXPARAM; i++) 
-    if (cov->kappasub[i] != NULL) SetLoc2NewLoc(cov->kappasub[i], loc);
+    if (cov->kappasub[i] != NULL) SetLoc2NewLoc(cov->kappasub[i], Loc);
   
-  cov->prevloc = loc;
+  cov->prevloc = Loc;
   for (i=0; i<maxsub; i++) 
-    if (cov->sub[i] != NULL) SetLoc2NewLoc(cov->sub[i], loc);
+    if (cov->sub[i] != NULL) SetLoc2NewLoc(cov->sub[i], Loc);
   
-  if (cov->key != NULL)  SetLoc2NewLoc(cov->key, loc);
+  if (cov->key != NULL)  SetLoc2NewLoc(cov->key, Loc);
   if (cov->Splus != NULL && cov->Splus->keys_given)
     for (i=0; i<maxsub; i++)
-      if (cov->sub[i] != NULL) SetLoc2NewLoc(cov->sub[i], loc);
+      if (cov->sub[i] != NULL) SetLoc2NewLoc(cov->sub[i], Loc);
   if (cov->Sbr != NULL || cov->Sget != NULL || cov->Spgs != NULL ||
       cov->Sset != NULL || cov->Slikelihood != NULL) BUG;
 }

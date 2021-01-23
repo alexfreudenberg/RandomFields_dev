@@ -64,7 +64,7 @@ extern "C" {
   //void GetNaturalScaling(int *covnr, double *q,  /* KAPPAS only  !! */
   //			      int *naturalscaling, double *natscale, int *error);
   
-  void ResetWarnings(int *all);
+  //  void ResetWarnings(int *all);
   
   //  void GetKeyInfo(int *keyNr, int *total, int *lengths, int *dim, 
   //		  int *timespacedim,int *grid,int *type,int *maxdim,int *vdim);
@@ -74,6 +74,7 @@ extern "C" {
   SEXP GetModel(SEXP keynr, SEXP modus, SEXP spconform, SEXP whichSub,
 		SEXP SolveRandom, SEXP returnwhichparam, SEXP origin);
   
+
   /* 
      check with InitSimulateRF in case of any changes !!
      both InitSimulateRF and DoGauss
@@ -82,7 +83,7 @@ extern "C" {
   // PROCESSES_NAMES
   SEXP Init(SEXP Model_reg, SEXP Model, SEXP x, SEXP NA_OK);
   
-  SEXP EvaluateModel(SEXP X, SEXP Covnr);
+  SEXP EvaluateModel(SEXP X, SEXP I, SEXP Covnr);
   // SEXP EvaluateModelXX();
   
   SEXP GetProcessType(SEXP Model_reg, SEXP Model);
@@ -122,11 +123,10 @@ extern "C" {
 
 
   // for isotropic spatial data
-  SEXP empirical(SEXP X, SEXP Dim, SEXP Lx, SEXP Values, SEXP Repet, SEXP Grid, 
+  SEXP empirical(SEXP X, SEXP Dim, SEXP Values, SEXP Repet, SEXP Grid, 
 		 SEXP Bin, SEXP Nbin, SEXP Vdim, SEXP Alpha, SEXP distgiven);
 
   SEXP empvarioXT(SEXP Xsexp, SEXP Tsexp, 
-		  SEXP Lx, 
 		  SEXP Values, SEXP Repet, SEXP Grid,
 		  SEXP Bin, SEXP Nbin, 
 		  SEXP Phi,    // vector of a real and an integer
@@ -149,7 +149,8 @@ extern "C" {
 		   SEXP repet,
 		   SEXP vdim,
 		   SEXP segmentEmpVario,
-		   SEXP pseudo);
+		   SEXP pseudo,
+		   SEXP tol);
   
    SEXP fftVario3DX(SEXP coord,
 		   SEXP sumvals,
@@ -176,21 +177,6 @@ extern "C" {
   SEXP minmax(SEXP dat, SEXP dim, SEXP ldim, SEXP boxes, SEXP lb);
   
 
-  //  void Cov(int *reg, double *result);
-  //  void CovMatrix(int *reg, double *result);
-  // void Variogram(int *reg, double *value);
-  // void Pseudovariogram(int* reg, double *result);
-  //  SEXP CovMatrixIntern(SEXP reg, SEXP x, SEXP dist, SEXP grid,
-  //		       SEXP lx, SEXP result, SEXP nonzeros);
-
-  SEXP MomentsIntern(SEXP reg, SEXP alpha);
-
-  
-  //  SEXP CovMatrixLoc(SEXP reg, SEXP x, SEXP dist, SEXP xdim, SEXP lx,
-  //		    SEXP result, SEXP nonzeros);
-  SEXP CovLoc(SEXP reg, SEXP x, SEXP y, SEXP xdim, SEXP lx, SEXP result);
-	      
-
   //  SEXP CovMatrixSelectedLoc(SEXP reg, SEXP x, SEXP dist, SEXP xdim, SEXP lx,
   //			    SEXP selected, SEXP nsel, SEXP result,
   //			    SEXP nonzeros);
@@ -202,14 +188,14 @@ extern "C" {
 		      SEXP fillvalues,
 		      SEXP integerNA, SEXP Print, SEXP vdim);
 
-  SEXP SetAndGetModelInfo(SEXP Model_reg, SEXP Model, 
+  SEXP SetAndGetModelFacts(SEXP Model_reg, SEXP Model, 
 			  SEXP spatialdim, SEXP distances, 
 			  SEXP ygiven, // TRUE is the standard variant
 			  SEXP Time, SEXP xdim, SEXP shortlen,
 			  SEXP allowforintegerNA, SEXP excludetrend);
   
   SEXP SetAndGetModelLikelihood(SEXP Model_reg, SEXP Model, SEXP x,
-				SEXP origin);
+				SEXP rawConcerns, SEXP origin);
     
   void PutValuesAtNA(int *reg, double *values);
   void PutValuesAtNAnoInit(int *reg, double *values);
@@ -217,27 +203,15 @@ extern "C" {
   void expliciteDollarMLE(int * modelnr, double *values);
 
   SEXP Take2ndAtNaOf1st(SEXP Model_reg, SEXP Model, SEXP Model_bound,
-			SEXP totalpoints,
-			SEXP spatialdim, SEXP Time, SEXP xdim, 
-			SEXP nbounds, SEXP skipchecks);
+			SEXP x, SEXP nbounds, SEXP skipchecks,
+			SEXP rawConcerns);
   //  void UserGetNatScaling(double *natscale);
   
-  void  GOUE(double * aniso, int *dim, double *grid_ext);
-  
-  
-  //SEXP GetChar(SEXP N, SEXP Choice, SEXP Shorter, SEXP Beep, SEXP Show);
-  
-  void defineCovariancematrix(int *nr, int * idx, int *ncol, double *m);
-  void deleteCovariancematrix();
   
   // SEXP IsStatAndIsoUser(SEXP removeGatter);
-  
-  
-  
+ 
   
   SEXP distInt(SEXP XX, SEXP N, SEXP Genes);
-  // void MLEMakeExplicite(double *dist, int *Lx, int *idx, int *totald);
-
 
   void GetMaxDims(int *maxints);
   void GetModelRegister(char **name, int* nr);
@@ -251,20 +225,17 @@ extern "C" {
 		     SEXP Neighbours);
   
   
-  void GetLH(int *LL, int *BB, int *HH);
-
   void NoCurrentRegister();
   void GetCurrentRegister(int *reg);
    
-  SEXP GetCathegoryNames();
-  void isAuthor(int *is);
-  SEXP allintparam();
+  // SEXP GetCathegoryNames();
+  // SEXP allintparam();
  
    void start_debug();
   void end_debug();
 
-  SEXP set_boxcox(SEXP boxcox);
-  SEXP get_boxcox();
+  SEXP set_boxcox(SEXP boxcox, SEXP Reg);
+  SEXP get_boxcox(SEXP Reg);
   SEXP BoxCox_inverse(SEXP boxcox, SEXP res);
   SEXP BoxCox_trafo(SEXP boxcox, SEXP res, SEXP vdim, SEXP inverse);	
 
@@ -282,7 +253,16 @@ extern "C" {
   SEXP attachRandomFields();
 
   SEXP maintainers_machine();
+  SEXP setlocalRFutils(SEXP seed, SEXP printlevel);
 
+  SEXP scatter(SEXP X);
+
+  
+  SEXP MomentsIntern(SEXP reg, SEXP alpha);
+  SEXP CovLocNonGrid(SEXP reg, SEXP x, SEXP y, SEXP result);
+  SEXP LocNonGrid(SEXP reg, SEXP x);
+  
+  SEXP copyoptions();
 
 #ifdef __cplusplus
 }

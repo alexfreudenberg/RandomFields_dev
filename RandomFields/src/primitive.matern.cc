@@ -91,6 +91,7 @@ double logWM(double x, double nu, double loggamma, double factor) {
   double bk[MATERN_NU_THRES + 1L];
  
   if (x > LOW_MATERN && nu < RF_INF) {
+    if (x == RF_INF) return RF_NEGINF;
     y = x * scale;
     v = LOG2 + nuThres * LOG(0.5 * y) - loggamma + 
       LOG(bessel_k_ex(y, nuThres, 2.0, bk)) - y;
@@ -103,7 +104,8 @@ double logWM(double x, double nu, double loggamma, double factor) {
     double w, sign,
       g = MATERN_NU_THRES / nu;
     y = 0.5 * x * factor;
-    logGauss(&y, NULL, &w, &sign);
+    DEFAULT_INFO(info);
+    logGauss(&y, info, NULL, &w, &sign);
 
     //    printf("g=%f %f %e y=%f %f\n", g, v, w, y, x);
 	   
@@ -117,13 +119,13 @@ double logWM(double x, double nu, double loggamma, double factor) {
 }
 
 
-double Ext_WM(double x, double nu, double loggamma, double factor) {
+double Intern_WM(double x, double nu, double loggamma, double factor) {
   // check calling functions, like hyperbolic and gneiting if any changings !!
   //  printf("vw = %f\n", logWM(x, nu, loggamma, factor));
   return EXP(logWM(x, nu, loggamma, factor));
 }
 
-double Ext_DWM(double x, double nu, double loggamma, double factor) { 
+double Intern_DWM(double x, double nu, double loggamma, double factor) { 
   double   y, v,
     nuThres = nu <= MATERN_NU_THRES ? nu : MATERN_NU_THRES,
   		   scale = 1.0;
@@ -131,6 +133,7 @@ double Ext_DWM(double x, double nu, double loggamma, double factor) {
   double bk[MATERN_NU_THRES + 1L];
   
   if (x > LOW_MATERN && nu < RF_INF) {  
+    if (x == RF_INF) return 0.0;
     y = x * scale;  
     v = - 2.0 * EXP(nuThres * LOG(0.5 * y) - loggamma + 
 		    LOG(bessel_k_ex(y, nuThres - 1.0, 2.0, bk)) - y);
@@ -144,14 +147,15 @@ double Ext_DWM(double x, double nu, double loggamma, double factor) {
       g = MATERN_NU_THRES / nu;
     scale = 0.5 * factor;
     y = x * scale;
-    DGauss(&y, NULL, &w);
+    DEFAULT_INFO(info);
+    DGauss(&y, info, NULL, &w);
     w *= scale;
     v = v * g + (1.0 - g) * w;
   }
   return v;
 }
 
-double Ext_DDWM(double x, double nu, double gamma, double factor) { 
+double Intern_DDWM(double x, double nu, double gamma, double factor) { 
   double  y, v,
     nuThres = nu < MATERN_NU_THRES ? nu : MATERN_NU_THRES, // >
  		   scale = 1.0;
@@ -161,6 +165,7 @@ double Ext_DDWM(double x, double nu, double gamma, double factor) {
 		   bk[MATERN_NU_THRES + 1L];
   
   if (x > LOW_MATERN && nu < RF_INF) {  
+    if (x == RF_INF) return 0.0;
     y = x * scale;
     v = POW(0.5 * y , nuThres - 1.0) / gamma *
       (- bessel_k_ex(y, nuThres - 1.0, 1.0, bk) +
@@ -176,7 +181,8 @@ double Ext_DDWM(double x, double nu, double gamma, double factor) {
     scale = factor / 2.0;
     scaleSq = scale * scale;
     y = x * scale;
-    DDGauss(&y, NULL, &w);
+    DEFAULT_INFO(info);
+    DDGauss(&y, info, NULL, &w);
     w *= scaleSq;
     v = v * g + (1.0 - g) * w;
   }
@@ -184,7 +190,7 @@ double Ext_DDWM(double x, double nu, double gamma, double factor) {
   return v;
 }
 
-double Ext_D3WM(double x, double nu, double gamma, double factor) { 
+double Intern_D3WM(double x, double nu, double gamma, double factor) { 
   double y, v,
     nuThres = nu < MATERN_NU_THRES ? nu : MATERN_NU_THRES,
  		   scale = 1.0;
@@ -193,6 +199,7 @@ double Ext_D3WM(double x, double nu, double gamma, double factor) {
   double bk[MATERN_NU_THRES + 1L];
   
   if (x > LOW_MATERN && nu < RF_INF) {
+    if (x == RF_INF) return 0.0;
     y = x * scale;
     v = POW(0.5 * y , nuThres - 1.0) / gamma *
       ( 3.0 * bessel_k_ex(y, nuThres - 2.0, 1.0, bk) 
@@ -208,7 +215,8 @@ double Ext_D3WM(double x, double nu, double gamma, double factor) {
     scale = factor / 2.0;
     scaleSq = scale * scale;
     y = x * scale;
-    D3Gauss(&y, NULL, &w);
+    DEFAULT_INFO(info);
+    D3Gauss(&y, info, NULL, &w);
     w *= scaleSq * scale;
     v = v * g + (1.0 - g) * w;
   }
@@ -216,7 +224,7 @@ double Ext_D3WM(double x, double nu, double gamma, double factor) {
   return v;
 }
 
-double Ext_D4WM(double x,  double nu, double gamma, double factor) {
+double Intern_D4WM(double x,  double nu, double gamma, double factor) {
   
   double y, v,
     nuThres = nu < MATERN_NU_THRES ? nu : MATERN_NU_THRES,
@@ -228,6 +236,7 @@ double Ext_D4WM(double x,  double nu, double gamma, double factor) {
  //  printf("x=%10g nu=%10g\n", x, nuThres);
   
   if (x > LOW_MATERN && nu < RF_INF) {
+    if (x == RF_INF) return 0.0;
     y = x * scale;
     v = 0.25 * POW(0.5 * y , nuThres - 3.0) / gamma *
       (+ 6.0 * (nuThres - 3.0 - y * y) *
@@ -244,7 +253,8 @@ double Ext_D4WM(double x,  double nu, double gamma, double factor) {
     scale = factor / 2.0;
     scaleSq = scale * scale;
     y = x * scale;
-    D4Gauss(&y, NULL, &w);
+    DEFAULT_INFO(info);
+    D4Gauss(&y, info, NULL, &w);
     w *= scaleSq * scaleSq;
     v = v * g + (1.0 - g) * w;
   }  
@@ -255,12 +265,13 @@ double Ext_D4WM(double x,  double nu, double gamma, double factor) {
 
 
   
-double logNonStWM(double *x, double *y, model *cov, double factor){
+double logNonStWM(double *x, double *y, int *info, model *cov, double factor){
   model *nu = cov->kappasub[WM_NU];
   int 
      dim = OWNLOGDIM(0);
   double nux, nuy, v,
     norm=0.0;
+  
   for (int d=0; d<dim; d++) {
     double delta = x[d] - y[d];
     norm += delta * delta;
@@ -270,8 +281,8 @@ double logNonStWM(double *x, double *y, model *cov, double factor){
   if (nu == NULL) {
     nux = nuy = GET_NU;
   } else {
-    FCTN(x, nu, &nux);
-    FCTN(y, nu, &nuy);
+    FCTN(x, info, nu, &nux);
+    FCTN(y, info + INFOS_PER_COORD, nu, &nuy);
     if (nux <= 0.0 || nuy <= 0.0)
       ERR1("'%.50s' is not a positive function", KNAME(WM_NU));
     nux = GET_NU_GEN(nux);
@@ -369,7 +380,7 @@ int checkWM(model *cov) {
   }
 
 
-  if (OWNDOM(0) != XONLY || !isAnyIsotropic(OWNISO(0))) 
+  if (!equalsXonly(OWNDOM(0)) || !isAnyIsotropic(OWNISO(0))) 
     // RETURN_ERR(ERRORFAILED);
     SERR2("isotropic function needed. Got %.50s, %.50s.",
 	  DOMAIN_NAMES[OWNDOM(0)], ISO_NAMES[OWNISO(0)]);
@@ -439,7 +450,7 @@ void rangeWM(model *cov, range_type *range){
 }
 
 
-void coinitWM(model *cov, localinfotype *li) {
+void coinitWM(model *cov, localfactstype *li) {
   // cutoff_A
   double thres[2] = {0.25, 0.5},
     nu = GET_NU;
@@ -455,7 +466,7 @@ void coinitWM(model *cov, localinfotype *li) {
   } 
 }
 
-void ieinitWM(model *cov, localinfotype *li) {
+void ieinitWM(model *cov, localfactstype *li) {
   double nu = GET_NU;
   // intrinsic_rawr
   li->instances = 1;
@@ -492,42 +503,42 @@ double densityWM(double *x, model *cov, double factor) {
 }
 
 
-void Matern(double *x, model *cov, double *v) {
-  *v = Ext_WM(*x, GET_NU, cov->q[WM_LOGGAMMA], SQRT2);
+void Matern(double *x, INFO, model *cov, double *v) {
+  *v = Intern_WM(*x, GET_NU, cov->q[WM_LOGGAMMA], SQRT2);
   // printf("%f %f %f %f\n", *x, *v, GET_NU, cov->q[WM_LOGGAMMA]);
   assert(R_FINITE(*v));
 }
 
-void logMatern(double *x, model *cov, double *v, double *Sign) { 
+void logMatern(double *x, INFO, model *cov, double *v, double *Sign) { 
   double nu = GET_NU;
   *v = logWM(*x, nu, cov->q[WM_LOGGAMMA], SQRT2);
   *Sign = 1.0;
 }
 
-void NonStMatern(double *x, double *y, model *cov, double *v){ 
-  *v = EXP(logNonStWM(x, y, cov, SQRT2));
+void NonStMatern(double *x, double *y, int *info, model *cov, double *v){ 
+  *v = EXP(logNonStWM(x, y, info, cov, SQRT2));
 }
 
-void logNonStMatern(double *x, double *y, model *cov, double *v, 
+void logNonStMatern(double *x, double *y, int *info, model *cov, double *v, 
 		     double *Sign){ 
   *Sign = 1.0;
-  *v = logNonStWM(x, y, cov, SQRT2);
+  *v = logNonStWM(x, y, info, cov, SQRT2);
 }
 
-void DMatern(double *x, model *cov, double *v) {
-  *v =Ext_DWM(*x, GET_NU, cov->q[WM_LOGGAMMA], SQRT2);
+void DMatern(double *x, INFO, model *cov, double *v) {
+  *v =Intern_DWM(*x, GET_NU, cov->q[WM_LOGGAMMA], SQRT2);
 } 
 
-void DDMatern(double *x, model *cov, double *v) {
-  *v=Ext_DDWM(*x, GET_NU, cov->q[WM_GAMMA], SQRT2);
+void DDMatern(double *x, INFO, model *cov, double *v) {
+  *v=Intern_DDWM(*x, GET_NU, cov->q[WM_GAMMA], SQRT2);
 } 
 
-void D3Matern(double *x, model *cov, double *v) {
-  *v=Ext_D3WM(*x, GET_NU,  cov->q[WM_GAMMA], SQRT2);
+void D3Matern(double *x, INFO, model *cov, double *v) {
+  *v=Intern_D3WM(*x, GET_NU,  cov->q[WM_GAMMA], SQRT2);
 } 
 
-void D4Matern(double *x, model *cov, double *v) {
-  *v=Ext_D4WM(*x, GET_NU, cov->q[WM_GAMMA], SQRT2);
+void D4Matern(double *x, INFO, model *cov, double *v) {
+  *v=Intern_D4WM(*x, GET_NU, cov->q[WM_GAMMA], SQRT2);
 } 
 
 void InverseMatern(double *x, model *cov, double *v) {
@@ -537,14 +548,14 @@ void InverseMatern(double *x, model *cov, double *v) {
   if (*x == 0.05) *v = SQRT2 * SQRT(nu) /  ScaleWM(nu);
 }
 
-void nonstatinverseMatern(double *x, model *cov, double *left, double*right) {
+void inversenonstatMatern(double *x, model *cov, double *left, double*right) {
   model *nufct = cov->kappasub[WM_NU];
   int dim = PREVTOTALXDIM;
   double inv;
   if (nufct == NULL) InverseMatern(x, cov, &inv);
   else {
     double nu;
-    FCTN(ZERO(cov), nufct, &nu); // just arbitrarily fixed reference point
+    Zero(nufct, &nu); // just arbitrarily fixed reference point
     inv = RF_NA;
     if (*x == 0.05) inv = SQRT2 * SQRT(nu) /  ScaleWM(nu);
   }
@@ -617,17 +628,17 @@ void spectralMatern(model *cov, gen_storage *S, double *e) {
 }
 
 
-void Whittle(double *x, model *cov, double *v) {
+void Whittle(double *x, INFO, model *cov, double *v) {
   //  printf("!! %10g\n", *x);
   double nu = GET_NU;
   assert(cov->q != NULL);
-  *v = Ext_WM(*x, nu, cov->q[WM_LOGGAMMA], 0.0);
-  assert(!ISNAN(*v));
+  *v = Intern_WM(*x, nu, cov->q[WM_LOGGAMMA], 0.0);
+   assert(!ISNAN(*v));
   //  printf("<< %10g\n", *x);
 }
 
 
-void logWhittle(double *x, model *cov, double *v, double *Sign) {
+void logWhittle(double *x, INFO, model *cov, double *v, double *Sign) {
   double nu = GET_NU;
   *v = logWM(*x, nu, cov->q[WM_LOGGAMMA], 0.0);
   assert(!ISNAN(*v));
@@ -635,51 +646,51 @@ void logWhittle(double *x, model *cov, double *v, double *Sign) {
 }
 
 
-void NonStWhittle(double *x, double *y, model *cov, double *v){ 
-  *v = EXP(logNonStWM(x, y, cov, 0.0));
+void NonStWhittle(double *x, double *y, int *info, model *cov, double *v){ 
+  *v = EXP(logNonStWM(x, y, info, cov, 0.0));
 }
 
-void logNonStWhittle(double *x, double *y, model *cov, double *v, 
+void logNonStWhittle(double *x, double *y, int *info, model *cov, double *v, 
 		     double *Sign){ 
   *Sign = 1.0;
-  *v = logNonStWM(x, y, cov, 0.0);
+  *v = logNonStWM(x, y, info, cov, 0.0);
 }
 
-void DWhittle(double *x, model *cov, double *v) {
-  *v =Ext_DWM(*x, GET_NU, cov->q[WM_LOGGAMMA], 0.0);
+void DWhittle(double *x, INFO, model *cov, double *v) {
+  *v =Intern_DWM(*x, GET_NU, cov->q[WM_LOGGAMMA], 0.0);
 }
 
-void DDWhittle(double *x, model *cov, double *v)
+void DDWhittle(double *x, INFO, model *cov, double *v)
 // check calling functions, like hyperbolic and gneiting if any changings !!
 { 
-  *v=Ext_DDWM(*x, GET_NU, cov->q[WM_GAMMA], 0.0);
+  *v=Intern_DDWM(*x, GET_NU, cov->q[WM_GAMMA], 0.0);
 }
 
 
-void D3Whittle(double *x, model *cov, double *v)
+void D3Whittle(double *x, INFO, model *cov, double *v)
 // check calling functions, like hyperbolic and gneiting if any changings !!
 { 
-  *v=Ext_D3WM(*x, GET_NU,  cov->q[WM_GAMMA], PisNULL(WM_NOTINV) ? 0.0 : SQRT2);
+  *v=Intern_D3WM(*x, GET_NU,  cov->q[WM_GAMMA], PisNULL(WM_NOTINV) ? 0.0 : SQRT2);
 }
 
-void D4Whittle(double *x, model *cov, double *v)
+void D4Whittle(double *x, INFO, model *cov, double *v)
 // check calling functions, like hyperbolic and gneiting if any changings !!
 {
-  *v=Ext_D4WM(*x, GET_NU, cov->q[WM_GAMMA], PisNULL(WM_NOTINV) ? 0.0 : SQRT2);
+  *v=Intern_D4WM(*x, GET_NU, cov->q[WM_GAMMA], PisNULL(WM_NOTINV) ? 0.0 : SQRT2);
 }
 
 void InverseWhittle(double *x, model *cov, double *v){
   double nu = GET_NU;
   *v = *x == 0.05 ?  1.0 / ScaleWM(nu) : RF_NA;
 }
-void nonstatinverseWhittle(double *x, model *cov, double *left, double*right) {
+void inversenonstatWhittle(double *x, model *cov, double *left, double*right) {
   model *nufct = cov->kappasub[WM_NU];
   int dim = PREVTOTALXDIM;
   double inv;
   if (nufct == NULL) InverseWhittle(x, cov, &inv);
   else {
     double nu;
-    FCTN(ZERO(cov), nufct, &nu); // just arbitrarily fixed reference point
+    Zero(nufct, &nu); // just arbitrarily fixed reference point
     inv = RF_NA;
     if (*x == 0.05) inv = 1.0 /  ScaleWM(nu);
   }
@@ -689,11 +700,11 @@ void nonstatinverseWhittle(double *x, model *cov, double *left, double*right) {
   }
 }
 
-void TBM2Whittle(double *x, model *cov, double *v) 
+void TBM2Whittle(double *x, int *info, model *cov, double *v) 
 {
   double nu = GET_NU;
   assert(PisNULL(WM_NOTINV));
-  if (nu == 0.5) TBM2exponential(x, cov, v);
+  if (nu == 0.5) TBM2exponential(x, info, cov, v);
   else BUG;
 }
 
@@ -720,7 +731,7 @@ int initWhittle(model *cov, gen_storage *s) {
 
 void spectralWhittle(model *cov, gen_storage *S, double *e) { 
   spectral_storage *s = &(S->Sspectral);
-  /* see Yaglom ! */
+ /* see Yaglom ! */
   if (PisNULL(WM_NOTINV)) {
     int dim = PREVLOGDIM(0);
     if (dim <= 2) {
@@ -772,8 +783,8 @@ double LogMixDensW(double VARIABLE_IS_NOT_USED *x, double logV, model *cov) {
 //
 // ERR("logmixdensnonstwm not programmed yet");
  /* 
-  double beta = GLOBAL.mpp.beta,
-    p = GLOBAL.mpp.p,
+  double beta = glo bal->mpp.beta,
+    p = gl obal->mpp.p,
     logU;
   if (UNIFORM_RANDOM < p){
     cov_a->WMalpha = beta;
@@ -811,7 +822,7 @@ double LogMixDensW(double VARIABLE_IS_NOT_USED *x, double logV, model *cov) {
   if (Nu == NULL) 
     nu = P(WM_NU][0];
   else 
-     FCTN(x, Nu, &nu);
+     F CTN(x, Nu, &nu);
 
 
    z = - nu  * M_LN2 // in g0  // eine 2 kuerzt sich raus
@@ -852,40 +863,40 @@ double LogMixDensW(double VARIABLE_IS_NOT_USED *x, double logV, model *cov) {
 
 
 
-void Whittle2(double *x, model *cov, double *v) {
-  *v =Ext_WM(*x, GET_NU,  cov->q[WM_LOGGAMMA], 0.0);
+void Whittle2(double *x, INFO, model *cov, double *v) {
+  *v =Intern_WM(*x, GET_NU,  cov->q[WM_LOGGAMMA], 0.0);
   assert(!ISNAN(*v));
 }
 
 
-void logWhittle2(double *x, model *cov, double *v, double *Sign) {
+void logWhittle2(double *x, INFO, model *cov, double *v, double *Sign) {
   double nu = GET_NU;
   *v = logWM(*x, nu, cov->q[WM_LOGGAMMA], 0.0);
   assert(!ISNAN(*v));
   *Sign = 1.0;
 }
 
-void DWhittle2(double *x, model *cov, double *v) {
-  *v =Ext_DWM(*x, GET_NU, cov->q[WM_LOGGAMMA], 0.0);
+void DWhittle2(double *x, INFO, model *cov, double *v) {
+  *v =Intern_DWM(*x, GET_NU, cov->q[WM_LOGGAMMA], 0.0);
 }
 
-void DDWhittle2(double *x, model *cov, double *v)
+void DDWhittle2(double *x, INFO, model *cov, double *v)
 // check calling functions, like hyperbolic and gneiting if any changings !!
 { 
-  *v=Ext_DDWM(*x, GET_NU, cov->q[WM_GAMMA], 0.0);
+  *v=Intern_DDWM(*x, GET_NU, cov->q[WM_GAMMA], 0.0);
 }
 
 
-void D3Whittle2(double *x, model *cov, double *v)
+void D3Whittle2(double *x, INFO, model *cov, double *v)
 // check calling functions, like hyperbolic and gneiting if any changings !!
 { 
-  *v=Ext_D3WM(*x, GET_NU, cov->q[WM_GAMMA], 0.0);
+  *v=Intern_D3WM(*x, GET_NU, cov->q[WM_GAMMA], 0.0);
 }
 
-void D4Whittle2(double *x, model *cov, double *v)
+void D4Whittle2(double *x, INFO, model *cov, double *v)
 // check calling functions, like hyperbolic and gneiting if any changings !!
 { 
-  *v=Ext_D4WM(*x, GET_NU, cov->q[WM_GAMMA], 0.0);
+  *v=Intern_D4WM(*x, GET_NU, cov->q[WM_GAMMA], 0.0);
 }
 
 void InverseWhittle2(double *x, model *cov, double *v){
@@ -1017,7 +1028,7 @@ int initbiWM2(model *cov, gen_storage *stor) {
     *nudiag = P(BInudiag);
   bool check = stor->check;
   bool notinvnu = PisNULL(BInotinvnu) || (bool) P0INT(BInotinvnu);
-  biwm_storage *S = cov->Sbiwm;
+getStorage(S ,   biwm); 
   assert(S != NULL);
   if (S->nudiag_given) {
     kdefault(cov, BInured, 1.0);
@@ -1088,7 +1099,8 @@ int initbiWM2(model *cov, gen_storage *stor) {
     double *s = P(BIs);
     for (int i=0; i<3; s[i++] = 1.0);
   }
-  
+
+  //  printf(" ***********dafds \n");
  
   if  (S->cdiag_given) {
     if (PisNULL(BIrhored))
@@ -1151,7 +1163,7 @@ void kappa_biWM(int i, model *cov, int *nr, int *nc){
     if (i==BInu || i==BIs || i==BIc) *nr = 3;
 }
 
-void biWM2(double *x, model *cov, double *v) {
+void biWM2(double *x, int *info, model *cov, double *v) {
   //v[0] = v[1] = v[2] = v[3] = 0.0; return;
    // printf("xsx"); // ohne 13.8/26.3 mit 17.4 / 34.7
   
@@ -1160,19 +1172,19 @@ void biWM2(double *x, model *cov, double *v) {
     *c = P(BIc),
     *nu = P(BInu),
     xx = *x;
-  biwm_storage *S = cov->Sbiwm;
+getStorage(S ,   biwm); 
   
   assert(S != NULL);
 
   assert(cov->initialised);
 
   for (i=0; i<3; i++) {
-    v[i] = c[i] * Ext_WM(FABS(S->a[i] * xx), S->nunew[i],
+    v[i] = c[i] * Intern_WM(FABS(S->a[i] * xx), S->nunew[i],
 			 cov->q[WM_LOGGAMMA + 2 * i], 0.0);
     if (!PisNULL(BInotinvnu) && nu[i] > MATERN_NU_THRES) {
       double w, y;
       y = FABS(S->aorig[i] * xx * INVSQRTTWO);
-      Gauss(&y, cov, &w);
+      Gauss(&y, info, cov, &w);
       *v = *v * MATERN_NU_THRES / nu[i] + 
 	(1 - MATERN_NU_THRES / nu[i]) * w;
     }
@@ -1186,24 +1198,24 @@ void biWM2(double *x, model *cov, double *v) {
 
 }
 
-void biWM2D(double *x, model *cov, double *v) {
+void biWM2D(double *x, int *info, model *cov, double *v) {
   int i;
   double
     *c = P(BIc),
     *nu = P(BInu),
     xx = *x;
-  biwm_storage *S = cov->Sbiwm;
+getStorage(S ,   biwm); 
   assert(S != NULL);
   assert(cov->initialised);
 
   for (i=0; i<3; i++) {
-    v[i] = c[i] * S->a[i] * Ext_DWM(FABS(S->a[i] * xx), S->nunew[i],
+    v[i] = c[i] * S->a[i] * Intern_DWM(FABS(S->a[i] * xx), S->nunew[i],
 				    cov->q[WM_LOGGAMMA + 2 * i], 0.0);
     if (!PisNULL(BInotinvnu) && nu[i] > MATERN_NU_THRES) {
       double w, y,
 	scale = S->aorig[i] * INVSQRTTWO;
       y = FABS(scale * xx);
-      DGauss(&y, cov, &w);
+      DGauss(&y, info, cov, &w);
       w *= scale;
       *v = *v * MATERN_NU_THRES / nu[i] + 
 	(1 - MATERN_NU_THRES / nu[i]) * w;
@@ -1214,24 +1226,24 @@ void biWM2D(double *x, model *cov, double *v) {
 }
 
 
-void biWM2DD(double *x, model *cov, double *v) {
+void biWM2DD(double *x, int *info, model *cov, double *v) {
   int i;
   double
     *c = P(BIc),
     *nu = P(BInu),
     xx = *x;
-  biwm_storage *S = cov->Sbiwm;
+getStorage(S ,   biwm); 
   assert(S != NULL);
   assert(cov->initialised);
 
   for (i=0; i<3; i++) {
     v[i] = c[i] * S->a[i] * S->a[i] *
-      Ext_DDWM(FABS(S->a[i] * xx), S->nunew[i], cov->q[WM_GAMMA + 2 * i],0.0);
+      Intern_DDWM(FABS(S->a[i] * xx), S->nunew[i], cov->q[WM_GAMMA + 2 * i],0.0);
     if (!PisNULL(BInotinvnu) && nu[i] > MATERN_NU_THRES) {
       double w, y,
     scale = S->aorig[i] * INVSQRTTWO;
       y = FABS(scale * xx);
-      DDGauss(&y, cov, &w);
+      DDGauss(&y, info, cov, &w);
       w *= scale;
       *v = *v * MATERN_NU_THRES / nu[i] +
     (1 - MATERN_NU_THRES / nu[i]) * w;
@@ -1241,24 +1253,24 @@ void biWM2DD(double *x, model *cov, double *v) {
   v[2] = v[i21];
 }
 
-void biWM2D3(double *x, model *cov, double *v) {
+void biWM2D3(double *x,int *info, model *cov, double *v) {
   int i;
   double
     *c = P(BIc),
     *nu = P(BInu),
     xx = *x;
-  biwm_storage *S = cov->Sbiwm;
+getStorage(S ,   biwm); 
   assert(S != NULL);
   assert(cov->initialised);
 
   for (i=0; i<3; i++) {
     v[i] = c[i] * S->a[i] * S->a[i] * S->a[i] *
-      Ext_D3WM(FABS(S->a[i] * xx), S->nunew[i], cov->q[WM_GAMMA + 2 * i], 0.0);
+      Intern_D3WM(FABS(S->a[i] * xx), S->nunew[i], cov->q[WM_GAMMA + 2 * i], 0.0);
     if (!PisNULL(BInotinvnu) && nu[i] > MATERN_NU_THRES) {
       double w, y,
     scale = S->aorig[i] * INVSQRTTWO;
       y = FABS(scale * xx);
-      D3Gauss(&y, cov, &w);
+      D3Gauss(&y, info, cov, &w);
       w *= scale;
       *v = *v * MATERN_NU_THRES / nu[i] +
     (1 - MATERN_NU_THRES / nu[i]) * w;
@@ -1268,26 +1280,26 @@ void biWM2D3(double *x, model *cov, double *v) {
   v[2] = v[i21];
 }
 
-void biWM2D4(double *x, model *cov, double *v) {
+void biWM2D4(double *x, int *info, model *cov, double *v) {
   
   int i;
   double
     *c = P(BIc),
     *nu = P(BInu),
     xx = *x;
-  biwm_storage *S = cov->Sbiwm;
+getStorage(S ,   biwm); 
   assert(S != NULL);
   assert(cov->initialised);
 
   for (i=0; i<3; i++) {
     double Sa2 = S->a[i] * S->a[i];
-    v[i] = c[i] * Sa2 * Sa2 * Ext_D4WM(FABS(S->a[i] * xx), S->nunew[i],
+    v[i] = c[i] * Sa2 * Sa2 * Intern_D4WM(FABS(S->a[i] * xx), S->nunew[i],
 				       cov->q[WM_GAMMA + 2 * i],0.0);
     if (!PisNULL(BInotinvnu) && nu[i] > MATERN_NU_THRES) {
       double w, y,
     scale = S->aorig[i] * INVSQRTTWO;
       y = FABS(scale * xx);
-      D4Gauss(&y, cov, &w);
+      D4Gauss(&y, info, cov, &w);
       w *= scale;
       *v = *v * MATERN_NU_THRES / nu[i] +
     (1 - MATERN_NU_THRES / nu[i]) * w;
@@ -1299,14 +1311,12 @@ void biWM2D4(double *x, model *cov, double *v) {
 }
 
 
-int checkbiWM2(model *cov) { 
+int checkbiWM2(model *cov) {
+
 
   // !! nudiag, nured has priority over nu
   // !! cdiag, rhored has priority over c
   int err;
-  gen_storage s;
-  gen_NULL(&s);
-  s.check = true;
 
   assert(PisNULL(BIrhored) || ISNAN(P0(BIrhored)) || P0(BIrhored) <= 1);
 
@@ -1314,16 +1324,25 @@ int checkbiWM2(model *cov) {
 
   if (cov->Sbiwm == NULL) {
     NEW_STORAGE(biwm);
-    biwm_storage *S = cov->Sbiwm;
+    getStorage(S ,     biwm); 
     S->nudiag_given = !PisNULL(BInudiag);
     S->cdiag_given = !PisNULL(BIcdiag);
   }
 
-  //  PMI(cov);  printf("%d\n", cov->Sbiwm->nudiag_given);
+  getStorage(S ,     biwm); 
+   gen_storage s;
+  gen_NULL(&s);
+  s.check =  !S->donotcheck;
+  
+  //  PMI(cov);
+  //printf("\n\n\sbiwm-rhored %d\n", PisNULL(BIrhored));
+  //  static int zaehler=0;
+  //if ((++zaehler)==3) crash();
+
+  
   if (cov->q == NULL) QALLOC(6);
   if ((err=initbiWM2(cov, &s)) != NOERROR) {
-    biwm_storage *S = cov->Sbiwm;
-    if (S->nudiag_given) {
+   if (S->nudiag_given) {
       PFREE(BInu);
     } else {
       PFREE(BInured);
@@ -1336,17 +1355,19 @@ int checkbiWM2(model *cov) {
       PFREE(BIcdiag);
     }
   }
-
+   S->donotcheck = true;
+ 
   VDIM0 = VDIM1 = 2;  
 
   RETURN_ERR(err);
 }
 
+
 sortsofparam sortof_biwm2(model *cov, int k, int VARIABLE_IS_NOT_USED row,
 			  int VARIABLE_IS_NOT_USED col,
 			  sort_origin origin){
-  biwm_storage *S = cov->Sbiwm;
-  if (S == NULL) return UNKNOWNPARAM;
+  if (cov->Sbiwm == NULL) return UNKNOWNPARAM;
+  getStorage(S ,   biwm); 
 
   /// printf("k=%d %d %d\n", k, origin, original); BUG;
   
@@ -1368,25 +1389,6 @@ sortsofparam sortof_biwm2(model *cov, int k, int VARIABLE_IS_NOT_USED row,
   }
 }
   
-/*
-sortsofparam sortof_biwm2_INisOUT(model *cov, int k, int VARIABLE_IS_NOT_USED row,
-			  int VARIABLE_IS_NOT_USED col){
-  biwm_storage *S = cov->Sbiwm;
-  if (S == NULL) return UNKNOWNPARAM;
-  switch(k) {
-  case BInudiag : return S->nudiag_given ? CRITICALPARAM : CRITONLYMLE;
-  case BInured :  return S->nudiag_given ? CRITICALPARAM : CRITONLYMLE;
-  case BInu :     return S->nudiag_given ? IGNOREPARAM : ONLYRETURN;
-  case BIcdiag :  return S->cdiag_given ? VARPARAM : VARONLYMLE;
-  case BIrhored : return S->cdiag_given ? ANYPARAM : ONLYMLE;
-  case BIc :      return S->cdiag_given ? IGNOREPARAM : ONLYRETURN;
-  case BIs :      return SCALEPARAM;
-  case BInotinvnu :return ONLYRETURN;
-  default : BUG;
-  }
-}
-  
-*/
  
 void rangebiWM2(model VARIABLE_IS_NOT_USED *cov, range_type *range){
 
@@ -1452,7 +1454,7 @@ void rangebiWM2(model VARIABLE_IS_NOT_USED *cov, range_type *range){
 
 
 
-void coinitbiWM2(model *cov, localinfotype *li) {
+void coinitbiWM2(model *cov, localfactstype *li) {
   double
     thres = 1.5,
     //         *c = P(BIc),
@@ -1522,7 +1524,7 @@ int initparsWM(model *cov, gen_storage VARIABLE_IS_NOT_USED  *s) {
   RETURN_NOERROR;
 }
 
-void parsWM(double *x, model *cov, double *v) {
+void parsWM(double *x, INFO, model *cov, double *v) {
   int i, j, vdiag,
     vdim = VDIM0,
     vdim2 = vdim * vdim,
@@ -1536,13 +1538,13 @@ void parsWM(double *x, model *cov, double *v) {
       double half = 0.5 * (nudiag[i] + nudiag[j]);      
       int idx = vdiag + j - i;
       v[idx] = v[vdiag + vdim * (j-i)] = cov->q[PARSWM_V + idx] *
-	Ext_WM(*x, half, cov->q[idx], 0.0);
+	Intern_WM(*x, half, cov->q[idx], 0.0);
     }
   }
 }
 
 
-void parsWMD(double *x, model *cov, double *v) {
+void parsWMD(double *x, INFO, model *cov, double *v) {
   int i, j, vdiag,
     vdim = VDIM0,
     vdim2 = vdim * vdim,
@@ -1554,7 +1556,7 @@ void parsWMD(double *x, model *cov, double *v) {
       double half = 0.5 * (nudiag[i] + nudiag[j]);      
       int idx = vdiag + j - i;
       v[idx] = v[vdiag + vdim * (j-i)] = cov->q[PARSWM_V + idx] *
-	Ext_DWM(*x, half, cov->q[idx], 0.0);
+	Intern_DWM(*x, half, cov->q[idx], 0.0);
     }
   }
 }

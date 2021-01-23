@@ -81,11 +81,6 @@ typedef char errorloc_type[nErrorLoc];
 #define LOCAL_ERROR(N) {}
 #endif
 
-
-// #define ERRMSG(X) if (PL>=PL_ERRORS){errorMSG(X,MSG); PRINTF("error: %s%s\n",ERROR_LOC,MSG);}
-
-
-
 #ifdef SCHLATHERS_MACHINE
   #ifdef ERRLINE0
     #undef ERRLINE0

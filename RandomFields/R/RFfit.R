@@ -157,7 +157,7 @@ summary.RMmodelFit <- function(object, ..., isna.param) {
   }
 
   for (i in c("covariat", "globalvariance", "param", "residuals", "variab",
-              "likelihood", "AIC", "AICc", "BIC", "coordsystem"))
+              "likelihood", "AIC", "AICc", "BIC", "coordsystem", "params.list"))
     assign(i, do.call(OP, list(object, i)))
 #  covariat <- do.call(OP, list(object, "covariat"))
 #  globalvariance <- do.call(OP, list(object, "globalvariance"))
@@ -189,6 +189,7 @@ summary.RMmodelFit <- function(object, ..., isna.param) {
                        if (length(covariat) > 0)
                          rbind(covariat, matrix(NA, ncol=ncol(covariat),
                                                 nrow= nr_p - nrow(covariat))))
+      l$params.list <- params.list
     }
 
     cartesian == all(coordsystem == "cartesisan")
@@ -246,7 +247,7 @@ print.summary.RMmodelFit <- function(x, ...) {
     cat("\n")
   }
 
-  if (RFoptions()$general$detailed_output) str(x$model, no.list=TRUE) #
+  if (RFoptions(GETOPTIONS="general")$detailed_output) str(x$model, no.list=TRUE) #
   cat("\n")
   np <- AIC <- ll <- nm <- NA
   cparam <- NULL
@@ -322,6 +323,9 @@ print.summary.RMmodelFit <- function(x, ...) {
     if (length(x$param) > 0) np <- printParam(x$param, x$coordsystem)
     printRest(np, x[c("loglikelihood", "AIC")])#
     if (!is.null(x$boundary)) cat(x$boundary, "\n\n")
+    class(x) <- NULL
+##    Print(x)
+##    Print(x$params.list)
   } else {
     cat("The model does not have a parameter to fit.\n")
   }
@@ -520,12 +524,15 @@ contour.RFfit <- contour.RFempVariog <-
 
 ExpliciteGauss <- function(model) {
   if (model[[1]] != "RPgauss" && model[[1]] != "gauss.process") {
-    boxcox <- RFoptions()$gauss$boxcox
+    boxcox <- getRFoptions("gauss")$boxcox
     if (any(is.na(boxcox)) || any(boxcox[c(TRUE, FALSE)] != Inf))
       return(list("RPgauss", boxcox=boxcox, model))
   }
   return(model)
 }
+
+
+
 
 RFfit <- function(model, x, y=NULL, z=NULL, T=NULL,  grid=NULL, data, 
            lower=NULL, upper=NULL, 
@@ -536,7 +543,6 @@ RFfit <- function(model, x, y=NULL, z=NULL, T=NULL,  grid=NULL, data,
            optim.control=NULL,
            users.guess=NULL,  
            distances=NULL, dim,
-           transform=NULL,
            params=NULL,
             ##type = c("Gauss", "BrownResnick", "Smith", "Schlather",
            ##             "Poisson"),
@@ -545,13 +551,11 @@ RFfit <- function(model, x, y=NULL, z=NULL, T=NULL,  grid=NULL, data,
 
   .C(C_NoCurrentRegister)
 
-  RFoptOld <-
-    internal.rfoptions(xyz=length(y)!=0,...,
-                       fit.addNAlintrend = 2,
-                       internal.examples_reduced = FALSE)
+  RFopt <-internalRFoptions(xyz=length(y)!=0,..., fit.addNAlintrend = 2,
+                            internal.examples_reduced = FALSE,
+                            messages.warn_singlevariab=FALSE)
+  if (!hasArg("COPY")) on.exit(optionsDelete(RFopt))
   
-  on.exit(RFoptions(LIST=RFoptOld[[1]]))
-  RFopt <- RFoptOld[[2]]
   if (length(params) > 0) {
     if ((!is.na(RFopt$fit$estimate_variance_globally) &&
          RFopt$fit$estimate_variance_globally) &&
@@ -561,7 +565,7 @@ RFfit <- function(model, x, y=NULL, z=NULL, T=NULL,  grid=NULL, data,
     RFoptions(fit.estimate_variance_globally = FALSE)
   }
   fit <- RFopt$fit
-  
+
   if (RFopt$general$vdim_close_together)
     stop("'vdim_close_together' must be FALSE")
 
@@ -569,49 +573,28 @@ RFfit <- function(model, x, y=NULL, z=NULL, T=NULL,  grid=NULL, data,
   ## are turned into genuine models 
   further.models <- list()
   models <- c("lower", "upper", "users.guess", "parscale")
-  if (paramlist <- length(params) > 0) {
-    parscale <- optim.control$parscale
+  parscale <- optim.control$parscale ## could be given by RMmodel!!
+  if (paramlist <- length(params) > 0)
     for (m in models) further.models[[m]] <- get(m)
-    ## names(further.models) <- models
-  }
 
-  ##  Print(further.models, list(...))
-  
+##  Print(model, if(!missing(x)) x)
+
   Z <- UnifyData(model=model, x=x, y=y, z=z, T=T, grid=grid,
                  data=data, distances=distances, dim=dim,
                  RFopt=RFopt,
-                 mindist_pts = RFopt$fit$smalldataset / 2,
-		 further.models = further.models,
-                 params=params,
+ 		 further.models = further.models,
+                 model.dependent.further.models = paramlist,
+                 params=params, return_transform=TRUE,
                  ...)
 
-  ## Print(Z$further.models);
-
-  ## TO DO
-  ##  Print(Z); 
+#  Print(Z)
  
-#  Z <- BigDataSplit(Z, RFopt)   
+  Z[c("rangex", "mindist", "maxdist")] <-
+    GetRanges(Z, RFopt$fit$smalldataset / 2)
   
-  if (!hasArg("transform")) transform <- NULL
-  if (paramlist) {
-    for (m in models) 
-      if (!is.null(get(m)) && !is.numeric(get(m)))
-        assign(m, Z$further.models[[m]])
-    optim.control$parscale <- parscale
-    if (!is.null(Z$transform)) {
-      if (!is.null(transform))
-        stop("argument 'transform' may not be given if 'params' is given")
-      transform <- Z$transform
-    }
-  } else {    
-    parscale <- optim.control$parscale
-    for (m in models)
-      if (!is.null(get(m)) && !is.numeric(get(m)))
-        assign(m, ReplaceC(PrepareModel2(get(m), ...,
-                                         return_transform=FALSE)$model))
-    optim.control$parscale <- parscale
-  }
-
+  for (m in models)  ## 6.1.20 somewhere ReplaceC??
+    if (!is.null(get(m)) && !is.numeric(get(m))) assign(m,Z$further.models[[m]])
+  optim.control$parscale <- parscale ## transformed parscale
 
   new.model <- Z$model
   if (new.model[[1]] %in% c("RPpoisson", "poisson")) {
@@ -632,17 +615,20 @@ RFfit <- function(model, x, y=NULL, z=NULL, T=NULL,  grid=NULL, data,
     type <- "bernoulli"
   } else {   
     Z$model <- ExpliciteGauss(ReplaceC(Z$model))
-    if (!is.null(transform)) RFoptions(fit.estimate_variance_globally = FALSE)
-      res <- do.call("rffit.gauss",
-            c(list(Z, lower=lower, upper=upper, users.guess=users.guess,  
-                   optim.control=optim.control,
-                   transform=transform,
-                   recall = FALSE),
-              if (!missing(methods))  list(mle.methods = methods),
-              if (!missing(sub.methods)) list(lsq.methods=sub.methods)
-              ## "internal" : name should not be changed; should always
-              ## be last method!
-              ))
+    if (!is.null(Z$transform) && fit$estimate_variance_globally &&
+        !hasArg("fit.estimate_variance_globally") &&
+        !hasArg("estimate_variance_globally")) {
+      stop("Since a transform of the parameters to be estimated is given, the parameter 'estimate_variance_globally=TRUE' might be faulty. On the user's full responsibility, the user might set 'estimate_variance_globally=TRUE' explicitely within the current function call.")
+    }
+    res <- do.call("rffit.gauss",
+                   c(list(Z, lower=lower, upper=upper, users.guess=users.guess,
+                          optim.control=optim.control,
+                          recall = FALSE),
+                     if (!missing(methods))  list(mle.methods = methods),
+                     if (!missing(sub.methods)) list(lsq.methods=sub.methods)
+                     ## "internal" : name should not be changed; should always
+                     ## be last method!
+                     ))
     type <- "gauss"
   }
   if (is.null(res)) return(res)

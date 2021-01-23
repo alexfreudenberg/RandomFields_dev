@@ -30,8 +30,8 @@ as.matrix.RFempVariog <- function(x, ...) {
   z
 }
 
-as.array.RFempVariog <-
-  as.array.RFspatialGridDataFrame <- function(x, ...) {
+
+as.array.RFempVariog <- function(x, ...) {
     z <- as.matrix(if (is.list(x)) x$empirical else x@empirical)    
     dim <- dim(z)
     dim <- dim[dim > 1]
@@ -39,8 +39,7 @@ as.array.RFempVariog <-
     dim(z) <- dim
   }
 
-as.vector.RFempVariog <-
-  as.vector.RFspatialGridDataFrame <- function(x, ...) {
+as.vector.RFempVariog <- function(x, ...) {
     as.vector(as.array.RFempVariog(x))
   }
 
@@ -105,10 +104,11 @@ setAs(CLASS_FITLIST, CLASS_EMPIR, def=function(from) from@ev)
 ## plot method
 
 
+## derzeit nicht genutzt:
 plotRFempVariogUnbinned <- function(x, coordunits, varunits, varnames,
                                     legend, ..., plotmethod="plot") {
   stop("currently not used ") # !!
-  graphics <- RFoptions()$graphics
+  graphics <- RFoptions(GETOPTIONS="graphics")
   dots = mergeWithGlobal(list(...))
   dotnames <- names(dots)
   coords <- GridTopology2gridVectors(cbind(x@centers$x, x@centers$T))  
@@ -217,7 +217,7 @@ RFplotEmpVariogram <- function(x, model = NULL, nmax.phi = NA, nmax.theta = NA,
   ##  print(model)
 
   dotnames <- names(dots)
-  graphics <- RFoptions()$graphics
+  graphics <- RFoptions(GETOPTIONS="graphics")
   OP <- c("$", "@")[1 + isS4(x)]
   newx <- list()
   fitmethod.names <- character(0)

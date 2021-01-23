@@ -37,11 +37,11 @@ void setpDef(int VARIABLE_IS_NOT_USED  i,
 	     SEXP VARIABLE_IS_NOT_USED  el,
 	     char VARIABLE_IS_NOT_USED  name[LEN_OPTIONNAME], 
 	     bool VARIABLE_IS_NOT_USED  isList,
-	     int VARIABLE_IS_NOT_USED local) {
+	     bool VARIABLE_IS_NOT_USED local) {
   BUG;
 }
 void getpDef(SEXP VARIABLE_IS_NOT_USED  sublist, int VARIABLE_IS_NOT_USED i,
-	     int VARIABLE_IS_NOT_USED local) {
+	     bool VARIABLE_IS_NOT_USED local) {
   BUG;
 }
 
@@ -63,18 +63,18 @@ finalsetparameterfct finalparam[MAXNLIST] = { NULL, NULL, NULL, NULL, NULL };
 deleteparameterfct delparam[MAXNLIST] = { NULL, NULL, NULL, NULL, NULL };
 
 
-void hintVariable(char *name) {
-  if (GLOBAL.basic.warn_unknown_option > 0) {
+void hintVariable(char *name, int warn_unknown_option) {
+  if (warn_unknown_option > 0) {
     PRINTF("'%s' is considered as a variable (not as an option).\n", name);
     if (GLOBAL.basic.helpinfo) {
-      PRINTF("(This hint can be turned off by 'RFoptions(%s=-2)",
-	     basic[BASIC_WARN_OPTION]);
+      PRINTF("[This hint can be turned off by 'RFoptions(%s=-%d)'.]\n",
+	     basic[BASIC_WARN_OPTION], warn_unknown_option);
     }
   }
 }
 
 void setparameter(SEXP el, char *prefix, char *mainname, bool isList,
-		  getlist_type *getlist, int local) {  
+		  getlist_type *getlist, int warn_unknown_option, bool local) {
   int 
     j = NOMATCHING,
     i = NOMATCHING,
@@ -118,17 +118,17 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList,
       if (j != NOMATCHING) break;
     }
     if (j==NOMATCHING) {
-      switch(GLOBAL.basic.warn_unknown_option) {
+      switch(warn_unknown_option) {
       case WARN_UNKNOWN_OPTION_NONE : return;
       case WARN_UNKNOWN_OPTION_CAPITAL : case -WARN_UNKNOWN_OPTION_CAPITAL :
 	if (name[0] >= 'A' && name[1] <= 'Z') {
-	  hintVariable(name);
+	  hintVariable(name, warn_unknown_option);
 	  return;
 	}
 	break;
       case WARN_UNKNOWN_OPTION_SINGLE : case -WARN_UNKNOWN_OPTION_SINGLE :
 	if (STRLEN(name) == 1 && name[0] >= 'A' && name[1] <= 'Z') {
-	  hintVariable(name);
+	  hintVariable(name, warn_unknown_option);
 	  return;
 	}
 	break;
@@ -178,7 +178,7 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList,
 }
 
 
-SEXP getRFoptions(int ListNr, int i, int local) {
+SEXP getRFoptions(int ListNr, int i, bool local) {
   SEXP sublist, subnames;
   int elmts = AllallN[ListNr][i];
   PROTECT(sublist = allocVector(VECSXP, elmts));
@@ -193,7 +193,7 @@ SEXP getRFoptions(int ListNr, int i, int local) {
   return sublist;
 }
 
-SEXP getRFoptions(int local) {
+SEXP getRFoptions(bool local) {
   SEXP list, names;
  
   int  prefixN, totalN, i, ListNr,
@@ -250,7 +250,7 @@ void getListNr(bool save, int t, int actual_nbasic, SEXP which,
 }
 
   
-SEXP getRFoptions(SEXP which, getlist_type *getlist, bool save, int local) {
+SEXP getRFoptions(SEXP which, getlist_type *getlist, bool save, bool local) {
   
   int ListNr, idx,
     actual_nbasic = nbasic_options * save,
@@ -277,7 +277,7 @@ SEXP getRFoptions(SEXP which, getlist_type *getlist, bool save, int local) {
 
 
 void splitAndSet(SEXP el, char *name, bool isList, getlist_type *getlist,
-		 int local) {
+		 int warn_unknown_option, bool local) {
   int i, len;
   char prefix[LEN_OPTIONNAME / 2], mainname[LEN_OPTIONNAME / 2];   
   //  printf("splitandset\n");
@@ -295,7 +295,7 @@ void splitAndSet(SEXP el, char *name, bool isList, getlist_type *getlist,
   // 
   //  printf("i=%d %d %.50s %.50s\n", i, len, prefix, mainname);
   setparameter(el, prefix, mainname, isList && GLOBAL.basic.asList, getlist,
-	       local);
+	       warn_unknown_option, local);
   //   printf("ende\n");
 }
 
@@ -307,9 +307,9 @@ SEXP RFoptions(SEXP options) {
   char *name, *pref;
   bool isList = false;
   int
-    n_protect = 0,
-    local = isGLOBAL;
-  
+    warn_unknown_option = GLOBAL.basic.warn_unknown_option,
+    n_protect = 0;
+  bool local = false;
 
     /* 
      In case of strange values of a parameter, undelete
@@ -317,42 +317,43 @@ SEXP RFoptions(SEXP options) {
   */
 
   
-  // printf("start %d %d\n", GLOBAL.basic.warn_unknown_option, options == R_NilValue);
   options = CDR(options); /* skip 'name' */
 
   // printf(" %d %d\n", GLOBAL.basic.warn_unknown_option, options == R_NilValue);
-  if (options == R_NilValue) return getRFoptions(local); 
-
-  
-  //  printf("hierA %d\n", isNull(TAG(options)));
- 
-  if (isNull(TAG(options))) name = (char*) ""; // (char*)
-  else name = (char*) CHAR(PRINTNAME(TAG(options)));
-  
-  //printf("hierB, %d\n", STRCMP(name, "LOCAL"));
-  if (STRCMP(name, "LOCAL")==0) {
-    el = CAR(options);
-    local = INT;
-    options = CDR(options); /* skip 'name' */
-    if (isNull(TAG(options))) name = (char*) "";
-    else name = (char*) CHAR(PRINTNAME(TAG(options)));
+  name = (char*) "";
+  if (options != R_NilValue) {
+    if (!isNull(TAG(options))) name = (char*) CHAR(PRINTNAME(TAG(options)));
+    if (STRCMP(name, "LOCAL")==0) {
+      el = CAR(options);
+      local = (bool) INT;
+      options = CDR(options); /* skip 'name' */
+     }
   }
-
-  //printf("hier\n");
   
+  if (options == R_NilValue || STRCMP(name, "") ==0)
+    return getRFoptions(local);
+ 
+  if (!isNull(TAG(options))) name = (char*) CHAR(PRINTNAME(TAG(options)));
+  if (STRCMP(name, "WARN_UNKNOWN")==0) {
+    el = CAR(options);
+    warn_unknown_option = INT;
+    options = CDR(options); /* skip 'name' */
+   }
+
+  if (!isNull(TAG(options))) name = (char*) CHAR(PRINTNAME(TAG(options)));
   if ((isList = STRCMP(name, "LIST")==0)) {   
-    //   printf("isList\n");
     list = CAR(options);
     if (TYPEOF(list) != VECSXP)
       ERR1("'LIST' needs as argument the output of '%.50s'", RFOPTIONS);
     PROTECT(names = getAttrib(list, R_NamesSymbol));
     lenlist = length(list);
-    for (i=0; i<lenlist; i++) {
+
+    if (lenlist > 0 && !local && parallel())
+      ERR("'RFoptions' may be used only outside any parallel code.");
+
+   for (i=0; i<lenlist; i++) {
       int len;
       pref = (char*) CHAR(STRING_ELT(names, i));  
-
-      //     printf("%d %.50s\n", i, pref);
-
       sublist = VECTOR_ELT(list, i);
       len = STRLEN(pref);
       for (j=0; j < len && pref[j]!='.'; j++);
@@ -363,28 +364,21 @@ SEXP RFoptions(SEXP options) {
 	PROTECT(subnames = getAttrib(sublist, R_NamesSymbol));
 	for (j=0; j<lensub; j++) {
 	  name = (char*) CHAR(STRING_ELT(subnames, j));
-
-
-	  //    print("%d %d %.50s : %10g %10g\n", i, j, name,
-	  //	     GLOBAL.gauss.exactness, GLOBAL.TBM.linesimustep);	  
-	  //
-	  //	  printf("  %d %d pref=%.50s name=%.50s\n", i, j, pref, name);
-
-
+	  // printf("Lxx '%s' %d %d %d local=%d\n", name, isList, i,j, local);
 	  setparameter(VECTOR_ELT(sublist, j), pref, name, 
-		       isList & GLOBAL.basic.asList, NULL, local);
+		       isList & GLOBAL.basic.asList, NULL, warn_unknown_option,
+		       local);
 	}
 	UNPROTECT(1);
       } else {   
-	splitAndSet(sublist, pref, isList, NULL, local);
+	splitAndSet(sublist, pref, isList, NULL, warn_unknown_option, local);
       }
     }
     UNPROTECT(1);
-    //    print("end1 %10g\n", GLOBAL.TBM.linesimufactor);
   } else {    
     getlist_type *getlist = NULL;
     bool save;
-    if ((save = STRCMP(name, "SAVEOPTIONS") ==0 ) ||
+    if ((save = STRCMP(name, "SAVEOPTIONS")==0 ) ||
 	STRCMP(name, "GETOPTIONS")==0) {
       SEXP getoptions = CAR(options);
       options = CDR(options);
@@ -398,34 +392,32 @@ SEXP RFoptions(SEXP options) {
       PROTECT(ans = getRFoptions(getoptions, getlist, save, local));
       n_protect++;
     }
-    //    printf("iok %d\n", length(CAR(options)));
-    for(i = 0; options != R_NilValue; i++, options = CDR(options)) {     
-      //       printf("set opt i=%d\n", i);
+
+    if (options != R_NilValue && !local && parallel())
+      ERR("'RFoptions(...)' may be used only outside any parallel code");
+
+    for(i = 0; options != R_NilValue; i++, options = CDR(options)) {
+      //printf("set opt i=%d\n", i);
       el = CAR(options);
-      if (isNull(TAG(options))) name = (char*) "";
-      else name = (char*) CHAR(PRINTNAME(TAG(options)));
-      //      printf("AAxx %s %d %ld\n", name, isList);
-      //      printf("%ld\n", REAL(el));
-      splitAndSet(el, name, isList, getlist, local);
-      //printf("yy %s %d\n", name, isList);
+      if (!isNull(TAG(options))) {
+	name = (char*) CHAR(PRINTNAME(TAG(options)));
+	//printf("AAxx '%s' %d %d local=%d\n", name, isList, i, local);
+	splitAndSet(el, name, isList, getlist, warn_unknown_option, local);
+      }
     }
     FREE(getlist);
-    //    printf("end2\n");
   }
 
 
-  //  printf("Nlist = %d %ld %ld\n", NList, ans, R_NilValue);
   for (i=0; i<NList; i++)
     if (finalparam[i] != NULL) {
-      finalparam[i](local);
+      finalparam[i]();
     }
 
   if (n_protect > 0) UNPROTECT(n_protect);
   
   GLOBAL.basic.asList = true;
-
-  // printf("Ende\n");
-  
+ 
   return(ans);
 } 
  
@@ -477,7 +469,7 @@ void detachRFoptions(const char **prefixlist, int N) {
 	prefixlist[0]);
   }
 
-  if (delparam[ListNr] != NULL) delparam[ListNr](isGLOBAL);
+  if (delparam[ListNr] != NULL) delparam[ListNr](false);
   
   int i;
   for (i=0; i<nbasic_options ; i++)

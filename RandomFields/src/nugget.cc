@@ -42,12 +42,14 @@ bool equal(model *cov, int i, int j, double *X, int dim) {
     dist += dummy * dummy;
   }
   dist = SQRT(dist);
-  nugget(&dist, cov, &v); // allows tolerance
+  DEFAULT_INFO(info);
+  nugget(&dist, info, cov, &v); // allows tolerance
   return v==1.0;
 }
 
 
 bool HasAniso(model *cov, bool checkzonal) {
+  globalparam *global = &(cov->base->global);
   assert(isAnyNugget(cov));
   cov = cov->calling;
   if (cov == NULL) return false;
@@ -71,9 +73,10 @@ bool HasAniso(model *cov, bool checkzonal) {
   //  printf("ans = %d\n",ans);
   
   if (ans && checkzonal) {
-    location_type *loc=PrevLoc(cov);
-    if (!GLOBAL.internal.allow_duplicated_loc
-	&& (loc->grid || !GLOBAL.internal.allow_duplicated_loc)) { // guarantees
+    location_type *loc=LocPrev(cov);
+    if (global->general.duplicated_loc != DUPLICATEDLOC_REPEATED
+	//	&& (loc->grid || !global->general.duplicated_loc)
+	) { // guarantees
       // that all locations are distinct!
       // now check whether the anisotropy matrix has full rank. If so,
       // all locations remain distinct after transformation and
@@ -94,21 +97,22 @@ bool HasAniso(model *cov, bool checkzonal) {
 
 
 bool SpatialNugget(model *cov) {
+  globalparam *global = &(cov->base->global);
   /* 
      What the definition of in the user interface says;
-     * if !GLOBAL.internal.allow_duplicated_loc : only SpatialNugget allowed
+     * if !glo bal->general.duplicated_loc : only SpatialNugget allowed
      * if distance values given: only SpatialNugget allowed (see convert.R)
      * if Aniso/proj is given in the preceding $: it is a SpatialNugget even if
-       GLOBAL.internal.allow_duplicated_loc=true
+       glo bal->general.duplicated_loc=true
      NOTE THAT ONLY THE PRECEDING DOLLAR IS CHECKED, not 
      other ones -- so the latter do not influence the behaviour 
      of the nugget effect 
   */
-  if (!GLOBAL.internal.allow_duplicated_loc ||
+  if (global->general.duplicated_loc != DUPLICATEDLOC_REPEATED ||
     // note: in convert.R it is guaranteed that distances are > 0!
     // so it is a spatial nugget although
-    // GLOBAL.internal.allow_duplicated_loc = true
-      (isProcess(cov) && DistancesGiven(cov) && isAnyIsotropic(OWNISO(0))))
+    // glob al->general.duplicated_loc = true
+      (isProcess(cov) && LocDist(cov) && isAnyIsotropic(OWNISO(0))))
     return true;
   return HasAniso(cov, false);
 }
@@ -122,20 +126,20 @@ bool SimuSpatialNugget(model *cov) {
         in convert.R!) -- note vector valued distances might also be given
      * does not have an ansiotropy matrix that is zonal
 
-     * if !GLOBAL.internal.allow_duplicated_loc : only SpatialNugget allowed
+     * if !glob al->general.duplicated_loc : only SpatialNugget allowed
      * if Aniso/proj is given the preceding $: it is a SpatialNugget even if
-       GLOBAL.internal.allow_duplicated_loc=true
+       glo bal->general.duplicated_loc=true
     NOTE THAT ONLY THE PRECEDING DOLLAR IS CHECKED, not 
      other ones -- so the latter do not influence the behaviour 
      of the nugget effect 
   */   
-  if (isProcess(cov) && DistancesGiven(cov) && isAnyIsotropic(OWNISO(0)))
+  if (isProcess(cov) && LocDist(cov) && isAnyIsotropic(OWNISO(0)))
     return false; // simulate as if was a measurement Error
   return HasAniso(cov, true);
 }
 
 /* nugget effect model */
-void nugget(double *x, model *cov, double *v) {
+void nugget(double *x, INFO, model *cov, double *v) {
 double same = (*x <= P0(NUGGET_TOL)) ? 1.0 : 0.0;
   int i, endfor,
     vdim   = VDIM0,
@@ -156,13 +160,15 @@ double same = (*x <= P0(NUGGET_TOL)) ? 1.0 : 0.0;
 }
 
 
-void nuggetnonstat(double *x, double *y, model *cov, double *v) {
+void nonstat_nugget(double *x, double *y, int *info, model *cov, double *v) {
   // printf("nonstat: spatial nugget effect %d %d\n", cov->Snugget->spatialnugget, cov->Snugget->simuspatialnugget);
   int i, endfor,
-    dim = ANYDIM, //  OWNXDIM(0)
+    dim = OWNXDIM(0),
     vdim   = VDIM0,
     vdimsq = vdim * vdim;
-  double same = (*x == 0.0 && y == NULL) || x[dim] == y[dim]//identical by index
+  double same = (*x == 0.0 && y == NULL) ||
+    (info[INFO_IDX_X] == info[INFO_IDX_Y] &&
+     info[INFO_EXTRA_DATA_X] == info[INFO_EXTRA_DATA_Y])//identical by index
     ? 1.0 : 0.0;
   assert(VDIM0 == VDIM1);
   assert(!cov->Snugget->spatialnugget);
@@ -172,16 +178,13 @@ void nuggetnonstat(double *x, double *y, model *cov, double *v) {
     endfor = i + vdim;
     for (; i<endfor; v[i++] = 0.0);
   }
-  //  printf("%10g %10g %d\n", *x, *v, PisNULL(NUGGET_TOL));
 }
 
 
-void covmatrix_nugget(model *cov, double *v) {
-  location_type *loc = Loc(cov);
-  int 
-    vdim   = VDIM0;
+void covmatrix_nugget(model *cov, bool ignore_y, double *v) {
+  int vdim   = VDIM0;
   Long i,
-    n = loc->totalpoints * vdim,
+    n = LoctotalpointsY(cov, ignore_y) * vdim,
     nP1 = n + 1,
     n2 = n * n;
   
@@ -198,7 +201,7 @@ void inverse_nugget(double VARIABLE_IS_NOT_USED *x, model VARIABLE_IS_NOT_USED *
   *v = 0.0; ///(*x==1.0) ? 0.0 : RF_INF; //or better 0.0 => error?
 }
 
-void nonstatinverse_nugget(double VARIABLE_IS_NOT_USED *x, model *cov,
+void inversenonstat_nugget(double VARIABLE_IS_NOT_USED *x, model *cov,
 			   double *left, double*right) {
   int dim = PREVTOTALXDIM;
   //  printf("\n\n\n\n\n\n\n XXXXXXXXXXXXXXXXXXXx dim=%d \n\n\n\n", dim);
@@ -207,9 +210,10 @@ void nonstatinverse_nugget(double VARIABLE_IS_NOT_USED *x, model *cov,
 }
 
 int check_nugget(model *cov) {
+ globalparam *global = &(cov->base->global);
 #define nsel 4
   int  err ; // taken[MAX DIM],
-  nugget_param *gp  = &(GLOBAL.nugget);
+  nugget_param *gp  = &(global->nugget);
 
   assert(equalsNugget(COVNR));
   if (!hasAnyEvaluationFrame(cov) && !hasAnyProcessFrame(cov)) ILLEGAL_FRAME;
@@ -226,10 +230,11 @@ int check_nugget(model *cov) {
  
   if (cov->Snugget == NULL) {
     NEW_STORAGE(nugget);
+    NEWSTOMODEL;
     cov->Snugget->spatialnugget = SpatialNugget(cov);
   }
 
-  if (!GLOBAL.internal.allow_duplicated_loc) {
+  if (global->general.duplicated_loc != DUPLICATEDLOC_REPEATED) {
     for (int i=CircEmbed; i<Nothing; i++)
       cov->pref[i] = (cov->pref[i] > 0) * PREF_BEST;
 
@@ -262,6 +267,7 @@ void range_nugget(model VARIABLE_IS_NOT_USED *cov, range_type *range) {
 Types Typenugget(Types required, model *cov, isotropy_type requ_iso){
   if (cov->Snugget == NULL) {
     NEW_STORAGE(nugget);
+    NEWSTOMODEL;
     cov->Snugget->spatialnugget = SpatialNugget(cov);
   }
   if (cov->Snugget->spatialnugget || equalsCoordinateSystem(requ_iso) ||
@@ -279,7 +285,8 @@ bool setnugget(model *cov) {
 
   if (cov->Snugget == NULL) {
     NEW_STORAGE(nugget);
-    cov->Snugget->spatialnugget = SpatialNugget(cov);
+     NEWSTOMODEL;
+   cov->Snugget->spatialnugget = SpatialNugget(cov);
   }
 
   if (cov->Snugget->spatialnugget) {
@@ -297,18 +304,23 @@ bool setnugget(model *cov) {
 bool allowedDnugget(model *cov) {
   if (cov->Snugget == NULL) {
     NEW_STORAGE(nugget);
-    cov->Snugget->spatialnugget = SpatialNugget(cov);
+    NEWSTOMODEL;
+   cov->Snugget->spatialnugget = SpatialNugget(cov);
   }
+  GETSTORAGE(S, cov, nugget);
+  assert(S->spatialnugget);
+   
   bool *D = cov->allowedD;
   for (int i=FIRST_DOMAIN; i<LAST_DOMAINUSER; D[i++]=false);
-  D[cov->Snugget->spatialnugget ? XONLY : KERNEL] = true;
+  D[S->spatialnugget ? XONLY : KERNEL] = true;
   return false;
 }
   
 bool allowedInugget(model *cov) {
   if (cov->Snugget == NULL) {
     NEW_STORAGE(nugget);
-    cov->Snugget->spatialnugget = SpatialNugget(cov);
+     NEWSTOMODEL;
+   cov->Snugget->spatialnugget = SpatialNugget(cov);
   }
   bool *I = cov->allowedI;
   for (int i=(int) FIRST_ISOUSER; i<=(int) LAST_ISOUSER; I[i++] = false);
@@ -331,12 +343,13 @@ int check_nugget_proc(model *cov) {
     *intern;
   int err;
 
-  nugget_storage *s = cov->Snugget;
-  if (s == NULL) {
+  if (cov->Snugget == NULL) {
     NEW_STORAGE(nugget);
-    s = cov->Snugget;
+    NEWSTOMODEL;
+    getStorage(s ,   nugget); 
     s->spatialnugget = SpatialNugget(cov);
   }
+  getStorage(s ,   nugget); 
 
   if (key == NULL) { 
     intern = sub;
@@ -430,17 +443,25 @@ void range_nugget_proc(model VARIABLE_IS_NOT_USED *cov, int k, int i, int j,
 // uses global RANDOM !!!
 int init_nugget(model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
 #define INTERNAL_ERR -99999
-  location_type *loc=PrevLoc(cov);
+
+  model *next = cov->sub[0];
+  // ACHTUNG LocDelete unten gefaehrlich
+  // next darf ja nie auf cov->ownloc zugreifen.
+  // (hier ok, da eh alle parameter von unten hoch kopiert wird)
+  
+  location_type *loc=LocPrev(cov);
   int dim = OWNXDIM(0);
 
   //  printf("init nugget\n");
  
   if (cov->ownloc!=NULL) {
-    LOC_DELETE(&(cov->ownloc));
+    // normalerweise init nur 1x aufgerufen...
+    LOC_DELETE(&(cov->ownloc)); // OK, aber nicht ganz unkritisch
+    //                          wird unten durch transformloc wieder gesetzt
+    next->prevloc = cov->prevloc; // damit auf keinen Fall was frei rumhaengt.
   }
-  model *next = cov->sub[0];
-  nugget_storage *s = cov->Snugget,
-    *snext = next->Snugget;
+  getStorage(s ,   nugget); 
+  nugget_storage *snext = next->Snugget;
   int d, //
     tot = loc->totalpoints,
     *refpos = NULL,
@@ -589,7 +610,7 @@ void do_nugget(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
   //  PMI0(cov);
   location_type *loc = Loc(cov);
 ///  double sqrtnugget;
-  nugget_storage* s = (nugget_storage*) cov->Snugget;
+  getStorage( s ,   nugget); 
   Long nx, endfor;
   int 
     vdim = VDIM0;
@@ -642,7 +663,7 @@ void do_nugget(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
       }
     } else {
       int
-	pts = Gettotalpoints(cov),
+	pts = Loctotalpoints(cov),
 	vdimtotal = s->total * vdim;
       for (int i=0; i<vdimtotal; field[i++] = GAUSS_RANDOM(1.0));
       for (nx=0; nx<pts; nx++) {

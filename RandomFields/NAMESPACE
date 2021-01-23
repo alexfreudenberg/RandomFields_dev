@@ -48,12 +48,12 @@ export(
 ### some functions used in the examples       
     ScreenDevice,
 ### obsolete       
-    CondSimu, Covariance, CovarianceFct, CovMatrix,
-    DeleteAllRegisters, DeleteRegister, DoSimulateRF,
-    EmpiricalVariogram, fitvario, fractal.dim, GaussRF, hurst,
-    InitSimulateRF, InitGaussRF, InitMaxStableRF, 
-    Kriging, MaxStableRF, RFparameters, Variogram,
-    plotWithCircles,
+#    CondSimu, Covariance, CovarianceFct, CovMatrix,
+#    DeleteAllRegisters, DeleteRegister, DoSimulateRF,
+#    EmpiricalVariogram, fitvario, fractal.dim, GaussRF, hurst,
+#    InitSimulateRF, InitGaussRF, InitMaxStableRF, 
+#    Kriging, MaxStableRF, RFparameters, Variogram,
+#    plotWithCircles,
 ### maths
      max, min, 
 ### others:
@@ -168,6 +168,7 @@ S3method(points,RMmodel)
 S3method(print, RMmodel)
 S3method(str, RMmodel)
 S3method(summary, RMmodel)
+S3method(as.list, RMmodel)
 S3method(print, summary.RMmodel)
 S3method(print, RMmodelgenerator)
 

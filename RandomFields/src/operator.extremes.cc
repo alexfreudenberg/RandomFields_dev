@@ -26,18 +26,19 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "questions.h"
 #include "operator.h"
 #include "shape.h"
+#include "startGetNset.h"
 
 
 //////////////////////////////////////////////////////////////////////
 // extremal gaussian 
 
-void extrgauss(double *x, model *cov, double *v) {
+void extrgauss(double *x, int *info, model *cov, double *v) {
   // BrownResnick to binary Gaussian
   model *next = cov->sub[0];
   double var, z;
   
-  COV(ZERO(next), next, &var);
-  COV(x, next, &z);
+  Zero(info, next, &var);
+  COV(x, info, next, &z);
   *v = 1.0 - SQRT(0.5 * (1.0 - z / var));
 }
 
@@ -58,7 +59,7 @@ int check_extrgauss(model *cov) {
   setbackward(cov, next);
   int maxv = MIN(vdim, MAXMPPVDIM);
   for (int i=0; i<maxv; i++) cov->mpp.maxheights[i] = 1.0;
-  COV(ZERO(next), next, &v);
+  Zero(next, &v);
   if (v != 1.0) SERR("only correlation functions allowed");
   RETURN_NOERROR;
 }
@@ -69,17 +70,17 @@ int check_extrgauss(model *cov) {
 
 #define BR_FACTOR 0.25  //  KSH: '/ 4' 
 #define BR_SEMI_FACTOR (2 * BR_FACTOR) // hier Semi-Variogram
-void brownresnick(double *x, model *cov, double *v) {
+void brownresnick(double *x, int *info, model *cov, double *v) {
   // BrownResnick to binary Gaussian
   model *next = cov->sub[0];
   double z;  
 
-  COV(ZERO(next), next, &z);
-  COV(x, next, v);
+  Zero(info, next, &z);
+  COV(x, info, next, v);
   *v = 2.0 * pnorm(SQRT((z - *v) * BR_SEMI_FACTOR), 0.0, 1.0, false, false);
 }
 
-void Dbrownresnick(double *x, model *cov, double *v) {
+void Dbrownresnick(double *x, int *info, model *cov, double *v) {
   // b = BR_SEMI_FACTOR
   // gamma(h) = C(0) - C(h) 
   // varphi(SQRT(gamma * b)) * (b C') / SQRT(gamma * b)
@@ -100,13 +101,13 @@ void Dbrownresnick(double *x, model *cov, double *v) {
   }
   
   if (*x != 0.0) {
-    COV(ZERO(next), next, &z);
-    COV(x, next, v);
+    Zero(info, next, &z);
+    COV(x, info, next, v);
     
     assert(DefList[NEXTNR].D != NULL);
     assert(DefList[NEXTNR].D != ErrD);
 
-    Abl1(x, next, &abl);   // Vorsicht: abl = -\gamma' 
+    Abl1(x, info, next, &abl);   // Vorsicht: abl = -\gamma' 
 
     //    printf("x=%10g abl=%10g %10g z=%10g %10g\n", *x, abl, BR_SEMI_FACTOR, z, *v);
     //    PMI0(next);
@@ -133,7 +134,7 @@ void Dbrownresnick(double *x, model *cov, double *v) {
 }
 
 
-void DDbrownresnick(double *x, model *cov, double *v) {
+void DDbrownresnick(double *x, int *info, model *cov, double *v) {
   // D = \varphi * b C' / SQRT(\gamma b)
 
   // b = BR_SEMI_FACTOR
@@ -152,10 +153,10 @@ void DDbrownresnick(double *x, model *cov, double *v) {
   }
    
   if (*x != 0.0) {
-    COV(ZERO(next), next, &z);
-    COV(x, next, v);
-    Abl1(x, next, &abl);
-    Abl2(x, next, &abl2);
+    Zero(info, next, &z);
+    COV(x, info, next, v);
+    Abl1(x, info, next, &abl);
+    Abl2(x, info, next, &abl2);
     s0 = (z - *v) * BR_SEMI_FACTOR;
     s = SQRT(s0); // SQRT(c * gamma)
     abl  *= BR_SEMI_FACTOR;
@@ -170,7 +171,7 @@ void DDbrownresnick(double *x, model *cov, double *v) {
 }
 
 
-void D3brownresnick(double *x, model *cov, double *v) {
+void D3brownresnick(double *x, int* info, model *cov, double *v) {
   // D = \varphi * b C' / SQRT(\gamma b)
 
   // b = BR_SEMI_FACTOR
@@ -191,11 +192,11 @@ void D3brownresnick(double *x, model *cov, double *v) {
   }
    
   if (*x != 0.0) {
-    COV(ZERO(next), next, &z);
-    COV(x, next, v);
-    Abl1(x, next, &abl);
-    Abl2(x, next, &abl2);
-    Abl3(x, next, &abl3);
+    Zero(info, next, &z);
+    COV(x, info, next, v);
+    Abl1(x, info, next, &abl);
+    Abl2(x, info, next, &abl2);
+    Abl3(x, info, next, &abl3);
     s0 = (z - *v) * BR_SEMI_FACTOR;
     s = SQRT(s0); // SQRT(c * gamma)
     abl  *= BR_SEMI_FACTOR;
@@ -206,7 +207,7 @@ void D3brownresnick(double *x, model *cov, double *v) {
        1.5 * abl2 * abl * (1/s0 + 1) +
        abl * abl * abl * (0.25 + 0.5 / s0 + 0.75 / (s0 * s0)));
 
-    // printf("br x=%10g v=%10e s=%10g abl=%10g s0=%10g abl2=%10g\n", *x, *v, s, abl, s0, abl2);
+    // printf("br x=%10g v=%10e s=%10g abl=%10g s0=%10g abl2=%10g\n", *x, info, *v, s, abl, s0, abl2);
     //  assert(*v >= 0);
 
   } else {
@@ -379,21 +380,23 @@ void do_brownresnick(model *cov, gen_storage *s) {
 }
 
 
-void BR2EG(double *x, model *cov, double *v) {
+void BR2EG(double *x, int *info, model *cov, double *v) {
   // BrownResnick to binary Gaussian
   model *next = cov->sub[0];
   double z;
-  COV(ZERO(next), next, &z);
-  COV(x, next, v);
+  Zero(info, next, &z);
+  COV(x, info, next, v);
   z = 2.0 * pnorm(SQRT( (z - *v) * BR_SEMI_FACTOR), 0.0, 1.0, true, false) -1.0;
   *v = 1.0 - 2.0 * z * z;
 }
 
 int check_BR2EG(model *cov) {
+  utilsparam *global_utils = &(cov->base->global_utils);
   // to do extend to multivariate
   model  
    *next = cov->sub[0];
-  double v, t, alpha;
+  double v, t,
+    alpha = 0.0;
   int err,
     vdim = VDIM0;
    if (VDIM0 != VDIM1) BUG;
@@ -417,11 +420,10 @@ int check_BR2EG(model *cov) {
   // mit c = 0 folgt SQRT(0.5 (1-c)) = 1 / SQRT(2)
   // semivario = 2 * {Phi^{-1}( (1 / SQRT(2) + 1) / 2 ) } ^2
 
-  alpha = 0.0;
-  COV(ZERO(next), next, &v);
+  Zero(next, &v);
   t = qnorm(0.5 * (1.0 + INVSQRTTWO), 0.0, 1.0, true, false);
   t *=  t / (BR_SEMI_FACTOR * (1.0 - alpha)); // 1/2 wegen Erf->qnorm
-  if (!GLOBAL_UTILS->basic.skipchecks && v > t)
+  if (!global_utils->basic.skipchecks && v > t)
     SERR2("variance equals %10g, but must be at most 4(Erf^{-1}(1/2))^2 = %10g",
 	  v, t);
   RETURN_NOERROR;  
@@ -429,20 +431,22 @@ int check_BR2EG(model *cov) {
 
 
 
-void BR2BG(double *x, model *cov, double *v) {
+void BR2BG(double *x, int *info, model *cov, double *v) {
   // BrownResnick to binary Gaussian
   model *next = cov->sub[0];
   double z;
-  COV(ZERO(next), next, &z);
-  COV(x, next, v); 
+  Zero(info, next, &z);
+  COV(x, info, next, v); 
   z = 2.0 * pnorm(SQRT( (z - *v) * BR_SEMI_FACTOR), 0.0, 1.0, true, false) -1;
   *v = COS(M_PI * z);
 }
 
 int check_BR2BG(model *cov) {
+  utilsparam *global_utils = &(cov->base->global_utils);
   // to do extend to multivariate
   model *next = cov->sub[0];
-  double v, t, alpha;
+  double v, t,
+    alpha = 0.0; // to do
   int err, 
     vdim = VDIM0;
   if (VDIM0 != VDIM1) BUG;
@@ -454,11 +458,12 @@ int check_BR2BG(model *cov) {
 			  EvaluationType
 			  )) != NOERROR)
     RETURN_ERR(err);
-   setbackward(cov, next);
-   int maxv = MIN(vdim, MAXMPPVDIM);
-   for (int i=0; i<maxv; i++) cov->mpp.maxheights[i] = 1.0;
-   if (next->pref[Nothing] == PREF_NONE) RETURN_ERR(ERRORPREFNONECOV);
 
+  setbackward(cov, next);
+  int maxv = MIN(vdim, MAXMPPVDIM);
+  for (int i=0; i<maxv; i++) cov->mpp.maxheights[i] = 1.0;
+  if (next->pref[Nothing] == PREF_NONE) RETURN_ERR(ERRORPREFNONECOV);
+  
   // Erfc(x) = 2(1 - Phi(x * SQRT(2)))
   // Erf(x) = 2 Phi(x * SQRT(2)) - 1
   // Erf^{-1}(x) = Phi^{-1}( (y + 1) / 2 ) / SQRT(2) 
@@ -469,13 +474,12 @@ int check_BR2BG(model *cov) {
   // Umgekehrt semivario = 2 * { Phi^{-1}(0.5 * [arcCOS( c ) / pi + 1]) }^2
   // mit c = 0 folgt arcCOS(c)/ pi + 1 = 3/2
   // semivario = 2 * { Phi^{-1}( 3 / 4) }^2
-  
-  COV(ZERO(next), next, &v);
-  alpha = 0.0; // to do
+
+  Zero(next, &v);
   t = qnorm(0.75, 0.0, 1.0, false, false);
   t *= t / (BR_SEMI_FACTOR * (1.0 - alpha)); // 1/2 wegen Erf->qnorm
  
-  if (!GLOBAL_UTILS->basic.skipchecks && v > t) { 
+  if (!global_utils->basic.skipchecks && v > t) { 
     SERR2("variance equals %10g, but must be at most 4(Erf^{-1}(.5))^2 = %10g",
 	 v, t);
     }
@@ -484,7 +488,7 @@ int check_BR2BG(model *cov) {
 
 
 
-void strokorb(double *x, model *cov, double *v) {
+void strokorb(double *x, int *info, model *cov, double *v) {
   // BrownResnick to strokorb Gaussian
   model *next = cov->sub[0];
   int dim = OWNLOGDIM(0);
@@ -494,7 +498,7 @@ void strokorb(double *x, model *cov, double *v) {
   u = 2 * *x;
   switch (dim) {
   case 1 :
-    Abl1(&u, next, v);
+    Abl1(&u, info, next, v);
     *v = - *v;
     break;
   case 3 :
@@ -510,7 +514,7 @@ void strokorb(double *x, model *cov, double *v) {
 	*v = next->taylor[idx][TaylorConst] * p * (p - 1) * POW(2, p-2)/ M_PI;
       else *v = RF_INF;
     } else {
-      Abl2(&u, next, v);
+       Abl2(&u, info, next, v);
       *v /= (M_PI * *x);
     }
     break;
@@ -859,7 +863,7 @@ void do_strokorbBall(model VARIABLE_IS_NOT_USED *cov, gen_storage VA// RIABLE_IS
 
 
 
-void strokorbBallInner(double *x, model *cov, double *v) {
+void strokorbBallInner(double *x, int *info, model *cov, double *v) {
   // only proportional to a density !!!
   model *next = cov->sub[0];
 
@@ -874,13 +878,13 @@ void strokorbBallInner(double *x, model *cov, double *v) {
   switch (dim) {
   case 1 :
     // \chi''(s)*s [ diameter ] -> 4\chi''(2 s)*s
-    Abl2(&y, next, v);
+    Abl2(&y, info, next, v);
     *v *= 2.0 * y;
     break;
   case 3 :
     double w;
-    Abl2(&y, next, v);
-    Abl3(&y, next, &w);
+    Abl2(&y, info, next, v);
+    Abl3(&y, info, next, &w);
     *v = 2.0 * (*v - w * y) * y / 3.0;
     break;
   default: BUG;
@@ -1032,10 +1036,10 @@ void poly2unif(model *local, model *remote,
   
 
 
-void strokorbPoly(double *x, model *cov, double *v) {
+void strokorbPoly(double *x, int *info, model *cov, double *v) {
   // only proportional to a density !!!
   model *next = cov->sub[0];
-  COV(x, next, v);
+  COV(x, info, next, v);
 }
 
 

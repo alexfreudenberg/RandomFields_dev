@@ -66,7 +66,8 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ## here a model with random scale parameter
 
 ## not exponential, but the Laplace distribution as symmetry is assumed
-z <- RFrdistr(RRmcmc(RMexp(), sigma=1), n=10000, cores=1)
+RFoptions(cores = 1)
+z <- RFrdistr(RRmcmc(RMexp(), sigma=1), n=10000)
 hist(z, 100, freq=FALSE)
 curve(0.5 * exp(-abs(x)), add=TRUE, col="blue") ## Laplace distribution
 

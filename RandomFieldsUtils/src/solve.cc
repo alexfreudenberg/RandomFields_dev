@@ -57,22 +57,22 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define LINEAR(A,B,C,D) linearX(A,B,C,D,6)
 
 /* three trials n=2500 | 2 crs usr/sys/elap      |  new with linear (1;2crs)
-0 : 8.140 8.076 8.036
-1 : 6.288 6.296 6.284  |  6.988   0.012   5.665  | 6.032; 6.672   0.004   5.395
-2 : 6.164 6.288 6.244 
-3 : 6.596 6.696 6.636 
-4 : ---
-5 : 6.112 6.092 6.080  |  6.736   0.008   5.464
-6 : 6.084 6.112 6.020  |  6.652   0.008   5.383  | 5.600; 6.756   0.008   3.413 
+   0 : 8.140 8.076 8.036
+   1 : 6.288 6.296 6.284  |  6.988   0.012   5.665  | 6.032; 6.672   0.004   5.395
+   2 : 6.164 6.288 6.244 
+   3 : 6.596 6.696 6.636 
+   4 : ---
+   5 : 6.112 6.092 6.080  |  6.736   0.008   5.464
+   6 : 6.084 6.112 6.020  |  6.652   0.008   5.383  | 5.600; 6.756   0.008   3.413 
 
-7 : 6.300 6.208 6.176 
-8 : 7.828 7.836 7.792
-9 : 10.24 10.10 10.00
-10: >1min
-2+10: >1min
-10+2:9.14  9.24  9.23
-2+9: 6.18  6.13  6.08  |  6.968   0.020   5.640
-9+2:10.2  10.11 10.00   
+   7 : 6.300 6.208 6.176 
+   8 : 7.828 7.836 7.792
+   9 : 10.24 10.10 10.00
+   10: >1min
+   2+10: >1min
+   10+2:9.14  9.24  9.23
+   2+9: 6.18  6.13  6.08  |  6.968   0.020   5.640
+   9+2:10.2  10.11 10.00   
 */
 
 
@@ -86,19 +86,19 @@ const char * InversionNames[nr_InversionMethods] = {
   "diagonal"};
 
 
-    //  double *A_= A, *B_= B;				
-     // i_ = N,					
+//  double *A_= A, *B_= B;				
+// i_ = N,					
 
 #define KAHAN GLOBAL.basic.kahanCorrection
 
-#define CMALLOC(WHICH, N, TYPE)	{				 \
-    int _N_ = N;						 \
-    if (pt->WHICH##_n < _N_) {					 \
-      if (pt->WHICH##_n < 0) BUG; 				 \
-      FREE(pt->WHICH);						 \
+#define CMALLOC(WHICH, N, TYPE)	{					\
+    int _N_ = N;							\
+    if (pt->WHICH##_n < _N_) {						\
+      if (pt->WHICH##_n < 0) BUG;					\
+      FREE(pt->WHICH);							\
       pt->WHICH##_n = _N_;						\
-	if ((pt->WHICH = (TYPE *) CALLOC(_N_, sizeof(TYPE))) == NULL)	\
-	  return ERRORMEMORYALLOCATION;					\
+      if ((pt->WHICH = (TYPE *) CALLOC(_N_, sizeof(TYPE))) == NULL)	\
+	return ERRORMEMORYALLOCATION;					\
     } else {								\
       assert( (_N_ > 0 && pt->WHICH != NULL) || _N_ == 0);		\
       for (int iii=0; iii<_N_; pt->WHICH[iii++] = 0);			\
@@ -108,17 +108,17 @@ const char * InversionNames[nr_InversionMethods] = {
 
 
 //  sqrtPosDef nutzt pt->U fuer das Ergebnis		
-#define FREEING(WHICH)						\
-  assert(int VARIABLE_IS_UNUSED *_i = WHICH);	\
+#define FREEING(WHICH)					\
+  assert(int VARIABLE_IS_UNUSED *_i = WHICH);		\
   if (pt->WHICH != NULL && pt->WHICH != result) {	\
-    UNCONDFREE(pt->WHICH);						\
-    pt->WHICH##_n = 0;						\
+    UNCONDFREE(pt->WHICH);				\
+    pt->WHICH##_n = 0;					\
   }						
  					       
 #define FREEING_INT(WHICH)			\
   assert(int VARIABLE_IS_UNUSED *_i = WHICH);	\
   if (pt->WHICH != NULL) {			\
-    UNCONDFREE(pt->WHICH);				\
+    UNCONDFREE(pt->WHICH);			\
     pt->WHICH##_n = 0;				\
   }						
 
@@ -150,39 +150,28 @@ double cumProd(double *D, int size, bool log) {
 
 
 void solve_DELETE0(solve_storage *x) {
-    FREE(x->iwork);
-    FREE(x->ipiv);
+  FREE(x->iwork);
 
-    FREE(x->pivotsparse);
-    FREE(x->pivot_idx);
-    FREE(x->xlnz);
-    FREE(x->snode);
-    FREE(x->xsuper);
-    FREE(x->xlindx);
-    FREE(x->invp);
-    FREE(x->cols);
-    FREE(x->rows);
-    FREE(x->lindx);
-    FREE(x->xja);
-    //    FREE(x->);
+  FREE(x->pivotsparse);
+  FREE(x->pivot_idx);
+  FREE(x->xlnz);
+  FREE(x->snode);
+  FREE(x->xsuper);
+  FREE(x->invp);
+  FREE(x->cols);
+  FREE(x->rows);
+  FREE(x->lindx);
+  FREE(x->xja);
    
-    FREE(x->workspaceD);
-    FREE(x->workspaceU);
-
-    FREE(x->VT);
-    FREE(x->work);
-    FREE(x->w2);
-    FREE(x->U);
-    FREE(x->D);
+  FREE(x->main);
+  FREE(x->rhs);
+  FREE(x->w2);
+  FREE(x->U);
+  FREE(x->D);
     
-    FREE(x->workLU);
-    FREE(x->diagonal);
-  
-    FREE(x->lnz); 
-    FREE(x->DD);
-    FREE(x->w3);
-    FREE(x->result);
-    FREE(x->to_be_deleted);
+  FREE(x->w3);
+  FREE(x->result);
+  FREE(x->to_be_deleted);
 }
 
 void solve_DELETE(solve_storage **S) {
@@ -195,7 +184,7 @@ void solve_DELETE(solve_storage **S) {
 void solve_NULL(solve_storage* x) {
   if (x == NULL) return;
   MEMSET(x, 0, sizeof(solve_storage));  
-  x->nsuper = x->nnzlindx = x->size = -1;
+  x->nsuper = x->size = -1;
   x->method = NoInversionMethod;
   for (int i=0; i<SOLVE_METHODS; x->newMethods[i++] = NoInversionMethod);
   x->actual_pivot = PIVOT_UNDEFINED;
@@ -424,7 +413,7 @@ void chol2inv(double *MPT, int size) {
 
 
 int doPosDef(double *M0, int size, bool posdef,
-	     double *rhs, int rhs_cols, double *result,
+	     double *rhs0, int rhs_cols, double *result,
 	     double *logdet, int calculate, solve_storage *Pt,
 	     solve_param *sp
 	     ){
@@ -479,7 +468,7 @@ int doPosDef(double *M0, int size, bool posdef,
   assert(calculate != MATRIXSQRT || (rhs == NULL && posdef));
   assert((rhs_cols != 0) xor (rhs == NULL));
 
-  double *RESULT = result != NULL ? result : rhs_cols > 0 ? rhs : M0;
+  double *RESULT = result != NULL ? result : rhs_cols > 0 ? rhs0 : M0;
   
   // Pivot_Cholesky:
   //	if (MPT == Morig || (rhs_cols > 0 && rhs == RESULT))
@@ -497,7 +486,7 @@ int doPosDef(double *M0, int size, bool posdef,
     if (calculate == DETERMINANT)
       return logdet3(det3(M0, size), posdef, logdet, sp->det_as_log);
     else if (calculate  == MATRIXSQRT) return chol3(M0, size, RESULT, Pt);
-    else return solve3(M0, size, posdef, rhs, rhs_cols, RESULT, logdet,
+    else return solve3(M0, size, posdef, rhs0, rhs_cols, RESULT, logdet,
 		       sp->det_as_log, Pt);
   }
 
@@ -519,6 +508,7 @@ int doPosDef(double *M0, int size, bool posdef,
     spam_zaehler = 0,
     nnzA = 0,
     sizeSq = size * size,
+    sizeRHS = size * rhs_cols,
     sizeP1 = size + 1;
   usr_bool
     sparse = sp->sparse;
@@ -632,14 +622,14 @@ int doPosDef(double *M0, int size, bool posdef,
 	  RESULT[i] = M0[i] <= 0.0 ? 0.0 : 1.0 / M0[i];
       }
     } else {
-      CMALLOC(work, size, double);
+      CMALLOC(main, size, double);
       for (int i=0; i<size; i++) {
 	int idx = i * sizeP1;
-	work[i] = M0[idx] == 0.0 ? 0.0 : 1.0 / M0[idx];
+	main[i] = M0[idx] == 0.0 ? 0.0 : 1.0 / M0[idx];
       }
       int j;
       for (int k=j=0; j<rhs_cols; j++)
-	for (int i=0; i<size; i++, k++) RESULT[k] = rhs[k] * work[i];
+	for (int i=0; i<size; i++, k++) RESULT[k] = rhs0[k] * main[i];
     }
     
     err = NOERROR;
@@ -661,18 +651,18 @@ int doPosDef(double *M0, int size, bool posdef,
 
   //  printf("from = %d (%d %d) [%d %d %d] sparse=%d %d\n", from, sp->Methods[0], sp->Methods[1], Meth[0],  Meth[1], Meth[2], sparse == True, Sparse);
   
-if (from == 0) { // user did not give any method
-  if (posdef) {
-    if (to < SOLVE_METHODS) {
-      Meth[to++] = useGPU ? GPUcholesky : Cholesky;
+  if (from == 0) { // user did not give any method
+    if (posdef) {
       if (to < SOLVE_METHODS) {
-	Meth[to++] = useGPU && sp->pivot != PIVOT_NONE ? Cholesky : Eigen;
+	Meth[to++] = useGPU ? GPUcholesky : Cholesky;
+	if (to < SOLVE_METHODS) {
+	  Meth[to++] = useGPU && sp->pivot != PIVOT_NONE ? Cholesky : Eigen;
+	}
       }
+    } else {
+      Meth[to++] = LU;
     }
   } else {
-    Meth[to++] = LU;
-  }
- } else {
     if (useGPU) 
       for (int i=0; i<SOLVE_METHODS; i++)
 	if (Meth[i] == Cholesky || Meth[i] == GPUcholesky){
@@ -691,18 +681,23 @@ if (from == 0) { // user did not give any method
   
   // cholesky, QR, SVD, Eigen, LU always destroy original matrix M
   int first_not_reading_M0;
-  double *MPT; // pointer of M matrix, die zerstoert wird
+  double *MPT, *RHS;
+  MPT = M0;// pointer of M matrix, die zerstoert wird
+  RHS = rhs0; 
   first_not_reading_M0 = 0;
-  MPT = M0;
 
   if (rhs_cols == 0 && result != NULL) MPT = result;
   else {
     first_not_reading_M0 = sparse + (Meth[sparse] == GPUcholesky);
+    // printf("first_not_reading_M0 %d %d\n", first_not_reading_M0, Meth[first_not_reading_M0] != Meth[first_not_reading_M0 - 1] &&
+    //	 Meth[first_not_reading_M0] != NoFurtherInversionMethod);
+    
     if (first_not_reading_M0 == 0 ||
 	(Meth[first_not_reading_M0] != Meth[first_not_reading_M0 - 1] &&
 	 Meth[first_not_reading_M0] != NoFurtherInversionMethod)) {
       int i=first_not_reading_M0;
-     if (rhs_cols > 0
+      //printf("rhs_cols +%d\n", rhs_cols);
+      if (rhs_cols > 0
 	  ||
 	  (SOLVE_METHODS > first_not_reading_M0 + 1 &&
 	   Meth[first_not_reading_M0 + 1] != Meth[first_not_reading_M0] &&
@@ -711,8 +706,12 @@ if (from == 0) { // user did not give any method
 	  (Meth[first_not_reading_M0] == SVD && sp->svd_tol > 0.0 &&
 	   calculate != SOLVE)
 	  ) { // at least two different Methods in the list
-	CMALLOC(work, sizeSq, double); // to pt->work, work local variable
-	MPT = pt->work;
+	CMALLOC(main, sizeSq, double); // to pt->main, main local variable
+	MPT = pt->main;
+	if (rhs_cols > 0) {
+	  CMALLOC(rhs, sizeRHS, double); // to pt->main, main local variable
+	  RHS = pt->rhs;
+	}
       }
     }
   }
@@ -732,31 +731,34 @@ if (from == 0) { // user did not give any method
   
   for (int m=0; m<SOLVE_METHODS && (m==0 || Meth[m] != Meth[m-1]); m++) {
     //    printf("m=%d %d %d %d\n", m,  Meth[m], sparse, sp->pivot);
-   pt->method = Meth[m];
+    pt->method = Meth[m];
     if (pt->method < 0) break;
     if (calculate != SOLVE) {
       if (pt->method == NoInversionMethod && m<=sparse) BUG;
-       if (pt->method == NoFurtherInversionMethod) break;
-     if (PL>=PL_STRUCTURE) { 
+      if (pt->method == NoFurtherInversionMethod) break;
+      if (PL>=PL_STRUCTURE) { 
 	PRINTF("method to calculate the square root : %s\n", 
 	       InversionNames[pt->method]);
       }
     } else {
-	if (PL>=PL_STRUCTURE) { 
-	  PRINTF("method to calculate the inverse : %s\n",
-		 InversionNames[pt->method]);
+      if (PL>=PL_STRUCTURE) { 
+	PRINTF("method to calculate the inverse : %s\n",
+	       InversionNames[pt->method]);
       }
     }
      
     if (MPT != M0 && m >= first_not_reading_M0)
       MEMCOPY(MPT, M0,  sizeSq * sizeof(double));
-  
+
+    if (RHS != rhs0) MEMCOPY(RHS, rhs0,  sizeRHS * sizeof(double));
+ 
     switch(pt->method) {
     case GPUcholesky :
       if (!posdef) CERR("Cholesky needs positive definite matrix");
 #ifdef USEGPU
-      if (sp->pivot != PIVOT_NONE)
+      if (sp->pivot != PIVOT_NONE && sp->pivot != PIVOT_AUTO)
 	ERR("cholesky decomposition on GPU does not allow for pivoting");
+      pt->actual_pivot = sp->pivot;
       {
 	double LD,
 	  *LogDet = logdet == NULL ? &LD : logdet;
@@ -777,11 +779,11 @@ if (from == 0) { // user did not give any method
 		  RESULT); // out: a pointer to the result whether or
 	// not rhs is given
 	if (err != NOERROR) continue;
-      if (logdet != NULL) {
-	*logdet *= 2;
-	if (!sp->det_as_log) *logdet = EXP(*logdet);
-	if (calculate == DETERMINANT) return NOERROR;
-      }
+	if (logdet != NULL) {
+	  *logdet *= 2;
+	  if (!sp->det_as_log) *logdet = EXP(*logdet);
+	  if (calculate == DETERMINANT) return NOERROR;
+	}
       }
 #else
       //     err = NOERROR;
@@ -794,13 +796,13 @@ if (from == 0) { // user did not give any method
 #define C_GERR2(X,Y,Z,G){SPRINTF(ErrStr,X,Y,Z);FERR(ErrStr);err=ERRORM; goto G;}
 #define C_GERR3(X,Y,Z,A,G) {SPRINTF(ErrStr,X,Y,Z,A); FERR(ErrStr);err = ERRORM; goto G;}
       int NR = KAHAN ? SCALAR_KAHAN : SCALAR_AVX;
-       if (size > sp->max_chol) {
+      if (size > sp->max_chol) {
 	CERR2("Matrix  is too large for Cholesky decomposition. Maximum ist currently a %d x %d matrix. Increase 'max_chol' in 'RFoption' if necessary.",
 	      sp->max_chol, sp->max_chol);
       }
       
-       CMALLOC(diagonal, size > rhs_cols ? size : rhs_cols, double);
-      for (int i=0; i<size; i++) diagonal[i] = MPT[sizeP1 * i];
+      CMALLOC(D, size > rhs_cols ? size : rhs_cols, double);
+      for (int i=0; i<size; i++) D[i] = MPT[sizeP1 * i];
       
       pt->actual_pivot = PIVOT_UNDEFINED;
 
@@ -821,7 +823,7 @@ if (from == 0) { // user did not give any method
 			A[i] - sclr, i, 
 			ERR_CHOL)
 		else C_GERR2("Got %10e as %d-th eigenvalue.",
-			    A[i] - sclr, i, Pivot_Cholesky);
+			     A[i] - sclr, i, Pivot_Cholesky);
 	      break;
 	    }
 	    A[i] = SQRT(A[i] - sclr);
@@ -861,7 +863,7 @@ if (from == 0) { // user did not give any method
 #endif	      
 	      for (int k=0; k<rhs_cols; k++) {
 		double *p_RESULT = RESULT + k * size,
-		  *p_rhs = rhs + k * size;
+		  *p_rhs = RHS + k * size;
 		for (int i=0; i<size; i++) {
 		  double *pM = MPT + i * size;
 		  p_RESULT[i] = (p_rhs[i] - SCALAR(pM, p_RESULT, i)) / pM[i];
@@ -896,7 +898,7 @@ if (from == 0) { // user did not give any method
 	// ebenso: untere dreiecksmatrix wird gelesen; obere geschrieben
 	if (pt->actual_pivot == PIVOT_NONE) {
 	  // wiederherstellung der Diagonalen und der unteren dreiecksmatrix
-	  for (int i=0; i<size; i++) MPT[sizeP1 * i] = diagonal[i];
+	  for (int i=0; i<size; i++) MPT[sizeP1 * i] = D[i];
 	}
 	int *pi;
 	if (sp->pivot == PIVOT_DO || sp->pivot == PIVOT_AUTO) {
@@ -925,14 +927,27 @@ if (from == 0) { // user did not give any method
 
 	err = NOERROR;
 	//	printf("hier\n");
-	double
+	double // *rhs = rhs,
+	  //	  *M00 = M0,
 	  rel_thres = 0,
 	  max_deviation = sp->max_deviation, //  1e-10,
 	  max_reldeviation = sp->max_reldeviation; //  1e-10,
-	if (MPT == M0 || (rhs_cols > 0 && rhs == RESULT)) {
-	  //	  printf("not on plaxe %d %d %d\n", MPT == M0, rhs_cols, rhs == RESULT);
+
+	//printf("MTP %d %d %d\n", MPT == M0, rhs_cols,  RHS == RESULT);
+	if (MPT == M0 || (rhs_cols > 0 && RHS == RESULT))
 	  CERR("Pivoted cholesky cannot be performed on place! Either you are a programmer or you should contact the maintainer.");
+	/* 
+	if (MPT == M0) {
+	  CMALLOC(main, sizeSq, double);
+	  MEMCOPY(main, M0, sizeSq * sizeof(double));
+	  M00 = main;	  
 	}
+	if (rhs_cols > 0 && rhs == RESULT) {
+	  Long totalRHS = size * rhs_cols;
+	  CMALLOC(U, totalRHS, double);
+	  MEMCOPY(U, rhs, totalRHS * sizeof(double));
+	  RHS = U;
+	  }*/
 	for (int q=0; q<actual_size; q++) {
 	  if (pt->actual_pivot == PIVOT_DO) {
 	    double 
@@ -941,8 +956,8 @@ if (from == 0) { // user did not give any method
 	    int k,
 	      argmax = NA_INTEGER;	    
 	    for (k=q; k<size; k++) {
-	      double dummy = diagonal[pi[k]];
-	      // if (diagonal[pi[k]] < 0)
+	      double dummy = D[pi[k]];
+	      // if (D[pi[k]] < 0)
 
 	      //printf("k=%d %10e %10e\n", k, dummy, -1e-15 * size * size);
 	      if (dummy < -1e-4 * sp->pivot_relerror* size * size){
@@ -982,7 +997,7 @@ if (from == 0) { // user did not give any method
 	      }
 	      break;
 	    }
-	    rel_thres += diagonal[pi[q]];
+	    rel_thres += D[pi[q]];
 	    int dummy = pi[q];
 	    pi[q] = pi[argmax];
 	    pi[argmax] = dummy;
@@ -992,11 +1007,11 @@ if (from == 0) { // user did not give any method
 	  int pqq = pi[q],
 	    col_q = pqq * size;
 	  
-	  if (diagonal[pqq] < 0) {
+	  if (D[pqq] < 0) {
 	    C_GERR1("Negative leading value found at the %d-th pivoted line.",
 		    q, ERR_CHOL);
 	  }
-	  double lqpq = MPT[q + col_q] = SQRT(diagonal[pqq]);	    
+	  double lqpq = MPT[q + col_q] = SQRT(D[pqq]);	    
 #ifdef DO_PARALLEL
 #pragma omp parallel for num_threads(CORES) if (MULTIMINSIZE(size - q)) schedule(dynamic, 8) 
 #endif
@@ -1007,7 +1022,7 @@ if (from == 0) { // user did not give any method
 	    assert(pii != pqq);
 	    double scalar = SCALAR(MPT + col_q, MPT + col_i, q);
 	    MPT[q + col_i] = (M0[pqq + col_i] - scalar) / lqpq;
-	    diagonal[pii] -=  MPT[q + col_i] *  MPT[q + col_i];
+	    D[pii] -=  MPT[q + col_i] *  MPT[q + col_i];
 	    // in Harbrecht: lqpq * MPT[q + col_i];
 	  }
 	  
@@ -1016,8 +1031,8 @@ if (from == 0) { // user did not give any method
 		  for (int j=0; j<size; j++)
 		  p rintf("%10g ", MPT[size * j + k]);
 		  p rintf("\n");
-			  } p rintf("\n");
-			  }
+		  } p rintf("\n");
+		  }
 	  */
 	  
 	} // for q
@@ -1059,7 +1074,7 @@ if (from == 0) { // user did not give any method
 #endif
 		  for (int k=0 ; k<actual_size; k++) {
 		    double *p_RESULT = MPT + pi[k] * size + k,
-		      diagK = diagonal[k] = 1.0 / p_RESULT[0];
+		      diagK = D[k] = 1.0 / p_RESULT[0];
 		    for (int i=1; i<size - k; i++) {
 		      double *pM = MPT + k + pi[k + i] * size;
 		      p_RESULT[i] = (-diagK * pM[0]
@@ -1076,7 +1091,7 @@ if (from == 0) { // user did not give any method
 		for (int i=actual_size-1; i>k; i--) {
 		  double *pM = MPT + pi[i] * size,		    
 		    r = (p_RESULT[i] /= pM[i]);
-		  diagonal[k] -= r * pM[k];
+		  D[k] -= r * pM[k];
 		  LINEAR(pM + k + 1, -r, i-k-1, p_RESULT + k + 1);
 		  // for (int j=k+1; j<i; j++) p_RESULT[j] -= r * pM[j]; 
 		}
@@ -1091,11 +1106,11 @@ if (from == 0) { // user did not give any method
 	      
 	      for (int k=0; k<actual_size; k++) {
 		double *pM = MPT + pi[k] * size;	         
-		pM[k] = diagonal[k] / pM[k];
+		pM[k] = D[k] / pM[k];
 	      }
 	      
 	      CMALLOC(xja, size, int);
-	      Sort(RESULT, size, size, pi, xja, diagonal);
+	      Sort(RESULT, size, size, pi, xja, D);
 	      for (int i=0; i<size; i++) {
 		for (int j=i+1; j<size; j++) {
 		  int idx = i + j * size;
@@ -1110,14 +1125,14 @@ if (from == 0) { // user did not give any method
 	      
 	    } else { // rhs_cols > 0
 	      assert(rhs != RESULT); 
-	      double eps = diagonal[0] * sp->pivot_relerror;
+	      double eps = D[0] * sp->pivot_relerror;
 			      
 #ifdef DO_PARALLEL
 #pragma omp parallel for num_threads(CORES) if (rhs_cols > 30)
 #endif
 	      for (int k=0; k<rhs_cols; k++) {
 		double *p_RESULT = RESULT + k * size,
-		  *p_rhs = rhs + k * size;
+		  *p_rhs = RHS + k * size;
 		int i=0;
 		for ( ; i<actual_size; i++) {
 		  int pii = pi[i];
@@ -1150,7 +1165,7 @@ if (from == 0) { // user did not give any method
 		}
 	      }
 	      CMALLOC(xja, size, int);
-	      Sort(RESULT, size, rhs_cols, pi, xja, diagonal);
+	      Sort(RESULT, size, rhs_cols, pi, xja, D);
 	    }// rhs_cols > 0
 	  } // not sqrt only
 
@@ -1162,9 +1177,9 @@ if (from == 0) { // user did not give any method
       if (err != NOERROR) {	
 	if (pt->actual_pivot == PIVOT_NONE)
 	  CERR1("Probably matrix not positive definite: %.300s\nTry more flexible options in 'RFoptions' ('pivot = PIVOT_AUTO or 'pivot = PIVOT_DO'').\n", ErrStr)
-	else // pt->actual_pivot == PIVOT_DO  or  PIVOT_IDX
-	  CERR1("Likely, the matrix is not positive semi definite: %.300s\n", ErrStr)
-      }
+	  else // pt->actual_pivot == PIVOT_DO  or  PIVOT_IDX
+	    CERR1("Likely, the matrix is not positive semi definite: %.300s\n", ErrStr)
+	      }
 
       if (PL >=  PL_DETAILSUSER) {
 	PRINTF("Cholesky decomposition successful\n");
@@ -1180,12 +1195,12 @@ if (from == 0) { // user did not give any method
       err = ERRORNOTPROGRAMMEDYET; /// to do: clarify transposed !
       continue;
 
-      CMALLOC(workspaceD, size, double);
-      CMALLOC(workspaceU, size, double);
+      CMALLOC(w2, size, double);
+      CMALLOC(w3, size, double);
 
       F77_CALL(dgeqrf)(&size, &size, // QR
-		       MPT, &size, // aijmax, &irank, inc, workspaceD, 
-		       workspaceU, workspaceD, &size, &err);     
+		       MPT, &size, // aijmax, &irank, inc, w2, 
+		       w3, w2, &size, &err);     
       
       if (err != NOERROR) {	
 	CERR1("'dgeqrf' failed with err=%d.", err);
@@ -1205,7 +1220,7 @@ if (from == 0) { // user did not give any method
       int k=0,
 	optimal_intwork,
 	*pt_iwork = &optimal_intwork, 
-	lwork = -1,
+	lw2 = -1,
 	lintwork = -1;
       
       CMALLOC(U, sizeSq, double);
@@ -1222,17 +1237,17 @@ if (from == 0) { // user did not give any method
 			 &abstol,// or DLAMCH
 			 &dummy_nr, D, U, &size, 
 			 xja, // 2 * size * sizeof(integer); nonzeros_idx
-			 pt_work, &lwork,
+			 pt_work, &lw2,
 			 pt_iwork, &lintwork,
 			 &err
 			 );
 	if (i==1 || err != NOERROR || ISNAN(D[0])) break;
-	lwork = (int) optimal_work;
+	lw2 = (int) optimal_work;
 	lintwork = (int) optimal_intwork;
-	CMALLOC(work, lwork, double);
+	CMALLOC(w2, lw2, double);
 	CMALLOC(iwork, lintwork, int);
 	pt_iwork = iwork;
-	pt_work = work; 
+	pt_work = w2; 
       }
 
       
@@ -1269,7 +1284,7 @@ if (from == 0) { // user did not give any method
 	if (rhs_cols > 0) {
 	  int tot = size * rhs_cols;
 	  CMALLOC(w2, tot, double);	
-	  matmulttransposed(U, rhs, w2, size, size, rhs_cols);
+	  matmulttransposed(U, RHS, w2, size, size, rhs_cols);
 	  for (k=0; k<tot; )
 	    for (int i=0; i<size; i++) w2[k++] *= D[i];
 	  matmult(U, w2, RESULT, size, size, rhs_cols);
@@ -1292,25 +1307,25 @@ if (from == 0) { // user did not give any method
     case SVD : {// SVD : M = U D VT
       if (size > sp->max_svd) CERR("matrix too large for SVD decomposition.");
       int k = 0,  
-	lwork = -1,
+	lw2 = -1,
 	size8 = size * 8;
       double  optim_lwork,
 	eigen2zero = sp->eigen2zero,
-	*pt_work = &optim_lwork;
+	*pt_w2 = &optim_lwork;
 
-      CMALLOC(VT, sizeSq, double);
+      CMALLOC(w3, sizeSq, double);
       CMALLOC(U, sizeSq, double);
       CMALLOC(D, size, double); 
       CMALLOC(iwork, size8, int);
 
       for (int i=0; i<=1; i++) {
 	F77_CALL(dgesdd)("A", &size, &size, // SVD
-			 MPT, &size, D, U, &size, VT, &size, 
-			 pt_work, &lwork, iwork, &err);
+			 MPT, &size, D, U, &size, w3, &size, 
+			 pt_w2, &lw2, iwork, &err);
 	if (i==1 || err != NOERROR || ISNAN(D[0])) break;
-	lwork = (int) optim_lwork;
-	CMALLOC(work, lwork, double);
-	pt_work = work;
+	lw2 = (int) optim_lwork;
+	CMALLOC(w2, lw2, double);
+	pt_w2 = w2;
       }
       if (err != NOERROR) {
 	if (PL>PL_ERRORS) {
@@ -1372,10 +1387,10 @@ if (from == 0) { // user did not give any method
 	if (rhs_cols > 0) {
 	  int tot = size * rhs_cols;
 	  CMALLOC(w2, tot, double);	
-	  matmulttransposed(U, rhs, w2, size, size, rhs_cols);
+	  matmulttransposed(U, RHS, w2, size, size, rhs_cols);
 	  for (k=0; k<tot; )
 	    for (int i=0; i<size; i++) w2[k++] *= D[i];
-	  matmulttransposed(VT, w2, RESULT, size, size, rhs_cols);
+	  matmulttransposed(w3, w2, RESULT, size, size, rhs_cols);
 	} else {
 	  // calculate inverse of covariance matrix
 	  int j;	  
@@ -1383,7 +1398,7 @@ if (from == 0) { // user did not give any method
 	    double dummy = D[j];
 	    for (int i=0; i<size; i++) U[k++] *= dummy;
 	  }
-	  matmult_tt(U, VT, RESULT, size, size, size); // V * U^T
+	  matmult_tt(U, w3, RESULT, size, size, size); // V * U^T
 	}
       }
 
@@ -1397,9 +1412,9 @@ if (from == 0) { // user did not give any method
 	continue;
       }
       
-      CMALLOC(ipiv, size, int);		    
+      CMALLOC(iwork, size, int);		    
       F77_CALL(dgetrf)(&size, &size, // LU
-		       MPT, &size, ipiv, &err);
+		       MPT, &size, iwork, &err);
       if (err != NOERROR) {
 	CERR1("'dgetrf' (LU) failed with err=%d.", err);
       }
@@ -1412,24 +1427,24 @@ if (from == 0) { // user did not give any method
 
       if (rhs_cols > 0) {
 	int totalRHS = size * rhs_cols;
-	if (result != NULL) MEMCOPY(RESULT, rhs, sizeof(double) * totalRHS);
+	if (result != NULL) MEMCOPY(RESULT, RHS, sizeof(double) * totalRHS);
 	F77_CALL(dgetrs)("N", &size, // LU rhs
-			 &rhs_cols, MPT, &size, ipiv, 
+			 &rhs_cols, MPT, &size, iwork, 
 			 RESULT, &size, &err);
 	if (err != NOERROR) {	
 	  CERR1("'dgetrs' (LU) failed with err=%d.", err);
 	}
       } else {
-	int lwork = -1;
+	int lw2 = -1;
 	double dummy,
 	  *p = &dummy;
 	for (int i=0; i<=1; i++) { 
 	  F77_CALL(dgetri)(&size, MPT, // LU solve
-			   &size, ipiv, p, &lwork, &err);	
+			   &size, iwork, p, &lw2, &err);	
 	  if (err != NOERROR) break;
-	  lwork = (int) dummy;
-	  CMALLOC(workLU, lwork, double);
-	  p = workLU;
+	  lw2 = (int) dummy;
+	  CMALLOC(w2, lw2, double);
+	  p = w2;
 	}
       }      
       if (PL >=  PL_DETAILSUSER) { PRINTF("LU decomposition successful\n"); }
@@ -1437,7 +1452,7 @@ if (from == 0) { // user did not give any method
     }
 	
     case Sparse : {// sparse matrix
-      int nnzlindx, 
+      int nnzlindx = -1, 
 	doperm = sp->pivotsparse,
 	halfsq = size * (size + 1) / 2,
 	nnzcolindices = 0,
@@ -1461,19 +1476,19 @@ if (from == 0) { // user did not give any method
       CMALLOC(xlnz, sizeP1, int);
       CMALLOC(snode, size, int);
       CMALLOC(xsuper, sizeP1, int);
-      CMALLOC(xlindx, sizeP1, int);
+      CMALLOC(iwork, sizeP1, int);
       CMALLOC(invp, size, int);
       CMALLOC(w3, size, double);
 
       CMALLOC(cols, spam_zaehler, int);
       CMALLOC(rows, sizeP1, int);
    
-      int nDD = spam_zaehler;
-      if (nDD < size) nDD = size;
-      CMALLOC(DD, nDD, double);
+      int nD = spam_zaehler;
+      if (nD < size) nD = size;
+      CMALLOC(D, nD, double);
       // prepare spam
 
-      F77_CALL(spamdnscsr)(&size, &size, M0, &size, DD,
+      F77_CALL(spamdnscsr)(&size, &size, M0, &size, D,
 			   cols, // ja
 			   rows, // ia
 			   &spam_tol); // create spam object   
@@ -1517,11 +1532,11 @@ if (from == 0) { // user did not give any method
 	CMALLOC(lindx, nnzcolindices, int);	
 	CMALLOC(lnz, nnzR, double);
 	 	
-	F77_CALL(cholstepwise)(&size, &nnzA, DD, cols, rows, &doperm,
+	F77_CALL(cholstepwise)(&size, &nnzA, D, cols, rows, &doperm,
 			       invp, pivotsparse, 
 			       &nnzlindx, &nnzcolindices, 
 			       lindx, // 
-			       xlindx,// 
+			       iwork,// 
 			       &(pt->nsuper), // length of lindx
 			       &nnzR,  // physical length of lindx
 			       lnz,   // output:result
@@ -1550,7 +1565,7 @@ if (from == 0) { // user did not give any method
 	nnzR = xlnz[size] - 1;
 	CMALLOC(xja, nnzR, int);
 	F77_CALL(calcja)(&size, &(pt->nsuper), pt->xsuper, 
-			 pt->lindx, pt->xlindx, pt->xlnz, xja);
+			 pt->lindx, pt->iwork, pt->xlnz, xja);
 	for (int i=0; i<size; invp[i++]--); 
 	F77_CALL(spamcsrdns)(&size, pt->lnz, xja, pt->xlnz, RESULT);
 	for (int i=0; i<size; i++) {
@@ -1593,7 +1608,7 @@ if (from == 0) { // user did not give any method
 	} else {
 	  RHS_COLS = rhs_cols;	
 	  if (result != NULL) 
-	    MEMCOPY(RESULT, rhs, size * rhs_cols * sizeof(double));
+	    MEMCOPY(RESULT, RHS, size * rhs_cols * sizeof(double));
 	}
 	
 	//printf("nsuper=%d\n", pt->nsuper);
@@ -1623,7 +1638,7 @@ if (from == 0) { // user did not give any method
 	
 	F77_CALL(backsolves)(&size, &(pt->nsuper), &RHS_COLS, 
 			     lindx, // colindices
-			     xlindx, //colpointers
+			     iwork, //colpointers
 			     lnz, 
 			     xlnz, //  rowpointers
 			     invp, pivotsparse,
@@ -1636,13 +1651,9 @@ if (from == 0) { // user did not give any method
 
     case NoInversionMethod: GERR("no inversion method given.");
     case NoFurtherInversionMethod:
-#ifdef DO_PARALLEL
-       GERR("All specified matrix inversion methods have failed.");     
-#else
-      STRCPY(ErrStr, ERRORSTRING);
-      GERR1("%.50s (All specified matrix inversion methods have failed.)",
+      STRCPY(ErrStr, WHICH_ERRORSTRING);
+      GERR1("%.150s (All specified matrix inversion methods have failed.)",
 	    ErrStr);
-#endif
     case direct_formula: case Diagonal: 
       GERR("strange method appeared: please contact author.");
     default : GERR1("unknown method (%d) in 'RandomFieldsUtils'.", pt->method);
@@ -1659,6 +1670,8 @@ if (from == 0) { // user did not give any method
     Pt->sparse = sparse;
   }
   
+  //   if (GLOBAL.basic.Cprintlevel > 1)
+  //     PRINTF("error: %d:\n", err, ERRORSTRING);  
 
   //  if (err != NOERROR) { printf("Err = %s %s %d\n",  ErrStr, WHICH_ERRORSTRING ,err); exit(0);}
     
@@ -2147,10 +2160,10 @@ int sqrtRHS(solve_storage *pt, double* RHS, double *result){
   case Sparse : {
     BUG; // SEE ALSO solve, calculate, tmp_delete !!
     int one = 1;
-    assert(pt->DD != NULL);
-    F77_CALL(amuxmat)(&size, &size, &one, RHS, pt->DD, pt->lnz, 
+    assert(pt->D != NULL);
+    F77_CALL(amuxmat)(&size, &size, &one, RHS, pt->D, pt->lnz, 
 		      pt->xja, pt->xlnz);
-    for (int i=0; i<size; i++) result[i] = pt->DD[pt->invp[i]];
+    for (int i=0; i<size; i++) result[i] = pt->D[pt->invp[i]];
   }
     break;
 

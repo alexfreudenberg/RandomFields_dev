@@ -59,17 +59,9 @@ SEXP Mat_t(double* V, int row, int col);
 #define MAX(A,B) ((A) > (B) ? (A) : (B))
 
 
-
-#define ATAN2 atan2
-#define COSH cosh
-#define SINH sinh
-#define TANH tanh
-#define FMIN fmin2
-#define FMAX fmax2
-
 #ifdef EVEN_NOT_USED_ON_SCHLATHERS_MACHINE
 #define EXP2 exp2
-#define LOGB logb
+//#define LOGB logb
 #define LOG_BASE2 log2
 #define CBRT cbrt
 #define FMOD fmod
@@ -78,12 +70,12 @@ SEXP Mat_t(double* V, int row, int col);
 
 #else
 //#define EXPM1(X) (EXP(X) - 1.0)
-#define LOGB(X) FLOOR(LOG(X) *  INVLOG2) //  EXP(X) - 1.0
+//#define LOGB(X) FLOOR(LOG(X) *  INVLOG2) //  EXP(X) - 1.0
 #define EXP2(X) POW(2.0, X)
 #define LOG_BASE2(X) (LOG(X) * INVLOG2)
 #define CBRT(X) POW(X, ONETHIRD)
 #define FMOD(X, Y) ((double) ((X) - (Y) * (int) ((X) / (Y))))
-#define REMAINDER(X, Y) ((double) ((X) - (Y) * fround((X) / (Y), 0))) // ROUND(
+#define REMAINDER(X, Y) ((double) ((X) - (Y) * FROUND((X) / (Y), 0))) // ROUND(
 #define FDIM(X, Y) FMAX((double) (X) - (Y), 0.0)
 #endif
 
@@ -91,6 +83,8 @@ SEXP Mat_t(double* V, int row, int col);
 
 
 double mod(double x, double modulus);
+
+int CeilIndex(double x, double *cum, int size);
 
 #endif /* AUXILIARY_H */
 

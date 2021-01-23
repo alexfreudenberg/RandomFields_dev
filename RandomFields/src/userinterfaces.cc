@@ -34,6 +34,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "rf_interfaces.h"
 #include "startGetNset.h"
 
+
+//#define debug 1
+
 #define PERR(X) {LOCAL_MSG; SPRINTF(MSG, "'%.100s': %.800s", param_name, X); RFERROR(MSG);}
 #define PERR1(X,Y) {LOCAL_MSG; LOCAL_ERRMSG2; SPRINTF(MSG, "'%.100s': %.800s", param_name, X); SPRINTF(MSG2, MSG, Y); RFERROR(MSG2);}
 
@@ -119,7 +122,8 @@ void includeparam(void **qq,       // px
 		  int len,         // future internal length
 		  SEXP p,          // user's values
 		  int base,     
-		  char *param_name // name used in error messages
+		  char *param_name, // name used in error messages
+		  KEY_type *KT
 		  ) {
   int j;
   switch(type) {
@@ -129,7 +133,7 @@ void includeparam(void **qq,       // px
       double *q = (double *) *qq;   
       for (j=0; j<len; j++) {
 	q[j] = Real(p, param_name, base + j); // p[base + j]
-	if (!GLOBAL_UTILS->basic.skipchecks && R_finite(q[j]) && 
+	if (!KT->global_utils.basic.skipchecks && R_finite(q[j]) && 
 	    FABS(q[j]) > MAXACCEPTED) 
 	  RFERROR2("'%.50s' has an absolute value larger than %10e, what is believed to be a misspecification.", param_name, MAXACCEPTED);
 	// insures that there is not conflict with PrepareModel2
@@ -159,10 +163,10 @@ void includeparam(void **qq,       // px
     /*
   case LANGSXP : case ENVSXP :   
      if (STRCMP("setseed", param_name) != 0 && STRCMP("env", param_name)!=0){ 
-       if (GLOBAL.general.storing) {
+       if (glo bal->general.storing) {
 	 RFERROR1("If models with R commands in the parameters (such as '%.50s') are used then 'storing' must be FALSE.", DefList[USER].nick);
        }
-       if (!GLOBAL.internal.warn_oldstyle) {
+       if (!GLO BAL.messages.warn_oldstyle) {
 	 RFERROR1("Models with R commands in the parameters (such as '%.50s') may not be called by obsolete functions.\nSee the notes in '?RMmodelsAdvanced' and set 'RFoldstyle(FALSE)'.", DefList[USER].nick);
        }
      }
@@ -184,11 +188,12 @@ void includeparam(void **qq,       // px
      break;
      */
   case LANGSXP : {
-   if (STRCMP("setseed", param_name) != 0 && STRCMP("env", param_name)!=0){ 
-       if (GLOBAL.general.storing) {
+    if (STRCMP("setseed", param_name) != 0 && STRCMP("env", param_name)!=0){ 
+      if (KT->global.general.storing) {
+	// printf("storing %d %d\n", KT->global.general.storing, GLOBAL.general.storing);
 	 RFERROR1("If models with R commands in the parameters (such as '%.50s') are used then 'storing' must be FALSE.", DefList[USER].nick);
        }
-       if (!GLOBAL.internal.warn_oldstyle) {
+       if (!KT->global.messages.warn_oldstyle) {
 	 RFERROR1("Models with R commands in the parameters (such as '%.50s') may not be called by obsolete functions.\nSee the notes in '?RMmodelsAdvanced' and set 'RFoldstyle(FALSE)'.", DefList[USER].nick);
        }
      }
@@ -209,10 +214,10 @@ void includeparam(void **qq,       // px
 
   case ENVSXP :   {
      if (STRCMP("setseed", param_name) != 0 && STRCMP("env", param_name)!=0){ 
-       if (GLOBAL.general.storing) {
-	 RFERROR1("If models with R commands in the parameters (such as '%.50s') are used then 'storing' must be FALSE.", DefList[USER].nick);
+       if (KT->global.general.storing) {
+	 RFERROR1("If models with R commands in the parameters (such as '%.50s') are used then 'storing' must be FALSE", DefList[USER].nick);
        }
-       if (!GLOBAL.internal.warn_oldstyle) {
+       if (!KT->global.messages.warn_oldstyle) {
 	 RFERROR1("Models with R commands in the parameters (such as '%.50s') may not be called by obsolete functions.\nSee the notes in '?RMmodelsAdvanced' and set 'RFoldstyle(FALSE)'.", DefList[USER].nick);
        }
      }
@@ -270,7 +275,7 @@ void includeparam(void **qq,       // px
 	pi = list ? VECTOR_ELT(p, i) : p;
 
 	includeparam((void**) (L->lpx + i), REALSXP, length(pi), 
-		     pi, base, param_name); 
+		     pi, base, param_name, KT); 
        	
 	if (isMatrix(pi)) {
 	  // Achtung isVector ist true falls isMatrix true
@@ -323,7 +328,7 @@ void includeparam(void **qq,       // px
 	for (i=0; i<lpk; i++) {
 	  pi = VECTOR_ELT(pk, i);
 	  includeparam((void**) (ll->fpx + i), INTSXP, length(pi), 
-		       pi, base, param_name); 
+		       pi, base, param_name, KT); 
 	
 	  if (isMatrix(pi)) {
 	    // Achtung isVector ist true falls isMatrix true
@@ -348,30 +353,32 @@ void includeparam(void **qq,       // px
 
 
 
-model * CMbuild(SEXP Model, KEY_type *KT, int cR);
+model *CMbuild(SEXP Model, KEY_type *KT, int cR);
   
 
-void CheckModel(SEXP Model, double *x, double *Y, double *T, 
+void CheckModel(SEXP Model, double *x, double *Y, double *T, double *Ty,
 		int Spatialdim, /* spatial dim only ! */
 		int XdimOZ,
-		int Lx, int Ly,
-		bool Grid,
+		int Totpts, int Totptsy,
+		bool Grid, bool GridY,
 		bool Distances,
 		bool Time, 
 		SEXP xlist,
+		raw_type raw,
 		KEY_type *KT,
 		int cR) {
-  
-  //  printf("CM T3 = %f\n", Time ? T[2] : -99999);
+#ifdef debug
+  printf("Checkmodel...\n");//
+#endif
 
    bool
     distances = Distances,
-    no_xlist = length(xlist) == 0; 
+     no_xlist = length(xlist) == 0; 
  
   int err,
-    lx = Lx,
+    totpts = Totpts,
     zaehler = 0,
-    ly = Ly;
+    totptsy = Totptsy;
   double *y = Y;
   model *cov = NULL;
   char EM2[LENERRMSG] = "";
@@ -379,76 +386,86 @@ void CheckModel(SEXP Model, double *x, double *Y, double *T,
   GetRNGstate(); // some parts use monte carlo to determine internal values
   while (true) {
     isotropy_type iso = ISO_MISMATCH;
-    coord_sys_enum coord = GLOBAL.coords.coord_system;
-    STRCPY(KT->error_loc, "Building the model");  
+    STRCPY(KT->error_location, "Building the model");  
     cov = CMbuild(Model, KT, cR);
-    //    PMI(cov);
-    //printf("cov-errmd '%s'\n", cov->err_msg);
+    KT->rawConcerns = raw;
+    KT->set = 0;
 
-    STRCPY(KT->error_loc, "Having built the model");
+     
+#ifdef debug
+    printf("KT concern = %d\n", KT->rawConcerns);//
+#endif
+
+    
+    globalparam *global = &(KT->global);
+    coord_sys_enum coord = global->coords.coord_system;
+
+    STRCPY(KT->error_location, "Having built the model");
     
     char *PREF_FAILURE = KEYtypeOf(cov)->PREF_FAILURE;
     STRCPY(PREF_FAILURE, "");
-
-     //   APMI(cov);    TREE(cov);
 
     if (cov == NULL) RFERROR("no model is given");
     assert(cov->calling == NULL);
 
 
-    // printf("noxlist =%d %d\n", no_xlist, distances);
+    //    printf("noxlist =%d %d\n", no_xlist, distances);
     if (no_xlist) {
-      // printf("lx = %d %d\n", lx, ly);
-      assert(ly >= 0);
-      if (lx == 0) ERR("no coordinates recognized -- oversimplified model?");
-
-      if (distances) {
-	lx = (int) (1e-9 + 0.5 * (1 + SQRT(1. + 8 * lx)));
-	if (Lx != lx * (lx - 1) / 2)
-	  RFERROR("distance length not of form 'n * (n - 1) / 2'");
-      }
+      //      printf("totpts = %d %d\n", totpts, totptsy);
+      assert(totptsy >= 0);
+      if (totpts == 0) ERR("no coordinates recognized -- oversimplified model?");
 
       cov->prevloc = LOCLIST_CREATE(1, XdimOZ + (int) Time);
       assert(cov->prevloc != NULL && cov->prevloc[0] != NULL);
-      if ((err = loc_set(x, y, T, Spatialdim, XdimOZ, lx, ly, Time, Grid, 
+      if ((err = loc_set(x, y, T, Ty,
+			 Spatialdim, XdimOZ, totpts, totptsy,
+			 Time, Grid, GridY,
 			 distances, cov->prevloc + 0)
 	   ) != NOERROR) goto ErrorHandling;
       //printf("loc cov-errmd '%s'\n", cov->err_msg);
 
-    } else { // xlist
-      assert(x == NULL && Y==NULL && T==NULL && lx == 0 && ly == 0);
+    } else { // genuine xlist
+      assert(x == NULL && Y==NULL && T==NULL && Ty == NULL && totpts == 0 &&
+	     totptsy == 0);
       cov->prevloc = loc_set(xlist);
       assert(cov->prevloc != NULL);
     }
 
-    location_type *loc;
-    loc = Loc(cov);
-    int spatialdim;
-    spatialdim = loc->spatialdim;
-    //  PREVDOM(0) = ly == 0 ? XONLY : KERNEL;
+#ifdef debug
+    printf("xlist is set\n"); //
+#endif    
+
+    int spatialdim, xdimOZ;
+    xdimOZ = LocxdimOZ(cov);
+    spatialdim= Locspatialdim(cov);
+    Time = LocTime(cov); // in case of only 1dim Time -> FALSE
+    //  PREVDOM(0) = totptsy == 0 ? XONLY : KERNEL;
     
-    if (spatialdim != loc->xdimOZ) {
-      //printf("ui %d %d %d %d\n", spatialdim, loc->xdimOZ, Distances, distances);
-      // printf("%d %d\n", loc->xdimOZ, cov->prevloc[0]->distances);
-      if (loc->xdimOZ != 1 || !cov->prevloc[0]->distances) {
-	//PMI(cov);
+    if (spatialdim != xdimOZ) {
+      if (xdimOZ != 1 || !LocDist(cov)) {
 	GERR("either full coordinates or distances expected");
       }
-      if (loc->Time) {
+      if (Time) {
 	if (coord == cartesian) iso = DOUBLEISOTROPIC;
 	else GERR("angles of earth coordinates currently cannot be combined with time component");
       } else iso = ISOTROPIC; // means any kind of isotropy
     }
 
+  //    PMI0(cov);    printf("%d\n", SIMULATE); 
+    
     //    printf("ok %d\n", coord);
+
+#ifdef debug
+    printf("iso and dom will be chosen\n"); // 
+#endif    
     switch (coord) {
     case coord_auto: 
     case cartesian:
-       set_system(PREV, 0, spatialdim + (int) loc->Time,
-		 UNSET, loc->xdimOZ + (int) loc->Time, InterfaceType,
+      set_system(PREV, 0, spatialdim + (int) Time,
+		 UNSET, xdimOZ + (int) Time, InterfaceType,
 		 XONLY, // formal sind alle Interface Modelle nur von 
 		 //                       (dummy) Variablen abhaengig
-		  equalsIsoMismatch(iso) ? CARTESIAN_COORD : iso);
+		 equalsIsoMismatch(iso) ? CARTESIAN_COORD : iso);
       break; 
     case earth:  case sphere: {
       if (spatialdim < 2) // && spatialdim !=3) 
@@ -458,34 +475,33 @@ void CheckModel(SEXP Model, double *x, double *Y, double *T,
       } else {
 	iso = equalsIsoMismatch(iso) ? SPHERICAL_COORD : SPHERICAL_ISOTROPIC;
       }
-
-      int dim = loc->spatialdim
+      
+      int dim = spatialdim
 #if MAXSYSTEMS == 1
-	+ (int) loc->Time
+	+ (int) Time
 #endif		 
 	;
       
-      assert(loc->spatialdim = 2);
+      assert(spatialdim = 2);
       
       set_system(PREV, 0, dim,  UNSET, dim, InterfaceType, XONLY, iso);
       
 #if MAXSYSTEMS > 1      
-      //PMI0(cov);
       
       
-      int remaining_dim = loc->xdimOZ - 2; // Hoehe auch gegeben??
+      int remaining_dim = xdimOZ - 2; // Hoehe auch gegeben??
       /*
 	if (remaining_dim >= 1) { // surely height
 	set_system(PREV, 0, 1,
 	UNSET, 1, InterfaceType,
-	XONLY, // formal sind alle Interface Modelle nur von 
+	XO NLY, // formal sind alle Interface Modelle nur von 
 	//                       (dummy) Variablen abhaengig
 	LOGCART_COORDS); 
 	remaining_dim--;
 	}
       */
       
-      remaining_dim += (int) loc->Time;
+      remaining_dim += (int) Time;
       if (remaining_dim >= 1) { 
 	set_system(PREV, 1, remaining_dim,
 		   UNSET, remaining_dim, InterfaceType,
@@ -493,13 +509,12 @@ void CheckModel(SEXP Model, double *x, double *Y, double *T,
 		   //                       (dummy) Variablen abhaengig
 		   CARTESIAN_COORD); 
       }
-      //APMI0(cov);
 #endif
       
-      }
-    
+    }
+      
       break;
-       //    case coord_auto: 
+      //    case coord_auto: 
       //    case cartesian: cov->isoprev = CARTESIAN_COORD; break; 
       //    case earth: 
       //      if (spatialdim < 2) // && spatialdim !=3) 
@@ -515,13 +530,20 @@ void CheckModel(SEXP Model, double *x, double *Y, double *T,
       //      break;
     default: GERR("Unknown coordinate system.");
     }
+
+  //    PMI0(cov);    
+ 
+
+#ifdef debug
+    printf("iso and dom have been chosen\n");//
+#endif    
+
+    
     cov->calling=NULL;
 
-    //printf("switch ok\n");
+    //    printf("switch ok\n");
  
-    //   
- 
-    STRCPY(KT->error_loc, "Checking the model");
+    STRCPY(KT->error_location, "Checking the model");
     if (PL >= PL_DETAILS) {
       PMI(cov);//OK      
     }
@@ -538,39 +560,40 @@ void CheckModel(SEXP Model, double *x, double *Y, double *T,
     
       if (PL >= PL_ERRORS) {
 	PMI(cov); // OK
-	PRINTF("err =%d at '%s'\n", err, KT->error_loc);
+	PRINTF("err =%d at '%s'\n", err, KT->error_location);
       }
-      KT->error_causing_cov = cov;
+ #ifdef debug
+      if (PL < PL_ERRORS)
+	PRINTF("err =%d at '%s'\n", err, KT->error_location);//
+#endif    
+     KT->error_causing_cov = cov;
       goto ErrorHandling;
     }
+
+    
 
     if (PL >= PL_DETAILS) {
       PMI(cov); // OK
     }
- 
-    SPRINTF(KT->error_loc, "%.50s process", TYPE_NAMES[cov->frame]);
-    //    PrInL=-1;
-    
-    // if (PL >= PL_DETAILS) { PRINTF("CheckModel Internal A\n"); }
 
-    //    PMI(cov);
+#ifdef debug
+    printf("CMbukd checked\n"); //
+#endif    
+ 
+    SPRINTF(KT->error_location, "%.50s process", TYPE_NAMES[cov->frame]);
 
     assert(isCallingSet(cov));
-
-    //    printf("\n\n\n userinterface.cc *************************************** \n\n\n\n");
-
-    //   PMI(cov);
-   
+ 
     err = STRUCT(cov, NULL);
-    //    PMI0(cov);    PMI0(cov->key);
-    //PMI(cov);
-    //    printf("struct cov-errmd '%s'\n", cov->err_msg);
+    //    printf("struct done\n");
+
+#ifdef debug
+    printf("CMbuild struct done\n"); // ok
+#endif    
 
     assert((COVNR >= COVFCTN && COVNR <= VARIOGRAM_CALL) || cov->initialised);
-    //   printf("rrr %d \n", err);
-
     
-    if (false) {
+  if (false) {
       PMI(cov); printf("COVNR= %d %d %d; %d  %d %d\n", //
 		       COVNR, COVFCTN, VARIOGRAM_CALL,
 		       cov->key==NULL,
@@ -586,8 +609,11 @@ void CheckModel(SEXP Model, double *x, double *Y, double *T,
 	   (cov->key!=NULL && cov->key->initialised));
 
     //assert(err == NOERROR);
- 
+
    ErrorHandling:
+#ifdef debug
+    printf("ErrorHandling:\n"); //
+#endif    
     //    printf("zaehler=%d %d '%s'\n", zaehler, err, cov->err_msg);
     
     if (err == NOERROR || zaehler>=1) {
@@ -603,10 +629,10 @@ void CheckModel(SEXP Model, double *x, double *Y, double *T,
     errorMSG(err, causing==NULL ? (char*)"<strange failure>" : causing->err_msg,
 	     KT, EM);
     SPRINTF(EM2, "%.50s %.500s", PREF_FAILURE, EM);
-    //   printf("location:%.50s  %.50s  %.50rs\n", KT->error_loc,  cov->err_msg, EM);
-    if (lx == 0 || distances) break;
+    //   printf("location:%.50s  %.50s  %.50rs\n", KT->error_location,  cov->err_msg, EM);
+    if (totpts == 0 || distances) break;
     y = x;
-    ly = lx;
+    totptsy = totpts;
     zaehler++;
 
   }// Ende while
@@ -620,21 +646,22 @@ void CheckModel(SEXP Model, double *x, double *Y, double *T,
     RFERROR(EM2); 
   }
 
-  if (GLOBAL.internal.warn_mathdef == True) {
-    GLOBAL.internal.warn_mathdef = False;
+  if (false && KT->global.messages.warn_mathdef == True) { // 3.1.21 :false &&
     PRINTF("To guarantee definiteness use 'RMmodel(var=const)', and not 'const * RMmodel()'.\n");
   }
 
   // muss ganz zum Schluss stehen, da Fehler zu einer unvollstaendigen
   // Struktur fuehren koennen
   assert(isCallingSet(cov));
-  //  printf("rrr AAA\n");
-
   
+#ifdef debug
+  printf("cbuild: done\n");//
+#endif
 }
 
 
-model *InitIntern(int cR, SEXP Model, SEXP x, bool NA_OK) {
+model *InitIntern(int cR, SEXP Model, SEXP x, bool NA_OK,
+		  raw_type rawConcerns) {
   set_currentRegister(cR);
   bool listoflists = (TYPEOF(x) == VECSXP && TYPEOF(VECTOR_ELT(x, 0)) ==VECSXP);
   SEXP
@@ -650,75 +677,64 @@ model *InitIntern(int cR, SEXP Model, SEXP x, bool NA_OK) {
   KEY_type *KT = KEYT();
   
   setKT_NAOK_RANGE(KT, NA_OK);
-  CheckModel(Model, NULL, NULL, NULL, spatialdim, xdimOZ, 0, 0,
-	     false, // any value
-	     distances, Time, x, KT, cR);
+  CheckModel(Model, NULL, NULL, NULL, NULL,
+	     spatialdim, xdimOZ, 0, 0,
+	     false, false, // any value
+	     distances, Time, x, rawConcerns, KT, cR);
+  // printf("initintern done\n");
   return KT->KEY[cR];
 }
 
+
 SEXP Init(SEXP model_reg, SEXP Model, SEXP x, SEXP NA_OK) {
-
-  // printf("initialising RndomFields model\n");
-  
+  //  printf("init start\n");
   model *cov = InitIntern(INTEGER(model_reg)[0], Model, x,
-			  (bool) LOGICAL(NA_OK)[0]);
+			  (bool) LOGICAL(NA_OK)[0], noConcerns);
 
+  // printf("init A\n");
+  
   if (PL >= PL_COV_STRUCTURE) {
     PMI(cov);// OK
   }
-
-  //  PMI(cov);
 
   SEXP ans;
   PROTECT (ans = allocVector(INTSXP, 2));
   INTEGER(ans)[0] = cov->vdim[0];
   INTEGER(ans)[1] = cov->vdim[1];
   UNPROTECT(1);
-  //  APMI(key[INTEGER(model_reg)[0]]);
- 
+  //  printf("init end\n");
   return ans;
 }
 
-
-/*
-// for testing only
-SEXP EvaluateModelXX(){
-  PRINTF("dummy simulation\n");
-  SEXP result;
-  GetRNGstate();
-  PROTECT(result = allocVector(REALSXP, 10));
-  for (int i=0; i<10; i++) REAL(result)[i]=UNIFORM_RANDOM;
-  PutRNGstate();// PutRNGstate muss vor UNPROTECT stehen!!
-  UNPROTECT(1);
-  return result;
+SEXP copyoptions() {
+  KEY_type *KT = KEYT();
+  globalparam_NULL(KT, false);
+  return R_NilValue;
 }
-*/
 
-  
-SEXP EvaluateModel(SEXP X, SEXP Covnr){
+SEXP EvaluateModel(SEXP X, SEXP I, SEXP Covnr){
+  //  printf("evaluation start\n");
   SEXP result=R_NilValue, 
     dummy=R_NilValue;
   assert(currentNrCov != UNSET);  
   int d, mem, len;
   model *cov = KEY()[INTEGER(Covnr)[0]];
   KEY_type *KT = cov->base;
-  
-  //  PMI(cov);
-  //  printf("evaluating RndomFields model: %f x %s\n", REAL(X)[0], NAME(cov));
+  KT->set = 0; 
  
-  STRCPY(KT->error_loc, "");
+  STRCPY(KT->error_location, "");
   if (cov == NULL) RFERROR("register not initialised");
   if ( (len = cov->qlen) == 0) {
     BUG;
     if (cov->fieldreturn == wahr) RFERROR("model cannot be evaluated");
     mem = VDIM0 * VDIM1;
-  } else {   
-     DefList[COVNR].cov(REAL(X), cov, NULL); // nicht FCTN, COV o.ae.
+  } else {
+    DefList[COVNR].cov(REAL(X),
+		       INTEGER(I), // for simulations: gives the number of repetitions
+		       cov, NULL); // nicht FCTN, COV o.ae.
      // da Trafo des ersten Wertes moeglich !
     if (len > 1 && cov->q[len-1] == 1) len--; // last is for n=#{simulations}
-    for (mem=1, d=0; d<len; d++) {
-      mem *= (int) cov->q[d];
-    }
+    for (mem=1, d=0; d<len; d++) mem *= (int) cov->q[d];
   }
   assert(hasInterfaceFrame(cov));
 
@@ -735,20 +751,13 @@ SEXP EvaluateModel(SEXP X, SEXP Covnr){
     PROTECT(result=allocArray(REALSXP, dummy));
   }
   GetRNGstate();
-  DefList[COVNR].cov(REAL(X), cov, REAL(result));
+  DefList[COVNR].cov(REAL(X),
+		     INTEGER(I),// for simulations: gives the number of repetitions
+		     // predict: selection indices
+		     cov, REAL(result));// nicht FCTN, COV o.ae
   PutRNGstate(); // PutRNGstate muss vor UNPROTECT stehen!!
   UNPROTECT(prot);
-
-  //  for(int i=0; i<cov->q[0] * cov->q[1]; i++) REAL(result)[i] = i;
-  //  if (result != NULL) UNPROTECT(1 + (int) (len > 2));return result;
-  
-
-  //  printf("length(X)=%d dim=%d %s (%d)\n", length(X), GATTERXDIM(0), NAME(cov), COVNR);
-  // PMI0(cov);
-  // assert(COVNR == SIMULATE || (length(X) == GATTERXDIM(0)));
-
-  // PMI(cov);
-
+  //  printf("evaluation end\n");
  return result;
 }
 
@@ -799,12 +808,12 @@ void GetNrParameters(int *covnr, int* kappas) {
     int k = C->kappas,
       kk =0;
     for (int i=0; i<k; i++) {
-      p rintf("%50s %50s\n", C->kappanames[i], INTERNAL_PARAM);
-      kk += (str cmp(C->kappanames[i], INTERNAL_PARAM) != 0);
+    p rintf("%.50s %.50s\n", C->kappanames[i], INTERNAL_PARAM);
+    kk += (str cmp(C->kappanames[i], INTERNAL_PARAM) != 0);
     }
     *kappas = kk;
     p rintf("%d \n", kk);
-}
+    }
   */
 
 }
@@ -815,7 +824,7 @@ void GetModelNr(char **name, int *nr) {
 
 
 SEXP GetParameterNames(SEXP nr) {
-   assert(currentNrCov != UNSET);
+  assert(currentNrCov != UNSET);
   defn *C = DefList + INTEGER(nr)[0]; // nicht gatternr
   SEXP pnames;
   int i;
@@ -823,7 +832,7 @@ SEXP GetParameterNames(SEXP nr) {
 
   PROTECT(pnames = allocVector(STRSXP, C->kappas)); 
   for (i=0; i<C->kappas; i++) {
-       SET_STRING_ELT(pnames, i, mkChar(C->kappanames[i]));
+    SET_STRING_ELT(pnames, i, mkChar(C->kappanames[i]));
   }
   UNPROTECT(1);
   return(pnames);
@@ -868,7 +877,7 @@ SEXP GetSubNames(SEXP nr) {
     //if (!C->subintern[i]) SET_STRING_ELT(subnames, j++,
     //                                     mkChar(C->subnames[i]));
     //for (nsub=i=0; i<C->maxsub; i++) nsub += !C->subintern[i];
- }
+  }
   
   SET_VECTOR_ELT(list, 0, subnames);
   SET_VECTOR_ELT(list, 1, subintern);
@@ -881,7 +890,7 @@ SEXP GetRange(){
   assert(false); // muss neu geschrieben werden, als SEXP
   return R_NilValue;
 
-/*
+  /*
   // never change double without crosschecking with fcts in RFCovFcts.cc!
   // index is increased by one except index is the largest value possible
   defn *C;
@@ -889,35 +898,35 @@ SEXP GetRange(){
   range_type *r;
   int i,j, kappas;
 
-   assert(currentNrCov != UNSET);
+  assert(currentNrCov != UNSET);
   if ((*nr<0) || (*nr>=currentNrCov)) goto ErrorHandling;
   C = DefList + *nr; // nicht gatternr
   kappas = DefList[*nr].kappas;
   if (*lparam > kappas || *lrange != kappas * 4) goto ErrorHandling;
   if (*index < 0) {
-    getrange->n = 1;
-    for (i=0; i<lparam; i++) {
-      cov.p[i] = (double *) CALLOC(sizeof(double), 1);
-      cov.p[i][0] = param[i];
-    }
-    getrange->n = 1;
-    C->range(&cov, &getrange);
+  getrange->n = 1;
+  for (i=0; i<lparam; i++) {
+  cov.p[i] = (double *) CALLOC(sizeof(double), 1);
+  cov.p[i][0] = param[i];
+  }
+  getrange->n = 1;
+  C->range(&cov, &getrange);
   }
   if (*index >= getrange.n) goto ErrorHandling;
   r = getrange.ranges + *index;
   for (j=i=0; i<kappas; i++) {
-    range[j++] = r->min[i];
-    range[j++] = r->max[i];
-    range[j++] = r->pmin[i];
-    range[j++] = r->pmax[i];
+  range[j++] = r->min[i];
+  range[j++] = r->max[i];
+  range[j++] = r->pmin[i];
+  range[j++] = r->pmax[i];
   }
   return;
 
-ErrorHandling : 
+  ErrorHandling : 
   for (i=0; i<*lrange; i++) range[i]=RF_NA;
- *index = - 100;
- return;
-*/
+  *index = - 100;
+  return;
+  */
 }
 
 
@@ -933,15 +942,15 @@ void PMLheader(char* firstcolumn, int nick) {
 
 void PrintModelList(int *intern, int *operat, int* Nick)
 { // used in Roger's book
-    int i, k, last_method, m, OP;
-//char header[]="circ cut intr TBM spec dir seq Mak ave add hyp part\n";
+  int i, k, last_method, m, OP;
+  //char header[]="circ cut intr TBM spec dir seq Mak ave add hyp part\n";
   char coded[6][2]={"-", "X", "+", "N", "H", "S"};
-//  char typenames[4][2]={"i", "f", "s", "n"};
+  //  char typenames[4][2]={"i", "f", "s", "n"};
   char specialnames[4][2]={".", "n", "f", "?"};
   char firstcolumn[20], name[MAXCHAR];
   int maxchar=10; // <= MAXCHAR=14
   assert(MAXCHAR >= maxchar);
- int type[MAXNRCOVFCTS], op[MAXNRCOVFCTS], monotone[MAXNRCOVFCTS], 
+  int type[MAXNRCOVFCTS], op[MAXNRCOVFCTS], monotone[MAXNRCOVFCTS], 
     finite[MAXNRCOVFCTS], simpleArguments[MAXNRCOVFCTS], 
     internal[MAXNRCOVFCTS], dom[MAXNRCOVFCTS], 
     iso[MAXNRCOVFCTS], vdim[MAXNRCOVFCTS], maxdim[MAXNRCOVFCTS],
@@ -975,7 +984,7 @@ void PrintModelList(int *intern, int *operat, int* Nick)
       if (OP) {
 	PRINTF("%4s Operators\n", "");
  	PRINTF("%4s =========\n\n", "");  
-     } else {
+      } else {
 	PRINTF("%4s Simple models\n", "");
 	PRINTF("%4s =============\n\n", "");  
       }
@@ -999,8 +1008,8 @@ void PrintModelList(int *intern, int *operat, int* Nick)
 	}
 	//	if (C->kappas > 9) PRINTF(
 	PRINTF("%2d ", C->kappas);
-//	PRINTF("%s", internal[i] ? specialnames[4] :
-//		 (C->maxsub==0) ? specialnames[5] : specialnames[op[i]]);
+	//	PRINTF("%s", internal[i] ? specialnames[4] :
+	//		 (C->maxsub==0) ? specialnames[5] : specialnames[op[i]]);
 	PRINTF("%s", 
 	       specialnames[isNormalMixture((monotone_type) monotone[i]) ? 1
 			    : finite[i] == 1 ? 2 
@@ -1030,7 +1039,7 @@ void PrintModelList(int *intern, int *operat, int* Nick)
 	   specialnames[2]);
     PRINTF("'%s': neither a normal mixture nor a finite range\n", 
 	   specialnames[0]);
-   PRINTF("'%s': could be a normal mixture or have a finite range\n", 
+    PRINTF("'%s': could be a normal mixture or have a finite range\n", 
 	   specialnames[3]);
 
     PRINTF("\nAll other rows:\n");
@@ -1044,23 +1053,23 @@ void PrintModelList(int *intern, int *operat, int* Nick)
 }
 
 void PrintModelList() {
-  int wahr = 1, Zero = 0;
-    PrintModelList(&wahr, &wahr, &Zero);
+  int wahr = 1, zero = 0;
+  PrintModelList(&wahr, &wahr, &zero);
 }
 /*
-void GetModelList(int* idx, int*internal) {
+  void GetModelList(int* idx, int*internal) {
   int i, j, m;
-   assert(currentNrCov != UNSET); 
+  assert(currentNrCov != UNSET); 
 
   if (DefList==NULL) return;
   for (j=i=0; i<currentNrCov; i++) {
-    if (!*internal && DefList[i].internal) continue;
-    for (m=(int) CircEmbed; m<(int) Nothing; m++) {
-      idx[j++] = DefList[i].implemented[m];
-     }
+  if (!*internal && DefList[i].internal) continue;
+  for (m=(int) CircEmbed; m<(int) Nothing; m++) {
+  idx[j++] = DefList[i].implemented[m];
+  }
   }
   return;
-}
+  }
 */
 
 
@@ -1114,7 +1123,7 @@ int InternalGetProcessType(model *cov) {
   case BrMethodType : return BROWNRESNICKPROC;
   case ProcessType :
     if (nr == DOLLAR_PROC) return InternalGetProcessType(cov->sub[0]);
-    else if (nr == PLUS_PROC || nr == MULT_PROC) //|| nr == TREND_PROC
+    else if (nr == PLUS_PROC || nr == MULT_PROC) 
       return GAUSSPROC;
     return COVNR;
   case ManifoldType:
@@ -1124,15 +1133,12 @@ int InternalGetProcessType(model *cov) {
   default :
     BUG;
   }
- BUG;
-}
- 
-model *Build_cov(SEXP model_reg, SEXP Model) {
-  return CMbuild(Model, KEYT(), INTEGER(model_reg)[0]);
+  BUG;
 }
 
+
 SEXP GetProcessType(SEXP model_reg, SEXP Model) {
-  model *cov = Build_cov(model_reg, Model);
+  model *cov = CMbuild(Model, KEYT(), INTEGER(model_reg)[0]);
   int covnr = InternalGetProcessType(cov);
   SEXP ans;
   PROTECT (ans = allocVector(STRSXP, 1));
@@ -1140,9 +1146,6 @@ SEXP GetProcessType(SEXP model_reg, SEXP Model) {
   UNPROTECT(1);
   return ans;
 }
-
-
-
 
 
 void GetModelRegister(char **name, int* nr) {
@@ -1196,7 +1199,8 @@ void CMbuild(SEXP Model, int level, model **Cov,
   defn *C; 
   model *cov;
   bool subleft[MAXSUB]; 
-
+  globalparam *global = &(KT->global);
+ 
   if (TYPEOF(Model) != VECSXP) { // not list8
     RFERROR("list expected, which defines the (covariance) model.");
   }
@@ -1214,8 +1218,8 @@ void CMbuild(SEXP Model, int level, model **Cov,
   //  if (covnr == NATSC && NS) ERR("natsc model and RFparameters(PracticalRange=T RUE) may not be given at the same time");
   if (covnr == MULTIPLEMATCHING)
     RFERROR1("multiple matching of (covariance) model name '%.50s'", name)
-  else if (covnr == NOMATCHING) 
-    RFERROR("'%.50s' is an unknown model name.\n'RFgetModelNames()' yields the list of models", name);
+    else if (covnr == NOMATCHING) 
+      RFERROR("'%.50s' is an unknown model name.\n'RFgetModelNames()' yields the list of models", name);
 
   *Cov = NULL;
   addModel(Cov, covnr, calling, true);
@@ -1228,13 +1232,13 @@ void CMbuild(SEXP Model, int level, model **Cov,
   strcopyN(leer, "                                                           ", 
 	   (2 * level < NLEER) ? 2 * level : NLEER);
   SPRINTF(ERR_LOC, "%.50s\n%.50s%.50s... ", "", leer, name);//
-  //  SPRINTF(ERR_LOC, "%.50s\n%.50s%.50s... ", KT->error_loc, leer, name);//
+  //  SPRINTF(ERR_LOC, "%.50s\n%.50s%.50s... ", KT->error_location, leer, name);//
   if (!isDollar(cov)) {
     model *call = cov->calling;
     if (call != NULL && !isDollar(call))
       call->user_given = ug_implicit;
-  }
-  
+  }  
+ 
   cov->nsub = 0;
   set_nr(GATTER, UNSET);
   C=DefList + covnr; // nicht gatter nr
@@ -1245,7 +1249,7 @@ void CMbuild(SEXP Model, int level, model **Cov,
   //  printf("name=%s len=%d\n", C->name, len);
   
   for ( ; elt < len; elt++) {
-  //    if (elt == methNr) continue;  // former definition, 26.8.2011
+    //    if (elt == methNr) continue;  // former definition, 26.8.2011
     p = VECTOR_ELT(Model, elt);
     int i = UNSET;
     strcopyN(param_name, names == R_NilValue ? "" 
@@ -1255,23 +1259,23 @@ void CMbuild(SEXP Model, int level, model **Cov,
 
     bool empty = STRCMP(param_name, "") == 0;
     if  ((!empty || C->maxsub == 0) && nkappas != 0) {
-     if (!empty) {
-       if ((i = Match(param_name, C->kappanames, nkappas)) < 0) {
-	 i = Match(param_name, STANDARDPARAM, nkappas);
-       }
-     }
+      if (!empty) {
+	if ((i = Match(param_name, C->kappanames, nkappas)) < 0) {
+	  i = Match(param_name, STANDARDPARAM, nkappas);
+	}
+      }
 
-     //     printf("i=%d\n", i);
+      //     printf("i=%d\n", i);
      
-     if (i<0 && !STRCMP(C->kappanames[nkappas - 1], FREEVARIABLE)) {
-       int j;
-       if ((j = Match(param_name, C->subnames, C->maxsub)) < 0) {
+      if (i<0 && !STRCMP(C->kappanames[nkappas - 1], FREEVARIABLE)) {
+	int j;
+	if ((j = Match(param_name, C->subnames, C->maxsub)) < 0) {
 	  j = Match(param_name, STANDARDSUB, MAXSUB);
-       }
+	}
 
 	//	printf("  j= %d\n", j);
 	
-       if (j < 0) {
+	if (j < 0) {
 	  if (cov->ownkappanames == NULL) {
 	    cov->ownkappanames = (char**) CALLOC(nkappas, sizeof(char*));
 	  }
@@ -1334,7 +1338,7 @@ void CMbuild(SEXP Model, int level, model **Cov,
 	  }
 	  if (i == MULTIPLEMATCHING) {
 
-#define MMERR(X) {ERR3("%.50s\n%.50s: %.50s", KT->error_loc, param_name, X);}
+#define MMERR(X) {ERR3("%.50s\n%.50s: %.50s", KT->error_location, param_name, X);}
 
             MMERR("multiple matching of submodel names") 
 	      } else {
@@ -1354,11 +1358,11 @@ void CMbuild(SEXP Model, int level, model **Cov,
 	}
 	// internal 
 	if (C->subintern[i]) {
-	  char info[200];
-	  SPRINTF(info,
+	  char msg[200];
+	  SPRINTF(msg,
 		  "submodel could not be identified. Please give the names of the parameters and the submodels explicitely. Did you mean '%.50s' ?", 
 		  C->subnames[i]);
-	  MMERR(info);
+	  MMERR(msg);
 	}
       }
 
@@ -1371,7 +1375,7 @@ void CMbuild(SEXP Model, int level, model **Cov,
       //cov->sub[i]->calling = cov; // ja nicht SET_CALLING
       assert(cov->calling == NULL || cov->calling->root == cov->root);
 
-      STRCPY(KT->error_loc, ERR_LOC);
+      STRCPY(KT->error_location, ERR_LOC);
       (cov->nsub)++;
     } else { // parameter (not list)
       // parameter identification
@@ -1390,7 +1394,7 @@ void CMbuild(SEXP Model, int level, model **Cov,
 	// ERR("short form k of parameter name not allowed for sophistacted models");
 	for (int j=0; j<len_p; j++) {
 	  if (!PisNULL(j)) PERR("parameter given twice"); // p[0] OK
-	  if (true ||  // neu seit 6.8.14, wegen RFgui, modelParam = .Call(C_SetAndGetModelInfo",
+	  if (true ||  // neu seit 6.8.14, wegen RFgui, modelParam = .Call(C_SetAndGetModelFacts",
 	      C->kappatype[j] != INTSXP ||
 	      Integer(p, param_name, j) != NA_INTEGER) {
 	    cov->ncol[j] = cov->nrow[j] = 1;	  
@@ -1398,7 +1402,7 @@ void CMbuild(SEXP Model, int level, model **Cov,
 	    if ( C->kappatype[j] != INTSXP && C->kappatype[j] != REALSXP)
 	      PERR("model has too complicated arguments to allow abbreviations");
 	    includeparam((void**) (cov->px + j), C->kappatype[j], 1, 
-			 p, j, param_name);
+			 p, j, param_name, KT);
 	  }
 	}
 	continue;
@@ -1446,7 +1450,7 @@ void CMbuild(SEXP Model, int level, model **Cov,
 	  ERR("models of interface type allowed only as mail model");
 	// cov->kappasub[i]->calling =  cov; // ja nicht SET_CALLING
  	assert(cov->calling == NULL || cov->calling->root == cov->root);
-	STRCPY(KT->error_loc, ERR_LOC);
+	STRCPY(KT->error_location, ERR_LOC);
       } else {
 	// first the fixed one for the dimensions !!
 	if (!PisNULL(i) || cov->kappasub[i] != NULL)
@@ -1458,11 +1462,11 @@ void CMbuild(SEXP Model, int level, model **Cov,
 		(((type = C->kappaParamType[i]) < NN1 || type > LASTNN) &&
 		 type != CharInputType)) {
 	  includeparam((void**) (cov->px + i), C->kappatype[i], len_p, 
-		     p, 0, param_name);
+		       p, 0, param_name, KT);
 	} else {
 	  if (type >= NN1 && type <= LASTNN) {
 	    if (len_p > 1)
-	      PERR1("argument '%50s' only allows a single string value",
+	      PERR1("argument '%.50s' only allows a single string value",
 		    param_name);
 	    if (C->kappatype[i] != INTSXP) BUG;
 	    const char **List;
@@ -1477,7 +1481,7 @@ void CMbuild(SEXP Model, int level, model **Cov,
 	    //  printf("ok %d\n", type - (int) NN1);
 	    //  printf("t=%d %50s %50s %d\n", type - (int) NN1, (char*) CHAR(STRING_ELT(p, 0)), List[0], lenL);
 	    int which = Match((char*) CHAR(STRING_ELT(p, 0)), List, lenL);
-	    if (which < 0) PERR1("value of '%50s' is not recognized", param_name);
+	    if (which < 0) PERR1("value of '%.50s' is not recognized", param_name);
 
 	    cov->px[i] = (double*) MALLOC(sizeof(int));
 	    ((int*) cov->px[i])[0] = which;
@@ -1523,7 +1527,7 @@ void CMbuild(SEXP Model, int level, model **Cov,
 	  while (call != NULL && MODELNR(call) != RFGET) //not CALLNR
 	    call = call->calling;
 	  if (call == NULL)
-	    ERR1("'%100s' does not have enough submodels", NAME(cov));
+	    ERR1("'%.100s' does not have enough submodels", NAME(cov));
 	}
 	if (PL >= PL_IMPORTANT && !emptyOK)  {
 	// bei emptyOK darf von 2 untermodellen nur 1 angegeben werden
@@ -1533,14 +1537,14 @@ void CMbuild(SEXP Model, int level, model **Cov,
       break;
     }
 
-  if (GLOBAL.general.naturalscaling > 0) {
+  if (global->general.naturalscaling > 0) {
     for (int j=0; j < C->maxsub; j++) {
       model *sub = cov->sub[0];
       if (sub != NULL) {
 	defn *S = DefList + SUBNR;
-	if (S->maxsub == 0 && S->inverse != ErrInverse && S->cov != nugget &&
+	if (S->maxsub == 0 && S->inverse != inverseErr && S->cov != nugget &&
 	    S->cov != constant) {
-	  if (GLOBAL.general.naturalscaling == NATSCALE_MLE && isDollar(cov)) {
+	  if (global->general.naturalscaling == NATSCALE_MLE && isDollar(cov)) {
 	    // natsc wird nur dann eingeschoben, wenn davor scale=NA war
 	    bool natsc= !PisNULL(DSCALE) && ISNAN(P0(DSCALE)) && 
 	      cov->kappasub[DSCALE] == NULL;
@@ -1576,7 +1580,7 @@ model *CMbuild(SEXP Model, KEY_type *KT, int cR) {
   model **Cov = KT->KEY + cR;
   if (*Cov != NULL) {
     COV_DELETE(Cov, NULL);
-  }
+   }
   assert(*Cov == NULL);
  
   CMbuild(Model, 0, Cov, NULL, KT, NULL);
@@ -1584,13 +1588,12 @@ model *CMbuild(SEXP Model, KEY_type *KT, int cR) {
   assert(cov->root == cov);
   assert(cov->base == KT);
   if (!isInterface(cov)) {
-    //PMI0(cov); crash();
     BUG;
   }
 
-  //printf("cmbuild %d\n", cR);
-  // if (cR == 13) 
-  // APMI(*Cov);
   
+
   return cov;
 }
+
+

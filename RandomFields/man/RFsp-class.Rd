@@ -157,11 +157,10 @@ dta <- data.frame(coords=z4$x,data=z2@data[,1])
 z3<-RFinterpolate(model=model, x=x, y=x, data=dta) 
 plot(z3,z2)
 
-## Illustrating the warning.
-
-a1 <- new("RFpointsDataFrame")
-str(a1)
-try(a2 <- new("RFsp")) ## ERROR
+%## Illustrating the warning.
+%a1 <- new("RFpointsDataFrame")
+%str(a1)
+%try(a2 <- new("RFsp")) ## ERROR
 \dontshow{FinalizeExample()}}
 
 \keyword{classes}

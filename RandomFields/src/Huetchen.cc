@@ -30,6 +30,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "Processes.h"
 #include "primitive.h" 
 #include "families.h"
+#include "startGetNset.h"
 
  
 #define POISSON_INTENSITY 0
@@ -54,11 +55,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 int alloc_pgs(model *cov) { // all what is necessary for dompp 
-  int dimP1 = ANYDIM + 1;
+  int dimP1 = OWNXDIM(0) + 1;
 
   //NIE pgs_DELETE(&(cov->Spgs)) in Huetchen, da sonst dompp durcheinander kommt
-  NEW_STORAGE_WITH_SAVE(pgs);
-  pgs_storage *pgs = cov->Spgs;
+  NEW_STORAGE(pgs);
+
+  //  if (cov->Smodel != NULL) crash();
+  
+  NEWSTOMODEL;
+  getStorage(pgs ,   pgs); 
 
   // to be save: everywhere +1 for loc->i_row although most not needed
   if ((pgs->supportmin = (double*) CALLOC(dimP1, sizeof(double))) == NULL ||
@@ -86,31 +91,31 @@ int alloc_pgs(model *cov) { // all what is necessary for dompp
 
 
 void closest(double *x, model *cov, double *delta) {
-  location_type *loc = Loc(cov);
-  int dim = OWNXDIM(0);
-  assert(Getgrid(cov));
-
+  assertNoLocY(cov);
+  int dim = OWNXDIM(0);  
+  assert(Locgrid(cov));
+  coord_type gr = Locxgr(cov);
+ 
   for (int d=0; d<dim; d++) {
     double
-      start = loc->xgr[d][XSTART],
-      step = loc->xgr[d][XSTEP],
+      start = gr[d][XSTART],
+      step = gr[d][XSTEP],
       idx = ROUND((x[d] - start) / step),
-      maxidx = loc->xgr[d][XLENGTH] - 1.0;
+      maxidx = gr[d][XLENGTH] - 1.0;
     idx = idx < 0.0 ? 0.0 : idx > maxidx ? maxidx : idx;
     delta[d] = x[d] - (start + idx * step);
   }
 }
 
 
-void Zhou(double *x, model *cov, // pointshapetype
-		     double *v) {
+void Zhou(double *x, int *info, model *cov, double *v) {// pointshapetype
   model *shape = cov->sub[PGS_FCT],
     *pts = cov->sub[PGS_LOC];
   double w;
   TALLOC_X1(delta, OWNXDIM(0));
-  NONSTATCOV(x, cov->q, shape, v);
+  NONSTAT2STATCOV(x, cov->q, info, shape, v);
   closest(cov->q, cov, delta);
-  VTLG_D(delta, pts, &w);
+  VTLG_D(delta, info, pts, &w);
   *v /= w;
   //printf("x=%f %f v=%f\n", x[0], x[1], *v);
  // PMI(cov);
@@ -120,14 +125,14 @@ void Zhou(double *x, model *cov, // pointshapetype
     END_TALLOC_X1;
 }
 
-void logZhou(double *x, model *cov, double *v, double *Sign) { 
+void logZhou(double *x, int *info, model *cov, double *v, double *Sign) { 
  model *shape = cov->sub[PGS_FCT],
     *pts = cov->sub[PGS_LOC];
   double w;
   TALLOC_X1(delta, OWNXDIM(0));
-  LOGNONSTATCOV(x, cov->q, shape, v, Sign);
+  LOGNONSTAT2STATCOV(x, cov->q, info, shape, v, Sign);
   closest(cov->q, cov, delta);
-  VTLG_DLOG(delta, pts, &w);
+  VTLG_DLOG(delta, info, pts, &w);
 
   *v -= w; // + LOG(pts->mpp.unnormedmass);
   // if (*v - cov->Spgs->log_density >= 1e-12) printf("%f\n", cov->Spgs->log_density);
@@ -138,19 +143,19 @@ void logZhou(double *x, model *cov, double *v, double *Sign) {
 }
 
 int check_Zhou(model *cov) {
+  globalparam *global = &(cov->base->global);
   ASSERT_ONESYSTEM;
   ASSERT_UNREDUCED;
  model *shape = cov->sub[PGS_FCT],
     *pts = cov->sub[PGS_LOC];
-  location_type *loc = Loc(cov);
   int err,
     dim = OWNLOGDIM(0);
  
   ASSERT_CARTESIAN;
-  if (loc->Time) SERR("Time component not allowed yet"); // todo
+  if (LocTime(cov)) SERR("Time component not allowed yet"); // todo
    
-  kdefault(cov, ZHOU_RATIO, GLOBAL.extreme.density_ratio); 
-  kdefault(cov, ZHOU_FLATHULL, (int) GLOBAL.extreme.flathull);
+  kdefault(cov, ZHOU_RATIO, global->extreme.density_ratio); 
+  kdefault(cov, ZHOU_FLATHULL, (int) global->extreme.flathull);
   kdefault(cov, ZHOU_INFTY_SMALL, P0INT(ZHOU_FLATHULL) != (int) False);
   kdefault(cov, ZHOU_NORMED, true);
   kdefault(cov, ZHOU_ISOTROPIC, true);
@@ -199,11 +204,13 @@ int struct_Zhou(model *cov, model **newmodel){
 
   
   model *shape = cov->sub[PGS_FCT];
-  //  location_type *loc = Loc(cov);
   int err = NOERROR;
 
   ASSERT_NEWMODEL_NULL;
-  if (cov->Spgs != NULL)  pgs_DELETE(&(cov->Spgs), cov);
+  if (cov->Spgs != NULL) {
+    pgs_DELETE(&(cov->Spgs));
+    DELSTOMODEL;
+  }
 
   if (!hasSmithFrame(shape)) ILLEGAL_FRAME;
   if (cov->sub[PGS_LOC] == NULL) {
@@ -222,8 +229,7 @@ int struct_Zhou(model *cov, model **newmodel){
 
 int calculate_mass_maxstable(model *cov) {// = pointshapetype
 
-  pgs_storage *pgs = cov->Spgs;
-  location_type *loc = Loc(cov);
+getStorage(pgs ,   pgs); 
   model *shape = cov->sub[PGS_FCT],
     *pts = cov->sub[PGS_LOC];
   double voxels, value_orig,
@@ -235,6 +241,9 @@ int calculate_mass_maxstable(model *cov) {// = pointshapetype
   int d,
     dim = OWNLOGDIM(0);
   usr_bool flathull = (usr_bool) P0INT(ZHOU_FLATHULL);
+  bool grid = Locgrid(cov);
+  coord_type gr = Locxgr(cov);
+  assertNoLocY(cov);
  
   if (hasPoissonFrame(shape)){
     BUG;
@@ -243,20 +252,22 @@ int calculate_mass_maxstable(model *cov) {// = pointshapetype
 
   } // else {
 
-  VTLG_D(ZERO(pts), pts, &value_orig);
+  DEFAULT_INFO(info);
+  VTLG_D(ZERO(pts), info, pts, &value_orig);
 
   //  PMI(cov, "calculate max");
   //  printf("%.50s %d %d %10g\n",NICK(cov), ZHOU_FLATHULL, P0INT(ZHOU_FLATHULL), value_orig );// APMI(cov); assert(false);
   
-  // VOXEL 
-  for (d=0; d<dim; d++) halfstepvector[d] = 0.5 * loc->xgr[d][XSTEP];
+  // VOXEL
+  if (grid) for (d=0; d<dim; d++) halfstepvector[d] = 0.5 * gr[d][XSTEP];
+  else BUG;
 
   if (flathull == Nan) {
     // flathull == im Kerngebiet wird konstant simuliert; ausserhalb dann
     // abfallend
-    if (loc->grid) {
+    if (grid) {
       double v;
-      VTLG_D(halfstepvector, pts, &v);
+      VTLG_D(halfstepvector, info, pts, &v);
       double threshold = 
 	value_orig == RF_INF//&& cov->p[ZHOU_RATIO][0] == 0.0 
 	? RF_INF
@@ -288,16 +299,17 @@ int calculate_mass_maxstable(model *cov) {// = pointshapetype
   } else {
     //    APMI(cov);
     //       printf("two sided %10g %10g %10g\n", halfstepvector[0], halfstepvector[1], halfstepvector[2]); //assert(false);
-    VTLG_P2SIDED(NULL, halfstepvector, pts, single + ZHOU_VOXEL);
+    VTLG_P2SIDED(NULL, halfstepvector, info, pts, single + ZHOU_VOXEL);
     //     printf("two sided done %10e %10g %.50s\n", single[ZHOU_VOXEL], halfstepvector[0], NICK(pts)); //assert(false);
   }
   voxels = 1.0;
-  for (d=0; d<dim; d++) voxels *= loc->xgr[d][XLENGTH] - 1.0;  
+  if (grid) for (d=0; d<dim; d++) voxels *= gr[d][XLENGTH] - 1.0;
+  else BUG;
   total[ZHOU_VOXEL] = single[ZHOU_VOXEL] * voxels;
   
   // CORNER
   for (d=0; d<dim; d++) x[d] = RF_INF;  
-  VTLG_P2SIDED(NULL, x, pts, single + ZHOU_CORNER);
+  VTLG_P2SIDED(NULL, x, info, pts, single + ZHOU_CORNER);
 
   //  printf("%d %10g\n", !P0INT(ZHOU_NORMED), single[ZHOU_CORNER]);
 
@@ -310,12 +322,13 @@ int calculate_mass_maxstable(model *cov) {// = pointshapetype
       if (pgs->flathull == True) for (int i=0; i<dim; i++) x[i] = 0.0;
       else for (int i=0; i<dim; i++) x[i] = halfstepvector[i];
       x[d] = RF_INF; // !! changed
-      VTLG_P2SIDED(NULL, x, pts, single + ZHOU_SIDES + d);
+      VTLG_P2SIDED(NULL, x, info, pts, single + ZHOU_SIDES + d);
 
+      assert(grid);
       for (int i=0; i<dim; i++) {
 	if (R_FINITE(x[i])) {
-	  if (pgs->flathull == True) single[ZHOU_SIDES + d] *= loc->xgr[i][XSTEP]; 
-	  nr *= loc->xgr[i][XLENGTH] - 1.0;
+	  if (pgs->flathull == True) single[ZHOU_SIDES + d] *= gr[i][XSTEP]; 
+	  nr *= gr[i][XLENGTH] - 1.0;
 	}
       }
       //
@@ -328,14 +341,15 @@ int calculate_mass_maxstable(model *cov) {// = pointshapetype
     }
 
     if (dim == 3) { // Kanten
+      assert(grid);
       for (d=0; d<dim; d++) {
 	int nr = 1.0;
 	for (int i=0; i<dim; i++) x[i] = RF_INF;
 	x[d] = pgs->flathull == True? 0.0 : halfstepvector[d];
-	VTLG_P2SIDED(NULL, x, pts, single + ZHOU_SIDES + dim + d);
+	VTLG_P2SIDED(NULL, x, info, pts, single + ZHOU_SIDES + dim + d);
 	if (pgs->flathull == True)
-	  single[ZHOU_SIDES + dim + d] *= loc->xgr[d][XSTEP]; 
-	nr *= loc->xgr[d][XLENGTH] - 1.0;
+	  single[ZHOU_SIDES + dim + d] *= gr[d][XSTEP]; 
+	nr *= gr[d][XLENGTH] - 1.0;
 	
 	//	printf("  single d=%d %d x=(%10g %10g %10g) val=%10g %d\n", d, ZHOU_SIDES + dim + d,  x[0], x[1], x[2], single[ZHOU_SIDES + dim + d], nr); //assert(false);
 
@@ -422,14 +436,12 @@ int init_Zhou(model *cov, gen_storage *S) {// = pointshapetype
   model *shape = cov->sub[PGS_FCT],
     *pts = cov->sub[PGS_LOC];
   defn *Cshape = DefList + MODELNR(shape);
-  location_type *loc = Loc(cov);
   int 
     err = NOERROR,
     dim = XDIM(PREVSYSOF(shape), 0);
-  pgs_storage *pgs = cov->Spgs;
   bool 
     grid = Loc(cov)->grid,
-    pgsnull = pgs == NULL;
+    pgsnull = cov->Spgs == NULL;
   if (!grid) { // todo
     SERR("non-grid not programmed yet"); // meiste da; fehlt noch
     // welche Vektoren ich wirklich brauche
@@ -440,13 +452,13 @@ int init_Zhou(model *cov, gen_storage *S) {// = pointshapetype
   assert(dim == XDIM(PREVSYSOF(cov->sub[PGS_LOC]), 0));
   assert(dim == Loc(cov)->timespacedim);
   
-  if (Cshape->inverse == ErrInverse)//&&Cshape->nonstat_inverse==Err CovNonstat)
+  if (Cshape->inverse == inverseErr)//&&Cshape->inverse_nonstat==Err CovNonstat)
     SERR1("support of the model is unknown. Use '%.50s' to determine the support",
 	  DefList[TRUNCSUPPORT].nick);
  
   if (pgsnull) {
     if ((err = alloc_pgs(cov)) != NOERROR) RETURN_ERR(err); // insb pgs->x
-    pgs = cov->Spgs;
+    getStorage(pgs ,   pgs); 
     
     if ((pgs->v = (double*) CALLOC(dim, sizeof(double))) == NULL ||
 	(pgs->y = (double*) CALLOC(dim, sizeof(double))) == NULL
@@ -456,7 +468,9 @@ int init_Zhou(model *cov, gen_storage *S) {// = pointshapetype
     pgs->sum_zhou_c = pgs->sq_zhou_c = 0.0;
     pgs->n_zhou_c = 0;
   }
-  pgs->size = loc->totalpoints;
+  getStorage(pgs ,   pgs); 
+  GETSTOMODEL;
+  pgs->size = Loctotalpoints(cov);
   if (grid) pgs->size = intpow(2, dim);
  
   // selbst wenn zufaelliger Shape: 1x laufen lassen, ob 
@@ -514,16 +528,17 @@ int init_Zhou(model *cov, gen_storage *S) {// = pointshapetype
   assert(cov->randomkappa == shape->randomkappa);
   if ((pgs->estimated_zhou_c =cov->randomkappa)) {
     pgs->zhou_c = RF_NA;
-    if (pgs->cov == NULL) {
+    if (STOMODEL->cov == NULL) {
       model *start=cov->calling;
       if (start == NULL) BUG;	
       //  APMI(start);
       while (start->calling != NULL && MODELNR(start) != ZHOU)
 	start = start->calling;	
       if (MODELNR(start) != ZHOU) {
-	if ((err=complete_copy(&(pgs->cov), cov)) != NOERROR) RETURN_ERR(err);
-	SET_CALLING(pgs->cov, cov->calling);
-	pgs->cov->Spgs->cov = cov;
+	if ((err=complete_copy(&(STOMODEL->cov), cov)) != NOERROR) RETURN_ERR(err);
+	SET_CALLING(STOMODEL->cov, cov->calling);
+	assert(STOMODEL->cov->Smodel != NULL);
+	STOMODEL->cov->Smodel->cov = cov;
       }
     }
     pgs->old_zhou = 0.0;
@@ -535,7 +550,7 @@ int init_Zhou(model *cov, gen_storage *S) {// = pointshapetype
   }
   
 
-  if (DefList[MODELNR(shape)].nonstat_inverse == ErrInverseNonstat) {
+  if (DefList[MODELNR(shape)].inverse_nonstat == inversenonstatErr) {
     if (MODELNR(pts) != RECTANGULAR) {
       //       PMI(pts);
       // APMI(shape);
@@ -580,7 +595,6 @@ int DrawCathegory(int size, double *single,
   pgs = cov->Spgs;				 \
   shape = cov->sub[PGS_FCT];			 \
   pts = cov->sub[PGS_LOC];			 \
-  loc = Loc(cov);				 \
   single = pgs->single;				 \
   total = pgs->total;				 \
   halfstepvector = pgs->halfstepvector;		 \
@@ -590,19 +604,19 @@ int DrawCathegory(int size, double *single,
   flathull = (bool) pgs->flathull;			 \
   assert(pgs != NULL);				 \
   assert(!cov->randomkappa ||			 \
-	 (pgs->cov!=NULL && pgs->cov->Spgs!=NULL \
-	  && pgs->cov->Spgs->cov==cov));
+	 (STOMODEL->cov!=NULL && STOMODEL->cov->Spgs!=NULL \
+	  && STOMODEL->cov->Smodel->cov==cov));
 
 #define SWAP_PGS				\
-  cov = cov->Spgs->cov;				\
+  cov = cov->Smodel->cov;			\
   SET_COV
 
  
 void do_pgs_maxstable(model *cov, gen_storage *S) {// = pointshapetype
+  globalparam *global = &(cov->base->global);
   pgs_storage *pgs = NULL;
   model *shape = NULL,
     *pts = NULL;
-  location_type *loc = NULL;
   int d, elmts, mcmc, dim, err;
   double 
     *single = NULL, // in
@@ -610,23 +624,29 @@ void do_pgs_maxstable(model *cov, gen_storage *S) {// = pointshapetype
     *halfstepvector = NULL, // in
     *x = NULL, // dummy
     *v = NULL; // dummy
-  bool flathull;
+  bool flathull,
+    grid = Locgrid(cov);
+  assert(grid);
+  coord_type gr = Locxgr(cov);
+  
   assert(cov->calling != NULL);
 
+  
+  GETSTOMODEL;
   if (!cov->randomkappa) {
-    SET_COV;
+   SET_COV;
   } else {
     // assert(PARAM0(shape->sub[0], POWSCALE) == PARAM0(pts, LOC_SCALE));
     double cmaxDmu;
     SWAP_PGS;    
-    for (mcmc=0; mcmc<GLOBAL.extreme.mcmc_zhou; mcmc++) {
+    for (mcmc=0; mcmc<global->extreme.mcmc_zhou; mcmc++) {
       if ((err = REINIT(cov, cov->mpp.moments, S)) != NOERROR) BUG;
       DO(shape, S);     
       if (calculate_mass_maxstable(cov) != NOERROR) 
 	ERR("unexpected error in 'do_Zhou' (maxstable)");
 
       cmaxDmu = pgs->totalmass / shape->mpp.mMplus[1];
-      if (pgs->n_zhou_c < GLOBAL.extreme.max_n_zhou) {
+      if (pgs->n_zhou_c < global->extreme.max_n_zhou) {
 	pgs->n_zhou_c++;
 	pgs->sum_zhou_c += cmaxDmu;
 	pgs->sq_zhou_c += cmaxDmu * cmaxDmu;
@@ -657,7 +677,7 @@ void do_pgs_maxstable(model *cov, gen_storage *S) {// = pointshapetype
       //PMI(cov);
       //assert( shape->sub[0]->Spolygon->P->box0[0] == PARAM(pts, 0)[0]);
 
-      double old_zhou = pgs->cov->Spgs->old_zhou;
+      double old_zhou = STOMODEL->cov->Spgs->old_zhou;
       if (old_zhou < cmaxDmu || UNIFORM_RANDOM * old_zhou < cmaxDmu) {
 	//printf(". %10g %10g\n", old_zhou, cmaxDmu);
 	pgs->old_zhou = cmaxDmu;
@@ -701,7 +721,7 @@ void do_pgs_maxstable(model *cov, gen_storage *S) {// = pointshapetype
     */
   }
 
-  int idx = DrawCathegory(pgs->size, single, total, loc->grid, &elmts);
+  int idx = DrawCathegory(pgs->size, single, total, Locgrid(cov), &elmts);
  
   if (flathull) for (d=0; d<dim; d++) x[d] = 0.0; 
   else for (d=0; d<dim; d++) x[d] = halfstepvector[d];
@@ -748,6 +768,7 @@ void do_pgs_maxstable(model *cov, gen_storage *S) {// = pointshapetype
   //APMI(cov);
   //printf("flathull = %d %ld %.50s i=%d %d \n", flathull, x, NICK(pts), i, ZHOU_VOXEL);
  
+  DEFAULT_INFO(info);
   if (flathull) { 
     // to do: programmierfehler!
     // frage: lohnt sich 'flathull=TRUE' ueberhaupt noch hinsichtlich Aufwand
@@ -758,11 +779,11 @@ void do_pgs_maxstable(model *cov, gen_storage *S) {// = pointshapetype
     //      Print(EXP(-EXP(range(-z[[1]]))))
     //      plot(z); X11(); hist(z[[1]], freq=FALSE, 50)
     //			curve(EXP(-x-2) * EXP(-EXP(-x-2)), -5, 2, add=TRUE)
-    if (idx != ZHOU_VOXEL) VTLG_R(x, pts, v); 
+    if (idx != ZHOU_VOXEL) VTLG_R(x, info, pts, v); 
     //  printf("v=%10g x=%10g %d %d %d \n", v[0],  x[0], i, ZHOU_VOXEL,  ZHOU_CORNER);
     for (d = 0; d<dim; d++)
       if (x[d] == 0.0) 
-	v[d] = loc->xgr[d][XSTEP] * UNIFORM_RANDOM - halfstepvector[d];
+	v[d] = gr[d][XSTEP] * UNIFORM_RANDOM - halfstepvector[d];
   } else { 
     //    printf("here %10g %10g %10g\n", x[0], x[1], x[2]);
     // double xx[3]; /* print */
@@ -771,7 +792,7 @@ void do_pgs_maxstable(model *cov, gen_storage *S) {// = pointshapetype
     // xx[0] = xx[1] = xx[2] = RF_INF; ok
     //xx[0] = 0.5;  xx[1] = xx[2] = RF_INF;
     
-    VTLG_R2SIDED(NULL, x, pts, v); 
+    VTLG_R2SIDED(NULL, x, info, pts, v); 
   }
 
   // v[0] = (2 * UNIFORM_RANDOM - 1) * PARAM0(shape->sub[0], POWSCALE) ;
@@ -784,16 +805,14 @@ void do_pgs_maxstable(model *cov, gen_storage *S) {// = pointshapetype
   //printf("i=%d %10g %10g v=%10g %10g\n", i, x[0], x[1], v[0], v[1]);
 
   for (d=0; d<dim; d++) {
-    cov->q[d] = loc->xgr[d][XSTART] + v[d];
+    cov->q[d] = gr[d][XSTART] + v[d];
     // 
-    // printf("q=%10g %10g %10g %d\n", cov->q[d], loc->xgr[d][XSTART], v[d], flathull);
-//APMI(pts->calling);
     if (R_FINITE(x[d])) {      
       int 
-	len = (int) loc->xgr[d][XLENGTH] - 1,
+	len = (int) gr[d][XLENGTH] - 1,
 	nr = elmts % len;
       elmts /= len;
-      cov->q[d] += loc->xgr[d][XSTEP] * (nr + (v[d] > 0.0));	
+      cov->q[d] += gr[d][XSTEP] * (nr + (v[d] > 0.0));	
       // simuliert von VTLF_R2SIDED ist die abgeschnittene Dichte symmetrisch
       // um 0; in Ursprung muss die Dichtekurve aufgeschnitten werden und 
       // versetzt wieder zusammengesetzt werden, so dass in der Mitte i.a.
@@ -801,11 +820,11 @@ void do_pgs_maxstable(model *cov, gen_storage *S) {// = pointshapetype
       // in der Naehe des Ursprungs. Dies bewirkt gerade (v>0) und "+ v"
     } else {
       if (v[d] > 0.0) 
-	cov->q[d] += loc->xgr[d][XSTEP] * (loc->xgr[d][XLENGTH] - 1.0);	
+	cov->q[d] += gr[d][XSTEP] * (gr[d][XLENGTH] - 1.0);	
       // dichte function der pts muss "zerschnitten" werden; der negative
       // Teil wird vor den Beginn des Gitters gesetzt, der positive Teil
       // ans Ende des Gitters.  Somit immer "+v", nie "-v";
-      // loc->xgr[0][XSTEP] * (loc->xgr[0][XLENGTH] - 1.0) schiebt den 
+      // gr[0][XSTEP] * (gr[0][XLENGTH] - 1.0) schiebt den 
       // Punkt ans Ende des Gitters.       
       x[d] = v[d];
     }
@@ -836,7 +855,7 @@ void do_Zhou(model *cov, gen_storage *S) {// = pointshapetype
   
   model *shape = cov->sub[PGS_FCT],
     *pts = cov->sub[PGS_LOC];
-  pgs_storage *pgs = cov->Spgs;
+getStorage(pgs ,   pgs); 
   int d,
     dim = XDIM(PREVSYSOF(shape), 0);
   double 
@@ -853,13 +872,12 @@ void do_Zhou(model *cov, gen_storage *S) {// = pointshapetype
   if (cov->loggiven) eps += pgs->log_density;
   else eps *= EXP(pgs->log_density);
 
-  //  printf("eps=%e %d %e %e\n", eps, cov->loggiven, pgs->currentthreshold,
-  //	 EXP(pgs->log_density));
-  assert(eps <= 1.0);
+  //  printf("eps=%e %d %e %e\n", eps, cov->loggiven, pgs->currentthreshold, EXP(pgs->log_density));
+  //assert(eps <= 1.0);
 
   
-  if (cov->loggiven) { NONSTATLOGINVERSE(&eps, shape, x, y); }
-  else NONSTATINVERSE(&eps, shape, x, y);
+  if (cov->loggiven) { INVERSENONSTATLOG(&eps, shape, x, y); }
+  else INVERSENONSTAT(&eps, shape, x, y);
 
   //  printf("%d %f %f--%f %s\n",cov->loggiven, eps, x[0], y[0], NAME(shape));
 
@@ -867,7 +885,7 @@ void do_Zhou(model *cov, gen_storage *S) {// = pointshapetype
     //double eps_neu = eps / cov->mpp.maxheights[0]; // warum ?? 29.12.2013
     double eps_neu = eps; //  29.12.2013
     if (cov->loggiven) { BUG; }
-    else NONSTATINVERSE_D(&eps_neu, pts, x, y);    
+    else INVERSENONSTAT_D(&eps_neu, pts, x, y);    
     if (ISNAN(x[0])  || x[0] > y[0]) BUG;
   }
 
@@ -905,10 +923,10 @@ void range_Zhou(model VARIABLE_IS_NOT_USED *cov, range_type *range) {
 
 
 
-#define STAT_SHAPE_FCT 0
-void stationary_shape(double *x, model *cov, double *v) { // = pointshapetype
-  model *shape = cov->sub[STAT_SHAPE_FCT];
-  FCTN(x, shape, v);
+#define STAT_TREND 0
+void stationary_shape(double *x, int *info, model *cov, double *v) { // = pointshapetype
+  model *shape = cov->sub[STAT_TREND];
+  FCTN(x, info, shape, v);
   //  if (cov->q[0] < 1) {
   //   printf("x=%10g q=%10g v=%10g\n", x[0], cov->q[0], v[0]);
   //   assert(false);
@@ -916,13 +934,13 @@ void stationary_shape(double *x, model *cov, double *v) { // = pointshapetype
   //  APMI(cov);
 }
 
-void logstationary_shape(double *x, model *cov, double *v, double *Sign) { 
-  model *shape = cov->sub[STAT_SHAPE_FCT];
-  LOGCOV(x, shape, v, Sign);
+void logstationary_shape(double *x, int *info, model *cov, double *v, double *Sign) { 
+  model *shape = cov->sub[STAT_TREND];
+  LOGCOV(x, info, shape, v, Sign);
 }
 
 int check_stationary_shape(model *cov) {
-  model *shape = cov->sub[STAT_SHAPE_FCT];
+  model *shape = cov->sub[STAT_TREND];
   int err, 
     dim = OWNLOGDIM(0); 
 
@@ -938,8 +956,7 @@ int check_stationary_shape(model *cov) {
 }
 
 int struct_stationary_shape(model *cov, model **newmodel){
-  model *shape = cov->sub[STAT_SHAPE_FCT];
-  //  location_type *loc = Loc(cov);
+  model *shape = cov->sub[STAT_TREND];
 
   ASSERT_NEWMODEL_NULL;
 
@@ -953,14 +970,14 @@ int struct_stationary_shape(model *cov, model **newmodel){
 
 int init_stationary_shape(model *cov, gen_storage *S) {  
   ASSERT_ONESYSTEM;
-  model *shape = cov->sub[STAT_SHAPE_FCT];
+  model *shape = cov->sub[STAT_TREND];
   int d, i,
     err = NOERROR,
     dim = XDIM(PREVSYSOF(shape), 0);
 
   assert(dim == Loc(cov)->timespacedim);
   if ((err = alloc_pgs(cov)) != NOERROR) RETURN_ERR(err);
-  pgs_storage *pgs = cov->Spgs;
+getStorage(pgs ,   pgs); 
 
   // selbst wenn zufaelliger Shape: 1x laufen lassen, ob 
   // Fehler auftauchen. Unter "Do" lassen sie sich nicht mehr
@@ -1009,8 +1026,8 @@ int init_stationary_shape(model *cov, gen_storage *S) {
 
 
 void do_stationary_shape(model *cov, gen_storage *S) {
-  pgs_storage *pgs = cov->Spgs;
-  model *shape = cov->sub[STAT_SHAPE_FCT]; 
+getStorage(pgs ,   pgs); 
+  model *shape = cov->sub[STAT_TREND]; 
   DO(shape, S);
 //printf("%ld %ld\n", cov->rf, shape->rf);
 //printf("%10g\n", shape->rf[0]);
@@ -1027,22 +1044,23 @@ void do_stationary_shape(model *cov, gen_storage *S) {
 }
 
 
-void standard_shape(double *x, model *cov, double *v) { // = pointshapetype,
+void standard_shape(double *x, int *info, model *cov, double *v) { // = pointshapetype,
   // poisson & smith
   model *shape = cov->sub[PGS_FCT];
-  NONSTATCOV(x, cov->q, shape, v);
+//  PMI(cov);
+  NONSTAT2STATCOV(x, cov->q, info, shape, v);
 }
 
-void logstandard_shape(double *x, model *cov, double *v, double *Sign) { 
+void logstandard_shape(double *x, int *info, model *cov, double *v, double *Sign) { 
   model *shape = cov->sub[PGS_FCT];
-  LOGNONSTATCOV(x, cov->q, shape, v, Sign);
+  LOGNONSTAT2STATCOV(x, cov->q, info, shape, v, Sign);
 }
 
 int check_standard_shape(model *cov) {
   model *shape = cov->sub[PGS_FCT],
     *pts = cov->sub[PGS_LOC];
   int err, 
-    dim =  ANYDIM;
+    dim =  OWNXDIM(0);
   Types frame;
   
   ASSERT_CARTESIAN;
@@ -1094,26 +1112,23 @@ int struct_standard_shape(model *cov, model **newmodel){
 int init_standard_shape(model *cov, gen_storage *S) {  
   ASSERT_ONESYSTEM;
   model *shape = cov->sub[PGS_FCT];
-  //  location_type *loc = Loc(cov);
-
   assert(cov->sub[PGS_LOC] != NULL);
-  location_type *loc = Loc(cov);
   int d,
     dim = XDIM(PREVSYSOF(shape), 0),
      err = NOERROR;
-  pgs_storage *pgs = cov->Spgs;
-
+ 
   assert(XDIM(PREVSYSOF(shape), 0) == Loc(cov)->timespacedim);
 
-  if (pgs == NULL) {
+  if (cov->Spgs == NULL) {
     if ((err = alloc_pgs(cov)) != NOERROR) RETURN_ERR(err);
-    pgs = cov->Spgs;
+    getStorage(pgs ,   pgs); 
     if ((pgs->localmin = (double*) CALLOC(dim, sizeof(double))) == NULL ||
 	(pgs->localmax = (double*) CALLOC(dim, sizeof(double))) == NULL ||
 	(pgs->minmean = (double*) CALLOC(dim, sizeof(double))) == NULL ||
 	(pgs->maxmean = (double*) CALLOC(dim, sizeof(double))) == NULL)
       RETURN_ERR(ERRORMEMORYALLOCATION);
   }
+  getStorage(pgs ,   pgs); 
 
  
   // selbst wenn zufaelliger Shape: 1x laufen lassen, ob 
@@ -1139,13 +1154,13 @@ int init_standard_shape(model *cov, gen_storage *S) {
     *y = pgs->maxmean; // !!
   
   // try out whether it works:
-  NONSTATINVERSE(ZERO(shape), shape, x, y);
+  INVERSENONSTAT(ZERO(shape), shape, x, y);
 
   // printf("x=%10g %10g %10g %10g\n", x[0], x[1], y[0], y[1]); BUG;
   
   if (ISNAN(x[0]) || x[0] > y[0])
     SERR1("inverse of '%.50s' unknown", NICK(shape));
-  GetDiameter(loc, pgs->localmin, pgs->localmax, 
+  GetDiameter(Loc(cov), pgs->localmin, pgs->localmax, 
 	      pgs->supportcentre); // last is only a dummy
   pgs->totalmass = 1.0;
   for (d=0; d<dim; d++) {
@@ -1155,7 +1170,7 @@ int init_standard_shape(model *cov, gen_storage *S) {
       SERR1("simulation window does not have compact support. Should '%.50s' be used?", DefList[TRUNCSUPPORT].nick);
     pgs->totalmass *= max[d] - min[d];
   }
-  
+
   if (hasAnyPoissonFrame(cov)) {
     pgs->log_density = 0.0;
   } else if (hasMaxStableFrame(cov)){    
@@ -1177,7 +1192,7 @@ void do_standard_shape(model *cov, gen_storage *S) {
   model *shape = cov->sub[PGS_FCT],
     *pts = cov->sub[PGS_LOC]; 
   assert(cov->sub[PGS_LOC] != NULL);
-  pgs_storage *pgs = cov->Spgs;
+getStorage(pgs ,   pgs); 
   double *x = pgs->x,
     *y = pgs->xstart;
   int d,
@@ -1189,7 +1204,7 @@ void do_standard_shape(model *cov, gen_storage *S) {
   ///  assert(shape->fieldreturn != falsch);  3.4.2018. Warum?
 
   //PMI(shape, "standard");
-  NONSTATINVERSE(ZERO(shape), shape, x, y);
+  INVERSENONSTAT(ZERO(shape), shape, x, y);
   if (ISNAN(x[0])|| x[0] > y[0]) BUG;
 
   for (d=0; d<dim; d++) {
@@ -1209,38 +1224,32 @@ void do_standard_shape(model *cov, gen_storage *S) {
 
 }
 
-
-
  
 
 
-
-
-
-
-void mcmc_pgs(double VARIABLE_IS_NOT_USED *x, model VARIABLE_IS_NOT_USED *cov, double VARIABLE_IS_NOT_USED *v) { 
+void mcmc_pgs(double VARIABLE_IS_NOT_USED *x, INFO, model VARIABLE_IS_NOT_USED *cov, double VARIABLE_IS_NOT_USED *v) { 
 }
 
-void logmcmc_pgs(double *x, model *cov, double *v, double *Sign) { 
+void logmcmc_pgs(double *x, int *info, model *cov, double *v, double *Sign) { 
   model *shape = cov->sub[PGS_FCT];
-  LOGNONSTATCOV(x, cov->q, shape, v, Sign);
+  LOGNONSTAT2STATCOV(x, cov->q, info, shape, v, Sign);
 
   //  printf("x = %10g %10g log=%10g\n", *x, cov->q[0], *v, *Sign);
 }
 int check_mcmc_pgs(model *cov) { // = pointshapetype
+  globalparam *global = &(cov->base->global);
   model *shape = cov->sub[PGS_FCT],
     *pts = cov->sub[PGS_LOC];
-  location_type *loc = Loc(cov);
   int err, 
     dim = OWNLOGDIM(0);
   Types frame;
 
   ASSERT_CARTESIAN;
   ASSERT_UNREDUCED;
- if (loc->Time) SERR("Time component not allowed yet"); // todo
+  if (LocTime(cov)) SERR("Time component not allowed yet"); // todo
    
-  kdefault(cov, ZHOU_RATIO, GLOBAL.extreme.density_ratio); 
-  kdefault(cov, ZHOU_FLATHULL, (int) GLOBAL.extreme.flathull);
+  kdefault(cov, ZHOU_RATIO, global->extreme.density_ratio); 
+  kdefault(cov, ZHOU_FLATHULL, (int) global->extreme.flathull);
   kdefault(cov, ZHOU_INFTY_SMALL, P0INT(ZHOU_FLATHULL) != (int) False);
   kdefault(cov, ZHOU_NORMED, true);
   kdefault(cov, ZHOU_ISOTROPIC, true);
@@ -1248,7 +1257,7 @@ int check_mcmc_pgs(model *cov) { // = pointshapetype
   if ((err = checkkappas(cov)) != NOERROR) RETURN_ERR(err);
 
   if (cov->q == NULL) QALLOC(dim);
-  
+     
   if (hasGaussMethodFrame(cov))
     frame = isGaussMethod(shape) || equalsBernoulliProcess(shape)
       ? GaussMethodType : cov->frame ; 
@@ -1295,7 +1304,6 @@ int check_mcmc_pgs(model *cov) { // = pointshapetype
 
 int struct_mcmc_pgs(model VARIABLE_IS_NOT_USED *cov, model VARIABLE_IS_NOT_USED **newmodel){
   //  model *shape = cov->sub[PGS_FCT];
-  //  location_type *loc = Loc(cov);
   //  int err = NOERROR;
   ASSERT_NEWMODEL_NULL;
  RETURN_NOERROR;
@@ -1387,8 +1395,7 @@ int calculate_mass_gauss(model *cov) { // = pointshapetype
 
   */  
 
-  pgs_storage *pgs = cov->Spgs;
-  location_type *loc = Loc(cov); 
+getStorage(pgs ,   pgs); 
   model *shape = cov->sub[PGS_FCT],
     *pts = cov->sub[PGS_LOC];
   double zx, zy, 
@@ -1399,29 +1406,31 @@ int calculate_mass_gauss(model *cov) { // = pointshapetype
 
   int d, 
     dim = OWNLOGDIM(0);
-
-  if (loc->grid) {
-    // int size = pgs->size;
-    COV(ZERO(shape), shape, v);
+  assertNoLocY(cov);
+  bool grid = Locgrid(cov);
+  coord_type gr = Locxgr(cov);
+ 
+  if (grid) {
+    Zero(shape, v);
     v[0] *= intpow(0.5, dim);
-    NONSTATINVERSE_D(v, shape, x, y); 
+    INVERSENONSTAT_D(v, shape, x, y); 
     if (ISNAN(x[0]) || x[0] > y[0]) 
       SERR1("inverse function of '%.50s' unknown", NICK(shape));
 
-  
     // is the underlying point distribution uniform? Then
     // no safety division by SQRT(dim) seems to be necessary // todo
     // unif might be modified by $. So a check on the equality
     // of three values is done
-    VTLG_D(ZERO(pts), pts, v);
-    VTLG_D(x, pts, &zx);
-    VTLG_D(y, pts, &zy);
+    DEFAULT_INFO(info);
+    VTLG_D(ZERO(pts), info, pts, v);
+    VTLG_D(x, info, pts, &zx);
+    VTLG_D(y, info, pts, &zy);
  
     //printf("> x=%10g %10g;   %10g %10g %10g\n", x[0], x[1], zx, zy, v[0]);
 
     for (d=0; d<dim; d++) {
       y[d] -= x[d]; // !! this line must be before next line
-      // and after VTLG_D(y, pts, &zy); !!
+      // and after VT LG_D(y, pts, &zy); !!
       assert(y[d] > 0);
     }
     if (zx != v[0] || zy != v[0] ||  true) {
@@ -1436,15 +1445,15 @@ int calculate_mass_gauss(model *cov) { // = pointshapetype
     // um Pythagoras fuer dim > 1
     pgs->totalmass = 1;
     for (d=0; d<dim; d++) { // Berechnung der ausgeduennten Reihe
-      if (loc->xgr[d][XLENGTH] > 1) {
-	double range = loc->xgr[d][XSTEP] * (loc->xgr[d][XLENGTH] - 1.0);
+      if (gr[d][XLENGTH] > 1) {
+	double range = gr[d][XSTEP] * (gr[d][XLENGTH] - 1.0);
 	xgr[d][XLENGTH] = CEIL(range / y[d] + 1.0);
-	if (xgr[d][XLENGTH] >= loc->xgr[d][XLENGTH]) {
+	if (xgr[d][XLENGTH] >= gr[d][XLENGTH]) {
 	  BUG;
-	  MEMCOPYX(xgr[d], loc->xgr[d], 3 * sizeof(double));
+	  MEMCOPYX(xgr[d], gr[d], 3 * sizeof(double));
 	} else {
 	  xgr[d][XSTART] =
-	    loc->xgr[d][XSTART] - 0.5 *((xgr[d][XLENGTH] - 1.0) * y[d] - range);
+	    gr[d][XSTART] - 0.5 *((xgr[d][XLENGTH] - 1.0) * y[d] - range);
 	  xgr[d][XSTEP] = y[d];
 	}
 	pgs->totalmass *= xgr[d][XLENGTH];
@@ -1453,7 +1462,7 @@ int calculate_mass_gauss(model *cov) { // = pointshapetype
 	assert(xgr[d][XSTEP] >= 0);
       } else {
 	int i; assert(XSTART == 0 && XLENGTH == 2);
-	for (i=XSTART; XLENGTH; i++) xgr[d][i] = loc->xgr[d][i];
+	for (i=XSTART; XLENGTH; i++) xgr[d][i] = gr[d][i];
       }
 
     }
@@ -1461,7 +1470,7 @@ int calculate_mass_gauss(model *cov) { // = pointshapetype
     //    printf("%d %10g %10g %10g \n", d,xgr[d][XSTART], xgr[d][XSTEP], xgr[d][XLENGTH] );    assert(false);
 
   } else { // not grid
-    pgs->totalmass = loc->totalpoints;
+    pgs->totalmass = Loctotalpoints(cov);
   }
 
   RETURN_NOERROR;
@@ -1471,10 +1480,9 @@ int calculate_mass_gauss(model *cov) { // = pointshapetype
 
 double gauss_eps = 1e-10;
 void do_pgs_gauss(model *cov, gen_storage *S) {// = pointshapetype
-  pgs_storage *pgs = cov->Spgs;
+getStorage(pgs ,   pgs); 
   model *shape = cov->sub[PGS_FCT],
     *pts = cov->sub[PGS_LOC];
-  location_type *loc = Loc(cov);
   //  window_info *w = &(S->window);
   Long i;
   int d, 
@@ -1492,8 +1500,9 @@ void do_pgs_gauss(model *cov, gen_storage *S) {// = pointshapetype
     //*single = pgs->single, // in
     **xgr = pgs->xgr, // in
     *v = pgs->v;    
-  bool 
-    grid = Loc(cov)->grid;
+  bool grid = Loc(cov)->grid;
+  coord_type gr = Locxgr(cov);
+  DEFAULT_INFO(info);
 
 
   if (cov->randomkappa) {
@@ -1508,14 +1517,14 @@ void do_pgs_gauss(model *cov, gen_storage *S) {// = pointshapetype
   // printf("name = %.50s\n", DefList[pts->nr].name);
   //  APMI(pts);
   
-  VTLG_R(NULL, pts, v); 
+  VTLG_R(NULL, info, pts, v); 
   i = UNIFORM_RANDOM * pgs->totalmass;
   
   // to determine the points that contribute to the value of the 
   // random field by the shape function centered at cov->q
   //printf("cat=%d el=%d\n", i, elmts);
-  if (loc->grid) {
-    NONSTATINVERSE_D(&gauss_eps, pts, x, y);
+  if (grid) {
+    INVERSENONSTAT_D(&gauss_eps, pts, x, y);
     if (ISNAN(x[0]) || x[0] > y[0]) BUG;
 
     //    printf("extremes %10g %10g %10g\n", eps, x[0], y[0]);
@@ -1554,12 +1563,12 @@ void do_pgs_gauss(model *cov, gen_storage *S) {// = pointshapetype
     }
    
     while (true) {
-      VTLG_D(y, pts, &value); 
+      VTLG_D(y, info, pts, &value); 
       total += value;
       
      //printf("y=%10g v=%10g q=%10g val=%10g tot=%10g min=%d max=%d pos=%d xgr.len=%d\n", 
       //     y[0], v[0], cov->q[0], value, total, min[0], max[0], pos[0],
-      //(int) loc->xgr[0][XLENGTH]);
+      //(int) gr[0][XLENGTH]);
       
       d = 0;
       while(d < dim && pos[d] == max[d]) {
@@ -1572,21 +1581,19 @@ void do_pgs_gauss(model *cov, gen_storage *S) {// = pointshapetype
       y[d] -= xgr[d][XSTEP]; // !! nicht '+' !!
     }
   } else { // not grid
-    if (loc->timespacedim != dim) BUG;
-    double *xx = loc->x + dim * i;
+    if (Loctsdim(cov) != dim) BUG;
+    double *xx = Locx(cov) + dim * i;
     for (d=0; d<dim; d++) cov->q[d] = v[d] + xx[d];
     // todo : mit Unterteilung des Feldes viel schneller
-    xx = loc->x;
-    Long endfor = loc->totalpoints;
+    xx = Locx(cov);
+    Long endfor = Loctotalpoints(cov);
     for (i=0; i<endfor; i++, xx+=dim) {
       for (d=0; d<dim; d++) y[d] = cov->q[d] - xx[d];
-      VTLG_D(y, pts, &value);
+      VTLG_D(y, info, pts, &value);
       total += value;
     }
   }
   pgs->log_density = LOG(total / pgs->totalmass);
-
-  //printf("total=%10g %10g grid=%d dim=%d\n", total, pgs->totalmass,loc->grid,dim);
 
   assert(R_FINITE(pgs->log_density));
   // assert(false);
@@ -1594,25 +1601,25 @@ void do_pgs_gauss(model *cov, gen_storage *S) {// = pointshapetype
 } // do_pgs_gauss
 
 
-void Ballani(double *x, model *cov, double *v){
+void Ballani(double *x, int *info, model *cov, double *v){
   model *shape = cov->sub[PGS_FCT];
   //    *pts = cov->sub[PGS_LOC];
-  NONSTATCOV(x, cov->q, shape, v);
+  NONSTAT2STATCOV(x, cov->q, info, shape, v);
 
   //  TALLOC_X1(delta, OWNXDIM(0));
   //  closest(cov->q, cov, delta);
   //  double w;
-  //  VTLG_D(delta, pts, &w);
+  //  VTLG_D(delta, info, pts, &w);
   //  *v /= w;
   //  assert(*v < 1e-12 * pts->mpp.unnormedmass);
   // if (*v > 1e-12 * pts->mpp.unnormedmass) printf("violating v=%10e\n", *v);
   //   END_TALLOC_X1;
 }
 
-void logBallani(double *x, model *cov, double *v, double *Sign){
+void logBallani(double *x, int *info, model *cov, double *v, double *Sign){
   model *shape = cov->sub[PGS_FCT];
     //    *pts = cov->sub[PGS_LOC];
-  LOGNONSTATCOV(x, cov->q, shape, v, Sign);
+  LOGNONSTAT2STATCOV(x, cov->q, info, shape, v, Sign);
 }
 
 int check_Ballani(model *cov){
@@ -1624,17 +1631,16 @@ int check_Ballani(model *cov){
   ASSERT_UNREDUCED;
  model *shape = cov->sub[PGS_FCT],
     *pts = cov->sub[PGS_LOC];
-  location_type *loc = Loc(cov);
   int err,
     dim = OWNLOGDIM(0);
   
   ASSERT_CARTESIAN;
-  if (loc->Time) SERR("Time component not allowed yet"); // todo
+  if (LocTime(cov)) SERR("Time component not allowed yet"); // todo
 
   // printf("checkballani A\n");
    
-  //  kdefault(cov, ZHOU_RATIO, GLOBAL.extreme.density_ratio); 
-  //  kdefault(cov, ZHOU_FLATHULL, (int) GLOBAL.extreme.flathull);
+  //  kdefault(cov, ZHOU_RATIO, glob al->extreme.density_ratio); 
+  //  kdefault(cov, ZHOU_FLATHULL, (int) gl obal->extreme.flathull);
   //  kdefault(cov, ZHOU_INFTY_SMALL, P0INT(ZHOU_FLATHULL) != (int) False);
   //  kdefault(cov, ZHOU_NORMED, true);
   //  kdefault(cov, ZHOU_ISOTROPIC, true);
@@ -1642,7 +1648,7 @@ int check_Ballani(model *cov){
   if ((err = checkkappas(cov)) != NOERROR) RETURN_ERR(err); 
   // printf("checkballani AB\n");
   if (cov->q == NULL) QALLOC(dim);
-  
+   
   assert(!isProcess(cov));
   assert(hasPoissonGaussFrame(cov));
    
@@ -1674,11 +1680,13 @@ int struct_Ballani(model *cov, model **newmodel){
   
   RETURN_ERR(ERRORNOTPROGRAMMEDYET);
   model *shape = cov->sub[PGS_FCT];
-  //  location_type *loc = Loc(cov);
   int err = NOERROR;
 
   ASSERT_NEWMODEL_NULL;
-  if (cov->Spgs != NULL)  pgs_DELETE(&(cov->Spgs), cov);
+  if (cov->Spgs != NULL) {
+    pgs_DELETE(&(cov->Spgs));
+    DELSTOMODEL;
+  }
 
   if (!hasPoissonGaussFrame(shape)) ILLEGAL_FRAME;
   if (cov->sub[PGS_LOC] == NULL) {
@@ -1701,14 +1709,12 @@ int init_Ballani(model *cov, gen_storage *S){
   model *shape = cov->sub[PGS_FCT],
     *pts = cov->sub[PGS_LOC];
   defn *Cshape = DefList + MODELNR(shape);
- location_type *loc = Loc(cov);
   int d, i,
     err = NOERROR,
      dim = XDIM(PREVSYSOF(shape), 0);
-  pgs_storage *pgs = cov->Spgs;
   bool 
     grid = Loc(cov)->grid,
-    pgsnull = pgs == NULL;
+    pgsnull = cov->Spgs == NULL;
   if (!grid) { // todo
     SERR("non-grid not programmed yet"); // meiste da; fehlt noch
     // welche Vektoren ich wirklich brauche
@@ -1719,19 +1725,20 @@ int init_Ballani(model *cov, gen_storage *S){
   assert(dim == XDIM(PREVSYSOF(cov->sub[PGS_LOC]), 0));
   assert(dim == Loc(cov)->timespacedim);
   
-  if (Cshape->inverse == ErrInverse)//&&Cshape->nonstat_inverse==Err CovNonstat)
+  if (Cshape->inverse == inverseErr)//&&Cshape->inverse_nonstat==Err CovNonstat)
     SERR1("support of the model is unknown. Use '%.50s' to determine the support",
 	  DefList[TRUNCSUPPORT].nick);
  
   if (pgsnull) {
     if ((err = alloc_pgs(cov)) != NOERROR) RETURN_ERR(err);
-    pgs = cov->Spgs;
-    
+    getStorage(pgs ,   pgs); 
+     
     if ((pgs->v = (double*) CALLOC(dim, sizeof(double))) == NULL ||
 	(pgs->y = (double*) CALLOC(dim, sizeof(double))) == NULL
 	) RETURN_ERR(ERRORMEMORYALLOCATION);
   }
-  pgs->size = loc->totalpoints;
+  getStorage(pgs ,   pgs); 
+  pgs->size = Loctotalpoints(cov);
   if (grid) pgs->size = intpow(2, dim);
  
   // selbst wenn zufaelliger Shape: 1x laufen lassen, ob 
@@ -1756,7 +1763,7 @@ int init_Ballani(model *cov, gen_storage *S){
   if ((err = calculate_mass_gauss(cov)) != NOERROR) RETURN_ERR(err);
 
 
-  if (DefList[MODELNR(shape)].nonstat_inverse == ErrInverseNonstat) {
+  if (DefList[MODELNR(shape)].inverse_nonstat == inversenonstatErr) {
     if (MODELNR(pts) != RECTANGULAR) {
       //       PMI(pts);
       // APMI(shape);
@@ -1776,6 +1783,7 @@ int init_Ballani(model *cov, gen_storage *S){
 
 
 void do_Ballani(model *cov, gen_storage *S) {// = pointshapetype
+  globalparam *global = &(cov->base->global);
   assert(hasPoissonGaussFrame(cov));  
   do_pgs_gauss(cov, S);
 
@@ -1789,7 +1797,7 @@ void do_Ballani(model *cov, gen_storage *S) {// = pointshapetype
   
   model *shape = cov->sub[PGS_FCT],
     *pts = cov->sub[PGS_LOC];
-  pgs_storage *pgs = cov->Spgs;
+  getStorage(pgs ,   pgs); 
   int d,
     dim = XDIM(PREVSYSOF(shape), 0);
   double 
@@ -1797,10 +1805,10 @@ void do_Ballani(model *cov, gen_storage *S) {// = pointshapetype
     *x = pgs->x,
     *y = pgs->y;
 
-  eps = GLOBAL.mpp.about_zero * EXP(pgs->log_density);
+  eps = global->mpp.about_zero * EXP(pgs->log_density);
 
-  if (cov->loggiven) { NONSTATLOGINVERSE(&eps, shape, x, y); }
-  else NONSTATINVERSE(&eps, shape, x, y);
+  if (cov->loggiven) { INVERSENONSTATLOG(&eps, shape, x, y); }
+  else INVERSENONSTAT(&eps, shape, x, y);
 
   // warum fkt obiges nicht ??
 
@@ -1809,7 +1817,7 @@ void do_Ballani(model *cov, gen_storage *S) {// = pointshapetype
     //double eps_neu = eps / cov->mpp.maxheights[0]; // warum ?? 29.12.2013
     double eps_neu = eps; //  29.12.2013
     if (cov->loggiven) { BUG; }
-    else NONSTATINVERSE_D(&eps_neu, pts, x, y);    
+    else INVERSENONSTAT_D(&eps_neu, pts, x, y);    
     if (ISNAN(x[0])  || x[0] > y[0]) BUG;
   }
 

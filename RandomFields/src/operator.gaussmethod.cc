@@ -41,16 +41,16 @@ typedef int (*set_local_q_type) (model *next, double a, double d);
 
 
 
-void tbm3(double *x, model *cov, double *v, double tbmdim){
+void tbm3(double *x, int *info, model *cov, double *v, double tbmdim){
   model *next = cov->sub[TBMOP_COV];
   int i,
     vdim = VDIM0,
     vdimsq = vdim * vdim;
   assert(VDIM0 == VDIM1);
   TALLOC_XX1(v1, vdimsq);
-  COV(x, next, v); // x has dim 2, if turning planes
+  COV(x, info, next, v); // x has dim 2, if turning planes
   if (x[0] != 0.0) {
-    Abl1(x, next, v1);
+    Abl1(x, info, next, v1);
     for (i=0; i<vdimsq; i++) v[i] += *x * v1[i] / tbmdim;
   }
   END_TALLOC_XX1;
@@ -59,24 +59,22 @@ void tbm3(double *x, model *cov, double *v, double tbmdim){
 struct TBM2_integr{
   model *cov;
   double *x;
+  int *info;
 };
 
 void TBM2NumIntegrFct(double *u,  int n, void *ex) {
   int i;
   double z[2];
-  TBM2_integr *info;
-  info = (TBM2_integr*) ex;
-  model *cov=info->cov;
-  double *x = info->x;
+  TBM2_integr *integrand = (TBM2_integr*) ex;
     
   for (i=0; i<n; i++) {
-    z[0] = x[0] * SQRT(1.0 - u[i] * u[i]);
-    tbm3(z, cov, u + i, 1.0);
+    z[0] = integrand->x[0] * SQRT(1.0 - u[i] * u[i]);
+    tbm3(z, integrand->info, integrand->cov, u + i, 1.0);
   }
 }
 
 void tbm2num(double *x, model *cov, double *v){
-  TBM2_integr info;
+  TBM2_integr integrand;
 #define MAXSUBDIVISIONS 100
   double a = 0, 
     b = 1, 
@@ -85,18 +83,20 @@ void tbm2num(double *x, model *cov, double *v){
       lenw = 4 * MAXSUBDIVISIONS;
   double abserr, work[4 * MAXSUBDIVISIONS];
   int subdivisions, integralevaluations, err, iwork[MAXSUBDIVISIONS];
-
-  info.cov = cov; // a bit strange: this is tbm2, but will call tbm3...
+  DEFAULT_INFO(info);
+  
+  integrand.cov = cov; // a bit strange: this is tbm2, but will call tbm3...
   //                 in TBM2NumIntegrFct ...
-  info.x = x;
-  Rdqags(TBM2NumIntegrFct, (void *) &info, &a, &b, &eps, &eps,
+  integrand.x = x;
+  integrand.info = info;
+  Rdqags(TBM2NumIntegrFct, (void *) &integrand, &a, &b, &eps, &eps,
 	 v, &abserr, &integralevaluations, &err,
 	 &maxsubdivisions, &lenw, &subdivisions, iwork, work);
 }
 
 
 #define DO_NUMERIC 0
-void tbm(double *x, model *cov, double *v){
+void tbm(double *x, int *info, model *cov, double *v){
   model *next = cov->sub[TBMOP_COV];
   int 
     fulldim = P0INT(TBMOP_FULLDIM),
@@ -104,13 +104,13 @@ void tbm(double *x, model *cov, double *v){
     //vdimsq = cov->vdim * cov->vdim;
 
   // if (!hasGaussMethodFrame(cov) && !hasAnyEvaluationFrame(cov)) { BUG; } else
-  if (fulldim == tbmdim + 2) tbm3(x, cov, v, (double) tbmdim);
+  if (fulldim == tbmdim + 2) tbm3(x, info, cov, v, (double) tbmdim);
   else if (fulldim == 2 && tbmdim == 1) {
     assert(cov->q);
     if (cov->q[DO_NUMERIC]) tbm2num(x, cov, v);
     else {	 
       // APMI(next);
-      TBM2CALL(x, next, v);
+      TBM2CALL(x, info, next, v);
       //  ASSERT_GATTER(next);
       // DefList[MODELNR(next)].tbm2(x, next, v);
     }
@@ -120,7 +120,7 @@ void tbm(double *x, model *cov, double *v){
 
 }
 
-void Dtbm(double *x, model *cov, double *v){
+void Dtbm(double *x, int *info, model *cov, double *v){
   model *next = cov->sub[TBMOP_COV];
   int i,
     fulldim = P0INT(TBMOP_FULLDIM),
@@ -135,8 +135,8 @@ void Dtbm(double *x, model *cov, double *v){
   BUG;// to do : Taylor-Entwicklung im Ursprung
 
   if (fulldim == tbmdim + 2) {
-    Abl1(x, next, v); // x has dim 2, if turning planes
-    Abl2(x, next, v1);
+    Abl1(x, info, next, v); // x has dim 2, if turning planes
+    Abl2(x, info, next, v1);
     for (i=0; i<vdimsq; i++) {
       v[i] = v[i] * f + *x * v1[i] / tbmdim;
     }
@@ -155,9 +155,10 @@ bool numeric_tbm(model *cov) {
 }
 
 int checktbmop(model *cov) {
+  globalparam *global = &(cov->base->global);
   // printf("entering checktbmop\n");
   model *next=cov->sub[TBMOP_COV];
-  tbm_param *gp  = &(GLOBAL.tbm);
+  tbm_param *gp  = &(global->tbm);
   int err; 
   ASSERT_ONESYSTEM;
 
@@ -168,10 +169,8 @@ int checktbmop(model *cov) {
   kdefault(cov, TBMOP_LAYERS, (int) gp->layers);
   if ((err = checkkappas(cov)) != NOERROR)  RETURN_ERR(err);
   //PMI0(cov);
-  if (!isVariogram(OWNTYPE(0))) {
-    // APMI(cov);
-    SERR("must be a variogram");
-  }
+ 
+  if (equalsTcf(PREVTYPE(0))) SERR("property of being a tail correlation function is not known to be preserved");
 
   int 
     tbmdim = P0INT(TBMOP_TBMDIM),
@@ -197,7 +196,6 @@ int checktbmop(model *cov) {
   if (next->pref[TBM] == PREF_NONE) RETURN_ERR(ERRORPREFNONE);
 
   assert(isSpaceIsotropic(OWN));
-  assert(isnowVariogram(cov));
   assert(isXonly(OWN));
 
 
@@ -238,10 +236,11 @@ Types Typetbm(Types required, model *cov, isotropy_type i) {
 
 
 bool settbm(model *cov) {
+  globalparam *global = &(cov->base->global);
   isotropy_type iso = CONDPREVISO(0);
   if (!isFixed(iso)) return false;
 
-  tbm_param *gp  = &(GLOBAL.tbm);
+  tbm_param *gp  = &(global->tbm);
   // critical parameter TBMOP_LAYER is already treated by SUBMODEL_I
   kdefault(cov, TBMOP_LAYERS, (int) gp->layers);
   set_type(OWN, 0, PREVTYPE(0));
@@ -251,7 +250,8 @@ bool settbm(model *cov) {
 
  
 bool allowedItbm(model *cov) {
-  tbm_param *gp  = &(GLOBAL.tbm);
+  globalparam *global = &(cov->base->global);
+  tbm_param *gp  = &(global->tbm);
   bool *I = cov->allowedI;
   kdefault(cov, TBMOP_LAYERS, (int) gp->layers);
   for (int i=(int) FIRST_ISOUSER; i<=(int) LAST_ISOUSER; I[i++] = false);
@@ -292,19 +292,20 @@ void rangetbmop(model *cov, range_type *range){
 
 
 int set_stein_q(model *cov, double r, double d) {
-  localCE_storage *s = cov->calling->SlocalCE;
+  GETSTORAGE(s , cov->calling,  localCE); 
   double C0, phi0, phi1, phi2, 
     zero = 0.0, 
     rP1 = r + 1.0,
     rM1 = r - 1.0, 
     dsq = d * d;
   localvariab *q = s->q2;
-
-  COV(&zero, cov, &C0);
-  COV(&d, cov, &phi0);
-  Abl1(&d, cov, &phi1); // derivative of
+  DEFAULT_INFO(info);
+  
+  COV(&zero, info, cov, &C0);
+  COV(&d, info, cov, &phi0);
+  Abl1(&d, info, cov, &phi1); // derivative of
   phi1 *= d;             // scaled fctn at 1
-  Abl2(&d, cov, &phi2); // 2nd derivative of
+  Abl2(&d, info, cov, &phi2); // 2nd derivative of
   phi2 *= dsq;            // scaled fctn at 1
   q->R =  r * d;   
   double dummy = (phi2 - phi1) / (3.0 * r * rP1);
@@ -347,13 +348,14 @@ int set_cutoff_q2variate(model *cov, double a, double d) {
   
   
   assert(cov->calling->SlocalCE != NULL);
-  localCE_storage *s = cov->calling->SlocalCE;
+  GETSTORAGE(s , cov->calling,  localCE); 
   localvariab *q = s->q2;
+  DEFAULT_INFO(info);
   
-  COV(&d, cov, phi0);
+  COV(&d, info, cov, phi0);
   // COV(&d,  cov->sub[0], &phi01);
-  Abl1(&d, cov, phi1);
-  Abl2(&d, cov, phi2);
+  Abl1(&d, info, cov, phi1);
+  Abl2(&d, info, cov, phi2);
   
   //bivariate Whittle  Cauchy Stable
 
@@ -402,8 +404,9 @@ int set_cutoff_q2variate(model *cov, double a, double d) {
 int set_cutoff_q(model *cov, double a, double d) {
   assert(VDIM0 > 0 && VDIM0 <= LOCALCE_MAXVDIM);
   if (VDIM0 > 1) return set_cutoff_q2variate(cov, a, d);
-  localCE_storage *s = cov->calling->SlocalCE;
-
+  GETSTORAGE(s , cov->calling,  localCE); 
+ DEFAULT_INFO(info);
+ 
     // auf modell ebene, d.h. co->sub[0] oder stein->sub[0]
   double
     phi0, phi1,
@@ -421,8 +424,8 @@ int set_cutoff_q(model *cov, double a, double d) {
   // DefList[cov->gatternr].D(&d, neu, &phi1);
   //FREE(neu);
   
-  COV(&d, cov, &phi0);
-  Abl1(&d, cov, &phi1);
+  COV(&d, info, cov, &phi0);
+  Abl1(&d, info, cov, &phi1);
 
 
    
@@ -446,7 +449,7 @@ int set_cutoff_q(model *cov, double a, double d) {
       
     } else if (a == 1 ) {
       //second derivative
-      Abl2(&d, cov, &phi2);
+      Abl2(&d, info, cov, &phi2);
       if (phi2 <= 0 || phi1 >= 0 || phi0 >= 0 ) {
                 return MSGLOCAL_SIGNPHISND;
       }
@@ -462,9 +465,9 @@ int set_cutoff_q(model *cov, double a, double d) {
       
     } else if (a == CUTOFF_THIRD_CONDITION) {
       
-      Abl2(&d, cov, &phi2);
-      Abl3(&d, cov, &phi3);
-      Abl4(&d, cov, &phi4);
+      Abl2(&d, info, cov, &phi2);
+      Abl3(&d, info, cov, &phi3);
+      Abl4(&d, info, cov, &phi4);
       
       double roots[3][2];
       
@@ -530,9 +533,9 @@ int set_cutoff_q(model *cov, double a, double d) {
       
       //a = CUTOFF_THIRD_CONDITION
 
-      Abl2(&d, cov, &phi2);
-      Abl3(&d, cov, &phi3);
-      Abl4(&d, cov, &phi4);
+      Abl2(&d, info, cov, &phi2);
+      Abl3(&d, info, cov, &phi3);
+      Abl4(&d, info, cov, &phi4);
       
       
       double roots[3][2];
@@ -581,9 +584,8 @@ int check_local(model *cov,
 		 getlocalparam init, // next->coinit
 		 set_local_q_type set_local) {
   // PMI(cov);
-  localCE_storage *s = cov->SlocalCE;
+getStorage(s ,   localCE); 
   assert(s != NULL);
-  location_type *loc = Loc(cov);
   int i, msg, 
     dim = OWNLOGDIM(0),
     err=NOERROR;
@@ -592,16 +594,12 @@ int check_local(model *cov,
     *q2 = s->q2;
   double d=RF_NA;
   model *next = cov->sub[0];
-  localinfotype li;
-  //ce_param *gp  = &(GLOBAL.localce); // ok
-
-  //printf("\n \n entering check local from %d:%.50s\n", cov->CALLINGNR,
-  //DefList[cov->CALLINGNR].name);
+  localfactstype li;
+ 
 
   if ((err = CHECK(next, dim,  1,
 		   method == CircEmbedCutoff ? PosDefType : VariogramType,
 		   OWNDOM(0), OWNISO(0), SUBMODEL_DEP, EvaluationType)) != NOERROR) {
-    //  printf("\n \n \n ::: checl_local :: if :::  dim = %d --- next->vdim[0] = %d::: \n \n \n", dim, next->vdim[0]);
     if ( method != CircEmbedCutoff ||
 	 (err = CHECK(next, dim,  1,
 		      VariogramType,
@@ -620,9 +618,9 @@ int check_local(model *cov,
   if (init == NULL) RETURN_ERR(ERRORUNKNOWNMETHOD);
 
   if (PisNULL(pLOC_DIAM)) {  
-    double 
-      diameter = GetDiameter(loc);
-    if (PL>=PL_DETAILS) { LPRINT("diameter %10g\n", diameter); }
+    assertNoLocY(cov);
+    double diameter = GetDiameter(Loc(cov));
+     if (PL>=PL_DETAILS) { LPRINT("diameter %10g\n", diameter); }
     kdefault(cov, pLOC_DIAM, diameter);
   } else {
     d = P0(pLOC_DIAM);
@@ -679,9 +677,9 @@ values have been chosen for '%.50s'", NICK(cov), NICK(next));
 }
 
 
-void co(double *x, model *cov, double *v) {
+void co(double *x, int *info, model *cov, double *v) {
   model *next = cov->sub[0];
-  localCE_storage *s = cov->SlocalCE;
+getStorage(s ,   localCE); 
   localvariab *q = s->q;
   double  y=*x, 
     diameter = P0(pLOC_DIAM),  
@@ -694,7 +692,7 @@ void co(double *x, model *cov, double *v) {
   
   if ( VDIM0 > 1 ) {
     if (y <= diameter) {
-      COV(x, next, v);
+      COV(x, info, next, v);
       for (int i = 0; i < 4; i++) {
         v[i] = v[i] - q[i].cutoff.constant;
       }
@@ -710,11 +708,11 @@ void co(double *x, model *cov, double *v) {
     if (y <= diameter) {
       //If it is a variogram (actually -variogram), add a constant. If it is positive definite, go below
       if (isnowVariogram(next)) {
-	COV(x, next, v);
+	COV(x, info, next, v);
 	*v = *v + q->cutoff.constant;
       } else
 	{
-	  COV(x, next, v)
+	  COV(x, info, next, v)
             }
       
     }
@@ -769,9 +767,9 @@ void range_co(model VARIABLE_IS_NOT_USED *cov, range_type *range){
 }
 
 
-void Stein(double *x, model *cov, double *v) {
+void Stein(double *x, int* info, model *cov, double *v) {
   model *next = cov->sub[0];
-  localCE_storage *s = cov->SlocalCE;
+getStorage(s ,   localCE); 
   localvariab *q = s->q;
   double y=*x, z, 
     diameter = P0(pLOC_DIAM);
@@ -779,7 +777,7 @@ void Stein(double *x, model *cov, double *v) {
   // assert(hasAnyEvaluationFrame(cov) || hasGaussMethodFrame(cov));
 
   if (y <= diameter) {
-    COV(x, next, v);
+    COV(x, info, next, v);
     *v += q->intrinsic.A0 + q->intrinsic.A2 * y * y;
   } else {
      z = q->R - y;

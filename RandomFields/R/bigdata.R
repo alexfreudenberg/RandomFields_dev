@@ -35,8 +35,8 @@ GetNeighbourhoods <- function(model, Z, X,
                              ) {
 
   model.nr <- MODEL_AUX
-  rfInit(list("RFfctn", model),
-         Z$coords, reg=model.nr, RFopt=RFoptions(SAVEOPTIONS=NULL))  
+  rfInit(model= list("RFfctn", model), x = Z$coords, reg=model.nr,
+         RFopt=getRFoptions(SAVEOPTIONS=NULL))  
   lc <- length(Z$coords)
   locfactor <- as.integer(splitfactor * 2 + 1) ## total number of
   ##    neighbouring boxes in each direction, including the current box itself
@@ -87,14 +87,14 @@ GetNeighbourhoods <- function(model, Z, X,
 
 
   newZ <- list()
-  restotal <- sapply(Z$coords, function(x) x$restotal) ## passt das ? 2.2.19
+  totpts <- sapply(Z$coords, function(x) x$totpts) ## passt das ? 2.2.19
   for (set in 1:lc) {
      ## n <- as.integer(dim(Z$coords[[set]])[2])
     coords <- Z$coords[[set]]
     data <- Z$data[[set]]
 
     oldlen <- length(newZ)
-    nOT <- nT <- restotal[set]
+    nOT <- nT <- totpts[set]
     if (Z$has.time.comp) nOT <- nOT / coords$T[3]
     
     if (consider.correlations) { ## to rto      
@@ -395,10 +395,10 @@ BigDataSplit <- function(Z, RFopt) {
     stop("unknown value for 'likelihood'.")
   method <- RC_LIKELIHOOD_NAMES[method] # kein + 1 notwendig
 
-  restotal <- sapply(Z$coords, function(x) x$restotal)
+  totpts <- sapply(Z$coords, function(x) x$totpts)
   
   if (method == "full" ||
-      (method %in% c("auto", "tesselation") && all(restotal<=fit$max_neighbours)
+      (method %in% c("auto", "tesselation") && all(totpts<=fit$max_neighbours)
        )) return(Z)
   if (method == "auto") { ## default
     method <- "tesselation"

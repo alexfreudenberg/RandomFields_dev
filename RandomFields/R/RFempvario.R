@@ -36,14 +36,19 @@ rfempirical <- function(x, y = NULL, z = NULL, T = NULL, data, grid,
   if ((is(data, "RFsp") || isSpObj(data)) && !missing(x))
     stop("x, y, z, T may not be given if 'data' is of class 'RFsp' or an 'sp' object")
 
+  
   ## to do: distances
   if (!missing(distances) && length(distances)>0)
     stop("option distances not programmed yet.")
 
+  ##   seq(from=0, to=deltaT[1], by=deltaT[2])}
+  byT <- 2
+  toT <- 1
  
-  RFoptOld <- internal.rfoptions(...)
-  on.exit(RFoptions(LIST=RFoptOld[[1]]))
-  RFopt <- RFoptOld[[2]]
+  RFopt <- internalRFoptions(...)
+  ## kein  if (!hasArg("COPY")) on.exit(optionsDelete(RFopt)) da nichts zu loeschen
+  
+  
   varunits <- RFopt$coords$varunits
   call <- match.call()
 
@@ -64,28 +69,30 @@ rfempirical <- function(x, y = NULL, z = NULL, T = NULL, data, grid,
 	  warning("given multivariate dimension 'vdim' does not match multivariate dimension of the data")
   }
 
+
   grid <- sapply(Z$coords, function(z) z$grid)
-  data <- RFboxcox(Z$data, vdim=vdim, ignore.na=TRUE)  
-  restotal <- sapply(Z$coords, function(z) z$restotal)
+  data <- boxcoxIntern(Z$data, vdim=vdim, ignore.na=TRUE)  
+
+  totpts <- sapply(Z$coords, function(z) z$totpts)
   spatialdim <- Z$spatialdim
   repetitions <- Z$repetitions
   sets <- length(Z$data)
   dist.given <- FALSE
   for (i in 1:sets) {
+    ## ginge auf C ohne kopieren:
     dist.given <- dist.given || Z$coords[[i]]$dist.given
-    dim.data <- c(restotal[i], vdim, repetitions[i])
-    dim(data[[i]]) <- dim.data
-    
+    dataX <- data[[i]]
+    dim.data <- c(totpts[i], vdim, repetitions[i])    
+    dim(dataX) <- dim.data    
     if (vdim > 1 && repetitions[i] > 1) {
-      dataX <- aperm(data[[i]], c(1, 3, 2)) ## now: coords, repet, vdim
+      dataX <- aperm(dataX, c(1, 3, 2)) ## now: coords, repet, vdim
       dim(dataX) <- c(dim.data[1] * dim.data[3], dim.data[2])
-      variance <- cov(dataX)
-      rm(dataX)
+      variance <- cov(dataX)  
     } else {
-      dim(data[[i]]) <- if (vdim == 1) prod(dim.data) else dim.data[1:2]    
-      variance <- var(data[[i]])
-      dim(data[[i]]) <- dim.data
+      dim(dataX) <- if (vdim == 1) prod(dim.data) else dim.data[1:2]    
+      variance <- var(dataX)
     }
+    rm(dataX)
   }
   
   pseudo <- alpha > 0
@@ -99,9 +106,9 @@ rfempirical <- function(x, y = NULL, z = NULL, T = NULL, data, grid,
     ## automatic bin depending on coords
     xx <- Z$coords[[1]]$x
     if(grid[1]) {
-      maxi <- if (ncol(x) == 1 && length(Z$coords[[1]]$T) == 0) {
-                    bins * if (deltaTgiven) deltaT[2] else 1
-              } else max(xx[2, ] * xx[3, ]) / 2
+      maxi <- if (ncol(xx) == 1 && length(Z$coords[[1]]$T) == 0) {
+                    bins * if (deltaTgiven) deltaT[byT] else 1
+              } else max(xx[XSTEP + 1, ] * xx[XLENGTH + 1, ]) / 2
       bins <- seq(0, maxi, len = bins)
     } else {
       bins <- seq(0, sqrt(sum((apply(xx, 2, max)-apply(xx, 2, min))^2))/2,
@@ -145,9 +152,9 @@ rfempirical <- function(x, y = NULL, z = NULL, T = NULL, data, grid,
   n.theta <- max(1, theta[2])
    
   if (has.time.comp) {
-    T.start  <- sapply(Z$coords, function(x) x$T[1])
-    T.step <- sapply(Z$coords, function(x) x$T[2])
-    T.len  <- sapply(Z$coords, function(x) x$T[3])
+    T.start  <- sapply(Z$coords, function(x) x$T[XSTART + 1])
+    T.step <- sapply(Z$coords, function(x) x$T[XSTEP + 1])
+    T.len  <- sapply(Z$coords, function(x) x$T[XLENGTH + 1])
     if (sets > 1) {
       if (any(abs(diff(diff(T.step))) > 1e-15))
 	stop("only data sets with the same time step allowed") #generalise todo
@@ -157,28 +164,36 @@ rfempirical <- function(x, y = NULL, z = NULL, T = NULL, data, grid,
     T <-  c(1, 1, 1)
   }
   
-  realdelta <- deltaT[2] * T[2]
-  timeComponent <- T[3] > 1 && deltaTgiven ## T[3] > 1 impliziert time
-  stepT <-  deltaT[2] / T[2]
-  if (stepT != as.integer(stepT))
-    stop("deltaT not multiple of distance of temporal grid")
-  stepT <- max(1, stepT)
-  nstepT <- as.integer(min(deltaT[1], T[2] * (T[3]-1)) / max(T[2], realdelta))
-  ##                                                             , deltaT[2]??
+  timeComponent <- T[XLENGTH + 1] > 1 && deltaTgiven ## T[XLENGTH + 1] > 1 impliziert time
+ 
+  if (timeComponent) {
+    stepT <-  deltaT[byT] / T[XSTEP + 1]
+    if (abs(stepT - as.integer(stepT)) > stepT * 1e-15 || stepT <= 0)
+      stop("deltaT not a multiple of the distance of the temporal grid")
+    stepT <- as.integer(stepT + 0.5) ## in Gittereinheiten ; +0.5 for rounding 
+    nstepT <-as.integer(min(T[XLENGTH + 1],
+                            as.integer(deltaT[toT] / T[XSTEP+1])) / stepT)
+    ## nstepT == n <=> set of temporal bin centers has length n + 1 elements,
+    ## i.e. nstep == #( {temp bin centers} \ { 0 } )
+  } else {
+    stepT <- 1
+    nstepT <- 0
+  }
   n.delta <- 1 + nstepT
+  
   n.phibins <- n.phi 
   dplt <- (!fft && !basic && !has.time.comp) ||
           ((pseudo || timeComponent) && phi[2]>0)
   if (dplt) n.phibins <- n.phibins * 2
 
-##  Print(fft, basic, has.time.comp, pseudo, timeComponent, deltaT, deltaTgiven, T, phi, n.phi, n.phibins, dplt); 
+  ##  Print(fft, basic, has.time.comp, pseudo, timeComponent, deltaT, deltaTgiven, T, phi, n.phi, n.phibins, dplt); 
   
   totalbinsOhnevdim <- as.integer(n.bins * n.phibins * n.theta * n.delta)
   totalbins <- totalbinsOhnevdim * vdim^2
   
   phibins <- thetabins <- Tbins <- NULL
   
-  if (timeComponent) Tbins <- (0:nstepT) * realdelta 
+  if (timeComponent) Tbins <- (0:nstepT) * deltaT[byT] 
   if (phi[2] > 0) phibins <- phi[1] + 0 : ((n.phibins - 1)) * pi / n.phi
 
   if (n.theta > 1)
@@ -189,7 +204,7 @@ rfempirical <- function(x, y = NULL, z = NULL, T = NULL, data, grid,
   
   empirical.sd <- NULL
 
-  if (fft) {
+  if (fft) { # TO DO!!
     ## to do: das liest sich alles irgendwie komisch
     maxspatialdim <- 3
     
@@ -203,8 +218,8 @@ rfempirical <- function(x, y = NULL, z = NULL, T = NULL, data, grid,
       if (ncol(xx)<maxspatialdim)  # not matrix(0, ...) here!
         ##                              since x is a triple
         xx <- cbind(xx, matrix(1, nrow=nrow(xx), ncol=maxspatialdim-ncol(xx)))
-      T3 <- if (has.time.comp) Z$coords[[i]]$T[3] else 1
-      neudim <- c(xx[3, ], if (has.time.comp) T3)
+      TLen <- if (has.time.comp) Z$coords[[i]]$T[XLENGTH + 1] else 1
+      neudim <- c(xx[XLENGTH + 1, ], if (has.time.comp) TLen)
             
       ## last: always repetitions
       ## last but: always vdim
@@ -216,7 +231,7 @@ rfempirical <- function(x, y = NULL, z = NULL, T = NULL, data, grid,
       crossvar <- doVario(X=data[[i]], asVector=TRUE, pseudo=pseudo,
                           has.time.comp=has.time.comp)
  
-#      Print(crossvar)
+                                        #
 #crossvar =  List of 3
 # $ : num [1:80000] -3.79426e-13 2.92282e+01 5.66963e+01 7.83819e+01 8.18708e+01 ...
 # $ : num [1:80000] 100 99 98 97 96 95 94 93 92 91 ...
@@ -235,22 +250,24 @@ rfempirical <- function(x, y = NULL, z = NULL, T = NULL, data, grid,
                     crossvar[[2]],
                     crossvar[[3]],
 		    as.double(bins), as.integer(n.bins), 
-		    as.integer(T3), 
+		    as.integer(TLen), 
 		    as.integer(stepT), as.integer(nstepT),       
 		    as.double(phi), 
 		    as.double(theta), 
 		    as.integer(repetitions[i]),
 		    as.integer(vdim),
 		    totalbinsOhnevdim,
-		    as.logical(pseudo) )       
+		    as.logical(pseudo),
+                    as.double(RFopt$empvario$tol))
 
-      if (TRUE) { ## 16.11.20 for debugging only
+      if (maintainers.machine() && totalbinsOhnevdim == n.bins) {
+        ## 16.11.20 for debugging only
         backX <- .Call(C_fftVario3DX, as.double(xx), 
 		    crossvar[[1]],
                     crossvar[[2]],
                     crossvar[[3]],
 		    as.double(bins), as.integer(n.bins), 
-		    as.integer(T3), 
+		    as.integer(TLen), 
 		    as.integer(stepT), as.integer(nstepT),       
 		    as.double(phi), 
 		    as.double(theta), 
@@ -258,10 +275,12 @@ rfempirical <- function(x, y = NULL, z = NULL, T = NULL, data, grid,
 		    as.integer(vdim),
 		    totalbinsOhnevdim,
 		    as.logical(pseudo) )
-       
-        if (any(back[, 1:2] != backX)) {
-          print(cbind(back[, 1:2], backX, back[,1:2]-backX)) ## ok
-          stop("RFemp error: pls kontakt author")
+
+        diff <- abs(back[, 1:2] - backX)
+        if (any(diff > 0)) {
+          Print(pseudo) ## ok
+          print(cbind(back[, 1:2],NA, backX, back[,1:2]-backX)) ## ok
+          stop("RFemp error: pls contact author")
         }
       }
        
@@ -294,14 +313,14 @@ rfempirical <- function(x, y = NULL, z = NULL, T = NULL, data, grid,
     
     if (basic) {
       N <- empirical.sdSq <- empirical <- 0
-      
+
       for (i in 1:sets) {
-##        Print(i)
+
+        ## ACHTUNG: nicht Z$C_coord !! (TODO, damit es schneller laeuft)
         back <- .Call(C_empirical, 
-                        as.double(Z$coords[[i]]$x), ## Z definition
+                        Z$coords[[i]]$x, ## Z definition
                         as.integer(spatialdim),
-                        as.integer(Z$coords[[i]]$l), 
-                        as.double(data[[i]]),
+                        data[[i]],
                         as.integer(repetitions[i]), as.integer(grid[i]), 
                         as.double(bins), as.integer(n.bins),
                       as.integer(vdim),
@@ -327,32 +346,32 @@ rfempirical <- function(x, y = NULL, z = NULL, T = NULL, data, grid,
       ## with all angles given. Otherwise there would be too many special
       ## cases to treat in the c program. However, there is some lost
       ## of speed in the calculations...
-      
+      if (!is.matrix(data[[1]])) stop("Bug")
+    
       for (i in 1:sets) {
-	ll <- Z$coords[[i]]$l
 	coords <-  Z$coords[[i]]
-	
-	xx <- coords$x
+
+        xx <- coords$x
         if (!is.matrix(xx)) stop("coordinates are not given by a matrix")
-	if (ncol(xx)<3)  # not matrix(0, ...) here! since x could be a triple
-	xx <- cbind(xx, matrix(1, nrow=nrow(xx), ncol=3-ncol(xx)))   
+	if (ncol(xx)<4)  # not matrix(0, ...) here! since x could be a triple
+          xx <- cbind(xx, matrix(1, nrow=nrow(xx), ncol=4-ncol(xx)))   
 	
 	## x fuer grid und nicht-grid: spalte x, y, bzw z
 	N <- empirical.sdSq <- empirical <- 0
+
 	back <-
           .Call(C_empvarioXT,
-		as.double(xx),
+		xx,
 		as.double(if (length(coords$T)>0) coords$T else rep(1,3)),
-		as.integer(Z$coords[[i]]$l), 
-		as.double(data[[i]]),
+		data[[i]],
 		as.integer(repetitions[i]),
 		as.integer(grid[i]), 
 		as.double(bins), as.integer(n.bins), 
 		as.double(phi[1:2]), 
 		as.double(theta[1:2]), 
 		as.integer(c(stepT, nstepT)), 
-		## input : deltaT[1] max abstand, deltaT[2]: echter gitterabst.
-		##   c   : delta[1]: index gitterabstand, deltaT[2]:#of bins -1
+		## input : deltaT[toT] max abstand, deltaT[byT]: echter gitterabst.
+		##   c   : delta[toT]: index gitterabstand, deltaT[byT]:#of bins -1
 		##                   (zero is the additional distance)
 		as.integer(vdim),
 		as.double(alpha),
@@ -453,7 +472,7 @@ rfempirical <- function(x, y = NULL, z = NULL, T = NULL, data, grid,
             )
   if (RFopt$general$spConform) l <- do.call("new", c(list(CLASS_EMPIR), l))
   else class(l) <- CLASS_EMPIR
-  
+
   return(l)  
 } # function rfempirical
 
@@ -624,7 +643,7 @@ crossvario <- function(f, pseudo = FALSE, dummy = FALSE) {
 prepareBins <- function(bins) {
   if(missing(bins)) return(NULL)
   if (bins[1] > 0) {
-    if (RFoptions()$basic$printlevel>1)
+    if (getRFoptions(GETOPTIONS="basic")$printlevel>1)
       message("empirical variogram: left bins border 0 added\n")
     bins <- c(0, bins)
   }

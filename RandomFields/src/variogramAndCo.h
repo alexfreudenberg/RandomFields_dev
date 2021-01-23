@@ -27,79 +27,101 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef variogramAndCo_H
 #define variogramAndCo_H 1
 
-#define STANDARDSTART_X							\
-  assert(loc != NULL && loc->xgr[0] != NULL);				\
-  for (d=0; d<tsxdim; d++) {						\
-    inc[d] = loc->xgr[d][XSTEP];					\
-    start[d] = 0;							\
-    end[d] = loc->xgr[d][XLENGTH];					\
-    nx[d] = start[d];							\
-    x[d] = xstart[d] = loc->xgr[d][XSTART];				\
-  }									\
-  x[tsxdim] = 0
-
-
-
-#define FINISH_START_X(whereSfctn)					\
-  fctn_storage *fctn= (whereSfctn)->Sfctn;				\
-  if (fctn == NULL) BUG;						\
-  location_type *loc = Loc(whereSfctn);					\
-  assert(loc != NULL);							\
-  /*bool grid =loc->grid && !loc->Time && loc->caniso==NULL, why !time ?? 10.3.15*/		\
-  bool grid =loc->grid && loc->caniso==NULL,				\
-    trafo = (loc->Time || loc->caniso != NULL) && !loc->distances;	\
-  Long tot = loc->totalpoints;						\
+#define FINISH_START(whereSfctn, whereVdim, ignore_x, ignore_y, idxVdim1, \
+		     TOTX, TOTY, I_COL_BASE)					\
+  GETSTORAGE(fctn, whereSfctn, fctn); \
+  if (fctn == NULL) { /* // PMI0(whereSfctn);printf("\n\n\n\n");PMI0(whereVdim); printf("fctn=NULL\n"); */ BUG;} \
+  assert(Loc(whereSfctn) != NULL);					\
+  double *caniso = LocAniso(whereSfctn);				\
+  bool grid = LocgridY(whereSfctn, !ignore_x) && caniso==NULL,		\
+    Time = LocTime(whereSfctn),						\
+    trafo = ((Time && !grid)|| caniso != NULL);				\
+  grid &= !trafo;							\
+  if (trafo && LocDist(whereSfctn))					\
+    ERR("complex construction with distances currently not programed -- pls contract maintainer"); /* ODER EHER BUG WENNS AUFTRITT? TO DO */ \
+  Long totX = (TOTX) ? (TOTX) : LoctotalpointsY(whereSfctn, !ignore_x), \
+    totY = (TOTY) ? (TOTY) : LoctotalpointsY(whereSfctn, ignore_y);	\
   int d,								\
+    i_col_base = I_COL_BASE,						\
     *start=fctn->start,							\
     *end=fctn->end,							\
     i_row = 0,								\
     *nx=fctn->nx,							\
-    tsxdim = PREVTOTALXDIM; /* weicht u.U. von logicaldim bei dist=true ab */ \
-  if (end == NULL) BUG;							\
+    tsxdim = PREVTOTALXDIM,						\
+    VARIABLE_IS_NOT_USED localdim = tsxdim; /* dim after trafo */ \
+  if (end == NULL) {/* //printf("end=NULL\n");*/ BUG;}			\
   double *x = fctn->x,							\
     *xstart= fctn->xstart,						\
     *inc=fctn->inc,							\
     *xx = NULL;		/* dito			   */			\
   assert(x != NULL);							\
+  coord_type gr = LocgrY(whereSfctn, !ignore_x);			\
   if (grid) {								\
     STANDARDSTART_X;							\
-  }									
-
-
-
-#define FINISH_START(whereSfctn, whereVdim, ignore_y, vdim2)		\
-  FINISH_START_X(whereSfctn);		\
-  /*bool grid =loc->grid && !loc->Time && loc->caniso==NULL, why !time ?? 10.3.15*/		\
-  bool ygiven = !(ignore_y) && (loc->y != NULL || loc->ygr[0] != NULL);/* might be changed !*/ \
-  int i_col = 0,							\
+  } else x = LocY(whereSfctn, !ignore_x);				\
+  									\
+  bool ygiven = !((ignore_x) xor (ignore_y)) && LocHasY(whereSfctn),/* might be changed !*/ \
+    xswapped = (ignore_x) && LocHasY(whereSfctn),			\
+    gridY = (ygiven) && LocgridY(whereSfctn),				\
+    trafoY = ((Time && !gridY) || caniso != NULL);			\
+  gridY &= !trafoY;							\
+  int i_col = 0,						\
     vdim0  = (whereVdim)->vdim[0],					\
-    vdimSq = vdim0 * (whereVdim)->vdim[vdim2], /*not nec. squ!!*/	\
+    vdim1 = (whereVdim)->vdim[idxVdim1],				\
+    vdimSq = vdim0 * vdim1, /*not nec. squ!!*/				\
     *endy =fctn->endy,							\
     *startny =fctn->startny,						\
-    *ny = fctn->ny;	 						\
- Long VARIABLE_IS_NOT_USED vdim0tot = vdim0 * tot,			\
-    vdimSqtot = vdimSq * tot,						\
+    *ny = fctn->ny;		 					\
+		 							\
+  Long vdim0totX = vdim0 * totX,					\
+    vdim1totX = vdim1 * totX,						\
+    VARIABLE_IS_NOT_USED VDIM_0, VARIABLE_IS_NOT_USED NEND,		\
+    VARIABLE_IS_NOT_USED  NINCR, VARIABLE_IS_NOT_USED  MINCR,		\
+    VARIABLE_IS_NOT_USED ENDFORINCR,					\
+    VARIABLE_IS_NOT_USED VDIMtotX,					\
+    vdimSqtotX = vdimSq * totX,						\
+    vdim0totSq = vdim0totX * totY,					\
+    vdimSqtotSq = vdimSq * totX * totY,					\
     err = NOERROR;							\
-  double *ystart =fctn->ystart,						\
-     *yy = NULL,		/* set by Transform Loc; freed  */	\
-     *incy =fctn->incy			
-  
-
-
-#define INCLUDE_VAL							\
-  double **Val= fctn->Val,						\
-    *cross=fctn->cross;							\
-  if (vdimSq > 1) {							\
-    for (Long v=0, i = 0; i<vdimSqtot ; i+=vdim0tot) {			\
-      for (Long ii=i, j=0; j<vdim0; ii+=tot, v++, j++) {		\
-	Val[v] = value + ii;						\
-      }									\
-    }									\
+  assert(fctn->y != NULL);						\
+  double *y = fctn->y,							\
+    *ystart =fctn->ystart,						\
+    *yy = NULL,		/* set by TransformLoc; freed  */		\
+    *incy =fctn->incy;							\
+  coord_type grY = LocgrY(whereSfctn, ignore_y);			\
+    if (global->general.vdim_close_together) {				\
+    /* v-dimensions close together */					\
+    VDIM_0 = vdim0;							\
+    VDIMtotX = vdimSqtotX;						\
+    NINCR = vdim0totX;							\
+    MINCR = 1;								\
+    NEND = vdimSqtotX;							\
+    ENDFORINCR = vdim0;							\
+  } else {								\
+    /* values of any *single* multivariate component close together */	\
+    /* default in global->CovMatrixMulti */				\
+    VDIM_0 = 1;								\
+    VDIMtotX = vdim0totX;						\
+    NINCR = vdim0totSq;							\
+    ENDFORINCR = vdim0totX;						\
+    NEND = vdimSqtotSq;							\
+    MINCR = totX;							\
   }									\
-  if (!(kernel && !ygiven && PL > 0 && GLOBAL.internal.warn_singlevariab)) { } else {			\
-      WARN1("'%.50s' is called with a single variable only, although it is used as a kernel. So, the second variable is set to zero, here.\n", NICK(cov));  \
-  } 
+  /*  PMI1(whereSfctn);	 PMIR(whereVdim); */				\
+  DEFAULT_INFO(info);							\
+  info[INFO_IDX_X] = info[INFO_IDX_Y] = 0
 
+
+
+#define STANDARDSTART_X				\
+  assert(Loc(cov) != NULL && gr[0] != NULL);	\
+  for (d=0; d<tsxdim; d++) {			\
+    inc[d] = gr[d][XSTEP];			\
+    start[d] = 0;				\
+    end[d] = gr[d][XLENGTH];			\
+    nx[d] = start[d];				\
+    x[d] = xstart[d] = gr[d][XSTART];		\
+  }								
 
 
 #define STANDARDINKREMENT_X	\
@@ -113,12 +135,23 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
     nx[d]++;			\
     x[d] += inc[d];		\
   }				\
-  x[tsxdim] = ++i_row;		\
+  info[INFO_IDX_X] = ++i_row;	\
   if (d < tsxdim) { } else break		
   // end define StandardInkrement
+        
+
+// ny wird nur inv CovMatrix verwendet!
+#define STANDARDSTART_Y_SUPPL						\
+  for (d=0; d<tsxdim; d++){						\
+    incy[d] = grY[d][XSTEP];						\
+    y[d] = ystart[d] = grY[d][XSTART];					\
+    endy[d] = grY[d][XLENGTH];						\
+    ny[d] = startny[d] = 0;						\
+  }									\
+  i_col = 0;							\
+  info[INFO_IDX_Y] = i_col + i_col_base
 
 
-				
 // Achtung hier *nicht* incy, starty
 #define STANDARDINKREMENT_Y			\
   d = 0;					\
@@ -129,39 +162,27 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
      y[d] = ystart[d];				\
      if (++d >= tsxdim) break;			\
      ny[d]++;					\
-    y[d] += incy[d];				\
-   }						\
-   y[tsxdim] = ++i_col				\
-   // end define Stand ardInkrement_Y
-                 
-
-// ny wird nur inv CovMatrix verwendet! Stattdessen dort weder
-// ystart noch incy!
-#define STANDARDSTART_Y_SUPPL						\
-  for (d=0; d<tsxdim; d++){						\
-    incy[d] = loc->ygr[d]==NULL ? loc->xgr[d][XSTEP] : loc->ygr[d][XSTEP]; \
-    y[d] = ystart[d] =							\
-      loc->ygr[d]==NULL ? loc->xgr[d][XSTART] : loc->ygr[d][XSTART];	\
-    endy[d] = loc->ygr[d]==NULL ? loc->xgr[d][XLENGTH]:loc->ygr[d][XLENGTH]; \
-    startny[d] = 0;							\
-    ny[d] = startny[d];							\
-  }									\
-  y[tsxdim] = i_col = 0
-								
-
-#define RECYCLE_Y				\
-  if (d <= tsxdim) { } else {			\
-    for (d=0; d<tsxdim; d++) {			\
-      y[d] = ystart[d] = loc->ygr[d][XSTART];	\
-      ny[d] = startny[d];			\
-    }						\
+     y[d] += incy[d];				\
   }						\
-  y[tsxdim] = i_col = 0  			
+  i_col++;					\
+  info[INFO_IDX_Y] = i_col  + i_col_base		     
+   // end define Stand ardInkrement_Y
+
+
+#define RECYCLE_Y					\
+  if (d < tsxdim) { } else {				\
+    for (d=0; d<tsxdim; d++) {				\
+      y[d] = ystart[d];		\
+      ny[d] = startny[d];				\
+    }							\
+    i_col = 0;					\
+    info[INFO_IDX_Y] = i_col + i_col_base;	\
+  }
 
 
 #define STANDARD_ENDE_X				\
   FREE(xx)
- 				
+
 
 #define STANDARD_ENDE				\
   STANDARD_ENDE_X;				\
@@ -171,98 +192,129 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define GRIDCYCLES(SOME_FCTN)				\
   while (true) {					\
     SOME_FCTN;						\
-    if (ygiven) { STANDARDINKREMENT_Y; RECYCLE_Y;}	\
+    if (gridY) { STANDARDINKREMENT_Y; RECYCLE_Y;}	\
     STANDARDINKREMENT_X;				\
-  }					
+  }				
 
 #define GRIDCYCLE_X(SOME_FCTN)			\
   while (true) {				\
     SOME_FCTN;					\
     STANDARDINKREMENT_X;			\
   }
+
+
+
     
-#define DO_INCREMENTY , yyy+=tsxdim, i_col++
+#define DO_INCREMENTY ,  i_col++, y+=tsxdim
 
 #define PREPAREX							\
-  MEMCOPY(x, xxx, xCpy);						\
-  x[tsxdim] = i_row
+  info[INFO_IDX_X]  = i_row
 
 #define PREPAREY				\
   PREPAREX;						\
-  if (yyy < yend) { } else { yyy = y0; i_col = 0; }	\
-  MEMCOPY(y, yyy, xCpy);					\
-  y[tsxdim] = i_col
+  if (y < yend) { } else { y = y0; i_col = 0; }	\
+  info[INFO_IDX_Y] = i_col + i_col_base;
 
 #define EMPTY 
 
 #define NONGRIDCYCLE(INCREMENT, PREPARE, FCTN1, FCTN2)			\
   if (vdimSq == 1) {							\
-    for (; i_row<tot; i_row++, xxx+=tsxdim INCREMENT){			\
+    for (; i_row<totX; i_row++, x+=tsxdim INCREMENT){			\
       PREPARE;								\
       FCTN1;								\
     }									\
   } else {								\
-    for (; i_row<tot; i_row++, xxx+=tsxdim INCREMENT){			\
+    for (; i_row<totX; i_row++, x+=tsxdim INCREMENT){			\
       PREPARE;								\
       FCTN2;								\
     }									\
   }
 
-#define PERFORM(UNIVAR_FCTN_X, MULTIVAR_FCTN_X, UNIVAR_FCTN, MULTIVAR_FCTN)  \
-  if (grid) {					\
+#define PERFORM_PREPARE						\
+  if (trafo) { /* implies no grid */					\
+    localdim = TransformLoc(cov, NULL, xswapped ? NULL : &xx,		\
+			    xswapped ? &xx : NULL,  false);	\
+    x = xx;								\
+  }									\
+  if (ygiven && !gridY) {						\
+    if (trafoY) { /* falls xswapped && ygiven, so auch yswapped	*/	\
+      localdim = TransformLoc(cov, NULL, xswapped ? &yy : NULL,\
+			      xswapped ? NULL : &yy, false);		\
+      y = yy;								\
+    } else y=LocY(cov, xswapped);					\
+  } else if (gridY) {							\
+    STANDARDSTART_Y_SUPPL;						\
+  } else y=zero	       
+	   
+#define PERFORM(UNIVAR_FCTN_X, MULTIVAR_FCTN_X, UNIVAR_KERNEL,		\
+		MULTIVAR_KERNEL)					\
+  assert(!ygiven || kernel);			\
+    if (grid) {								\
     if (ygiven || kernel) {						\
-      STANDARDSTART_Y_SUPPL;						\
-      if (vdimSq == 1) { GRIDCYCLES(UNIVAR_FCTN; value+=vdimSq);	\
-      } else { GRIDCYCLES(MULTIVAR_FCTN); }				\
+      if (vdimSq == 1) {						\
+      	if (gridY){ GRIDCYCLES(UNIVAR_KERNEL; v+=vdimSq);}		\
+	else { BUG;} /* somewhen in future */				\
+      } else {								\
+	if (gridY) { GRIDCYCLES(MULTIVAR_KERNEL); }			\
+	else {BUG;}							\
+      }									\
     } else { /* grid, y not given */					\
       if (vdimSq == 1) {						\
-	GRIDCYCLE_X(UNIVAR_FCTN_X; value+=vdimSq);			\
+	GRIDCYCLE_X(UNIVAR_FCTN_X; v+=vdimSq);			\
       } else {GRIDCYCLE_X(MULTIVAR_FCTN_X); }				\
     }									\
   } else { /* not a grid */						\
-    int localdim = tsxdim;						\
-    double *xxx, *yyy = zero;						\
-    if (trafo) {							\
-      localdim = TransformLoc(cov, &xx, &yy, false);			\
-      xxx = xx;								\
-      if (ygiven) yyy = yy;						\
-    } else {								\
-      xxx=loc->x;							\
-      if (ygiven) yyy=loc->y;						\
-    }									\
-    int /* xMem = sizeof(double) * (tsxdim + 1), */			\
-      xCpy = sizeof(double) * localdim;					\
-    assert(ygiven xor (yyy==zero));					\
-    if (ygiven || kernel) {						\
-      double *y0 = yyy,							\
-	*yend = ygiven ? yyy + tsxdim * loc->ly : yyy;			\
-      NONGRIDCYCLE(DO_INCREMENTY, PREPAREY, UNIVAR_FCTN; value+=vdimSq,	\
-		   MULTIVAR_FCTN);					\
-    } else {								\
-      NONGRIDCYCLE(EMPTY, PREPAREX, UNIVAR_FCTN_X; value+=vdimSq,	\
-		   MULTIVAR_FCTN_X);					\
+    assert(ygiven xor (y==zero));					\
+    if (ygiven || kernel) {		\
+      double *y0 = y,							\
+	*yend = ygiven ? y + localdim * totY : y;	\
+      if (grid) {							\
+	{BUG; } /* maybe somewhen in future */				\
+      } else {								\
+	NONGRIDCYCLE(DO_INCREMENTY, PREPAREY,				\
+		     UNIVAR_KERNEL; v+=vdimSq, MULTIVAR_KERNEL);	\
+      }									\
+    } else {				\
+      if (grid) {BUG; } /* maybe somewhen in future */			\
+      else {								\
+	NONGRIDCYCLE(EMPTY, PREPAREX, UNIVAR_FCTN_X; v+=vdimSq,	\
+		     MULTIVAR_FCTN_X);					\
+      }									\
     }									\
     if (err != NOERROR) XERR(err);					\
   }
 
+// kein komma in der nachfolgenden Defintion!!
+#define VDIM_LOOP(DO)							\
+   double *C = v + VDIM_0 * i_row + i_col * VDIMtotX;			\
+  int m = 0;								\
+  for (Long n1=0; m<vdim1; n1+=NINCR) { /* spaltenschleife */		\
+    /* n1: index fuer ergebnismatrix C fuer spaltenschleife */		\
+    int u = m * vdim0;/*richtiger idx der cross matrix fuer zeilenschleife*/ \
+    int w = m; /* index der (virtuell) transponierten cross Matrix */	\
+    for (Long m1=n1; w<vdimSq; m1+=MINCR) { /* zeilenschleife */	\
+      /* printf("%d %d; %d %d; row=%d, col%d\n", m1, VDIM_0 * i_row + i_col * VDIMtotX + m1, totX, totY,  i_row, i_col); assert( VDIM_0 * i_row + i_col * VDIMtotX + m1< 400); //*/ \
+      C[m1] = DO;							\
+      u++; w+=vdim1;							\
+    }									\
+    m++;								\
+  }
 
 
-void CovVario(model *cov, bool is_cov, bool pseudo, 
-	      double *value);
-///void CovIntern(int reg, double *x, double *value);
-void CovIntern(int reg, double *x, double *y, Long lx, Long ly, double *value);
 void PseudovariogramIntern(int reg, double *x, double *y,
-			   Long lx, Long ly, double *value);
-void PseudovariogramIntern(int reg, double *x, double *value);
-void CovarianceMatrix(model *cov,double *v);
-void CovarianceMatrixCol(model *Cov, int column, double *v);
-void InverseCovMatrix(model *cov, double *v, double *det);
-void StandardCovariance(model *cov, double *v);
-void StandardCovMatrix(model *cov, double *v);
-void StandardInverseCovMatrix(model *cov, double *inverse, double *det);
-void StandardVariogram(model *cov, double *v);
-void StandardPseudoVariogram(model *cov, double *v);
-
+			   Long totalpoints, Long totalpointsY, double *v);
+void PseudovariogramIntern(int reg, double *x, double *v);
+void CovarianceMatrix(model *cov, bool ignore_y, double *v);
+void CovarianceMatrix(model *Cov, bool ignore_y, int *idx, int Nidx,
+		      double *v);
+void CovarianceMatrixCols(model *Cov, bool ignore_y, int row, double *v);
+void StandardCovMatrix(model *cov, bool ignore_y, double *v);
+//void InverseCovMatrix(model *cov, double *v, double *det);
+//void StandardInverseCovMatrix(model *cov, double *inverse, double *det);
+void Variogram(model *cov, double *v);
+void Covariance(model *cov, double *v);
+void CovarianceT(model *cov, int base_i_col, double *v);
+void Pseudomadogram(model *cov, double alpha, double *v);
 
 #endif
 

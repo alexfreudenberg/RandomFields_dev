@@ -54,17 +54,30 @@ RFinterpolate(model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
 }}
 
 \details{
-  
- In case of repeated data, they are kriged 
- \emph{separately}; if the argument \code{x} is missing,
- \code{data} may contain \code{NA}s, which are then replaced by
- the kriged values (imputing); 
+  If the argument \code{x} is missing,
+  \code{data} may contain \code{NA}s, which are then replaced by
+  the kriged values (imputing); 
 
-  
+  Different data sets behave differently from repeated data without missings
+  if and only if the model is not fully specified,
+  i.e., if the model contains NAs in the linear part or an NA
+  in the global variance. Then, different linear parts are fitted to the
+  different data sets (but the same to repeated data).
+%  NOT TRUE ANYMORE:
+%  The \command{\link[RFoptions]{option}} \code{apart_linear_fit}
+ % forces repeated data to be treated as different data sets.
+  Handling of different data sets instead of repeated data costs
+  always (considerably) more time.
+
+%  NOT TRUE ANYMORE:
+%  In case of missing values and \command{\link[RFoptions]{option}}
+ % \code{na_rm_lines = FALSE} (which is the default value) or imputing,
+%  repeated measurements are always treated as if they were from
+%  different data sets. 
+
  In case of intrinsic cokriging (intrinsic kriging for multivariate
  random fields) the pseudo-cross-variogram is used (cf. Ver Hoef and
  Cressie, 1991).
-
 }
 \value{
  The value depends on the additional argument \code{variance.return},
@@ -130,7 +143,7 @@ dev.new(height=7, width=16)
 ## here, a grid is chosen, but does not matter
 p <- 3:8
 points <- as.matrix(expand.grid(p,p))
-model <- RMexp() + RMtrend(mean=1)
+model <- RMexp() + RMshape(mean=1)
 dta <- RFsimulate(model, x=points)
 plot(dta)
 x <- seq(0, 9, 0.25)
@@ -142,12 +155,12 @@ z <- RFinterpolate(model, x=x, y=x, data=dta)
 plot(z, dta)
 
 ## Simple kriging with mean=4 and scaled covariance
-model <- RMexp(scale=2) + RMtrend(mean=4)
+model <- RMexp(scale=2) + RMshape(mean=4)
 z <- RFinterpolate(model, x=x, y=x, data=dta)
 plot(z, dta)
 
 ## Ordinary kriging
-model <- RMexp() + RMtrend(mean=NA)
+model <- RMexp() + RMshape(mean=NA)
 z <- RFinterpolate(model, x=x, y=x, data=dta)
 plot(z, dta)
 
@@ -197,21 +210,21 @@ screen(scr <- scr+1); plot(z, dta)
 
 ## Interpolation nicht korrekt
 ## Intrinsic kriging with Polynomial Trend
-model <- RMfbm(a=1) + RMtrend(polydeg=2)
+model <- RMfbm(a=1) + RMshape(polydeg=2)
 z <- RFinterpolate(model, x, x, data=dta)
 screen(scr <- scr+1); plot(z, dta)
 }}
 
 \dontshow{\dontrun{
 ## Universal kriging with trend as formula
-model <- RMexp() + RMtrend(arbit=function(X1,X2) sin(X1+X2)) +
- RMtrend(mean=1)
+model <- RMexp() + RMshape(arbit=function(X1,X2) sin(X1+X2)) +
+ RMshape(mean=1)
 z <- RFinterpolate(model, x=x, y=x, data=dta)
 screen(scr <- scr+1); plot(z, dta)
 
 ## Universal kriging with several arbitrary functions
-model <- RMexp() + RMtrend(arbit=function(x,y) x^2 + y^2) +
- RMtrend(arbit=function(x,y) (x^2 + y^2)^0.5) + RMtrend(mean=1)
+model <- RMexp() + RMshape(arbit=function(x,y) x^2 + y^2) +
+ RMshape(arbit=function(x,y) (x^2 + y^2)^0.5) + RMshape(mean=1)
 z <- RFinterpolate(model, x=x, y=x, data=dta)
 screen(scr <- scr+1); plot(z, dta)
 }}

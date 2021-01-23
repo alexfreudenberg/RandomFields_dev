@@ -28,9 +28,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define rfutil_own_H 1
 #include "Options_utils.h"
 
-void setparameterUtils(int i, int j, SEXP el, char name[200], bool isList, int local);
-void getparameterUtils(SEXP sublist, int i, int local);
-void delparameterUtils(int local);
+void setparameterUtils(int i, int j, SEXP el, char name[200], bool isList,
+		       bool local);
+void getparameterUtils(SEXP sublist, int i, bool local);
+void delparameterUtils(bool local);
 void set_num_threads();
 
 
@@ -42,7 +43,7 @@ extern int ownallN[ownprefixN];
 
 void freeGlobals();
 double *ToReal(SEXP X);
-
+bool parallel();
 
 #endif
 

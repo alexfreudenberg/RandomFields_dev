@@ -27,7 +27,7 @@ RFgui <- function(data, x, y,
                   sim_only1dim=FALSE,
                   wait = 0, 
                   ...) {
-  if (!interactive()) {
+  if (!interactive() || !requireNamespace("tkrplot", quietly = TRUE)) {
     warning("'RFgui' can be used only in an interactive mode")
     return(NULL)
   }
@@ -36,10 +36,19 @@ RFgui <- function(data, x, y,
   assign("RFgui.model", NULL, envir=Env)
   if (exists(".RFgui.exit", .GlobalEnv)) rm(".RFgui.exit", envir=.GlobalEnv)
  
+  RFopt <- if (same.alg) 
+             internalRFoptions(storing=FALSE,
+                               circulant.trials=circ.trials,
+                               circulant.force=circ.force,
+                               circulant.mmin=circ.min, ...
+                                        # , graphics.height=-1
+                               )
+         else  internalRFoptions(storing=FALSE, ...)
+
   rfgui.intern(x=x, y=y, same.alg=same.algorithm,
                           ev=ev, xcov=xcov, ycov=ycov,
                           data=data, sim_only1dim=sim_only1dim, 
-                          parent.ev = Env,
+                          parent.ev = Env, RFopt=RFopt,
                           ...)
  
   if (wait >= 0) {
@@ -48,7 +57,7 @@ RFgui <- function(data, x, y,
     res <- get("RFgui.model", envir=Env)
     if (is.null(res)) return(res) 
     if (RFoptions()$general$spConform) {
-      RFvariogram(model=res, 0, get(".RFgui.y", envir=Env))
+      RFvariogram(COPY=FALSE, model=res, 0, get(".RFgui.y", envir=Env)) # OK
       res <- list2RMmodel(GetModel(RFvariogram))
     } else {
       class(res) <- CLASS_CLIST
@@ -64,6 +73,7 @@ rfgui.intern <- function(data, x, y,
                          xcov, ycov,
                          sim_only1dim=FALSE,                         
                          parent.ev=NULL,
+                         RFopt,
                          printlevel=0,...) {
   circ.trials <- 1
   circ.force <- TRUE
@@ -79,18 +89,9 @@ rfgui.intern <- function(data, x, y,
   ENVIR <- environment()
   assign("model", NULL, envir = ENVIR) # orignal: model als parameter uebergeben
 
-  RFoptOld <- if (same.alg)
-    internal.rfoptions(storing=FALSE, printlevel=printlevel - 10,
-                       circulant.trials=circ.trials,
-                       circulant.force=circ.force,
-                       circulant.mmin=circ.min, ...
-                      # , graphics.height=-1
-                       )
-  else  internal.rfoptions(storing=FALSE, printlevel=printlevel - 10, ...)
-  assign("RFopt.old", RFoptOld[[1]], envir=ENVIR)
-  RFopt <- RFoptOld[[2]]
-  rm("RFoptOld")
-
+  .Call(C_setlocalRFutils, NULL, printlevel - 10)
+   ## kein hasArg("COPY") da bei exit immer Register geloescht wird (s.u.)
+  
   guiReg <- MODEL_GUI
   guiOpt <- RFopt$gui
 
@@ -146,7 +147,7 @@ rfgui.intern <- function(data, x, y,
     
     newmodel <- list(modelChoice, k=rep(NA, times=selModelCountPar))
     dim <- as.integer(2 - sim_only1dim)
-    minmax <- Try(.Call(C_SetAndGetModelInfo, guiReg,
+    minmax <- Try(.Call(C_SetAndGetModelFacts, guiReg,
                         list("Dummy", newmodel), dim,
                         FALSE, FALSE, FALSE, dim,
                         as.integer(10), ## ehemals RFoptions(short=10)
@@ -372,7 +373,8 @@ rfgui.intern <- function(data, x, y,
       x1 <- rep(xcov, each=length(ycov))
       x2 <- rep(ycov, times=length(xcov))
 
-      cv <- RFvariogram(x=as.matrix(expand.grid(xcov, ycov)),
+      cv <- RFvariogram(COPY=FALSE, # OK
+                        x=as.matrix(expand.grid(xcov, ycov)),
                         model=newmodel, 
                         practicalrange = tkValue(cbPracRangeVal) != "0")
       dim(cv) <- c(length(ycov),length(xcov))
@@ -398,13 +400,13 @@ rfgui.intern <- function(data, x, y,
     cv <- xcov
     if(as.character(tkValue(plotVarCov)) == "Covariance") {
      
-      cv <- RFcovariance(x=xcov, model=newmodel,
+      cv <- RFcovariance(COPY=FALSE, x=xcov, model=newmodel, # OK
                          practicalrange = tkValue(cbPracRangeVal) != "0")
     }
     if(as.character(tkValue(plotVarCov)) == "Variogram") {      
       pr.dummy <- tkValue(cbPracRangeVal) != "0"
  
-      cv <- RFvariogram(x=xcov, model=newmodel,
+      cv <- RFvariogram(COPY=FALSE, x=xcov, model=newmodel, # OK
                         practicalrange = pr.dummy)
      }
 
@@ -445,14 +447,13 @@ rfgui.intern <- function(data, x, y,
       yy <- (if (get("simDim", envir = ENVIR) =="sim1Dim") NULL else
              if (length(y)==0) x else y)
       pr <-  tkValue(cbPracRangeVal) != "0"
-      z <- try(RFsimulate(simu.model,x=x, grid=TRUE, #to fool findall: tkEntry( 
+      z <- Try(RFsimulate(COPY=FALSE, # OK
+                          simu.model,x=x, grid=TRUE,#to fool findall: tkEntry( 
                           y=if (get("simDim", envir = ENVIR)=="sim1Dim") NULL
                           else if (length(y)==0) x else y,
                           seed = fixed.rs,
                           register=guiReg, spConform=TRUE,
-                          practicalrange =
-                          tkValue(cbPracRangeVal) != "0"),
-               silent=!TRUE)
+                          practicalrange =tkValue(cbPracRangeVal) != "0"))
  
      if (is(z, "try-error")) {
          plot(Inf, Inf, xlim=c(0,1), ylim=c(0,1), axes=!FALSE, xlab="",
@@ -537,7 +538,7 @@ rfgui.intern <- function(data, x, y,
   {
     # hier muss eine rueckgabe stehen, emp vario und model mit parametern
    #   Print(GetGuiModel())
-    RFoptions(LIST=get("RFopt.old", envir=ENVIR))
+    setRFoptions(storing=c(FALSE, MODEL_GUI))
     ##remove("RFopt.old", envir=ENVIR)
     assign(".RFgui.exit", TRUE, envir=parent.ev)
     tkDestroy(tt)    

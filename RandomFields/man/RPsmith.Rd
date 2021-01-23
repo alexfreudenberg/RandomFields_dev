@@ -102,11 +102,13 @@ x <- seq(0, 10, 0.1)
 z <- RFsimulate(RPsmith(model, xi=0), x, x)
 plot(z)
 
+\dontshow{\dontrun{ TO DO
 ## original Smith model
 x <- seq(0, 10, 0.05)
 model <- RMgauss(scale = sqrt(2)) # !! cf. definition of RMgauss
 z <- RFsimulate(RPsmith(model, xi=0), x, x)
 plot(z)
+
 
 
 ## Smith model with %  library(RandomFields)
@@ -121,7 +123,7 @@ x <-seq(0, 10, 0.05)
 model <- RMcauchy(s=exp(), gamma=2)
 z <- RFsimulate(RPsmith(model), x, x) ## takes some time
 plot(z)
-
+}}
 
 \dontshow{\dontrun{
 ## original Smith model at arbitrary locations

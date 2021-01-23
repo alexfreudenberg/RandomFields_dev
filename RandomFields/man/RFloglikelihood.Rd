@@ -93,7 +93,7 @@ stopifnot(all.equal(likeli$log, L))
 pts <- 4
 repet <- 1
 trend <- 2 * sin(R.p(new="isotropic")) + 3
-#trend <- RMtrend(mean=0)
+#trend <- RMshape(mean=0)
 model <- 2 * RMexp() + trend
 x <- seq(0, pi, len=pts)
 dta <- as.matrix(RFsimulate(model, x=x, n=repet, spC = FALSE))

@@ -6,8 +6,6 @@
 #define MAXUNITS 4
 #define MAXCHAR 18 // max number of characters for (covariance) names  
 #define RFOPTIONS "RFoptions"
-#define isGLOBAL NA_INTEGER
-
 
 #define WARN_UNKNOWN_OPTION_ALL 3
 #define WARN_UNKNOWN_OPTION_SINGLE 2

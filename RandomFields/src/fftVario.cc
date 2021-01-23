@@ -56,7 +56,8 @@ SEXP fftVario3D(SEXP Coord,
 		SEXP Repet,
 		SEXP Vdim,
 		SEXP SegmentEmpVario,
-		SEXP Pseudo
+		SEXP Pseudo,
+		SEXP Tol
 		) {
 
 /*    coord   : 3x3 matrix of coordinates of the 3 space dimension
@@ -78,6 +79,7 @@ SEXP fftVario3D(SEXP Coord,
  *    empvario: vector of bins filled with averaged empirical variogram
  *    n       : number of pairs in each bin
  *    pseudo  : if pseudo == 1, then the pseudo (cross)-variogram is computed
+ *    tol     : RFopt$empvario$tol
  */
   double
     *phi = REAL(Phi),
@@ -391,11 +393,16 @@ SEXP fftVario3D(SEXP Coord,
 	  } // z
 	} // y
       } //x	
-  
-      double tolerance = GLOBAL.empvario.tol * segmentbase[3];  // to do. Warum?
-      for(int i=0; i < totalbins ;i++){
-	if (FABS(emp_vario[i]) < tolerance) emp_vario[i] = 0.0; 
-      }
+
+
+      // nachfolgend ein einfaches Verfahren, um insbesondere in der 0
+      // beim Variogram die 0 zu garantieren. Bessere Idee?
+      // (ansonsten tauchen in 0 Werte um 1e-10 auf.)
+      
+      double tolerance = REAL(Tol)[0] * segmentbase[3];
+      //printf("tol = %f\n", tolerance);
+      for(int i=0; i < totalbins ;i++)
+     	if (FABS(emp_vario[i]) < tolerance) emp_vario[i] = 0.0;
     } // vdim1
   } // vdim
   

@@ -1,6 +1,6 @@
 \name{RMplus}
 \alias{RMplus}
-\alias{RMtrendplus}
+\alias{RMshapeplus}
 \alias{+}
 \alias{RM_PLUS}
 \title{Addition of Random Field Models}
@@ -18,7 +18,7 @@
 \usage{
 RMplus(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, trend,
        var, scale, Aniso, proj)
-RMtrendplus(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, add.na=FALSE,
+RMshapeplus(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, add.na=FALSE,
             var, scale, Aniso, proj)
 }
 \arguments{
@@ -50,7 +50,7 @@ RMtrendplus(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, add.na=FALSE,
  are multiplied to the corresponding arguments of the submodels
  (from the right side).
 
- \code{RMtrendplus} behaves as \code{RMplus}, but with argument
+ \code{RMshapeplus} behaves as \code{RMplus}, but with argument
  \code{trend=TRUE}. Further, it allows for formulae for the submodels.
 }
 \value{
@@ -70,7 +70,7 @@ RMtrendplus(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, add.na=FALSE,
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
-model <- RMplus(RMgauss(), RMnugget(var=0.1))
+model <- RMplus(RMgauss(), RMnugget(), var=0.5) ## common variance parameter
 model2<- RMgauss() + RMnugget(var=0.1)
 plot(model, "model.+"=model2, type=c("p", "l"), pch=20, xlim=c(0,3)) # the same
 

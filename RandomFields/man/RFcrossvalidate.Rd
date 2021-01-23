@@ -22,7 +22,7 @@
 RFcrossvalidate(model, x, y=NULL, z=NULL, T=NULL, grid=NULL, data,
                 params, lower=NULL, upper=NULL, method="ml",
                 users.guess=NULL, distances=NULL, dim, optim.control=NULL,
-                transform=NULL, full = FALSE, ...)
+                full = FALSE, ...)
 }
 \arguments{
   \item{model,params}{\argModel }
@@ -41,8 +41,7 @@ RFcrossvalidate(model, x, y=NULL, z=NULL, T=NULL, grid=NULL, data,
  \item{users.guess}{\argUsersguess}
  \item{distances,dim}{\argDistances}
  \item{optim.control}{\argOptimcontrol}
- \item{transform}{\argTransform}
-  \item{full}{logical.
+   \item{full}{logical.
    If \code{TRUE} then cross-validation is also performed
    for intermediate models used in
    \code{RFfit} (if any).
@@ -60,7 +59,10 @@ RFcrossvalidate(model, x, y=NULL, z=NULL, T=NULL, grid=NULL, data,
 \note{
   An important option is \code{cross_refit} that determines
   whether the model is refitted for each location left out.
-  Default is \code{FALSE}. See also \command{\link[=RFoptionsFit]{RFoptions}}.
+  Default is \code{FALSE}. See also
+  \command{\link[=RFoptionsFit]{RFoptions}}.
+
+  \NoteTransform
 }
 
 
@@ -144,7 +146,7 @@ d <- RFsimulate(model, x=x, y=y, grid=FALSE, n=n=100) #better n=1000
 #########################################################
 ## estimation; 'NA' means: "to be estimated"
 estmodel <- RMgencauchy(var=NA, scale=NA, alpha=NA, beta=2) +
-            RMtrend(mean=NA)
+            RMshape(mean=NA)
 RFcrossvalidate(estmodel, data=d)
 
 }}

@@ -25,9 +25,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define RF_INTERFACE_H 1
 
 
-model *InitIntern(int cR, SEXP Model, SEXP x, bool NA_OK);
+model *InitIntern(int cR, SEXP Model, SEXP x, bool NA_OK,
+		  raw_type rawConcerns);
 
-void simulate(double *x, model *cov, double *v);
+void simulate(double *x, int*, model *cov, double *v);
 int check_simulate(model *cov); 
 void range_simulate(model *cov, range_type *range);  
 int struct_simulate(model *cov, model **newmodel);
@@ -35,7 +36,7 @@ int init_simulate(model *cov, gen_storage *S);
 // void do_simulate(model *cov, gen_storage *S);
 void range_simulate(model VARIABLE_IS_NOT_USED *cov, range_type* range);
 
-void density(double *x, model *cov, double *v);
+void density(double *x, int*, model *cov, double *v);
 int check_density(model *cov); 
 void range_density(model *cov, range_type *range);  
 int struct_density(model *cov, model **newmodel);
@@ -54,42 +55,50 @@ void range_density(model VARIABLE_IS_NOT_USED *cov, range_type* range);
 #define LIKELI_EXCLUDE_TREND true
 void kappalikelihood(int i, model VARIABLE_IS_NOT_USED *cov, 
 		     int *nr, int *nc);
-void likelihood(double *data, model *cov, double *v);
+void likelihood(double *data, int*, model *cov, double *v);
 int check_likelihood(model *cov);
 int struct_likelihood(model *cov, model **newmodel);
 void range_likelihood(model *cov, range_type* range);
 
-void linearpart(double *data, model *cov, double *v);
+void linearpart(double *data, int *, model *cov, double *v);
 int check_linearpart(model *cov);
 int struct_linearpart(model *cov, model **newmodel);
 //void range_linearpart(model *cov, range_type* range);
 
+#define PREDICT_DATA 0
+#define PREDICT_NA_VAR 1
+#define PREDICT_BETASSEPARATE 2
+#define PREDICT_IGNORETREND 3
+#define PREDICT_GIVEN 4
+//#define PREDICT_GIVENIDX 5
+//#define PREDICT_PREDICTIDX 6
+#define PREDICT_CONDITIONING 0
+#define PREDICT_PREDICT 1
 
-void predict(double VARIABLE_IS_NOT_USED *x, model *cov, double *v);
-int check_predict(model *predict);
+void kappapredict(int i, model VARIABLE_IS_NOT_USED *cov, int *nr, int *nc);
+void predict(double VARIABLE_IS_NOT_USED *x, int *, model *cov, double *v);
+int check_predict(model *cov);
 int struct_predict(model *cov, model VARIABLE_IS_NOT_USED  **newmodel);
-void range_predict(model VARIABLE_IS_NOT_USED *cov, range_type* range);
+void range_predict(model VARIABLE_IS_NOT_USED *predict, range_type* range);
 
-
-void Cov(double *x, model *cov, double *value);
+void Cov(double *x, int *,  model *cov, double *v);
 int check_cov(model *cov);
 int struct_cov(model *cov, model **newmodel);
 int init_cov(model *cov, gen_storage *s);
 
 
-void FctnIntern(model *cov, model *covVdim, model *sub,
-		double *value, bool ignore_y);
-void FctnExtern(model *cov, model *covVdim, model *sub,
-		double *value, bool ignore_y);
-void Fctn(double *x, model *cov, double *value);
+void FctnIntern(model *cov, model *covVdim, model *sub, bool ignore_y,
+		double *v);
+void FctnExtern(model *cov, model *sub, bool ignore_y, double *v);
+void Fctn(double *x, int *, model *cov, double *v);
+void Fctn(model *cov, bool ignore_y, double *v);
+int check_fctn_intern(model *cov);
 int check_fctn(model *cov);
-//int check_fct_intern(model *cov, Types type, bool close, bool kernel,
-//		     int rows, int cols, Types frame);
 
-void CovMatrix(double *x, model *cov, double *value);
+void CovMatrix(double *x, int *, model *cov, double *v);
 int check_covmatrix(model *cov) ;
 
-void EvalDistr(double *x, model *cov, double *v);
+void EvalDistr(double *x, int*, model *cov, double *v);
 void kappa_EvalDistr(int i, model *cov, int *nr, int *nc);
 int check_EvalDistr(model *cov); 
 void range_EvalDistr(model *cov, range_type *range);  
@@ -97,25 +106,26 @@ int struct_EvalDistr(model *cov, model **newmodel);
 int init_EvalDistr(model *cov, gen_storage *S);
 // void do_EvalDistr(model *cov, gen_storage *S);
 
-void RFget(double *x, model *cov, double *v);
-int SearchParam(model *cov, get_storage *s) ;
+void RFget(double *x, int*, model *cov, double *v);
+int SearchParam(model *cov, get_storage *s, model_storage *STOMODEL) ;
 int check_RFget(model *cov) ;
 void range_RFget(model *cov, range_type* range);
 int struct_RFget(model *cov, model **newmodel);
 
 
 #define PSEUDO_ALPHA 0
-void Pseudovariogram(double *x, model *cov, double *value) ;
+void Pseudovariogram(double *x, int*, model *cov, double *v) ;
 int check_pseudovario(model *cov);
 void range_pseudovario(model *cov, range_type* range);
-void Pseudomadogram(double *x, model *cov, double *value) ;
+void Pseudomadogram(double *x, int *, model *cov, double *v) ;
 int check_pseudomado(model *cov);
 void range_pseudomado(model *cov, range_type* range);
-void Variogram(double *x, model *cov, double *value) ;
+
+void Variogram(double *x, int*, model *cov, double *v) ;
 int check_vario(model *cov);
 int struct_variogram(model *cov, model **newmodel);
 
-void Dummy(double *x, model *cov, double *value);
+void Dummy(double *x, int*, model *cov, double *v);
 int check_dummy(model *cov);
 int struct_dummy(model *cov, model **newmodel);
 

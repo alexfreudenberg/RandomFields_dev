@@ -151,8 +151,8 @@ rfspDataFrame2dataArray_generic <- function(obj) {
   dim(arr) <- c(grid.length.v,         # spatial and time dim
                 obj@.RFparams$vdim,    # vdim
                 obj@.RFparams$n + has.variance)       # repetitions
-  timespacedim <- length(grid.length.v)
-  if (timespacedim > 1)
+  tsdim <- length(grid.length.v)
+  if (tsdim > 1)
     arr <- reflection(arr, 2, drop=FALSE)
     ## re-ordering of 2nd space dimension since in sp objects, the 2nd dimension
     ## is in decreasing order

@@ -31,12 +31,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define SPECTRAL_SIGMA (COMMON_GAUSS + 4)
 
 int check_spectral(model *cov) {
+  globalparam *global = &(cov->base->global);
 #define nsel 4
   model *next=cov->sub[0],
     *key =cov->key,
     *sub = key==NULL ? next : key;
   int err;
-  spectral_param *gp  = &(GLOBAL.spectral);
+  spectral_param *gp  = &(global->spectral);
 
   ASSERT_CARTESIAN;
   FRAME_ASSERT_GAUSS_INTERFACE;
@@ -144,16 +145,12 @@ int init_spectral(model *cov, gen_storage *S){
   model *next = cov->sub[0],
     *key =cov->key,
     *sub = key == NULL ? next : key;
+
+  //  PMIR(cov);
+  
   int err=NOERROR,
     dim = ANYDIM;
   spec_properties *s = &(S->spec);
-  location_type *loc = Loc(cov);
-  //  if ((meth->S=MALLOC(sizeof(spectral_storage)))==0){
-  //    err=ERRORMEMORYALLOCATION; goto ErrorHandling;
-  //  }
-  //  s = (spectral_storage*)meth->S;
-
-  //  assert(false); printf("\n\nsdrfsjfd\n");
 
   if (hasEvaluationFrame(cov)) {
     RETURN_NOERROR;
@@ -161,7 +158,7 @@ int init_spectral(model *cov, gen_storage *S){
 
   cov->method = SpectralTBM;
   
-  if (loc->distances) RETURN_ERR(ERRORFAILED);
+  if (LocDist(cov)) RETURN_ERR(ERRORFAILED);
   if (dim > MAXTBMSPDIM) {
     err=ERRORMAXDIMMETH; goto ErrorHandling;
   } 
@@ -244,35 +241,40 @@ void E(int dim, spectral_storage *s, double A, double *e) {
 }
 
 
-void do_spectral(model *cov, gen_storage *S) 
-// in two dimensions only!
-{  
+void do_spectral(model *cov, gen_storage *S) {  // in two dimensions only!
+  globalparam *global = &(cov->base->global);
   //  gauss_param *dp = &(gp->gauss);
-  usr_bool exact = GLOBAL.general.exactness;
+  usr_bool exact = global->general.exactness;
   model *next = cov->sub[0];
   defn *C = DefList + NEXTNR; // nicht COVNR!
-  location_type *loc = Loc(cov);
 
+  bool Time = LocTime(cov),
+    grid = Locgrid(cov);
+  coord_type gr = Locxgr(cov);
+  double *T = LocT(cov),
+    *caniso = LocAniso(cov);
+ 
   assert(S != NULL);
   spec_properties *cs = &(S->spec);
   spectral_storage *s = &(S->Sspectral);
+  assert(s != NULL && cs != NULL);
   int d, n, gridlenx, gridleny, gridlenz, gridlent,
     ntot = P0INT(SPECTRAL_LINES),
-    origdim = loc->timespacedim,
-    spatialdim = loc->spatialdim,
-    every = GLOBAL.general.every,
+    origdim = Loctsdim(cov),
+    spatialdim = Locspatialdim(cov),
+    every = global->general.every,
     nthreshold = (every>0) ? every : MAXINT,
     deltathresh = nthreshold;
   double inct, VV,
      E[MAXTBMSPDIM], // must always be of full dimension, even 
     // if lower dimension is simulated -- simulation algorithm for e
     // might use higher dimensional components
-    *x = loc->x,
+    *x = Locx(cov),
     oldE[MAXTBMSPDIM] = { 0, 0, 0, 0 },
     inc[MAXTBMSPDIM] = { 0, 0, 0, 0}, 
     *res = cov->rf;
-  Long nt, nx, total = loc->totalpoints,
-    spatialpoints = loc->spatialtotalpoints;
+  Long nt, nx, total = Loctotalpoints(cov),
+    spatialpoints = Locspatialpoints(cov);
   SAVE_GAUSS_TRAFO;
 			
   s->grid = P0INT(SPECTRAL_GRID);
@@ -284,19 +286,19 @@ void do_spectral(model *cov, gen_storage *S)
   for (n=0; n<total; n++) res[n]=0.0;
   //the very procedure:
   gridlenx = gridleny = gridlenz = gridlent = 1;
-  if (loc->grid) {
+  if (grid) {
     switch (origdim) {
     case 4 : 
-      gridlent = (int) loc->xgr[3][XLENGTH];
+      gridlent = (int) gr[3][XLENGTH];
       FALLTHROUGH_OK; 		
     case 3 : 
-      gridlenz = (int) loc->xgr[2][XLENGTH];
+      gridlenz = (int) gr[2][XLENGTH];
       FALLTHROUGH_OK; 		
     case 2 : 
-      gridleny = (int) loc->xgr[1][XLENGTH];
+      gridleny = (int) gr[1][XLENGTH];
       FALLTHROUGH_OK; 		
     case 1 : 
-      gridlenx = (int) loc->xgr[0][XLENGTH];
+      gridlenx = (int) gr[0][XLENGTH];
       break;
     default: BUG;
     }
@@ -307,7 +309,7 @@ void do_spectral(model *cov, gen_storage *S)
     C->spectral(next, S, E);
     if (PL > 6) {
       PRINTF("spect: %d %10g %10g %d %d sigma=%10g nmetro=%d\n",
-	     n, E[0], E[1], loc->grid, loc->caniso  != NULL,
+	     n, E[0], E[1], grid, caniso  != NULL,
 	     cs->sigma, cs->nmetro);
     }
        //assert(n < 3);
@@ -316,9 +318,7 @@ void do_spectral(model *cov, gen_storage *S)
     //    double invscale = 1.0 / meth->cscale;       
     //   for (d=0; d<cov->ts dim; d++)  E[d] *= invscale;
     //}
-    if (loc->caniso  != NULL) {
-      double 
-	*A = loc->caniso;
+    if (caniso != NULL) {
       int m, k, j,
 	dim = ANYDIM,
 	nrow = origdim;
@@ -329,26 +329,16 @@ void do_spectral(model *cov, gen_storage *S)
       }      
       for (d=0, k=0; d<nrow; d++, k++) {
 	for (m=0, j=k; m<dim; m++, j+=nrow) {
-	  E[d] += oldE[m] * A[j];
+	  E[d] += oldE[m] * caniso[j];
 	}
       }
     }
 
-    // PMI(cov);   d = 1;
-    // printf("E[%d]=%10g %d n=%d\n\n\n\n\n", d, E[d], loc->caniso  != NULL, n);
-
-    //  print("spect %d %10g %10g %d %d %10g\n",
-    //	   n, E[0], E[1], loc->grid, meth->caniso  != NULL, meth->cscale);
     VV = TWOPI * UNIFORM_RANDOM;
-    if (loc->grid) {
-      //      printf("OK\n\n\n\n"); // E!!
+    if (grid) {
       for (d = 0; d < origdim; d++) {
 	// VV += meth->grani[d][XSTART] * E[d];
-	  inc[d] = loc->xgr[d][XSTEP] * E[d];
-//;
-//	  printf("E[%d]=%10g\n\n\n\n\n", d, E[d]);
-///	  printf("x[%d]=%10g\n\n\n\n", d, loc->xgr[d][XSTEP]);
-//	    printf("inc[%d]=%10g\n\n\n\n\n", d, inc[d]);
+	  inc[d] = gr[d][XSTEP] * E[d];
       }
       
 
@@ -420,9 +410,9 @@ void do_spectral(model *cov, gen_storage *S)
       }
     } else { // no grid
       double psi, cit, sit;
-      if (loc->Time) {
+      if (Time) {
 	int j;
-	inct = loc->T[XSTEP] * E[spatialdim];
+	inct = T[XSTEP] * E[spatialdim];
 	cit = COS(inct); 
 	sit = SIN(inct);
 	for (j=nx=0; nx<spatialpoints; nx++) { 
@@ -479,7 +469,7 @@ void do_spectral(model *cov, gen_storage *S)
     
   } // for k<NTOT
   double sqrttwodivbyn;
-  COV(ZERO(next), next, &sqrttwodivbyn);
+  Zero(next, &sqrttwodivbyn);
   
   sqrttwodivbyn = SQRT(sqrttwodivbyn * 2.0 // 2.0 from spectral simul.
 		       / (double) ntot);

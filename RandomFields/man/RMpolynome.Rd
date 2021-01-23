@@ -3,7 +3,7 @@
 \title{Creating polynomial models}
 \description{
   Polynomials, mainly used in trend models, can be created easily with
-  this function.
+  this function. 
 }
 
 \usage{
@@ -37,7 +37,7 @@ RMpolynome(degree, dim, value=NA, coordnames = c("x", "y", "z", "T"),
 
 \me
 \seealso{
-  \command{\link{RMtrend}},
+  \command{\link{RMshape}},
  \command{\link{RFfit}}.
 }
 
@@ -45,12 +45,9 @@ RMpolynome(degree, dim, value=NA, coordnames = c("x", "y", "z", "T"),
 \keyword{models}
 
 \examples{\dontshow{StartExample()}
- ## For examples see the help page of 'RFformula' ##
+## For further examples see the help page of 'RFformula' and 'RMshape'
 
 RMpolynome(1, 1)
-RMpolynome(1, 2)
-RMpolynome(2, 1)
-RMpolynome(2, 2)
 RMpolynome(3, 3)
 
 \dontshow{FinalizeExample()}}

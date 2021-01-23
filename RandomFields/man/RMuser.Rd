@@ -149,6 +149,7 @@ model <- RMnugget(var=1e-5) +
          RMuser(type="positive definite", domain="kernel",
                 iso="symmetric", fctn=sum(x * y))
 x <- y <- seq(1, 10, len=35)
-z <- RFsimulate(model, x=x, y=y, n=6, svdtol=1e-9) 
+RFoptions(svdtol=1e-9)
+z <- RFsimulate(model, x=x, y=y, n=6) 
 plot(z)
 \dontshow{FinalizeExample()}}

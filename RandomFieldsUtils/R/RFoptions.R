@@ -34,9 +34,9 @@ print.RFoptElmnt <- function(x, ...) {
   invisible(x)
 }
 
-RFoptions <- function(..., no.readonly=TRUE) {
+RFoptions <- function(..., no.readonly=TRUE, no.class=FALSE) {
   opt <- .External(C_RFoptions, ...)
-  if (length(opt) == 0) return(invisible(NULL))
+  if (length(opt) == 0 || no.class) return(invisible(opt))
   if (is.list(opt[[1]])) {
     opt <- lapply(opt,
 		  function(x) {

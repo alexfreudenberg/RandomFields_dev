@@ -82,8 +82,8 @@ RMgneitingdiff <- new(CLASS_RM,
 	vdim = 1
 	)
 
-R.lon <- copyProp(function() R.p(proj=1, new="spherical system"), R.p)
-R.lat <- copyProp(function() R.p(proj=2, new="spherical system"), R.p)
+R.lon <- copyProp(function() R.p(proj=1, new="earth system"), R.p)
+R.lat <- copyProp(function() R.p(proj=2, new="earth system"), R.p)
 
 RMhandcock <- function(nu, notinvnu, var, scale, Aniso, proj){
   RMS(scale = 1/sqrt(2), RMmatern(nu, notinvnu, var, scale, Aniso, proj))

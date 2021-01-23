@@ -23,8 +23,9 @@
     then, for any linear term without
     leading constant, a linear coefficient is estimated.
 
-    Default: \code{TRUE} in \pkg{RandomFields} and \code{2} for 
-    functions in \pkg{RandomFieldsLight}
+    Default: \code{2}
+    %\code{TRUE} in \pkg{RandomFields} and \code{2} for 
+%    functions in \pkg{RandomFieldsLight}
   }
 
   \item{\code{algorithm}}{
@@ -346,6 +347,14 @@
     
     Default: \code{TRUE}. 
   }
+
+    \item{\code{return_hessian}}{logical.
+      If \code{TRUE} then the hessian matrix is calculated
+      for the MLE and returned.
+    
+      Default: \code{TRUE}. 
+  }
+
   
 
   \item{\code{scale_max_relative_factor}}{ If the initial scale

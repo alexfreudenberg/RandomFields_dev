@@ -66,7 +66,8 @@ RMbigneiting(kappa, mu, s, sred12, gamma, cdiag, rhored, c, var, scale, Aniso, p
  Note that \eqn{c_{12}= c_{21}}.
 
  Either 
- \code{rhored} and \code{cdiag} or \code{c} must be given.
+ \code{rhored}  or \code{c} must be given.
+ If and only if \code{rhored} is given,  \code{cdiag} might be given.
  }
  \item{rhored}{value in \eqn{[-1,1]}.
  See

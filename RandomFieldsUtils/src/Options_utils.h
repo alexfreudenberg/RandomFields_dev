@@ -45,24 +45,24 @@ extern int PL, CORES;
 
 #define LEN_OPTIONNAME 201
 
-#define basicN 12
+#define basicN 11
 // IMPORTANT: all names of basic must be have least 3 letters !!!
 extern const char *basic[basicN];
 #define BASIC_WARN_OPTION 9
-#define BASIC_USEGPU 11
+#define BASIC_USEGPU 10
 typedef // benoetigt
 struct basic_param {
-  int 
+  int  
   Rprintlevel,
     Cprintlevel,
     seed, cores, warn_unknown_option;
   bool skipchecks, asList /* hidden:verbose */, kahanCorrection, helpinfo,
-    warnparallelwrite, useGPU;
+    useGPU;
 } basic_param;
 #define basic_START \
   { R_PRINTLEVEL, C_PRINTLEVEL, NA_INTEGER, INITCORES,  \
       WARN_UNKNOWN_OPTION_DEFAULT,			 \
-      false, true, false, true, true, GPUavailable	 \
+      false, true, false, true,  GPUavailable	 \
       }
 
 
@@ -89,7 +89,7 @@ struct solve_param {
 #define svd_tol_start 0
 #endif
 #define solve_START							\
-  { Nan, False, true, 							\
+  { False, False, true,							\
       DBL_EPSILON, {0.8, 0.9}, svd_tol_start, 1e-12, 1e-11,		\
     1e-10, 1e-10,							\
   {NoInversionMethod,  NoFurtherInversionMethod},			\
@@ -106,12 +106,14 @@ struct utilsparam{
 
 
 
-typedef void (*setparameterfct) (int, int, SEXP, char[200], bool, int);
-typedef void (*getparameterfct) (SEXP, int, int);
-typedef void (*finalsetparameterfct) (int);
-typedef void (*deleteparameterfct) (int);
+
+typedef void (*setparameterfct) (int, int, SEXP, char[200], bool, bool);
+typedef void (*getparameterfct) (SEXP, int, bool);
+typedef void (*finalsetparameterfct) ();
+typedef void (*deleteparameterfct) (bool);
 #define ADD(ELT) SET_VECTOR_ELT(sublist, k++, ELT)
 #define ADDCHAR(ELT) x[0] = ELT; ADD(ScalarString(mkChar(x)))
+
 
 
 #endif

@@ -90,7 +90,7 @@ jpegORpdf <- function(graphics=NULL) {
     isjpg <- is.function(GD) && is.logical(all.equal(args(jpeg), args(GD)))
   } 
   
-  if (is.null(graphics)) graphics <- RFoptions()$graphics        
+  if (is.null(graphics)) graphics <- getRFoptions(GETOPTIONS="graphics")        
   file <- graphics$file
   if (file != "") {
     f <- strsplit(file, "\\.")[[1]]
@@ -134,7 +134,7 @@ ScreenDevice <- function(height, width) {
                       formatC(format="d", flag="0", graphics$filenumber,
                               width=5),
                       graphics$ext, sep="")
-        RFoptions(graphics.filenumber = graphics$filenumber + 1)
+        setRFoptions(graphics.filenumber = graphics$filenumber + 1)
       } else file <- paste(file, graphics$ext, sep="")
       ##            Print(file, dev.list())
       if (graphics$ispdf)
@@ -154,12 +154,8 @@ ScreenDevice <- function(height, width) {
     graphics$GD(height=height, width=width)        
     ##    Print("OK", height, width, RFoptions()$graphics, par()$cex)
     return()
-    }
-  
-  if (RFoptions()$internal$warn_aspect_ratio) {
-    RFoptions(warn_aspect_ratio = FALSE)
-    cat("The graphical device does not seem to be a standard screen device. Hence the\naspect ratio might not be correct. (This message appears only one per session.)")
   }
+  Note("aspect_ratio")
 }
 
 
@@ -192,7 +188,7 @@ ArrangeDevice <- function(graphics, figs, dh=2.8, h.outer=1.2,
     
    if (is.na(graphics$always_open_device)) {
       open <- interactive() || jpg_pdf
-      RFoptions(graphics.always_open_device = open)
+      setRFoptions(graphics.always_open_device = open)
     } else open <- graphics$always_open_device
 
     if (length(dev.list()) > 0 && open) {      
@@ -228,13 +224,13 @@ ArrangeDevice <- function(graphics, figs, dh=2.8, h.outer=1.2,
 StartExample <- function(reduced = TRUE, save.seed=TRUE) {
   if (save.seed) {
     RFopt <- RFoptions()    
-#    L <- list(seed=RFopt$basic$seed)
+#    L <- list(se ed=RFopt$ba sic$s eed)
  #   if (length(RFopt$coords) != 0) L$coord_system= RFopt$coords$coord_system
  #   assign("RandomFields_options", envir=.RandomFields.env, L)
     assign("RandomFields_options", envir=.RandomFields.env, RFopt)
   }
 # Print(ls( envir=.RandomFields.env), .RandomFields.env)
-  if (!interactive()) {
+  if (!interactive() || hasArg("reduced")) {
     ## do not touch next lines
     ## REDUCED <- reduced, reduced
     REDUCED <- reduced

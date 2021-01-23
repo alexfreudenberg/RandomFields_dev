@@ -335,7 +335,7 @@ positive definite (or negative definite), e.g. \command{cos} in
   \item please use the functions given in \command{\link{RMmodels}}
        for definite functions (for \code{cos} see \command{\link{RMbessel}})
   \item Using uncapsulated substraction to build up a covariance
-	function is ambiguous, see the example in \command{\link{RMtrend}}
+	function is ambiguous, see the example in \command{\link{RMshape}}
       }      
 }
 
@@ -343,7 +343,7 @@ positive definite (or negative definite), e.g. \command{cos} in
 \me
 \seealso{
  \command{\link{RMmodel}}, \command{\link{RFfctn}},
-	 \command{\link{RMtrend}}	
+	 \command{\link{RMshape}}	
 }
 
 \examples{\dontshow{StartExample()}

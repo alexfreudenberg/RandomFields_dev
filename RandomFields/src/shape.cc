@@ -40,10 +40,34 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "Coordinate_systems.h"
 
 
-
-
-
 /* Covariate models */
+
+location_type * indexedSet(model *cov) {
+  location_type *loc = Loc(cov);
+  if (loc->rawset != UNSET) {
+    assert(cov->Scovariate != NULL && !cov->Scovariate->merged_x);
+    cov->base->set = loc->rawset;
+  }
+  return loc;
+}
+
+int indexedSet(model *cov, int nr) { // ACHTUG! side effect: cov->base-set
+  location_type *loc = indexedSet(cov); // ja nicht loc = Loc(cov) !!!!
+  if (loc->rawidx != NULL) {
+    assert(cov->Scovariate != NULL && !cov->Scovariate->merged_x);
+    nr = loc->rawidx[nr];
+  }
+  return nr;
+}
+
+void indexedSet(model *cov, int *nrx, int *nry) { 
+  location_type *loc = indexedSet(cov);
+  if (loc->rawidx != NULL) {
+    assert(cov->Scovariate != NULL && !cov->Scovariate->merged_x);
+    *nrx = loc->rawidx[*nrx];
+    *nry = loc->rawidx[*nry];
+  }
+}
 
 int cutidx(double Idx, int len) {
   int idx = (int) ROUND(Idx);
@@ -55,45 +79,63 @@ int cutidx(double Idx, int len) {
 
 #define GET_LOC_COVARIATE \
   assert(cov->Scovariate != NULL);					\
-  location_type **local = P0INT(COVARIATE_RAW) || PisNULL(COVARIATE_X)	\
-    ? PLoc(cov) : cov->Scovariate->loc;					\
-  assert(local != NULL);						\
-  location_type *loc =  LocLoc(local);					\
+   assert(!P0INT(COVARIATE_RAW));					\
+  location_type **Loc = P0INT(COVARIATE_RAW) || PisNULL(COVARIATE_X)	\
+    ? LocP(cov) : cov->Scovariate->loc;					\
+  assert(Loc != NULL);						\
+  location_type *loc =  LocLoc(Loc, cov);			\
   assert(loc != NULL)
  
 
-int get_index(double *x, model *cov) {
-  GET_LOC_COVARIATE;
+int get_index(double *x, bool ignore_y, model *cov) {  
+  // TO DO: ueber Parkettierung beschleunigen, falls euklidische Distanz!
+  //        und zwar ueber Einteilung des Raumes in Bloecke
+  //        (lohnt ab gewisser Groesse nur!)
+  //        Am besten hierarchisch, damit nicht ewig ein Kaestchen gesucht
+  //        werden muss, das nicht leer ist.
+  globalparam *global = &(cov->base->global);
+  //  GET_LOC_COVARIATE;
+  assert(cov->Scovariate != NULL);
 
+
+  //  PMI(cov);
+
+  assert(!P0INT(COVARIATE_RAW));					
+  location_type **Loc = P0INT(COVARIATE_RAW) || PisNULL(COVARIATE_X)	
+    ? LocP(cov) : cov->Scovariate->loc;					
+  assert(Loc != NULL);						
+  location_type *loc =  LocLoc(Loc, cov);			
+  assert(loc != NULL)
+
+
+    
   double X[2];
-  int d, idx, i,
-    nr = 0,
-    cummul = 1.0,  
-    ntot = loc->totalpoints,
-    dim = OWNTOTALXDIM;
+  int  nr = 0,
+     dim = OWNTOTALXDIM;
   assert(OWNTOTALXDIM == PREVTOTALXDIM && PREVLASTSYSTEM  == OWNLASTSYSTEM &&
 	 OWNTOTALXDIM == total_logicaldim(SYSOF(cov)) &&   
-	 loc->timespacedim == OWNTOTALXDIM);		       
-  
-  //printf("grid = %d\n", loc->grid);
+	 LocLoctsdim(loc) == OWNTOTALXDIM);
 
   if (loc->grid) {
-    for (d = 0; d<dim; d++) {
-      int len = loc->xgr[d][XLENGTH];
-      double
-	step = loc->xgr[d][XSTEP];                
-      if (d > 1 || !isAnySpherical(OWNISO(0))) {
-	idx = cutidx((x[d] - loc->xgr[d][XSTART]) / step, len);
+    int cummul = 1.0;
+    bool cartesian = !isAnySpherical(OWNISO(0));
+    coord_type gr = LocgrY(loc, ignore_y);
+    for (int d = 0; d<dim; d++) {
+      int idx,
+	len = gr[d][XLENGTH];
+      double step = gr[d][XSTEP];                
+      if (cartesian || d > 1) {// also arth height; earth time
+	idx = cutidx((x[d] - gr[d][XSTART]) / step, len);
       } else {
 	if (d == 0) { // to do: report technique?
 	  double full, half, y[2];
 	  int idx2,
 	    xdim = 2;
-	  for (i=0; i<xdim; i++) y[i] = loc->xgr[i][XSTART];
+	  for (int i=0; i<xdim; i++) y[i] = gr[i][XSTART];
 	  if (isSpherical(OWNISO(0))) {
 	    full = M_2_PI;
 	    half = M_PI;
-	    if (GLOBAL.coords.polar_coord) NotProgrammedYet("");
+	    if (global->coords.polar_coord) NotProgrammedYet("");
 	  } else if (isEarth(OWNISO(0))) {
 	    full = 360.0;
 	    half = 180.0;
@@ -109,24 +151,27 @@ int get_index(double *x, model *cov) {
 	  assert(d==1);
 	  idx = cutidx((x[d] - X[1]) / step, len);
 	}
-      }      
+      } 
       nr += cummul * idx;
-
-      //  printf("nr = %d\n", nr);
-
       cummul *= len;  
-    }           
+    }         
   } else { // to do: effizienterer Zugriff ueber Kaestchen eines Gitters, 
     // in dem die jeweiligen Punkte gesammelt werden. Dann muessen nur
     // 3^d Kaestchen durchsucht werden.
-    
-    model *next = cov->sub[0];
-    double distance,
-      mindist = RF_INF,
-      *given = loc->x;
-    for (i=0; i<ntot; i++, given+=dim) {
-      assert(next->checked);
-      NONSTATCOV(x, given, next, &distance);
+    //   model *next = cov->sub[0];
+    double 
+      *given = LocY(loc, ignore_y),
+      mindist = RF_INF;
+    int ntot = LoctotalpointsY(loc, ignore_y);
+    for (int i=0; i<ntot; i++, given+=dim) {
+      double distance = 0.0;
+      for (int d = 0; d < dim; d++) {
+	double dummy = x[d] - given[d];
+	distance += dummy * dummy;
+      }
+      // 5.1.20 : 'norm' rueckgebaut
+      // assert(next->checked);
+      //      N ONSTATCOV(x, given, info, next, &distance);
       if (distance < mindist) {
 	mindist = distance;
 	nr = i;
@@ -134,6 +179,137 @@ int get_index(double *x, model *cov) {
     }
   }
   return nr;
+}
+
+
+int check_fix_covariate(model *cov,  location_type ***Locations){
+  globalparam *global = &(cov->base->global);
+  int err = NOERROR;
+  cov->base->set = 0;
+  bool globalXT = PisNULL(COVARIATE_X) &&
+    (cov->Scovariate == NULL || cov->Scovariate->loc == NULL);
+  coord_sys_enum ccs = global->coords.coord_system;
+  kdefault(cov, COVARIATE_RAW, globalXT); 
+  bool raw = P0INT(COVARIATE_RAW);
+  raw_type rawConcerns = cov->base->rawConcerns;
+  assert(rawConcerns != unsetConcerns);
+  ONCE_NEW_STORAGE(covariate); 
+  
+  if (cov->Scovariate != NULL &&
+      cov->Scovariate->matrix_err != MATRIX_NOT_CHECK_YET && 
+      cov->Scovariate->matrix_err != NOERROR)
+    return cov->Scovariate->matrix_err; // #define RETURN
+
+  if (globalXT && rawConcerns == neverGlobalXT) {
+    // cov->base->rawConcerns nicht aendern, da Model an anderer
+    // Stelle diese Info braucht
+    getStorage(S ,     covariate); 
+    assert(S->loc == NULL);
+    S->loc = loc_set(LocP(cov));
+    assert(S->loc != NULL);
+    PINT(COVARIATE_RAW)[0] = raw = globalXT = false;
+  }
+
+  if (raw) {// raw must imply globalXT
+    if (!globalXT) ERR2("if '%.30s=TRUE', '%.10s' may not be given.",
+			COVARIATE_RAW_NAME, COVARIATE_X_NAME);
+    if (rawConcerns == neverRaw) {
+      PINT(COVARIATE_RAW)[0] = raw = false; 
+      if (cov->base->global.messages.warn_raw_covariates && !parallel()) {
+	PRINTF("In combination with complex models, such as '%s', covariates may not be given in the format '%s=TRUE'. So, here, the user's choice is overwritten.\n", // OK 
+	       DefList[VAR2COV_PROC].nick, COVARIATE_RAW_NAME);
+        cov->base->global.messages.warn_raw_covariates = false; // OK
+      }
+    }
+  }
+  
+  ASSERT_ONESYSTEM;
+  if (globalXT) { // may or may not raw
+    *Locations = LocP(cov);
+    if (raw) { // then globalXT
+      model *calling = cov->calling;
+      assert(calling != NULL);
+      if (isDollar(calling) && !hasVarOnly(calling) &&
+	  calling->kappasub[DSCALE] != cov) {
+	ERR1("If 'raw=TRUE' and 'x' is not given, then none of {'Aniso', 'proj', 'scale'} may be given within '%.25s'", NICK(cov));
+      }
+      assert(cov->Scovariate != NULL);
+    }
+  } else { // particularly, not raw
+    assert(!globalXT && !raw &&
+	   (COVNR != FIXCOV || PisNULL(FIXCOV_GIVEN) ||
+	    (rawConcerns != noConcerns &&
+	     rawConcerns != onlyOneDataSetAllowed)));
+    location_type *loc = LocLoc(cov->Scovariate->loc, cov);
+    
+    bool doset = loc == NULL ||
+      Locspatialdim(cov) != LocLocspatialdim(loc) ||  // !!! doset
+      LocxdimOZ(cov) != LocLocxdimOZ(loc);
+    //    printf("doset = %d %d\n", doset, cov->Scovariate == NULL);
+    if (doset) {
+      getStorage(S ,       covariate);
+      if (S->loc != NULL) LOC_DELETE(&(S->loc));
+      S->loc = loc_set(PVEC(COVARIATE_X));
+      int sets = LocPSets(S->loc);
+      for (int i=0; i<sets; i++) {
+	if (S->loc[i]->distances) {
+	  ERR2("'%.50s' in '%50s' does not allow distances",
+	       KNAME(COVARIATE_X), NAME(cov));
+	}
+      }
+      assert(S->loc != NULL);      
+      if (LocPtsdim(S->loc) != OWNLOGDIM(0)) {
+	GERR1("number of columns of '%.50s' do not equal the dimension",
+	      KNAME(COVARIATE_X));
+      }
+    }
+    *Locations = cov->Scovariate->loc;
+  } // neither raw nor globalXT
+ 
+ 
+  // Achtung! rawConcerns can noch nach Modellerstellung
+  // umgeaendert werden. Relevant ist hier von raw (noConcern) nach neverRaw
+  //printf("%s =? %s\n", ISO_NAMES[OWNISO(0)], COORD_SYS_NAMES[ccs]);
+  assert(cov->Scovariate != NULL);
+  cov->Scovariate->coordinate_mismatch = false; // mismatch muss bei
+  // jedem Aufruf von check neu bestimmt werden
+  if ((ccs == cartesian && !equalsCartCoord(OWNISO(0))) ||
+      (ccs == earth && !equalsEarthCoord(OWNISO(0))) ||
+      (ccs == sphere && !equalsSphericalCoord(OWNISO(0)))) {
+    // sonst macht die (nachfolgende) norm keinen Sinn
+    if (raw) { // user hat schon raw=FALSE eingegeben oder
+      //         oben automatische Aenderung zu !raw
+      // Dann sicher ein Fehler:
+      cov->Scovariate->coordinate_mismatch = true;
+    } else {
+      GERR2("'%.50s' not the global coordinate system ('%.50s')",
+	    ISO_NAMES[OWNISO(0)], COORD_SYS_NAMES[ccs]);
+    }
+  } else if (false) {
+    // auch fuer den fall dass rawConcerns=noConcerns ist, muss
+    // der fall raw=false vorbereitet werden
+    if (cov->sub[0] == NULL) {
+      addModel(cov, 0, TRAFO);
+      kdefault(cov->sub[0], TRAFO_ISO, IsotropicOf(PREVISO(0)));
+    } else {
+      model *next = cov->sub[0];
+      PARAMINT(next, TRAFO_ISO)[0] = IsotropicOf(PREVISO(0));
+    }    
+    if ((err = CHECK(cov->sub[0], OWNLOGDIM(0), OWNXDIM(0), ShapeType,
+		     KERNEL, OWNISO(0), 1, cov->frame)) != NOERROR) {
+      goto ErrorHandling;
+    }
+  }
+
+
+ ErrorHandling:
+  cov->base->set = 0;
+  if (err != NOERROR) {
+    covariate_DELETE(&(cov->Scovariate));
+    RETURN_ERR(err);
+  }
+    
+  RETURN_NOERROR;
 }
 
 
@@ -145,7 +321,7 @@ void kappa_covariate(int i, model VARIABLE_IS_NOT_USED *cov,
 }
 
 
-void covariate(double *x, model *cov, double *v){
+void covariate(double *x, int *info, model *cov, double *v){
   // ACHTUNG!! FALLS NAs verdeckt da sind, i.e. COVARIATE_ADDNA = TRUE:
   // HIER WIRD GETRICKST: vdim[0]=1 fuer Kovarianz, das hier nur 
   //                      vim[0] abgefragt wird und de facto univariat ist
@@ -153,185 +329,124 @@ void covariate(double *x, model *cov, double *v){
   //     fctnintern das produkt betrachtet und somit die dimensionen der
   //     design matrix reflektiert.
   // Fuer COVARIATE_ADDNA = FALSE haben wir ganz normals Verhalten
-  GET_LOC_COVARIATE;
-  double
-    *p = LP(COVARIATE_C);
-  bool addna = (bool) cov->q[1];
-  assert(cov->vdim[!addna] == 1);
-  int  nr,
-    dim = ANYDIM,
-    vdim = cov->vdim[addna],
-    ntot = loc->totalpoints;
 
-  if (hasAnyEvaluationFrame(cov)) {
+
+  // extradata: 2. Datensatz fuer kriging: 1. fuer vorhersage, 2. fuers bedingen
+  //           diese Situation tritt auf, wenn user covariaten fuer die
+  //           vorherzusagenden Orte weiss
+  // falls der 2. Datensatz nicht angegeben wurde, muss die covariabe des
+  //           bedingenden Datensatzes auf ganz R^d erweitert werden
+  //           (mittels voronoi mosaik)
+  
+  raw_type rawConcerns = cov->base->rawConcerns;
+  assert(rawConcerns != unsetConcerns && rawConcerns != neverGlobalXT);
+  bool addna = (bool) cov->q[1];
+  int vdim = cov->vdim[addna];
+  assert(cov->vdim[!addna] == 1);
+
+  if (hasAnyEvaluationFrame(cov) || rawConcerns == ignoreValues) {
     for (int i=0; i<vdim; v[i++] = 0.0);
     return;
-  } else assert(isnowTrend(cov));
-
-  if (P0INT(COVARIATE_RAW)) {
-    // should happen only in a matrix context!
-    nr = (int) x[dim];
-    if (nr * vdim >= LNROW(COVARIATE_C) * LNCOL(COVARIATE_C))
-      ERR("illegal access -- 'raw' should be FALSE");
-  } else { 
-    // interpolate: here nearest neighbour/voronoi
-    nr = get_index(x, cov);
- }
-  //  printf("%10g %10g %10g %d nr=%d q=%10g %d vdim=%d\n", x[0],x[1],x[2], dim, nr, cov->q[0], GLOBAL.general.vdim_close_together, vdim);
-  
-  if (cov->q[0] == 0) {
-    if (GLOBAL.general.vdim_close_together) {
-      p += nr * vdim;
-      for (int i=0; i<vdim; i++, p++) v[i] = *p;
-    } else {
-      p += nr;
-      for (int i=0; i<vdim; i++, p+=ntot) v[i] = *p;
-      //      printf("%10g\n", v[0]);
-      //     APMI(cov->calling->calling);
-    }
-  } else {
-    if (GLOBAL.general.vdim_close_together) {
-      double dummy = 0.0;
-      p += nr * vdim;      
-      for (int i=0; i<vdim; i++, p++) dummy += *p * P(COVARIATE_FACTOR)[i];
-      *v = dummy;
-   } else {
-      p += nr;
-      //   PMI(cov);
-      //    printf("%d %d %d\n", nr, vdim, ntot);
-      for (int i=0; i<vdim; i++, p+=ntot) v[i] = *p * P(COVARIATE_FACTOR)[i];
-    }
   }
-  //printf("%d %d\n", (int) v[0], (int) v[1]);
-}
-
-
-
-int check_fix_covariate(model *cov,  location_type ***Local){
-  int err = NOERROR,
-    store = GLOBAL.general.set;
-  GLOBAL.general.set = 0;
-  bool globalXT = PisNULL(COVARIATE_X);
-  coord_sys_enum ccs = GLOBAL.coords.coord_system;
  
-  // printf("B\n");
-  if (cov->Scovariate != NULL &&
-      cov->Scovariate->matrix_err != MATRIX_NOT_CHECK_YET && 
-      cov->Scovariate->matrix_err != NOERROR)
-    return cov->Scovariate->matrix_err; // #define RETURN
+  assert(isnowTrend(cov));
+  globalparam *global = &(cov->base->global);
+getStorage(S ,   covariate); 
+   bool
+    extradata = P0INT(COVARIATE_EXTRA_DATA),
+    extra = info[INFO_EXTRA_DATA_X] && !S->onlyOne;
+  int  nr, ntot = 0,
+    idx = info[INFO_IDX_X],
+    nrow = LNROW(COVARIATE_C),
+    set = cov->base->set,
+    dim = OWNXDIM(0); // vdim within covariate, not VDIM!
+  assert(idx != NA_INTEGER);
 
-  kdefault(cov, COVARIATE_RAW, globalXT); 
-  bool raw = P0INT(COVARIATE_RAW);
-  
-  //  printf("B A %d\n", raw);
-  if (globalXT) {
-    ONCE_NEW_STORAGE(covariate); 
-    *Local = PLoc(cov);
-  } else { // neither raw nor globalXT
-    bool doset = cov->Scovariate == NULL;
-    if (!doset) {
-	location_type *loc = LocLoc(cov->Scovariate->loc);
-	assert(loc != NULL);
-	doset = Loc(cov)->spatialdim != loc->spatialdim ||  // !!! doset
-	  Loc(cov)->xdimOZ != loc->xdimOZ;
-    }
-    if (doset) {
-      ONCE_NEW_STORAGE(covariate);
-      covariate_storage *S = cov->Scovariate;
-      GLOBAL.general.set = store;
-      // printf("B A Vec\n");
-      S->loc = loc_set(PVEC(COVARIATE_X));
-      int sets = S->loc[0]->len;
-      for (int i=0; i<sets; i++) {
-	if (S->loc[i]->distances)
-	  GERR2("'%50s' in '%50s' does not allow distances",
-		KNAME(COVARIATE_X), NAME(cov));
-      }
-      //printf("B A Vec \n");
-      GLOBAL.general.set = 0;
-      assert(S->loc != NULL);
-      
-      if (S->loc[0]->timespacedim != OWNLOGDIM(0)) 
-	GERR1("number of columns of '%.50s' do not equal the dimension",
-	      KNAME(COVARIATE_X));
-    }
-    *Local = cov->Scovariate->loc;
-  } // neither raw nor globalXT
-  
-  
-  if (raw) {
-    model *calling = cov->calling;
-    assert(calling != NULL);
-    if (globalXT) {    
-      if (isDollar(calling) && !hasVarOnly(calling) &&
-	  calling->kappasub[DSCALE] != cov) {
-	GERR("if 'raw=TRUE' and 'x' not given then none of {'Aniso', 'proj', 'scale'} may be given");
-      }
-    } else {
-      assert(cov->Scovariate != NULL);	
-      int totalpoints = Gettotalpoints(cov),
-	sets = cov->Scovariate->loc[0]->len;
-      for (GLOBAL.general.set = 0; GLOBAL.general.set<sets;
-	   GLOBAL.general.set++) {
-	GET_LOC_COVARIATE;
-	if (totalpoints != loc->totalpoints) 
-	  GERR("if 'raw' and 'x' given then the number of points given by the argument 'x' must match the global number of points.");
-	}
-    }
-    assert(cov->ownloc == NULL);  
-    ONCE_NEW_STORAGE(covariate); 
+  if (S->merged_x) { // bei bedingter simulation muessen x udn y
+    // zusammengeworfen werden
+    // darf nicht ge-indexed sein. siehe assert in indexedSet
+    assert(extradata);
+    // assert(loc->rawidx == NULL && loc->rawset == UNSET);
+    int i = 2 * cov->base->set;
+    if ((extra = idx >= S->nrow[i])) idx -= S->nrow[i];
+  }
+
+  //  printf("covariate %d %d %d %d\n", P0INT(COVARIATE_RAW),
+  //	 rawConcerns==noConcerns,  extra, extradata);
+     
+     
+  //printf("%d %d; %d %d\n", rawConcerns, onlyOneDataSetAllowed, extra, extradata);
+
+  if (P0INT(COVARIATE_RAW) &&
+      (rawConcerns==noConcerns || rawConcerns == onlyOneDataSetAllowed) &&
+      (!extra || extradata)) {
+    
+    // NOTE: rawConcerns kann auch nach der Modelldefinition geaendert werden!!
+    assert(PisNULL(COVARIATE_X));// call should happen only in a matrix context!
+    nr = indexedSet(cov, idx);
+    // ************** ACHTUNG !!
+    // ******* es darf erst ab hier auf Covariaten zugegriffen werden!
+
+    ntot = MAX(Loctotalpoints(cov), LoctotalpointsY(cov));
+    
+    if (!S->merged_x && LNROW(COVARIATE_C) != ntot) BUG;
+    if (nr >= ntot) ERR("illegal access -- 'raw' should be FALSE?");
   } else {
-    if ((ccs == cartesian && !equalsCartCoord(OWNISO(0))) ||
-	(ccs == earth && !equalsEarthCoord(OWNISO(0))) ||
-	(ccs == sphere && !equalsSphericalCoord(OWNISO(0))))
-      GERR2("'%.50s' not the global coordinate system ('%.50s')",
-	    ISO_NAMES[OWNISO(0)], COORD_SYS_NAMES[GLOBAL.coords.coord_system]);
+    if (S->coordinate_mismatch)
+      ERR("Models that have an implicite coordinate transformation inside may not use (implicitely) 'RMcovariate' (up to now).");
+  
+    // interpolate: here nearest neighbour/voronoi
+    indexedSet(cov);
+    // ************** ACHTUNG !!
+    // ******* es darf erst ab hier auf Covariaten zugegriffen werden!
+
+    nr = get_index(x, !(extra && extradata), cov);
+    GET_LOC_COVARIATE;
+    int ntotX = loc->totalpoints,
+      ntotY = loc->totalpointsY;
+    ntot = MAX(ntotX, ntotY);
   }
 
-  ASSERT_ONESYSTEM;
-  if (!raw) {
-    if (cov->sub[0] == NULL) {
-      addModel(cov, 0, TRAFO);
-      kdefault(cov->sub[0], TRAFO_ISO, IsotropicOf(PREVISO(0)));
-    } else {
-      model *next = cov->sub[0];
-      PARAMINT(next, TRAFO_ISO)[0] = IsotropicOf(PREVISO(0));
-    }
-    
-    if ((err = CHECK(cov->sub[0], OWNLOGDIM(0), OWNXDIM(0), ShapeType,
-		     KERNEL, OWNISO(0), 1, cov->frame)) != NOERROR) {
-      goto ErrorHandling;
-      //APMI(cov);
-    }
+  assert(!PisNULL(COVARIATE_C));
+  double *p = LP(COVARIATE_C);
+  assert(p != NULL);
+  if (extra && extradata) p += nrow * vdim;
+
+#define LOOP(DO)				\
+  if (global->general.vdim_close_together) {	\
+    p += nr * vdim;				\
+    for (int i=0; i<vdim; i++, p++) {DO;}	\
+  } else {					\
+    p += nr;					\
+    for (int i=0; i<vdim; i++, p+=nrow) {DO;}	\
   }
 
+  //#define PRINTING printf("i=0 %d v =%d %d n=%d, row %d %d\n", p -  LP(COVARIATE_C), vdim, extra, ntot, nrow, LNCOL(COVARIATE_C))
+  
+  if (cov->q[0] == 0) { // no multiplication with any factor
+    LOOP(//PRINTING;
+	 v[i] = *p);
+  } else {
+    double dummy = 0.0;   
+    LOOP(//PRINTING;
+	 dummy = *p * P(COVARIATE_FACTOR)[i]);
+    *v = dummy;
+  }
 
- ErrorHandling:
-  GLOBAL.general.set = store;
-  if (err != NOERROR) RETURN_ERR(err);
-    
-  RETURN_NOERROR;
+  cov->base->set = set;
 }
-
 
 
 int checkcovariate(model *cov){
- assert(cov != NULL);
-  int store = GLOBAL.general.set;
-  GLOBAL.general.set = 0;
+  assert(cov != NULL);
   int
-    len = 0,
+    sets = UNSET,
     vdim = UNSET, 
     err = NOERROR;
-  location_type **local = NULL;
-
-  //  printf("A\n");
-  
-  // double value = 1.0;
-  //  covariate_storage *S;
-  //  bool addna = !PisNULL(COVARIATE_ADDNA) && P0INT(COVARIATE_ADDNA);
-
-  bool addna; 
+  location_type **Loc = NULL;
+  raw_type rawConcerns = unsetConcerns; 
+    
+  bool addna;
   if (cov->q == NULL) {
     addna = (!PisNULL(COVARIATE_ADDNA) && P0INT(COVARIATE_ADDNA)) || 
       (!PisNULL(COVARIATE_FACTOR) && ISNAN(P0(COVARIATE_FACTOR)));
@@ -339,42 +454,79 @@ int checkcovariate(model *cov){
     // cov->q[0] == 0 iff vdim vectors are returned
     cov->q[1] = addna;
   } else addna = (bool) cov->q[1];
-
-
-  //   printf("AB\n");
-
-  
-  if ((err = check_fix_covariate(cov, &local)) != NOERROR) goto ErrorHandling;
-  assert(local != NULL);
-  // printf("AC\n");
+  kdefault(cov, COVARIATE_EXTRA_DATA, false);
+  bool extradata = P0INT(COVARIATE_EXTRA_DATA);
  
-  len = local[0]->len;
-  //S = cov->Scovariate;  assert(S != NULL);
-  if (len <= 0) BUG;
-  for (GLOBAL.general.set=0;  GLOBAL.general.set<len;  GLOBAL.general.set++) {
-    // printf("set=%d\n", GLOBAL.general.set);
+  if ((err = check_fix_covariate(cov, &Loc)) != NOERROR) {
+    cov->base->set = 0;
+    RETURN_ERR(err);
+  }
+  assert(Loc != NULL);
+  
+  sets = LocPSets(Loc);
+  getStorage(S ,   covariate); 
+
+  assert(S != NULL);
+  if (sets <= 0) BUG;
+
+  rawConcerns = cov->base->rawConcerns;
+  assert(rawConcerns != unsetConcerns);
+  if (rawConcerns == onlyOneDataSetAllowed) {
+    if (extradata) ERR1("only one data set allowed in '%.20s'", NICK(cov));
+    S->onlyOne = true;
+  }
+  for (int set=0;  set<sets;  set++) {
+    cov->base->set = set;
     int
-      ndata = LNROW(COVARIATE_C) * LNCOL(COVARIATE_C),
-      ntot = LocLoc(local)->totalpoints;
-    if (GLOBAL.general.set == 0) {
-      vdim = ndata/ntot;
-      //      PMI0(cov);
-      //      PMI0(cov);
-      //      printf("vdim=%d %d %d %d %d %lu\n", vdim, ndata, ntot, cov->zaehler, PisNULL(COVARIATE_FACTOR), (unsigned lo ng) P(COVARIATE_FACTOR));
+      nrow =  LNROW(COVARIATE_C),
+      ncol =  LNCOL(COVARIATE_C),
+      ndata = nrow * ncol,      
+      ntotX = LocLoc(Loc, cov)->totalpoints,
+      ntotY = LocLoc(Loc, cov)->totalpointsY,
+      ntot = MAX(ntotX, ntotY);
+    bool merged_x = extradata && ntotY == 0 && ntotX > nrow;
+    // bei bedingter simulation muessen x und y zusammengeworfen werden
+    if (set == 0) {
+      S->merged_x = merged_x;
+      vdim = ncol / (1L + extradata);
+    } else if (merged_x xor S->merged_x)
+      ERR("coordinates do not match data size");
+    
+    if (merged_x) {
+      int idx = 2 * set;
+      if (!S->nrow_checked) {
+	if (S->nrow == NULL) S->nrow = (int*) CALLOC(2 * sets, sizeof(int));
+	double *p = LP(COVARIATE_C);
+	int i;
+	for (i = nrow-1; i>=0; i--) if (p[i] != RF_INF) break;
+	S->nrow[idx] = i + 1;
+	int endfor = ndata - nrow;
+	for (i = ndata - 1; i>=endfor; i--) if (p[i] != RF_INF) break;
+	S->nrow[idx + 1] = i + 1 - endfor;
+	if (S->nrow[idx] != nrow && S->nrow[idx+1] != nrow) BUG;
+      }
+      assert(S->nrow != NULL);
+      nrow = S->nrow[idx] + S->nrow[idx+1]; // virtuell nrow when joining
     }
 
-    //PMI(cov->calling);
+    if (vdim * (1L + extradata) != ncol) { // for all sets!!!! 
+      ERR2("Number of columns in data (%d) differ from the number of expected components (%d)'.", ncol, vdim * (1L + extradata));      
+    }
+
+
+    //    PMI0(cov);
+    // printf("ntot = %d %d\n", ntot, nrow);
     
-    if (ntot <= 0) GERR("no locations given");
-    if (vdim * ntot != ndata) {
-      //BUG;
-      // PMI(cov);
-      GERR3("Number of data (%d) not a multiple of the number of locations  (%d)times the number of components (%d)'.", ndata, ntot, vdim);      
+    if (rawConcerns != ignoreValues) {
+      if (ntot <= 0) GERR("no locations given");
+      if (ntot != nrow )
+	GERR2("Number of rows in data (%d) different from the number of locations  (%d)'.", nrow, ntot);      
     }
   }
+  S->nrow_checked = true;
   assert(vdim > 0);
-
-  // printf("AD\n");
+ 
+  //  printf("AD\n");
   
   if (addna) {
     if (!isnowTrend(cov))
@@ -383,48 +535,44 @@ int checkcovariate(model *cov){
     /*
       model *calling = cov->calling;
       if (PisNULL(COVARIATE_FACTOR)) {
-	while (calling != NULL && CALLINGNR != LIKELIHOOD_CALL &&
-	       CALLINGNR != LINEARPART_CALL) {
-	  calling = CALLINGNR == PLUS ? calling->calling : NULL;	
-	}
+      while (calling != NULL && CALLINGNR != LIKELIHOOD_CALL &&
+      CALLINGNR != LINEARPART_CALL) {
+      calling = CALLINGNR == PLUS ? calling->calling : NULL;	
+      }
       }
       if (calling == NULL)  {
       GERR1("%.50s is used with NAs outside a trend definition.", NAME(cov));
       }
     */
 
-    //    printf("\n\n\n\n\nvdim=%d %d %d\n", vdim, DefList[MODELNR(cov)].kappatype[COVARIATE_FACTOR],  REALSXP);  
-    
     if (PisNULL(COVARIATE_FACTOR)) PALLOC(COVARIATE_FACTOR, vdim, 1);
     assert(!PisNULL(COVARIATE_FACTOR));
    
     for (int i=0; i<vdim; i++) {
-      //      printf("i=%d %d %d %lu\n", i, vdim, COVNR, (unsigned lo ng) P(COVARIATE_FACTOR));
       P(COVARIATE_FACTOR)[i] = RF_NA; // 11.10.19 NAN
     }
   }
 
   /*
-   if (PisNULL(COVARIATE_FACTOR)) {
+    if (PisNULL(COVARIATE_FACTOR)) {
     PALLOC(COVARIATE_FACTOR, vdim, 1);
     for (int i=0; i<vdim; i++) P(COVARIATE_FACTOR)[i] = value;
-  }
+    }
   
-  kdefault(cov, COVARIATE_ADDNA, 
-  !PisNULL(COVARIATE_FACTOR) && ISNAN(P0(COVARIATE_FACTOR)));
+    kdefault(cov, COVARIATE_ADDNA, 
+    !PisNULL(COVARIATE_FACTOR) && ISNAN(P0(COVARIATE_FACTOR)));
 
-  Brasilien:
-  kdefault(cov, COVARIATE_ADDNA, !PisNULL(COVARIATE_FACTOR) &&
-	   (ISNA(P0(COVARIATE_FACTOR)) || ISNAN(P0(COVARIATE_FACTOR))));
+    Brasilien:
+    kdefault(cov, COVARIATE_ADDNA, !PisNULL(COVARIATE_FACTOR) &&
+    (ISNA(P0(COVARIATE_FACTOR)) || ISNAN(P0(COVARIATE_FACTOR))));
   */
    
   cov->q[0] = ((bool) cov->q[1]) || PisNULL(COVARIATE_FACTOR) ? 0 : vdim;
   cov->vdim[!addna] = 1; 
   cov->vdim[addna] = cov->q[0] == 0.0 ? vdim : 1;
 
-  assert( VDIM0 > 0 && VDIM1 >0);
+  assert(VDIM0 > 0 && VDIM1 > 0);
   
-
   if (hasAnyEvaluationFrame(cov) && VDIM0 != 1)
     GERR1("'%.50s' used in a wrong context", NICK(cov));
 
@@ -432,14 +580,13 @@ int checkcovariate(model *cov){
     
   cov->mpp.maxheights[0] = RF_NA;
 
-   if (cov->ptwise_definite == pt_paramdep) {
+  if (cov->ptwise_definite == pt_paramdep) {
     if (vdim > 1) {
       cov->ptwise_definite = pt_unknown;
     } else {
-      int // len = local[0]->len,
-	dummy = GLOBAL.general.set;
       cov->ptwise_definite = pt_posdef;
-      for (GLOBAL.general.set=0; GLOBAL.general.set<len; GLOBAL.general.set++) {
+      for (int set=0; set<sets; set++) {
+	cov->base->set = set;
 	double *p = LP(COVARIATE_C);
 	int ndata = LNROW(COVARIATE_C) * LNCOL(COVARIATE_C) * vdim;
 	for (int i=0; i<ndata; i++)
@@ -449,16 +596,14 @@ int checkcovariate(model *cov){
 	  }
 	if (cov->ptwise_definite != pt_posdef) break;
       }
-    GLOBAL.general.set = dummy;
     }
   }
   
 
  ErrorHandling: 
-  // printf("AE\n");
-  GLOBAL.general.set = store;
+  cov->base->set = 0;
 
-  PFREE(COVARIATE_ADDNA); 
+  //  PFREE(COVARIATE_ADDNA); //22.12.20
   RETURN_ERR(err);
 }
 
@@ -474,42 +619,90 @@ void rangecovariate(model *cov, range_type *range){
   range->pmax[COVARIATE_FACTOR] = 1e10;
   range->openmin[COVARIATE_FACTOR] = true;
   range->openmax[COVARIATE_FACTOR] = true;
+
+  booleanRange(COVARIATE_EXTRA_DATA);
 }
 
 
 void kappa_fix(int i, model VARIABLE_IS_NOT_USED *cov,
-		     int *nr, int *nc){
-    *nc = *nr = i <= FIXCOV_X ? 0 
-      : i <= FIXCOV_RAW ? 1 
-      : -1;
+	       int *nr, int *nc){
+  *nc = *nr = i <= FIXCOV_X || i == FIXCOV_GIVEN ? SIZE_NOT_DETERMINED 
+    : i == FIXCOV_RAW ? 1 
+    : -1;
 }
 
-
-void fix(double *x, double *y, model *cov, double *v){
+void nonstat_fix(double *x, double *y, int *info, model *cov, double *v){
+  globalparam *global = &(cov->base->global);
+  raw_type rawConcerns = cov->base->rawConcerns;
+  assert(rawConcerns != unsetConcerns && rawConcerns != neverGlobalXT);
   GET_LOC_COVARIATE;
-   int nrx, nry,
-     dim = OWNTOTALXDIM,
-     ntot = loc->totalpoints,
-    vdim = VDIM0;
-  double
-    *p = LP(FIXCOV_M);
+  int 
+    matrix = UNSET,
+    dim = OWNTOTALXDIM,    
+    vdim = VDIM0,
+     nrx = info[INFO_IDX_X],
+    nry = info[INFO_IDX_Y];
+  getStorage(S ,   covariate); 
+  bool ignore_y,
+    ignore_x,
+    extra_x = info[INFO_EXTRA_DATA_X] && !S->onlyOne,
+    extra_y = info[INFO_EXTRA_DATA_Y] && !S->onlyOne;
 
-  assert(VDIM0 == VDIM1);
-  if (P0INT(FIXCOV_RAW)) {
-    // should happen only in a matrix context!
-    nrx = (int) x[dim];
-    nry = y == NULL ? x[dim+1] : (int) y[dim];
-    if (nrx * vdim >= LNROW(FIXCOV_M) ||
-	nry * vdim >= LNCOL(FIXCOV_M))
-      ERR("illegal access -- 'raw' should be FALSE");
-  } else {    
-    nrx = get_index(x, cov);
-    nry = get_index(y, cov);
+  if (S->merged_x) {
+    int max1 = LNROW(FIXCOV_M) / vdim;
+    ignore_x = nrx >= max1;
+    if (ignore_x) nrx -= max1;      
+    ignore_y = nry < max1;
+    if (!ignore_y) nry -= max1;
+  } else {
+    ignore_x = extra_x || nrx == NA_INTEGER;
+    ignore_y = !extra_y || PisNULL(FIXCOV_GIVEN) || nry == NA_INTEGER;
   }
 
-  int i, j, k, 
+  if (!ignore_x) matrix = FIXCOV_M;
+  if (!ignore_y) matrix = matrix == FIXCOV_M ? UNSET : FIXCOV_GIVEN;
+ 
+  if (matrix == UNSET || (nrx == NA_INTEGER && nry == NA_INTEGER) ||
+      rawConcerns == ignoreValues) {
+    int vdim2 = vdim * vdim;
+    assert(*x==0.0 && (y == NULL || *y==0.0)); // call with x=ZERO
+    for (int i=0; i<vdim2; v[i++] = 0.0);
+    return;
+  }
+ 
+  assert(VDIM0 == VDIM1);
+  if (P0INT(FIXCOV_RAW) &&
+      (rawConcerns == noConcerns || rawConcerns == onlyOneDataSetAllowed)) {
+    // NOTE: rawConcerns kann auch nach der Modelldefinition geaendert werden!!
+    // should happen only in a matrix context!
+    nrx = nrx == NA_INTEGER ? nry : nrx;
+    nry = nry == NA_INTEGER ? nrx : nry;
+
+    indexedSet(cov, &nrx, &nry);
+    // ************** ACHTUNG !!
+    // ******* es darf erst ab hier auf Matrix zugegriffen werden!
+    if (nrx * vdim >= LNROW(matrix) || nry * vdim >= LNCOL(matrix))
+      ERR("illegal access -- 'raw' should be FALSE");
+  } else {
+    if (cov->Scovariate->coordinate_mismatch)
+      ERR("Models that have an implicite coordinate transformation inside may not use (implicitely) 'RMcovariate' (up to now).");
+
+    indexedSet(cov);
+    // ************** ACHTUNG !!
+    // ******* es darf erst ab hier auf Matrix zugegriffen werden!
+   
+    nrx = get_index(x, ignore_y, cov);
+    if (y == NULL) ERR1("invalid construction for '%.30s'", NICK(cov));
+    nry = get_index(y, ignore_y, cov);
+  }
+
+  
+  double *p = LP(matrix);
+  int i, j, k,
+    ntot = ignore_y ? loc->totalpoints : loc->totalpointsY,
     ntotvdim = ntot * vdim;
-  if (GLOBAL.general.vdim_close_together) {
+
+  if (global->general.vdim_close_together) {
     p += (ntotvdim * nry + nrx) * vdim;
     for (k=i=0; i<vdim; i++, p += ntotvdim) {
       double *q = p;
@@ -526,30 +719,29 @@ void fix(double *x, double *y, model *cov, double *v){
 }
 
 
-void fixStat(double *x, model *cov, double *v){
+void fix(double *x, int *info, model *cov, double *v){
   assert(P0INT(FIXCOV_RAW));
-  assert(Loc(cov)->distances);
-  fix(x, NULL, cov, v);
+  assert(LocDist(cov));
+  nonstat_fix(x, NULL, info, cov, v);
 }
 
-
-
-
-
 /*
-
-bool allowedDfix(model *cov) {
+  bool allowedDfix(model *cov) {
   kdefault(cov, FIXCOV_RAW, PisNULL(FIXCOV_X));
   // && cov->calling != NULL && isnowTrend(cov)); 
   if (P0INT(FIXCOV_RAW)) return allowedDtrue;
   for(int i=FIRST_DOMAIN; i<= LAST_DOMAINUSER; i++) cov->allowedD[i] = false;
   cov->allowedD[KERNEL] = true;
   return false;
-}
+  }
 
 */
 
 bool allowedIfix(model *cov) {
+  //  printf("cov %d \n", cov == NULL);
+  // printf("%d %d\n",  (cov)->ownloc == NULL, (cov)->prevloc == NULL);
+  //PMI(cov->calling);
+
   model *dummy = cov;
   location_type *loc = Loc(dummy);
   while (loc == NULL && dummy->calling != NULL) {
@@ -557,33 +749,32 @@ bool allowedIfix(model *cov) {
     loc = Loc(dummy);
   }
   if (loc == NULL) BUG;
-  bool dist = DistancesGiven(cov),
+  bool dist = LocDist(cov) && LocxdimOZ(cov) == 1,
     *I = cov->allowedI;
-  //printf("name dummy = %.50s dist = %d\n", NAME(dummy), dist);
   kdefault(cov, FIXCOV_RAW, PisNULL(FIXCOV_X));
   // && cov->calling != NULL && isnowTrend(cov)); 
   for(int i=FIRST_ISOUSER; i<=LAST_ISOUSER; i++) I[i] = false;
   if (dist) I[ISOTROPIC] = I[EARTH_ISOTROPIC] = true;
-    // not spherical since it involves a transformation that looses i_nrow
+  // not spherical since it involves a transformation that looses i_nrow
   else I[CARTESIAN_COORD] = I[EARTH_COORD] = true;
   return false;
 }
-
+ 
 /*
-bool setfix(model *cov) {
+  bool setfix(model *cov) {
   kdefault(cov, FIXCOV_RAW,
-	   PisNULL(FIXCOV_X) && cov->calling != NULL && isnowTrend(cov)); 
+  PisNULL(FIXCOV_X) && cov->calling != NULL && isnowTrend(cov)); 
   if (P0INT(FIXCOV_RAW)) {
-    isotropy_type iso = CONDPREVISO(0); 
-    if (!isFixed(iso)) return false;
-    set_iso(OWN, 0, iso);
-    set_dom(OWN, 0, PREVDOM(0));    
+  isotropy_type iso = CONDPREVISO(0); 
+  if (!isFixed(iso)) return false;
+  set_iso(OWN, 0, iso);
+  set_dom(OWN, 0, PREVDOM(0));    
   } else {
-    set_iso(OWN, 0, CoordinateSystemOf(PREVISO(0)));
-    set_dom(OWN, 0, KERNEL);
+  set_iso(OWN, 0, CoordinateSystemOf(PREVISO(0)));
+  set_dom(OWN, 0, KERNEL);
   }
   return true;
-}
+  }
 */
 
 Types Typefix(Types required, model *cov, isotropy_type requ_iso){
@@ -594,112 +785,172 @@ Types Typefix(Types required, model *cov, isotropy_type requ_iso){
 
 
 int checkfix(model *cov){
+  // ACHTUNG TO DO: given coords fuer givenM zu uebergeben wird
+  // vermutlich noch nicht funktionieren.
+  utilsparam *global_utils = &(cov->base->global_utils);
   assert(cov != NULL);
-  int store = GLOBAL.general.set;
-  GLOBAL.general.set = 0;
   int 
     vdim = UNSET, 
     vdimSq = UNSET,
     err = NOERROR;
-  location_type **local = NULL;
-  bool isAnyIso = isAnyIsotropic(OWNISO(0));
-  assert(!isAnyIso || Loc(cov)->distances);
+  location_type **Loc = NULL;
 
-  if ((err = check_fix_covariate(cov, &local)) != NOERROR) goto ErrorHandling;
+  bool isAnyIso = isAnyIsotropic(OWNISO(0)),
+    extradata = !PisNULL(FIXCOV_GIVEN);
+  assert(!isAnyIso || Loc(cov)->distances);
+  raw_type rawConcerns = cov->base->rawConcerns;
+  assert(rawConcerns != unsetConcerns);
+
+  //  printf("%d %d\n", rawConcerns, PisNULL(FIXCOV_X));
+  //  PMI(cov)
+ 
+  if (rawConcerns != ignoreValues && PisNULL(FIXCOV_X))
+    SERR2("In the current situation, '%.20s' must be given in '%.20s'",
+	  COVARIATE_X_NAME, NICK(cov));
+
+  if (!P0INT(FIXCOV_RAW) && !PisNULL(FIXCOV_GIVEN))
+    ERR("In case 'givenM' is given 'raw=TRUE' is obligatory");  
+
+  if ((err = check_fix_covariate(cov, &Loc)) != NOERROR) goto ErrorHandling;
   if (!P0INT(FIXCOV_RAW)) {
     if (isAnyIso)
       SERR1("distances only allowed for '%.50s' = TRUE", KNAME(FIXCOV_RAW));
     if (!(equalsKernel(OWNDOM(0)) && equalsCartCoord(OWNISO(0))))
       SERR2("Model only allowed within positive definite kernels, not within positive definite functions. (Got %.50s, %.50s.)",  DOMAIN_NAMES[OWNDOM(0)], ISO_NAMES[OWNISO(0)]);
   }
-  assert(local != NULL);
+
+  assert(Loc != NULL);
   covariate_storage *S;
-  int len;
-  len = local[0]->len;
+  int sets;
+  sets = LocPSets(Loc);
+  if (sets <= 0) BUG;
   S = cov->Scovariate;
   assert(S != NULL);
-  if (len <= 0) BUG;
-  for (GLOBAL.general.set=0;  GLOBAL.general.set<len;  GLOBAL.general.set++) {
-    int
-      ndata = LNROW(FIXCOV_M) * LNCOL(FIXCOV_M),
-      ntot = LocLoc(local)->totalpoints;
-    if (GLOBAL.general.set == 0) {
-      vdim = (int) SQRT((double) ndata / (double) (ntot * ntot));
-      vdimSq = vdim * vdim;
-    }
 
-    if (ntot <= 0) GERR("no locations given");
-    if (cov->nrow[FIXCOV_M] != cov->ncol[FIXCOV_M])
-      GERR("square matrix expected");
-    if (vdimSq * ntot * ntot != ndata)
-      GERR3("number of data (%d) not a multiple of the number of locations (%d x %d)^2", ndata, ntot, vdim);      
+  
+  if (rawConcerns == onlyOneDataSetAllowed) {
+    if (extradata) ERR1("only one data set allowed in '%.20s'", NICK(cov));
+    S->onlyOne = true;
   }
-  assert(vdim > 0);
-  VDIM0 = VDIM1 = vdim;
+
+
+   if (cov->qlen == 0) {
+    for (int set=0; set<sets; set++) {
+      cov->base->set = set;
+      int
+	nrow = LNROW(FIXCOV_M),
+	ncol = LNCOL(FIXCOV_M),
+	ndata = nrow * ncol,
+	ntot = LocLoc(Loc, cov)->totalpoints,
+ 	ntotY = LocLoc(Loc, cov)->totalpointsY;
+     bool merged_x = extradata && ntotY == 0 && !PisNULL(FIXCOV_GIVEN);
+      if (set == 0) {
+	S->merged_x = merged_x;
+	if (merged_x) vdim = (nrow + LNROW(FIXCOV_GIVEN)) / ntot;
+	else vdim = nrow / ntot;
+  	vdimSq = vdim * vdim;
+      } else if (merged_x xor S->merged_x)
+	ERR("coordinates do not match data size");
+
+      if (ntot <= 0) GERR("no locations given");
+      if (nrow != ncol) ERR("square matrix expected");      
+      if (vdimSq * ntot * ntot != ndata)
+	GERR3("number of data (%d) not a multiple of the number of locations (%d x %d)^2", ndata, ntot, vdim);
+
+      if (!PisNULL(FIXCOV_GIVEN)) {
+	nrow = LNROW(FIXCOV_GIVEN);
+	ncol = LNCOL(FIXCOV_GIVEN);
+	ndata = nrow * ncol;
+	if (ntotY <= 0) GERR("no locations for 'givenM'");
+	if (nrow != ncol) ERR("square matrix for 'givenM' expected");
+	if (vdimSq * ntotY * ntotY != ndata)
+	GERR3("number of data (%d) not a multiple of the number of locations (%d x %d)^2", ndata, ntotY, vdim);
+      }
+    }
+    assert(vdim > 0);
+    QALLOC(1);
+    cov->q[0] = VDIM0 = VDIM1 = vdim;
+  } else VDIM0 = VDIM1 = (int) cov->q[0];
 
   if ((err = checkkappas(cov)) != NOERROR) goto ErrorHandling;
      
-  if (vdim == 1 && len == 1) {
-    GLOBAL.general.set = 0;
+  if (vdim == 1 && sets == 1) { 
+    cov->base->set = 0;
     double *c = LP(FIXCOV_M);   
-    int i,
-      ntot = LocLoc(local)->totalpoints;
-    for (i=0; i<ntot; i++) if (c[i] != 0.0) break;
-    cov->ptwise_definite = pt_zero;
-    if (i<ntot) {
-      if (c[i] > 0.0) {
-	cov->ptwise_definite = pt_posdef;
-        for (i++; i<ntot; i++)
-	  if (c[i] < 0.0) {
-	    cov->ptwise_definite = pt_indef;
-	    break;
-	  }
-      } else { // < 0.0
-	cov->ptwise_definite = pt_negdef;
-        for (i++; i<ntot; i++)
-	  if (c[i] > 0.0) {
-	    cov->ptwise_definite = pt_indef;
-	    break;
-	  }
+    int ntot = LocLoc(Loc, cov)->totalpoints;
+    ptwise_type p,q;
+    int endfor = extradata;
+    for (int m=0; m<=endfor; m++) {
+      int i;
+      p = pt_zero;
+      for (i=0; i<ntot; i++) if (c[i] != 0.0) break;
+      if (i<ntot) {
+	if (c[i] > 0.0) {
+	  p  = pt_posdef;
+	  for (i++; i<ntot; i++)
+	    if (c[i] < 0.0) {
+	      p = pt_indef;
+	      break;
+	    }
+	} else { // < 0.0
+	  p = pt_negdef;
+	  for (i++; i<ntot; i++)
+	    if (c[i] > 0.0) {
+	      p = pt_indef;
+	      break;
+	    }
+	}
+      }
+      if (m == 0) {
+	q = p;
+	if (q == pt_indef) break;
+	c = LP(FIXCOV_GIVEN);
+	ntot = LocLoc(Loc, cov)->totalpointsY;
       }
     }
-    
-  } else cov->ptwise_definite = pt_unknown; // to do ?! alle Matrizen ueberpruefen...
+    cov->ptwise_definite = // POINTWISE, NOT POSDEF as a matrix
+      (p==pt_zero || p==pt_posdef) && (q==pt_zero || q==pt_posdef) ? pt_posdef
+      : (p==pt_zero || p==pt_posdef) && (q==pt_zero || q==pt_posdef) ?pt_posdef
+      : pt_indef;
+  }
 
      
   if (S->matrix_err == MATRIX_NOT_CHECK_YET) {
     S->matrix_err = NOERROR;
-    for (GLOBAL.general.set=0; GLOBAL.general.set<len; GLOBAL.general.set++){
-      int j, k,
-	nrow = LNROW(FIXCOV_M),
-	ncol = LNCOL(FIXCOV_M);
-      double
-	*C =  LP(FIXCOV_M);
-      if (nrow != ncol || nrow == 0) {
-	S->matrix_err = err = ERROR_MATRIX_SQUARE; 
-	goto ErrorHandling;
-      }    
-
-      for (k=0; k<nrow; k++) {	
-	for (j=k+1; j<ncol; j++) {
-	  if (C[k + nrow * j] != C[j + nrow * k] ||
+    int endfor = LP(FIXCOV_GIVEN) != NULL;
+    for (int set=0; set<sets; set++){
+      cov->base->set = set;
+      for (int m=0; m<=endfor; m++) {
+	int matrix = m ==0 ? FIXCOV_M : FIXCOV_GIVEN,
+	  nrow = LNROW(matrix),
+	  ncol = LNCOL(matrix);
+	double *C =  LP(matrix);
+	if (nrow != ncol || nrow == 0) {
+	  S->matrix_err = err = ERROR_MATRIX_SQUARE; 
+	  goto ErrorHandling;
+	}    
+	
+	for (int k=0; k<nrow; k++) {	
+	  for (int j=k+1; j<ncol; j++) {
+	    if (C[k + nrow * j] != C[j + nrow * k] ||
 	      (ISNAN(C[k + nrow * j]) && ISNAN(C[j + nrow * k])) )
-	    GERR("matrix not symmetric");
+	      ERR("matrix not symmetric");
+	  }
+	}
+	
+	if (!global_utils->basic.skipchecks) {
+	  if (nrow < 3000) {
+	    if (!Ext_is_positive_definite(C, nrow)) {
+	      S->matrix_err = err = ERROR_MATRIX_POSDEF;
+	      goto ErrorHandling;
+	    }
+	  } else {
+	    if (sets==1) 
+	      PRINTF("covariance matrix is large, hence not verified to be positive definite.");
+	    else PRINTF("covariance matrix of %d%s set is large, hence not verified to be positive definite.", set + 1, TH(set + 1));
+	  }
 	}
       }
-
-      if (!GLOBAL_UTILS->basic.skipchecks) {
-	if (nrow < 3000) {
-	  if (!Ext_is_positive_definite(C, nrow)) {
-	    S->matrix_err = err = ERROR_MATRIX_POSDEF;
-	    goto ErrorHandling;
-	  }
-	} else {
-	  if (len==1) 
-	    PRINTF("covariance matrix is large, hence not verified to be positive definite.");
-	  else PRINTF("covariance matrix of %d%s set is large, hence not verified to be positive definite.", GLOBAL.general.set + 1, TH(GLOBAL.general.set + 1));
-	}
-      }	
     }
     if (err != NOERROR) goto ErrorHandling;
   }
@@ -708,7 +959,7 @@ int checkfix(model *cov){
   cov->mpp.maxheights[0] = RF_NA;
   
  ErrorHandling: 
-  GLOBAL.general.set = store;
+  cov->base->set = 0;
 
   RETURN_ERR(err);
 }
@@ -731,6 +982,13 @@ void rangefix(model VARIABLE_IS_NOT_USED *cov, range_type *range){
 
   booleanRange(FIXCOV_RAW);
 
+  range->min[FIXCOV_M] = RF_NEGINF;
+  range->max[FIXCOV_M] = RF_INF;
+  range->pmin[FIXCOV_M] = - 1e10;
+  range->pmax[FIXCOV_M] = 1e10;
+  range->openmin[FIXCOV_M] = true;
+  range->openmax[FIXCOV_M] = true;
+
 }
 
 
@@ -739,8 +997,7 @@ void rangefix(model VARIABLE_IS_NOT_USED *cov, range_type *range){
 // ----------------------------------------------------------------------
 // ball
 
-void ball(double *x, model VARIABLE_IS_NOT_USED *cov, double *v) {
-  //APMI(cov);
+void ball(double *x, INFO, model VARIABLE_IS_NOT_USED *cov, double *v) {
   // isotropic function, expecting only distance; BALL_RADIUS=1.0
   assert(*x >= 0);
   *v = (double) (*x <= BALL_RADIUS);
@@ -763,9 +1020,6 @@ int struct_ball(model *cov, model **newmodel){
 }
 
 int init_ball(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
-
-  //  TREE0(cov);  PMI0(cov);
-  
   assert(s != NULL);
    
   if (hasSmithFrame(cov) || hasAnyPoissonFrame(cov)) {
@@ -813,14 +1067,14 @@ double meanVolPolygon(int dim, double beta) {
   return intpow(dim * kd / (kdM1 * beta), dim) / kd;
 }
 
-void Polygon(double *x, model VARIABLE_IS_NOT_USED *cov, double *v) { 
-  polygon_storage *ps = cov->Spolygon;
+void Polygon(double *x, INFO, model VARIABLE_IS_NOT_USED *cov, double *v) { 
+getStorage(ps ,   polygon); 
   assert(ps != NULL);
   *v = (double) isInside(ps->P, x);
 }
  
 void Inversepolygon(double VARIABLE_IS_NOT_USED *x, model *cov, double *v){
-  polygon_storage *ps = cov->Spolygon;
+getStorage(ps ,   polygon); 
   int d,
     dim = OWNLOGDIM(0);
 
@@ -848,9 +1102,9 @@ void Inversepolygon(double VARIABLE_IS_NOT_USED *x, model *cov, double *v){
   }
 }
 
-void InversepolygonNonstat(double VARIABLE_IS_NOT_USED *v, model *cov,
+void inversenonstat_polygon(double VARIABLE_IS_NOT_USED *v, model *cov,
 			   double *min, double *max){
-  polygon_storage *ps = cov->Spolygon;
+getStorage(ps ,   polygon); 
   int d,
     dim = OWNLOGDIM(0);
   assert(ps != NULL);
@@ -885,7 +1139,7 @@ int check_polygon(model *cov) {
   
   assert(dim <= MAXDIM_POLY);
   if (dim != 2)
-    SERR("random polygons only defined for 2 dimensions"); // to do
+    ERR("random polygons only defined for 2 dimensions"); // to do
   kdefault(cov, POLYGON_BETA, 1.0);
   if ((err = checkkappas(cov)) != NOERROR) RETURN_ERR(err);
   cov->randomkappa = true;
@@ -951,7 +1205,7 @@ int init_polygon(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
   }
    
   // nicht nur aber auch zur Probe
-  struct polygon_storage *ps = cov->Spolygon;
+  getStorage(ps , polygon); 
   assert(ps != NULL && ps->P != NULL);
   
   if (!false) {
@@ -1000,7 +1254,7 @@ double maxEigenrational(model VARIABLE_IS_NOT_USED *cov, double VARIABLE_IS_NOT_
   double *a = P(RATIONAL_a);
   return (a[0] > a[1]) ? a[0] : a[1];
 }
-void rational(double *x, model *cov, double *v) {
+void rational(double *x, INFO, model *cov, double *v) {
   int i, k, j, 
     dim = OWNLOGDIM(0);
   double nu,
@@ -1062,7 +1316,7 @@ void kappa_EAxxA(int i, model *cov, int *nr, int *nc){
   *nc = (EAXXA_A == i) ? OWNLOGDIM(0) : 1;
   *nr = i < DefList[COVNR].kappas ? OWNLOGDIM(0) : -1;
 }
-void EAxxA(double *x, model *cov, double *v) {
+void EAxxA(double *x, INFO, model *cov, double *v) {
   int d, k, j, 
     dim = OWNLOGDIM(0);
   double xA[EaxxaMaxDim],
@@ -1140,7 +1394,7 @@ void kappa_EtAxxA(int i, model VARIABLE_IS_NOT_USED *cov, int *nr, int *nc){
   *nc = (i == EAXXA_A) ? logicaldim : 1;
   *nr = (i == EAXXA_E || i==EAXXA_A) ? logicaldim : (i==ETAXXA_ALPHA) ? 1 : -1;
 }
-void EtAxxA(double *x, model *cov, double *v) {
+void EtAxxA(double *x, INFO, model *cov, double *v) {
   int d, k, j, 
     dim = OWNLOGDIM(0),
     time = dim - 1;
@@ -1148,7 +1402,7 @@ void EtAxxA(double *x, model *cov, double *v) {
     *E = P(EAXXA_E),
     *A = P(EAXXA_A),
     phi = P0(ETAXXA_ALPHA),
-    c =  cos(phi * x[time]),
+    c =  COS(phi * x[time]),
     s = SIN(phi * x[time]); 
      
   R[0] = R[4] = c;
@@ -1237,7 +1491,7 @@ void rangeEtAxxA(model VARIABLE_IS_NOT_USED *cov, range_type* range){
 // Sigma(x) = diag>0 + A'xx'A
 #define ROTAT_PHI 0 // both rotat & Rotat
 #define ROTAT_SPEED 1
-void rotat(double *x, model *cov, double *v) {
+void rotat(double *x, INFO, model *cov, double *v) {
   int
     dim = OWNLOGDIM(0),
     time = dim - 1;
@@ -1246,7 +1500,7 @@ void rotat(double *x, model *cov, double *v) {
     phi = P0(ROTAT_PHI),
     absx = SQRT(x[0] * x[0] + x[1] * x[1]);
   *v = (absx == 0.0) ? 0.0
-    : speed * (cos(phi * x[time]) * x[0] + SIN(phi * x[time]) * x[1]) / absx;
+    : speed * (COS(phi * x[time]) * x[0] + SIN(phi * x[time]) * x[1]) / absx;
 }
 
 void minmaxEigenrotat(model VARIABLE_IS_NOT_USED *cov, double *mm) {
@@ -1276,15 +1530,15 @@ void rangerotat(model VARIABLE_IS_NOT_USED *cov, range_type* range){
 }
 
 
-void Rotat(double *x, model *cov, double *v) {
+void Rotat(double *x, INFO, model *cov, double *v) {
   int d, k, j, 
     dim = OWNLOGDIM(0),
     time = dim - 1;
   double
     phi = P0(ROTAT_PHI),
-      c =  cos(phi * x[time]),
-      s = SIN(phi * x[time]),
-      R[9]; assert(dim ==3);
+    c =  COS(phi * x[time]),
+    s = SIN(phi * x[time]),
+    R[9]; assert(dim ==3);
    
   R[0] = R[4] = c;
   R[1] = s;
@@ -1324,7 +1578,7 @@ void rangeRotat(model VARIABLE_IS_NOT_USED *cov, range_type* range){
 // ----------------------------------------------------------------------
 //
 
-void truncsupport(double *x, model *cov, double *v){
+void truncsupport(double *x, int *info, model *cov, double *v){
   // truncsupport erwartet dass vorher $ kommt, sofern skalenmischung
   model *next = cov->sub[0];
   int xdimown = OWNTOTALXDIM;
@@ -1338,7 +1592,7 @@ void truncsupport(double *x, model *cov, double *v){
   } else dist = FABS(*x);
 
   if (radius>=0 && dist > radius) { *v=0.0; return; }
-  FCTN(x, next, v);
+  FCTN(x, info, next, v);
 }
 
 int checktruncsupport(model *cov) {
@@ -1418,7 +1672,6 @@ int init_truncsupport(model *cov, gen_storage *s) {
 
 
 void do_truncsupport(model *cov, gen_storage *s) {
-  //  mppinfotype *info = &(s->mppinfo);
   model *next = cov->sub[0];
   int vdim = VDIM0;
  //  double
@@ -1430,7 +1683,5 @@ void do_truncsupport(model *cov, gen_storage *s) {
     int maxv = MIN(vdim, MAXMPPVDIM);
     for (int i=0; i<maxv; i++) cov->mpp.maxheights[i] = next->mpp.maxheights[i];
   }
-
-  // if (radius>=0 && radius < info->radius) info->radius = radius;
 }
 

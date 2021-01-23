@@ -58,6 +58,7 @@ double bernoulli(double p) {
 
 
 int check_hyperplane(model *cov) {
+  globalparam *global = &(cov->base->global);
  model 
    *key = cov->key,
    *next= cov->sub[0],
@@ -65,7 +66,7 @@ int check_hyperplane(model *cov) {
  int err,
    dim = OWNLOGDIM(0)
     ; // taken[MAX DIM],
-  hyper_param *gp  = &(GLOBAL.hyper);
+  hyper_param *gp  = &(global->hyper);
 
   ASSERT_CARTESIAN;
   ASSERT_ONESYSTEM;
@@ -109,12 +110,13 @@ int check_hyperplane(model *cov) {
 
 
 int check_hyperplane_intern(model *cov) {  
+  globalparam *global = &(cov->base->global);
   assert(cov->key == NULL);
 
   model *next= cov->sub[0];  
   int err,
     dim = OWNLOGDIM(0);    
-  hyper_param *gp  = &(GLOBAL.hyper);
+  hyper_param *gp  = &(global->hyper);
 
   kdefault(cov, HYPER_SUPERPOS, gp->superpos);
   kdefault(cov, HYPER_MAXLINES, gp->maxlines);
@@ -264,7 +266,7 @@ int init_hyperplane(model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
   /****************************************************************/
 
   assert(loc->caniso == NULL ||
-	 (GetLoctsdim(cov) == loc->cani_nrow && PREVXDIM(0) == loc->cani_ncol));
+	 (Loctsdim(cov) == loc->cani_nrow && PREVXDIM(0) == loc->cani_ncol));
 
   s->radius = 0.5 * GetDiameter(loc, min, max, s->center);
   for (d=0; d-dim; d++) s->rx[d] = 0.5 * (max[d] - min[d]);
@@ -380,7 +382,8 @@ void do_hyperplane(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
   int    integers, bits, q, endfor, err, len[MAXHYPERDIM],
     vdim = VDIM0,
     dim = OWNLOGDIM(0),
-     totvdim = loc->totalpoints * vdim,
+    totalpoints = loc->totalpoints,
+     totvdim = totalpoints * vdim,
     superpos = P0INT(HYPER_SUPERPOS),
     mar_distr = P0INT(HYPER_MAR_DISTR);
   double
@@ -395,7 +398,7 @@ void do_hyperplane(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
     mar_param = P0(HYPER_MAR_PARAM);
   Long i, j, resindex;
   randomvar_type randomvar=NULL;
-  hyper_storage *s = cov->Shyper;
+getStorage(s ,   hyper); 
   avltr_tree *tree = NULL;
   cell_type *cell = NULL;
   bool
@@ -454,7 +457,7 @@ void do_hyperplane(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
 	  /* temporary code */
 	  if (q==0) {
 	    double colour = randomvar(mar_param);
-	    for (j=resindex=0; resindex < loc->totalpoints; resindex++) {
+	    for (j=resindex=0; resindex < totalpoints; resindex++) {
 		if (additive) res[resindex] += colour;
 		else res[resindex] = res[resindex] < colour ? colour
 						     : res[resindex];
@@ -483,7 +486,7 @@ void do_hyperplane(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
 		gy += deltay;
 	      }  
 	    } else {
-	      for (j=resindex=0; resindex < loc->totalpoints; resindex++) {
+	      for (j=resindex=0; resindex < totalpoints; resindex++) {
 		if ((cell=determine_cell(loc->x[j], loc->x[j+1], 
 					 hx, hy, hr,
 					 &integers, &tree, randomvar, 
@@ -527,7 +530,7 @@ void do_hyperplane(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
       default : ERR("distribution unknown in hyperplane\n");
       }
       sd = SQRT(variance / (superpos * sd));
-      for(i=0; i<loc->totalpoints; i++) 
+      for(i=0; i<totalpoints; i++) 
 	res[i] = (double) (((double) res[i] - superpos * E) * sd);    
     
       BOXCOX_INVERSE;

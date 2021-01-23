@@ -91,6 +91,9 @@ static const R_ExternalMethodDef extMethods[] = {
 
 #define CALLABLE(FCTN)  R_RegisterCCallable("RandomFieldsUtils", #FCTN, (DL_FUNC)  FCTN)
 void R_init_RandomFieldsUtils(DllInfo  *dll) {
+  CALLABLE(utilsparam_DELETE);
+  CALLABLE(utilsparam_NULL);
+
   CALLABLE(solve_DELETE);
   CALLABLE(solve_NULL);
   CALLABLE(solvePosDef);

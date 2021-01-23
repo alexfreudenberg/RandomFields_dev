@@ -1,9 +1,9 @@
 \name{Coordinate systems}
-\alias{zenit}
+\alias{coordinates}
 \alias{Coordinate systems}
+\alias{zenit}
 \alias{coordinate systems}
 \alias{coordinate system}
-\alias{coordinates}
 \title{Coordinate systems}
 \description{
   Implemented Coordinate Systems.
@@ -279,7 +279,7 @@ RFcov(model, x, y, grid=FALSE,
 (z2 <- RFcov(RMS(model, s= 6350 / 1.609344 / 180 * pi), x, y, grid=FALSE,
              coord_sys="earth", new_coord_sys="orthographic",
              new_coordunits="miles"))
-stopifnot(all.equal(z1, z2))
+stopifnot(all.equal(z1, z2, tolerance = 1e-6))
 
 
 ## again, projection onto a plane first, but now using the
@@ -292,7 +292,7 @@ stopifnot(all.equal(z1, z2))
 (z2 <- RFcov(RMS(model, s= 6350 / 1.609344 / 180 * pi), x, y, grid=FALSE,
              coord_sys="earth", new_coord_sys="gnomonic",
              new_coordunits="miles"))
-stopifnot(all.equal(z1, z2, tol=1e-5))
+stopifnot(all.equal(z1, z2, tol=1e-6))
 
 
 

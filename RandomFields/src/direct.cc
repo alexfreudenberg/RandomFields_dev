@@ -40,7 +40,6 @@ int check_directGauss(model *cov) {
   location_type *loc = Loc(cov);
   int j,
     err; // taken[MAX DIM],
-  // direct_param *gp  = &(GLOBAL.direct); //
 
   FRAME_ASSERT_GAUSS_INTERFACE;
 
@@ -84,12 +83,13 @@ void range_direct(model VARIABLE_IS_NOT_USED *cov, int k, int i, int j, simple_r
 
 
 int init_directGauss(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
+  globalparam *global = &(cov->base->global);
   model *next = cov->sub[0];
   double //*xx,
     *Cov=NULL;
   int
     err = NOERROR,
-    maxvariab = GLOBAL.direct.maxvariables;
+    maxvariab = global->direct.maxvariables;
   direct_storage* s=NULL;
   location_type *loc = Loc(cov);
   Long 
@@ -98,7 +98,7 @@ int init_directGauss(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
     vdimtot = vdim * locpts,
     vdimSqtotSq = vdimtot * vdimtot,
     bytes = sizeof(double) * vdimSqtotSq;
-  solve_param sp = GLOBAL_UTILS->solve;
+  solve_param sp = cov->base->global_utils.solve;
 
 
   EXT_NEW_STORAGE(solve);
@@ -121,6 +121,7 @@ int init_directGauss(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
   //  PMI(cov->calling);
 
   if ((Cov =(double *) MALLOC(bytes))==NULL) {
+    // Achtung: Cov wird von extern in solve_storage eingehaengt
     err=ERRORMEMORYALLOCATION;  
     goto ErrorHandling;
   }
@@ -134,8 +135,9 @@ int init_directGauss(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
   /* matrix creation part  */
   /* ********************* */
   CHECKED;
-   
-  CovarianceMatrix(next, Cov); 
+
+  //  PMI0(next);
+  CovarianceMatrix(next, true, Cov); 
   assert(R_FINITE(Cov[0]));
 
    
@@ -157,7 +159,7 @@ int init_directGauss(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
     if (sp.pivot_check == Nan) sp.pivot_check = False;
     assert(cov->Ssolve != NULL);
     err = Ext_sqrtPosDefFree(Cov, vdimtot, cov->Ssolve, &sp);
-
+    
     
 
     if (false) {
@@ -179,7 +181,7 @@ int init_directGauss(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
     int r;
     double min = RF_INF,
       *C;
-    if (vdim > 1 && GLOBAL.general.vdim_close_together)
+    if (vdim > 1 && global->general.vdim_close_together)
       SERR("Simulation of multivariate intrinsic field per RPdirect only possible for 'vdim_close_together=FALSE'");
     for (int i=0; i < vdimSqtotSq; i++) min = Cov[i] < min ? Cov[i] : min;
     if (sp.pivot_check == Nan) sp.pivot_check = False;
@@ -251,12 +253,7 @@ int init_directGauss(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
   /* ********************** */
 
    if (err != NOERROR) {
-#ifdef DO_PARALLEL
-     GERR1("Calculation of the square root (cholesky decomposition) failed. Rerun with  RFoptions(printlevel=%d)  to see details.", PL_ERRORS-PLoffset);
-#else     
-     Ext_getErrorString(cov->err_msg);
-     goto ErrorHandling;
-#endif     
+     GERR2("Calculation of the square root (cholesky decomposition) failed (%.200s; err=%d)", cov->Ssolve->err_msg, err);
    }
 
   if ( (s->G = (double *) CALLOC(vdimtot + 1, sizeof(double))) == NULL) {
@@ -267,13 +264,16 @@ int init_directGauss(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
   
  ErrorHandling: // and NOERROR...
   cov->simu.active = err == NOERROR;
+  
+  
   RETURN_ERR(err);
 }
 
 
 void do_directGauss(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {  
+  globalparam *global = &(cov->base->global);
   location_type *loc = Loc(cov);
-  direct_storage *s = cov->Sdirect;
+getStorage(s ,   direct); 
   Long 
     locpts = loc->totalpoints,
     vdim = VDIM0,
@@ -282,7 +282,7 @@ void do_directGauss(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
     *G = NULL,
     //*U = NULL,
     *res = cov->rf;  
-  // bool  vdim_close_together = GLOBAL.general.vdim_close_together;
+  // bool  vdim_close_together = global->general.vdim_close_together;
 
   //  PMI(cov);
   

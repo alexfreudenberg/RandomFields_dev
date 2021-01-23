@@ -53,22 +53,27 @@
   and provided by Dra. Maria Cristina Neves de Oliveira.
 
   Capeche, C.L.; Macedo, J.R.; Manzatto, H.R.H.; Silva, E.F. (1997)
-  Caracterização pedológica da fazenda Angra - PESAGRO/RIO -
-  Estação experimental de Campos (RJ). (compact disc).
-  In: Congresso BRASILEIRO de Ciência do Solo. 26.,
-  Informação, globalização, uso do solo; Rio de Janeiro, 1997.
+  Caracterizacao pedologica da fazenda Angra - PESAGRO/RIO -
+  Estacao experimental de Campos (RJ). (compact disc).
+  In: Congresso BRASILEIRO de Ciencia do Solo. 26.,
+  Informacao, globalizacao, uso do solo; Rio de Janeiro, 1997.
   trabalhos. Rio de Janeiro: Embrapa/SBCS.
 
 }
 \references{
-  Oliveira, M.C.N. (2003) \emph{Métodos de estimação de parâmetros
-  em modelos geoestatísticos com diferentes estruturas de
-  covariâncias: uma aplicação ao teor de cálcio no solo.}
+  Oliveira, M.C.N. (2003) \emph{Metodos de estimacao de parametros
+  em modelos geoestatisticos com diferentes estruturas de
+  covariancias: uma aplicacao ao teor de calcio no solo.}
   Tese de Doutorado, ESALQ/USP/Brasil. 
   
   Further information on the package \pkg{geoR}, from which the
   data stem, can be found at:\cr
   \url{http://www.leg.ufpr.br/geoR}.
+}
+
+\examples{
+data(ca20)
+str(ca20.df)
 }
 
 \keyword{datasets}

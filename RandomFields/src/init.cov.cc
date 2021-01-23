@@ -36,6 +36,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "operator.h"
 #include "startGetNset.h"
 #include "primitive.h"
+#include "primitive.bivariate.h"
 #include "shape.h" // wegen fixcov
 
 int
@@ -69,7 +70,7 @@ void includeCovModels() {
 	       checkave, rangeave, PREF_ALL, 
 	       false, SCALAR, AveMaxDim, (ext_bool) false, NOT_MONOTONE);
   kappanames("A", REALSXP, "z", REALSXP, "spacetime", INTSXP);
-  addCov(ave, NULL, NULL);
+  addCov(ave);
   RandomShape(UNSET, structAve, initOK, doOK,  do_random_failed, 
 	       true, false, false);
   
@@ -117,7 +118,7 @@ void includeCovModels() {
 	      checkBessel, rangeBessel,
 	      pbessel, SCALAR, INFDIM, (ext_bool) false, NOT_MONOTONE);
   kappanames("nu", REALSXP);
-  addCov(Bessel, NULL, NULL);
+  addCov(Bessel);
   addTBM(initBessel, spectralBessel);	       
   RandomShape(0, struct_failed, initBessel, do_failed, false, true, false);
   setptwise(pt_indef);
@@ -126,7 +127,7 @@ void includeCovModels() {
   IncludeModel("bigneiting", PosDefType, 0, 0, 8, kappa_biGneiting, XONLY,
 	       ISOTROPIC, checkbiGneiting, rangebiGneiting, PREF_ALL, 
 	       false, 2, PARAM_DEP, (ext_bool) true, NOT_MONOTONE);
-  addCov(biGneiting, DbiGneiting, DDbiGneiting, NULL, NULL);
+  addCov(biGneiting, DbiGneiting, DDbiGneiting);
   kappanames("kappa", INTSXP,
 	     "mu", REALSXP,
 	     "s", REALSXP, "sred12", REALSXP,
@@ -135,7 +136,17 @@ void includeCovModels() {
   add_sortof(sortof_biGneiting);
   RandomShape(0, struct_failed, initbiGneiting, do_failed, false, true, false);
   setptwise(pt_posdef);
-  
+
+  /*
+  pref_type
+        pBiCoshShift = {1, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
+    //                  CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
+    IncludePrim("biCoshShift",  PosDefType, 2, XONLY, CARTESIAN_COORD, 
+            checkOK, rangeBiCoshShift,
+            pBiCoshShift, 2, 1, (ext_bool) false, NOT_MONOTONE);
+    kappanames("a", REALSXP, "b", REALSXP);
+    addCov(biCoshShift);
+  */
 
   pref_type
     pbernoulli = {5, 0, 0,  0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 5};
@@ -144,13 +155,13 @@ void includeCovModels() {
 	       checkbinary, rangebinary, pbernoulli,
 	       false, SCALAR, SUBMODEL_DEP, (ext_bool) SUBMODEL_DEP, MON_SUB_DEP);
   kappanames("threshold", REALSXP, "correlation", INTSXP, "centred", INTSXP);
-  addCov(binary, NULL, NULL);
+  addCov(binary);
 
   IncludeModel("biWM",  PosDefType, 0, 0, 8, kappa_biWM, XONLY, ISOTROPIC,
 	       checkbiWM2, rangebiWM2, PREF_ALL,
 	       false, 2, INFDIM, (ext_bool) false, NOT_MONOTONE);
   nickname("biwm");
-  addCov(biWM2, biWM2D, biWM2DD, biWM2D3, biWM2D4,  ErrInverse);
+  addCov(biWM2, biWM2D, biWM2DD, biWM2D3, biWM2D4,  inverseErr);
   addLocal(coinitbiWM2, NULL);
   kappanames("nudiag", REALSXP, "nured12", REALSXP, 
 	     "nu", REALSXP, // or lower triangle
@@ -175,7 +186,7 @@ void includeCovModels() {
              "betared", REALSXP,
              "alphadiag", REALSXP
              );
-  addCov(biStable, DbiStable, DDbiStable, D3biStable, D4biStable, NULL);
+  addCov(biStable, DbiStable, DDbiStable, D3biStable, D4biStable);
   addLocal(coinitbiStable, NULL);
  setptwise(pt_posdef);
   RandomShape(0, struct_failed, initbiStable, do_failed, false, true, false); //what is this???
@@ -198,8 +209,7 @@ void includeCovModels() {
     IncludeModel("brownresnick", TcfType, 1, 1, 0, NULL, XONLY, SUBMODEL_I,
 		 checkbrownresnick, NULL , pbrownresnick, false,
 		 SCALAR, SUBMODEL_DEP, (ext_bool) false, MON_SUB_DEP);
-  addCov(brownresnick, Dbrownresnick, DDbrownresnick, D3brownresnick, 
-	 NULL, NULL);
+  addCov(brownresnick, Dbrownresnick, DDbrownresnick, D3brownresnick, NULL);
   RandomShape(0, struct_brownresnick, init_brownresnick, do_brownresnick);
   //  Taylor(0, 0, 0, 0, 0, 0, 0, 0);
 
@@ -207,13 +217,13 @@ void includeCovModels() {
   IncludeScalar("br2bg",  PosDefType, 1, 1, 0, XONLY, SUBMODEL_I, 
 		 check_BR2BG, NULL, PREF_ALL, SUBMODEL_DEP,
 		(ext_bool) false, MON_SUB_DEP);
-  addCov(BR2BG, NULL, NULL);
+  addCov(BR2BG);
 
 
   IncludeScalar("br2eg", PosDefType, 1, 1, 0,  XONLY, SUBMODEL_I, 
 		check_BR2EG, NULL, PREF_ALL, SUBMODEL_DEP,
 		(ext_bool) false, MON_SUB_DEP);
-  addCov(BR2EG, NULL, NULL);
+  addCov(BR2EG);
  
   
   pref_type pbubble = {  0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
@@ -247,7 +257,55 @@ void includeCovModels() {
   RandomShape(SUBMODEL_DEP, initCauchy, doCauchy);
   Taylor(RF_NA, 2.0);
   TailTaylor(1, RF_NA, 1, 1);
- 	       
+
+
+    pref_type pCauchyUnif1 = {5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
+    //                CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
+    IncludePrim("cauchyUnif1", PosDefType, 2, XONLY, SYMMETRIC, checkOK, rangeCauchyUnif1, pCauchyUnif1, 2, INFDIM, (ext_bool) false, NOT_MONOTONE);
+    kappanames("eps", REALSXP, "b", REALSXP);
+    addCov(cauchyUnif1);
+
+
+    pref_type pCauchyUnif2 = {5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
+    //                CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
+    IncludePrim("cauchyUnif2", PosDefType, 2, XONLY, SYMMETRIC, checkOK, rangeCauchyUnif2, pCauchyUnif2, 2, INFDIM, (ext_bool) false, NOT_MONOTONE);
+    kappanames("eps", REALSXP, "b", REALSXP);
+    addCov(cauchyUnif2);
+
+
+    pref_type pCauchyUnif3 = {5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
+    //                CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
+    IncludePrim("cauchyUnif3", PosDefType, 2, XONLY, SYMMETRIC, checkOK, rangeCauchyUnif3, pCauchyUnif3, 2, INFDIM, (ext_bool) false, NOT_MONOTONE);
+    kappanames("eps", REALSXP, "b", REALSXP);
+    addCov(cauchyUnif3);
+
+    pref_type platentCauchy1 = {5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
+    //                CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
+    IncludePrim("latentCauchy1", PosDefType, 2, XONLY, SYMMETRIC, checkOK, rangelatentCauchy1, pCauchyUnif3, 2, INFDIM, (ext_bool) false, NOT_MONOTONE);
+    kappanames("a", REALSXP, "b", REALSXP);
+    addCov(latentCauchy1);
+
+    pref_type platentCauchy2 = {5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
+    //                CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
+    IncludePrim("latentCauchy2", PosDefType, 2, XONLY, SYMMETRIC, checkOK, rangelatentCauchy2, platentCauchy2, 2, INFDIM, (ext_bool) false, NOT_MONOTONE);
+    kappanames("a", REALSXP, "b", REALSXP);
+    addCov(latentCauchy2);
+
+    pref_type platentCauchy3 = {5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
+    //                CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
+    IncludePrim("latentCauchy3", PosDefType, 2, XONLY, SYMMETRIC, checkOK, rangelatentCauchy3, platentCauchy3, 2, INFDIM, (ext_bool) false, NOT_MONOTONE);
+    kappanames("a", REALSXP, "b", REALSXP);
+    addCov(latentCauchy3);
+
+    pref_type platentCauchy4 = {5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
+    //                CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
+    IncludePrim("latentCauchy4", PosDefType, 3, XONLY, SYMMETRIC, checkOK, rangelatentCauchy4, platentCauchy4, 2, INFDIM, (ext_bool) false, NOT_MONOTONE);
+    kappanames("a", REALSXP, "b", REALSXP, "gamma", REALSXP);
+    addCov(latentCauchy4);
+
+  
+
+  
  // todo : WARUM HABE ICH DIESES MODELL CODIERT, ABER NICHT ONLINE??     
   //  pref_type pctbm={2, 0, 0,  5, 0, 5, 5, 0, 0, 0, 0, 0, 0, 5};
   //     //           CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
@@ -256,10 +314,13 @@ void includeCovModels() {
   // kappanames("alpha", REALSXP, "beta", REALSXP, "gamma", REALSXP);
   // addCov(Cauchytbm, DCauchytbm, InverseCauchy); // scale not correct, but
   // should be an approximation that is good enough
-	      
+
+
+
+  
   IncludePrim("circular",  TcfType, 0, XONLY, ISOTROPIC,
 	      checkOK, NULL, 2, (ext_bool) false, GNEITING_MON);
-  addCov(circular, Dcircular, ScaleOne);
+  addCov(circular, Dcircular, inverseOne);
   RandomShape(UNSET, structcircular, initOK, doOK,  do_random_failed, 
 	      false, true, false);
 
@@ -275,7 +336,7 @@ void includeCovModels() {
   nickname("cdewijs");
   make_internal();
   kappanames("alpha", REALSXP, "range", REALSXP);
-  addCov(DeWijsian, NULL, NULL, InverseDeWijsian); 
+  addCov(DeWijsian, NULL, InverseDeWijsian); 
   
  
   // next model is constant in space, possibly multivariate
@@ -286,7 +347,7 @@ void includeCovModels() {
 		checkconstant, rangeconstant, PREF_ALL,
 		false, PARAM_DEP, INFDIM, (ext_bool) false, MON_SUB_DEP);
   kappanames("M", REALSXP);  
-  addCov(constant, NULL, NULL);
+  addCov(constant);
   addCov(nonstatconstant);
   AddVariant(NegDefType, ISOTROPIC);
   //  AddVariant(TcfType, PREVMODEL_I);
@@ -300,18 +361,19 @@ void includeCovModels() {
   pref_type pfix={0, 0, 0,  0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
   //              CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
   FIXCOV =
-    IncludeModel("fixcov", PosDefType, 0, 1, 3, kappa_fix,
+    IncludeModel("fixcov", PosDefType, 0, 0, 4, kappa_fix,
 	       KERNEL, UNREDUCED, // zwingend bei RAW-Konstruktionen !!
 	       checkfix, rangefix, pfix, 
 	       INTERN_SHOW, PARAM_DEP, INFDIM-1, (ext_bool) false,
 	       NOT_MONOTONE);
-  subnames("norm");
+  //  subnames("norm");
   kappanames("M", LISTOF + REALSXP,
 	     COVARIATE_X_NAME, VECSXP,
-	     COVARIATE_RAW_NAME, INTSXP);
+	     COVARIATE_RAW_NAME, INTSXP,
+	     "givenM", LISTOF + REALSXP);
   change_sortof(COVARIATE_X, DONOTVERIFYPARAM);
-  addCov(fixStat, NULL, NULL);
   addCov(fix);
+  addCov(nonstat_fix);
   setptwise(pt_posdef);
   addTypeFct(Typefix);
   setDI(NULL, allowedIfix, NULL); 
@@ -325,7 +387,7 @@ void includeCovModels() {
 	       checkcox, rangecox, pcox,
 	       false, SCALAR, CoxMaxDim, (ext_bool) false, NOT_MONOTONE);
   kappanames("mu", REALSXP, "D", REALSXP, "beta", REALSXP);  
-  addCov(cox, NULL, NULL);
+  addCov(cox);
   addTBM(initcox, spectralcox);
   nablahess(coxnabla, coxhess);
   setptwise(pt_posdef);
@@ -333,7 +395,7 @@ void includeCovModels() {
 
   IncludePrim("cubic",  TcfType, 0, XONLY, ISOTROPIC, 
 	      checkOK, NULL, 3, (ext_bool) false, MONOTONE);
-  addCov(cubic, Dcubic, ScaleOne);
+  addCov(cubic, Dcubic, inverseOne);
 	       
   pref_type pcurl= {2, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 5};
   //           CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
@@ -342,7 +404,7 @@ void includeCovModels() {
 	       checkdivcurl, rangedivcurl, pcurl,
 	       false, PARAM_DEP, SUBMODEL_DEP, (ext_bool) SUBMODEL_DEP, NOT_MONOTONE);
   kappanames("which", INTSXP);  
-  addCov(curl, NULL, NULL);
+  addCov(curl);
  
   pref_type plocal={5, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 5};
   //            CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
@@ -351,7 +413,7 @@ void includeCovModels() {
 		 check_co, range_co, plocal,
 		 false, SUBMODEL_DEP, MAXCEDIM,  (ext_bool) true, MONOTONE);
   kappanames("diameter", REALSXP, "a", REALSXP);  
-  addCov(co, NULL, NULL);
+  addCov(co);
   addCallLocal(alternativeparam_co);
   setptwise(pt_posdef);
      
@@ -386,7 +448,7 @@ void includeCovModels() {
 	       false, PARAM_DEP, SUBMODEL_DEP, (ext_bool) SUBMODEL_DEP,
 	       NOT_MONOTONE);
   kappanames("which",INTSXP);
-  addCov(derivative, NULL, NULL);
+  addCov(derivative);
   
    
   pref_type pdewijsian = {2, 5, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
@@ -410,7 +472,7 @@ void includeCovModels() {
 	       false, PARAM_DEP, SUBMODEL_DEP, (ext_bool) SUBMODEL_DEP,
 	       NOT_MONOTONE);
   kappanames("which", INTSXP);  
-  addCov(diverge, NULL, NULL);
+  addCov(diverge);
 
 
 
@@ -421,14 +483,14 @@ void includeCovModels() {
 	       false, SCALAR, INFDIM, (ext_bool) false, NORMAL_MIXTURE);
   nickname("epscauchy");
   kappanames("alpha", REALSXP, "beta", REALSXP, "eps", REALSXP);
-  addCov(epsC, DepsC, DDepsC, NULL, NULL);
+  addCov(epsC, DepsC, DDepsC);
   addlogCov(logepsC);
 
   IncludePrim("exponential", TcfType, 0, XONLY, ISOTROPIC,
 	      checkexponential, NULL, INFDIM, (ext_bool) false, COMPLETELY_MON);
   nickname("exp");
-  addCov(0, exponential, Dexponential, DDexponential, Inverseexponential, NULL);
-  addlogCov(logexponential, NULL, nonstatLogInvExp);
+  addCov(exponential, Dexponential, DDexponential, Inverseexponential);
+  addlogCov(logexponential, NULL, inverse_log_nonstatExp);
   addLocal(coinitExp, ieinitExp);
   addHyper(hyperexponential);
   // numerisches Ergebnis passt nicht !
@@ -445,7 +507,7 @@ void includeCovModels() {
 		NOT_MONOTONE);
   nickname("exponential");
   kappanames("n", INTSXP, "standardised", INTSXP);
-  addCov(Exp, DExp, DDExp, NULL, NULL);
+  addCov(Exp, DExp, DDExp);
   setptwise(pt_submodeldep);
 
   pref_type
@@ -456,15 +518,15 @@ void includeCovModels() {
 	       check_extrgauss, NULL, pextrgauss, false,
 	       SCALAR, SUBMODEL_DEP, (ext_bool) SUBMODEL_DEP, NOT_MONOTONE);
   nickname("schlather");
-  addCov(extrgauss, NULL, NULL);
+  addCov(extrgauss);
   
   //X
 
   IncludePrim("FD", PosDefType,  1, XONLY, ISOTROPIC,
-	      checkOK, rangeFD, 1, (ext_bool) false, NOT_MONOTONE); 
+	      checkFD, rangeFD, 1, (ext_bool) false, NOT_MONOTONE); 
   nickname("fractdiff");
   kappanames("alpha", REALSXP);
-  addCov(FD, NULL, NULL);
+  addCov(FD);
   setptwise(pt_indef);
 
   
@@ -475,7 +537,7 @@ void includeCovModels() {
 		checkoesting, rangeoesting, INFDIM, (ext_bool) false,
 		BERNSTEIN); // todo BERNSTEIN
   kappanames("alpha", REALSXP);
-  addCov(2, oesting, Doesting, DDoesting, NULL, NULL);
+  addCov(oesting, Doesting, DDoesting);
   RandomShape(0, initoesting, do_statiso);
   Taylor(-1, 2, RF_NA, 4, RF_NA, 6);
   TailTaylor(-1, RF_NA, 0, 0);
@@ -501,7 +563,7 @@ void includeCovModels() {
   IncludePrim("fractgauss", PosDefType, 1, XONLY, ISOTROPIC,
 	      checkOK, rangefractGauss, 1, (ext_bool) false, NOT_MONOTONE);
   kappanames("alpha", REALSXP);
-  addCov(fractGauss, NULL, NULL);
+  addCov(fractGauss);
   setptwise(pt_indef);
 
 
@@ -513,19 +575,35 @@ void includeCovModels() {
 		checkOK, NULL, pgauss,
 		SCALAR, INFDIM, (ext_bool) false, NORMAL_MIXTURE);
   addCov(Gauss, DGauss, DDGauss, D3Gauss, D4Gauss, InverseGauss);
-  addlogCov(logGauss, NULL, nonstatLogInvGauss);
+  addlogCov(logGauss, NULL, inverse_log_nonstatGauss);
   addTBM(NULL, spectralGauss);
   RandomShape(INFTY, struct_Gauss, initGauss, do_Gauss, false, true, false);
   addGaussMixture(DrawMixGauss, LogMixDensGauss);
   Taylor(-1.0, 2.0);
   TailTaylor(1, 0, 1.0, 2.0);
+  
+  pref_type pgaussgauss = {5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
+  //                      CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
+  IncludePrim("gaussgauss", PosDefType, 1, XONLY, SYMMETRIC, checkOK, rangegaussgauss, pgaussgauss, 2, INFDIM, (ext_bool) false, NOT_MONOTONE);
+  kappanames("nu", REALSXP);
+  addCov(gaussgauss);
+  
+  pref_type pgaussGammalike = {5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
+  //                CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
+  IncludePrim("gaussGammalike", PosDefType, 1, XONLY, SYMMETRIC, checkOK,
+	      rangegaussGammalike, pgaussGammalike,
+	      2/*this is hopefully the parameter that controls the dim*/,
+	      INFDIM, (ext_bool) false, NOT_MONOTONE);
+  kappanames("m", INTSXP); // TODO ask or find version for int
+  addCov(gaussGammalike); 
+
 
   
   IncludePrim("genB", VariogramType, 2, XONLY, ISOTROPIC, 
 	      checkOK, rangegenBrownian, INFDIM, (ext_bool) false, MONOTONE);
   nickname("genfbm");
   kappanames("alpha", REALSXP, "beta", REALSXP);
-  addCov(genBrownian, NULL, NULL, InversegenBrownian); 
+  addCov(genBrownian, NULL, InversegenBrownian); 
   addlogCov(loggenBrownian);
 
 
@@ -553,7 +631,7 @@ void includeCovModels() {
              "s", REALSXP,  // lower triangle definition
          "rho", REALSXP  // lower triangl
              );
-   addCov(biCauchy, DbiCauchy, DDbiCauchy, D3biCauchy, D4biCauchy, NULL);
+   addCov(biCauchy, DbiCauchy, DDbiCauchy, D3biCauchy, D4biCauchy);
   addLocal(coinitbiCauchy, NULL);
   setptwise(pt_posdef);
 
@@ -565,18 +643,8 @@ void includeCovModels() {
 	      MONOTONE); // GNEITING_MON ??
   // not INFDIM, also not normalscale mixture and alpha will be void
   kappanames("kappa", INTSXP, "mu", REALSXP);
-  addCov(genGneiting, DgenGneiting, DDgenGneiting, //NULL, NULL,
-	 ScaleOne, NULL);
+  addCov(genGneiting, DgenGneiting, DDgenGneiting, inverseOne);
 
-
-
-  IncludePrim("gengneiting",  PosDefType, 2, XONLY, ISOTROPIC, 
-	      checkgenGneiting, rangegenGneiting, INFDIM-1, (ext_bool) true,
-	      MONOTONE); // GNEITING_MON ??
-  // not INFDIM, also not normalscale mixture and alpha will be void
-  kappanames("kappa", INTSXP, "mu", REALSXP);
-  addCov(genGneiting, DgenGneiting, DDgenGneiting, //NULL, NULL,
-	 ScaleOne, NULL);
 
   GNEITING_INTERN =
     IncludeModel("gengneit_intern", PosDefType, 0, 0, 2, NULL, 
@@ -585,14 +653,14 @@ void includeCovModels() {
 		 true, SCALAR, PARAM_DEP, (ext_bool) true, MONOTONE);  
   nickname("gengneiting");
   kappanames("kappa", INTSXP, "mu", REALSXP);
-  addCov(Gneiting, DGneiting, DDGneiting, ScaleOne);
+  addCov(Gneiting, DGneiting, DDGneiting, inverseOne);
 
 
   IncludeScalar("gneiting", PosDefType, 0, 0, 1, XONLY, ISOTROPIC,
 	      checkGneiting, rangeGneiting, PREF_ALL, 
 	      PARAM_DEP, (ext_bool) true, MONOTONE);  // GNEITING_MON ??
   kappanames("orig", INTSXP);
-  addCov(Gneiting, DGneiting, DDGneiting, ScaleOne);
+  addCov(Gneiting, DGneiting, DDGneiting, inverseOne);
 
   pref_type pfgennsst= { 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
   //                 CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
@@ -601,7 +669,7 @@ void includeCovModels() {
 	       checkgennsst, rangegennsst, pfgennsst,
 	       SUBMODEL_DEP, (ext_bool) false, NOT_MONOTONE);
   kappanames("dim_u", INTSXP);
-  addCov(gennsst, NULL, NULL);
+  addCov(gennsst);
   addCov(nonstatgennsst);
   setDI(allowedDgennsst, NULL, NULL); //allowedIgennsst);
   setptwise(pt_posdef);
@@ -615,7 +683,7 @@ void includeCovModels() {
 	       true, SCALAR, SUBMODEL_DEP, (ext_bool) false, NOT_MONOTONE);
   nickname("gennsst");
   kappanames("A", REALSXP);
-  addCov(gennsst_intern, NULL, NULL);
+  addCov(gennsst_intern);
   setptwise(pt_posdef);
 
   /*
@@ -625,7 +693,7 @@ void includeCovModels() {
          checkhelmholtz,rangeHelmholtz, phelmholtz,
            true, PARAM_DEP, SUBMODEL_DEP, (ext_bool) SUBMODEL_DEP, NOT_MONOTONE);
   kappanames("component",REALSXP,"Aniso",REALSXP);
-  addCov(helmholtz, NULL, NULL);
+  addCov(helmholtz);
   */
 
   pref_type phyper= {2, 0, 0, 3, 0, 4, 5, 0, 5, 0, 5, 0, 0, 5};
@@ -634,7 +702,7 @@ void includeCovModels() {
 	      checkhyperbolic, rangehyperbolic, phyper,
 	      SCALAR, INFDIM, (ext_bool) false, NORMAL_MIXTURE);
   kappanames("nu", REALSXP, "lambda", REALSXP, "delta", REALSXP);
-  addCov(hyperbolic, Dhyperbolic, NULL); // InversehyperbolicSq);
+  addCov(hyperbolic, Dhyperbolic); // InversehyperbolicSq);
   addlogCov(loghyperbolic);
   RandomShape(0, struct_failed, inithyperbolic, do_failed, false, true, false);
   setptwise(pt_posdef);
@@ -644,7 +712,7 @@ void includeCovModels() {
 	      checkOK, rangeIacoCesare, INFDIM, (ext_bool) false, NOT_MONOTONE);
   nickname("iaco");
   kappanames("nu", REALSXP, "lambda", REALSXP, "delta", REALSXP);
-  addCov(IacoCesare, NULL, NULL);
+  addCov(IacoCesare);
   
 
   IncludeModel("identity", ManifoldType, 1,1, 1, NULL, PREVMODEL_D, PREVMODEL_I,
@@ -653,9 +721,9 @@ void includeCovModels() {
 	       MON_SUB_DEP);
   nickname("idmodel");
   kappanames("vdim", INTSXP);
-  addCov(IdStat, DId, DDId, inverseId, nonstatinverseId);
-  addCov(IdNonStat);
-  addlogCov(logId, NULL, nonstat_loginverseId);
+  addCov(Id, DId, DDId, inverseId, inversenonstatId);
+  addCov(nonstatId);
+  addlogCov(logId, NULL, inverse_log_nonstatId);
   addTBM(TBM2Id, initId, spectralId);
   addLocal(coinitId, ieinitId);
   addTypeFct(TypeId);
@@ -663,7 +731,7 @@ void includeCovModels() {
 
   IncludePrim("kolmogorov",  VariogramType, 0, XONLY, VECTORISOTROPIC,
 	      checkKolmogorov, NULL, 3, 3, (ext_bool) false, NOT_MONOTONE);
-  addCov(Kolmogorov, NULL, NULL);
+  addCov(Kolmogorov);
   
 
   pref_type plgd1= {2, 0, 0, 5, 0, 5, 5, 0, 0, 0, 0, 0, 0, 5};
@@ -673,7 +741,7 @@ void includeCovModels() {
 	      SCALAR, PARAM_DEP, (ext_bool) false, MONOTONE);
   nickname("lgd");
   kappanames("alpha", REALSXP, "beta", REALSXP);
-  addCov(lgd1, Dlgd1, NULL); // Inverselgd1);
+  addCov(lgd1, Dlgd1); // Inverselgd1);
   setptwise(pt_unknown);
 
 
@@ -684,13 +752,13 @@ void includeCovModels() {
   //	       //          CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
   //             );
   //  kappanames("p", REALSXP);
-  //  addCov(lp, NULL, NULL);
+  //  addCov(lp);
  
   IncludeScalar("mastein",  PosDefType, 1, 1, 2, XONLY, DOUBLEISOTROPIC, 
 	       check_MaStein, range_MaStein, PREF_ALL, 
 	       SUBMODEL_DEP, (ext_bool) false, NOT_MONOTONE);
   kappanames("nu", REALSXP, "delta", REALSXP);
-  addCov(MaStein, NULL, NULL);
+  addCov(MaStein);
   setptwise(pt_posdef);
 
     
@@ -699,14 +767,14 @@ void includeCovModels() {
 	       SUBMODEL_DEP, (ext_bool) false, NOT_MONOTONE);
   nickname("ma");
   kappanames("alpha", REALSXP, "theta", REALSXP);
-  addCov(ma1, NULL, NULL);
+  addCov(ma1);
   setptwise(pt_posdef);
 
 
   IncludeScalar("ma2",  PosDefType, 1, 1, 0, XONLY, SYMMETRIC, checkma2, NULL,
 		PREF_ALL, SUBMODEL_DEP, (ext_bool) false, NOT_MONOTONE);
   nickname("intexp");
-  addCov(ma2, NULL, NULL);
+  addCov(ma2);
   setptwise(pt_posdef);
 
   //X
@@ -720,8 +788,8 @@ void includeCovModels() {
   nickname("matrix"); // NEVER change !! see Fitgauss
   kappanames("M", REALSXP, "vdim", INTSXP); // vdim ist das interne!
   change_typeof(M_M, ShapeType);
-  addCov(Mstat, NULL, NULL);
-  addCov(Mnonstat);
+  addCov(Matrix);
+  addCov(nonstatM);
   add_sortof(sortof_M);
   addTypeFct(TypeM);
   RandomShape(0, struct_failed, initM, do_failed, false, true, false);
@@ -737,7 +805,7 @@ void includeCovModels() {
   change_typeof(WM_NU, RandomOrShapeType);
   change_sortof(WM_NOTINV, ONLYRETURN);
   addCov(Matern, DMatern, DDMatern, D3Matern, D4Matern, InverseMatern,
-	 nonstatinverseMatern);
+	 inversenonstatMatern);
   addCov(NonStMatern);
   addlogCov(logMatern, logNonStMatern, NULL);
   addTBM(initMatern, spectralMatern);
@@ -755,7 +823,7 @@ void includeCovModels() {
   subnames("phi");
   kappanames("theta", REALSXP);
   change_sortof(QAM_THETA, CRITICALPARAM); 
-  addCov(mqam, NULL, NULL);
+  addCov(mqam);
 
   
   pref_type
@@ -765,7 +833,7 @@ void includeCovModels() {
 	      XONLY, SPHERICAL_ISOTROPIC, checkOK, rangemultiquad,
 	      pmultiquad, SCALAR, 2, (ext_bool) false, MONOTONE);
   kappanames("delta", REALSXP, "tau", REALSXP);
-  addCov(multiquad, NULL, NULL);
+  addCov(multiquad);
 
 
   NATSC_INTERN =NATSC_USER = 
@@ -792,15 +860,11 @@ void includeCovModels() {
   subnames("phi", "psi");
   kappanames("delta", REALSXP); 
   change_sortof(NSST_DELTA, CRITICALPARAM);
-  addCov(nsst, Dnsst, NULL);
+  addCov(nsst, Dnsst);
   addTBM(TBM2nsst);
   setptwise(pt_posdef);
 
-  //  IncludePrim("nsst2", 7, checknsst2, DOUBLEISOTROPIC, 
-  //		   rangensst2);
-  //  addCov(nsst2, Dnsst2, NULL);
-  //  addTBM(NULL, NULL /* TBM3nsst2 */);
-
+  
  pref_type pfnugget= { 1, 0, 0, 0, 0, 1, 1, 0, 0, 5, 0, 0, 0, 5};
   //                  CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
   NUGGET  = 
@@ -812,9 +876,9 @@ void includeCovModels() {
   kappanames("tol", REALSXP, "vdim", INTSXP);
   change_sortof(NUGGET_TOL, FORBIDDENPARAM);
   change_sortof(NUGGET_VDIM, FORBIDDENPARAM);
-  addCov(nugget, NULL, NULL, inverse_nugget, nonstatinverse_nugget);
+  addCov(nugget, NULL, NULL, inverse_nugget, inversenonstat_nugget);
   // BUG;
-  addCov(nuggetnonstat);
+  addCov(nonstat_nugget);
   addReturns(covmatrix_nugget, iscovmatrix_nugget);
   //  AddVariant(TcfType, EARTH_ISOTROPIC);
   //AddVariant(TcfType, SPHERICAL_ISOTROPIC);
@@ -828,7 +892,7 @@ void includeCovModels() {
 	       checkparsWM, rangeparsWM, PREF_ALL,
 	       false, PARAM_DEP, INFDIM, (ext_bool) false, NOT_MONOTONE);
   nickname("parswm");
-  addCov(parsWM, parsWMD, NULL);
+  addCov(parsWM, parsWMD);
   kappanames("nudiag", REALSXP);
   change_sortof(PARSnudiag, CRITICALPARAM);
   RandomShape(0, struct_failed, initparsWM, do_failed, false, true, false);
@@ -837,13 +901,13 @@ void includeCovModels() {
 
   IncludePrim("penta", PosDefType, 0, XONLY, ISOTROPIC,
 	      checkOK, NULL, 3, (ext_bool) true, MONOTONE);
-  addCov(penta, Dpenta, ScaleOne);
+  addCov(penta, Dpenta, inverseOne);
 
   IncludePrim("power", PosDefType,  1, XONLY, ISOTROPIC, 
 	      checkpower, rangepower, INFDIM-1, (ext_bool) true, MONOTONE);
   nickname("askey");
   kappanames("alpha", REALSXP);
-  addCov(power, Dpower, ScaleOne);	
+  addCov(power, Dpower, inverseOne);	
   AddVariant(TcfType, ISOTROPIC);
   //  AddVariant(PosDefType, SPHERICAL_ISOTROPIC);
   RandomShape(INFTY, structpower, initpower, doOK,  do_random_failed, 
@@ -854,7 +918,7 @@ void includeCovModels() {
 		     checkPow, rangePow, PREF_ALL, SUBMODEL_DEP,
 		     Submodeldep, NOT_MONOTONE);
   nickname("power");
-  addCov(Pow, DPow, DDPow, InversePow, nonstatinversePow); 
+  addCov(Pow, DPow, DDPow, InversePow, inversenonstatPow); 
   kappanames("alpha", REALSXP);
   setptwise(pt_submodeldep);
   AddVariant(NegDefType, SUBMODEL_I);
@@ -863,14 +927,14 @@ void includeCovModels() {
   RandomShape(0, struct_failed, initPow, do_failed, false, false, false);
   
  
-   pref_type pfprod= { 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 5};
+  pref_type pfprod= { 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 5};
   //                  CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
-   PROD = 
+  PROD = 
      IncludeModel("prod",  PosDefType, 1, 1, 0, NULL,
 		  KERNEL, UNREDUCED, 
 		  checkprod, NULL, pfprod,
 	       false, SUBMODEL_DEP, INFDIM-1, (ext_bool) false, NOT_MONOTONE);
-  addCov(nonstatprod);
+  addCov(nonstat_prod);
   subnames("phi");  
   //  AddVariant(PosDefType, SPHERICAL_COORD);
   // AddVariant(PosDefType, EARTH_COORD);
@@ -883,7 +947,7 @@ void includeCovModels() {
 	       false, SCALAR, SUBMODEL_DEP, (ext_bool) false, NOT_MONOTONE);
   kappanames("theta", REALSXP);
   subnames("phi");
-  addCov(qam, NULL, NULL);
+  addCov(qam);
   change_sortof(QAM_THETA, CRITICALPARAM);
   
 
@@ -910,8 +974,8 @@ void includeCovModels() {
 	       checkSchur, rangeSchur, PREF_ALL,
 	       false, SUBMODEL_DEP, SUBMODEL_DEP, (ext_bool) SUBMODEL_DEP, NOT_MONOTONE);
   kappanames("M", REALSXP, "diag", REALSXP, "rhored", REALSXP);
-  addCov(Schurstat, DSchur, D2Schur, D3Schur, D4Schur, NULL);
-  addCov(Schurnonstat);
+  addCov(Schur, DSchur, D2Schur, D3Schur, D4Schur, NULL);
+  addCov(nonstatSchur);
   add_sortof(sortof_M); 
 
  
@@ -920,7 +984,7 @@ void includeCovModels() {
 	       false, PARAM_DEP, SUBMODEL_DEP, (ext_bool) SUBMODEL_DEP,
 	       NOT_MONOTONE);
   nickname("delay"); // delayeffect
-  addCov(shift, NULL, NULL);
+  addCov(shift);
   kappanames("s", REALSXP);
   setptwise(pt_submodeldep);
 
@@ -931,13 +995,13 @@ void includeCovModels() {
 	      XONLY, SPHERICAL_ISOTROPIC, checkOK, rangesinepower,
 	      psinepower, SCALAR, 2, (ext_bool) false, MONOTONE);
   kappanames("alpha", REALSXP);
-  addCov(sinepower, NULL, NULL);
+  addCov(sinepower);
 
 
   IncludePrim("spherical", TcfType, 0, NULL, XONLY, ISOTROPIC, 
 	      checkOK, NULL, 3, (ext_bool) true, GNEITING_MON);
   nickname("spheric");
-  addCov(spherical, Dspherical, DDspherical, ScaleOne);
+  addCov(spherical, Dspherical, DDspherical, inverseOne);
   addTBM(TBM2spherical);
   RandomShape(1, structspherical, initspherical, dospherical,
 	      false, true, false);
@@ -949,7 +1013,7 @@ void includeCovModels() {
 	      MON_PARAMETER);
   kappanames("alpha", REALSXP);
   addCov(stable, Dstable, DDstable, Inversestable);
-  addlogCov(logstable, NULL, nonstatLogInversestable);
+  addlogCov(logstable, NULL, inverse_log_nonstat_stable);
   addLocal(coinitstable, ieinitstable);
   AddVariant(TcfType, ISOTROPIC);
   AddVariant(PosDefType, SPHERICAL_ISOTROPIC);
@@ -958,8 +1022,7 @@ void includeCovModels() {
   //  IncludePrim("stableX", 1, checkOK, DOUBLEISOTROPIC, 
   //		  rangestable);
   //  addCov(stableX, DstableX, Inversestable);
-  //  addTBM(NULL, NULL)
-
+ 
 
   STEIN =  
     IncludeModel("Stein", PosDefType,  1, 1, 2, NULL, XONLY, ISOTROPIC,
@@ -969,7 +1032,7 @@ void includeCovModels() {
   kappanames("diameter", REALSXP, "rawR", REALSXP);  
   change_sortof(pLOC_DIAM, FORBIDDENPARAM);
   change_sortof(pLOC_A, FORBIDDENPARAM);
-  addCov(Stein, NULL, NULL);
+  addCov(Stein);
   addCallLocal(alternativeparam_Stein);
   //  RandomShape(struct_ce_approx, init_ce_approx, do_ce_approx);
  setptwise(pt_posdef);
@@ -979,7 +1042,7 @@ void includeCovModels() {
 	      checkSteinST1, rangeSteinST1, INFDIM, (ext_bool) false, NOT_MONOTONE);
   nickname("stein");
   kappanames("nu", REALSXP, "zeta", REALSXP);
-  addCov(SteinST1, NULL, NULL);
+  addCov(SteinST1);
   addTBM(initSteinST1, spectralSteinST1);
   RandomShape(0, struct_failed, initSteinST1, do_failed, false, true, false);
   setptwise(pt_unknown);
@@ -1015,7 +1078,7 @@ void includeCovModels() {
 		 SUBMODEL_DEP, PARAM_DEP, (ext_bool) PARAM_DEP, NOT_MONOTONE);
   kappanames("fulldim", INTSXP, "reduceddim", INTSXP, "layers", INTSXP); 
   change_sortof(TBMOP_LAYERS, ONLYRETURN); // NA will not be estimated
-  addCov(tbm, NULL, NULL); // Dtbm, NULL); todo
+  addCov(tbm); // Dtbm); todo
   setDI(NULL, allowedItbm, settbm);
   addTypeFct(Typetbm);
 
@@ -1050,22 +1113,11 @@ void includeCovModels() {
 	     //, "trd", LANGSXP
 	     ); 
   // H ueberall wo U-x steht. dort U-H(x)
-  addCov(User, DUser, DDUser, NULL, NULL);
-  addCov(UserNonStat);
+  addCov(User, DUser, DDUser);
+  addCov(nonstatUser);
   setDI(allowedDuser, allowedIuser, setUser);
   addTypeFct(TypeUser);
-
-
-  /*
-    IncludeModel("gamma2cov",  PosDefType, 1, 1, 1, 
-	       kappaGammaToCov, KERNEL, SYMMETRIC,
-	       checkGammaToCov, rangeGammaToCov, pg2c, 
-		false, SCALAR, SUBMODEL_DEP, (ext_bool) false, NOT_MONOTONE);
-  kappanames("x0", REALSXP);
-  addCov(GammaToCov);
-  */
-
-
+  
   
   pref_type pg2c = {  0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
         //           CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
@@ -1075,7 +1127,7 @@ void includeCovModels() {
 		 checkvariogram2cov, rangevariogram2cov, pg2c, 
 		 INTERN_SHOW, SCALAR, INFDIM-1, (ext_bool) false, NOT_MONOTONE);
   subnames("gamma");
-  kappanames("x", VECSXP, "a", REALSXP);
+  kappanames(COVARIATE_X_NAME, VECSXP, "a", REALSXP);
   // change_typeof(VAR2COV_X, MixedInputType, RMCOV_X); 
   change_sortof(VAR2COV_X, DONOTVERIFYPARAM);
   addCov(variogram2cov);
@@ -1085,7 +1137,7 @@ void includeCovModels() {
 		 checkvector, rangevector, PREF_ALL, 
 		 false, PARAM_DEP, SUBMODEL_DEP, (ext_bool) SUBMODEL_DEP,
 		 NOT_MONOTONE);
-  addCov(vector, NULL, NULL);
+  addCov(vector);
   kappanames("a", REALSXP, "Dspace", INTSXP);
   LASTVECTOR = addFurtherCov(vectorAniso, NULL); 
 
@@ -1106,7 +1158,7 @@ void includeCovModels() {
   change_typeof(WM_NU, RandomOrShapeType);
   change_sortof(WM_NU, CRITICALPARAM); 
   addCov(Whittle, DWhittle, DDWhittle, D3Whittle, D4Whittle, InverseWhittle,
-	 nonstatinverseWhittle);
+	 inversenonstatWhittle);
   addCov(NonStWhittle);
   addlogCov(logWhittle, logNonStWhittle, NULL);
   addTBM(initWhittle, spectralWhittle);
@@ -1127,7 +1179,7 @@ void includeCovModels() {
       C->pref[i] *= C->implemented[i]==IMPLEMENTED;
       //      if (old != C->pref[i] && i!=Nugget) printf("%.50s:%d%d ", METHOD_NAMES[i], old, C->pref[i]); // && i!=Specific
     }
-    C->pref[Nothing] *= (C->cov != ErrCov || C->nonstat_cov != ErrCovNonstat);
+    C->pref[Nothing] *= (C->cov != ErrCov || C->nonstat_cov != nonstatErrCov);
   }
     
   //////////////////////////////////////////////////////////////////////

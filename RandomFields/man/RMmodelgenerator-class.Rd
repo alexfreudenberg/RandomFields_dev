@@ -99,7 +99,7 @@
        See \link{RR} for a complete list.
      }
      \item{\code{'shape function'}:}{functions used in, e.g., M3 processes (\link{RPsmith})}
-     \item{\code{'trend'}:}{\link{RMtrend} or a \link[=RFformula]{mixed model} }
+     \item{\code{'trend'}:}{\link{RMshape} or a \link[=RFformula]{mixed model} }
      \item{\code{'interface'}:}{indicates internal models which are usually
        not visible for the users. These functions are the internal
        representations of \command{\link{RFsimulate}},

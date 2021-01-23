@@ -41,7 +41,7 @@ RFgetModelNames(type="variogram") ## the complete list covariance models
 ## our choice is RMstable
 
 ## define the model:
-model <- RMtrend(mean=0.5) + # mean
+model <- RMshape(mean=0.5) + # mean
 RMstable(alpha=1, var=4, scale=10) +
 # see help("RMstable")
 # for additional arguments
@@ -112,7 +112,7 @@ summary(simulated@data$variable1.n2)
 
 ##s function 
 model <- RMexp(var=0.3) +
-RMtrend(arbitraryfct = function(x,y) 2*sin(x)*cos(y))
+RMshape(arbitraryfct = function(x,y) 2*sin(x)*cos(y))
 x.seq <- y.seq <- seq(-5,5,0.1)
 simulated <- RFsimulate(model, x=x.seq,y=y.seq)
 plot(simulated)
@@ -120,9 +120,9 @@ plot(simulated)
 #############################################################
 ## with linear trend surface: 3x-y 
 
-model1 <- RMexp() + RMtrend(plane=c(3,-1), fctcoeff=1)
+model1 <- RMexp() + RMshape(plane=c(3,-1), fctcoeff=1)
 # or equivalently:
-model2 <- RMexp() + RMtrend(arbitraryfct=function(x,y) 3*x-y)
+model2 <- RMexp() + RMshape(arbitraryfct=function(x,y) 3*x-y)
 
 simulated <- RFsimulate(model1, x=x.seq, y=y.seq)
 persp(x.seq,y.seq, RFspDataFrame2conventional(simulated)$data,

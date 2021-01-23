@@ -44,6 +44,8 @@ typedef enum reportcoord_modes {reportcoord_always,
 				reportcoord_none} reportcoord_modes;
 #define nr_reportcoord_modes (reportcoord_none + 1)
 
+
+
 typedef enum modes {careless, sloppy, easygoing, normal, precise, 
 		    pedantic, neurotic} modes;
 #define nr_modes (neurotic + 1)
@@ -53,6 +55,26 @@ typedef enum output_modes {output_sp, output_rf, output_geor} output_modes;
 
 typedef enum angle_modes {radians, degree} angle_modes;
 #define last_angle_mode degree
+
+
+// noConcerns: keine Einschraenkungen
+// neverRaw: *x kann Werte annehmen != loc-Werte; loc-Werte bleiben erhalten
+// neverGlobalXT: loc-Werte werden geaendert; darf nur beim Aufbau (check)
+//                gesetzt sein. Folge: bei GlobalXT werden die Werte kopiert.
+// onlyOneDataSetAllowed : wird bislang nur beim Aufbau verwendet werden(check).
+//                Folge: ueberpruefung, dass nur ein Datensatz vorhanden;
+//                       Flag ignore_y wird bei Auswertung ignoriert
+// ignoreValues: keine Auswertung -- darf bei RMfix nur zur Auswertungszeit
+//               gesetzt sein
+// unsetConcerns: nur beim Start zur Kontrolle
+typedef enum raw_type {noConcerns = 0,
+		       neverRaw=1, 
+		       neverGlobalXT=2,
+		       onlyOneDataSetAllowed = 3,
+		       ignoreValues=4, 
+		       unsetConcerns=5
+} raw_type;
+
 
 // 0 sicherheitshalber nirgendswo nehmen
 // JEGLICHE AENDERUNG AUCH BEI monotone_type DURCHZIEHEN
@@ -168,9 +190,8 @@ typedef enum monotone_type {
 #define MODEL_MLESPLIT (FIRST_INTERNAL + 5)  // ="= 
 #define MODEL_LSQ (FIRST_INTERNAL + 6)  // used in fitgauss for variogram calc
 #define MODEL_BOUNDS (FIRST_INTERNAL + 7)  // MLE, lower, upper 
-#define MODEL_KRIGE  (FIRST_INTERNAL + 8)
-#define MODEL_PREDICT  (FIRST_INTERNAL + 9) 
-#define MODEL_ERR  (FIRST_INTERNAL + 10)
+#define MODEL_PREDICT (FIRST_INTERNAL + 8)
+#define MODEL_ERR (FIRST_INTERNAL + 10)
 #define MODEL_MAX MODEL_ERR  
 
 
@@ -227,25 +248,31 @@ typedef enum Types { // IF CHANGED, CHANGE RFgetModelNames!
 #define LASTNN NN4
 #define LASTTYPE NN4
 
-#define nOptimiser 9
+#define nOptimiser 8
 #define nNLOPTR 15
 #define nLikelihood 4
+#define nDuplicatedloc 4
 #define nNamesOfNames 12
 #define nVAR2COV_METHODS 4
 #define nProjections 2
 
+#define DUPLICATEDLOC_ERROR 0
+#define DUPLICATEDLOC_RISKERROR 1
+#define DUPLICATEDLOC_REPEATED 2
+#define DUPLICATEDLOC_SCATTER 3
+#define DUPLICATEDLOC_LASTERROR DUPLICATEDLOC_RISKERROR
+
+
 typedef enum sortsofeffect { // ! always compare with convert.R!
   DetTrendEffect, // trend, nichts wird geschaetzt
-  FixedTrendEffect, // linearer Parameter wird geschaetzt  
-  FixedEffect, // trend is also converted to FixedEffect ?
-  DataEffect, // box cox
+  FixedEffect, // linearer Parameter wird geschaetzt  
+  DataEffect, // box cox, wo und wenn NAs auftauchen. Notwendig
+  //             um alle NAs zu klassifizieren. Wird aber ansonsten nicht
+  //             verwendet.
   RandomEffect, // random efffect : ALWAYS first covariance model part
-  ErrorEffect, // error term: orig Remaining...
-  effect_error //
+  ErrorEffect
 } sortsofeffect;
 
-//#define FirstMixedEffect FixedEffect
-//#define LastMixedEffect SpVarEffect
 
 //////////////////////////////////////////////////////////////////////
 // the different types of parameters
@@ -259,7 +286,7 @@ typedef enum sortsofparam { // never change ordering; just add new ones !!!!!!
   ANISOPARAM, // 4..6
   INTEGERPARAM,//7
   ANYPARAM, //8
-  TRENDPARAM, // unused , // 7..9
+  TRENDPARAM, 
   NUGGETVAR,
   CRITICALPARAM, 
   DONOTVERIFYPARAM,  // lists arguments and worse; not used in MLE!
@@ -298,7 +325,7 @@ typedef enum Methods {
   
   Direct,        // directly, by matrix inversion  // 5
   Sequential,    // sequential simulation 
-  Trendproc,        // Trend evaluation
+  Shapefctproc,        // Trend evaluation
   Average,       // Random spatial averages 
   Nugget,        // just simulate independent variables
   
@@ -341,12 +368,14 @@ typedef enum sort_origin {
 #define COVARIATE_C_NAME "data"
 #define COVARIATE_X_NAME "x"
 #define COVARIATE_RAW_NAME "raw"
+#define COVARIATE_EXTRA_DATA_NAME "extra_data"
 #define COVARIATE_ADDNA_NAME "addNA"
 #define COVARIATE_NAME_NAME "name"
 
+#define COVARIATE_DATA_NAME "data"
+
 #define CONST_A_NAME "x"
 
-#define COVARIATE_DATA_NAME "data"
 
 
 #define MINMAX_PMIN 1 // already in R coding
@@ -366,19 +395,24 @@ typedef enum sort_origin {
 
 
 #define XLIST_X 0
-#define XLIST_Y 1
-#define XLIST_T 2
-#define XLIST_GRID 3
-#define XLIST_SPATIALDIM 4
-#define XLIST_TIME 5
-#define XLIST_DIST 6
-#define XLIST_RELEVANT_ELMTS (XLIST_DIST + 1)
-#define XLIST_RESTOT 7
-#define XLIST_L 8
-#define XLIST_UNITS 9
-#define XLIST_NEWUNITS 10
-#define XLIST_ENTRIES  (XLIST_NEWUNITS + 1)
-
+#define XLIST_T 1
+#define XLIST_GRID 2
+#define XLIST_SPATIALDIM 3
+#define XLIST_TIME 4
+#define XLIST_DIST 5
+#define XLIST_Y 6
+#define XLIST_TY 7
+#define XLIST_GRIDY 8
+#define XLIST_RELEVANT_ELMTS (XLIST_GRIDY + 1)
+// 27.12.20: from here on, none of these integer constants are used
+//           (the corresponding names in R are used)
+#define XLIST_RESTOT 9
+#define XLIST_RESTOTY 10
+#define XLIST_UNITS 11
+#define XLIST_NEWUNITS 12
+#define XLIST_RAWXIDX 13
+#define XLIST_RAWSET 14
+#define XLIST_ENTRIES (XLIST_NEWUNITS + 1)
 
 #define PROJ_SPACE -1
 #define PROJ_TIME -2
@@ -396,6 +430,8 @@ typedef enum sort_origin {
 #define VARIOGRAM -2// RC NEVER change ordering nor values!! 
 #define MADOGRAM -1// RC 
 #define COVARIANCE 0// RC // immer die 0
+// pseudo hat positive Werte, nicht-pseudo negative
+// pos und neg Werte matchen
 #define PSEUDOMADOGRAM 1 // RC NEVER change ordering nor values!! 
 #define PSEUDO 2// RC // as values are identical to corresp. alpha values
 #define TOTAL_FCTN_TYPE 5
@@ -432,6 +468,7 @@ extern const char *ISO_NAMES[LAST_ISO + 1],
   *EQ_NAMES[nEQ_NAMES],
   *OPTIMISER_NAMES[nOptimiser], *NLOPTR_NAMES[nNLOPTR],
   *LIKELIHOOD_NAMES[nLikelihood],
+  *DUPLICATEDLOC_NAMES[nDuplicatedloc],
   *DOMAIN_NAMES[LAST_DOMAIN + 1],
   *TYPE_NAMES[LASTTYPE + 1],
   *MONOTONE_NAMES[MONOTONE_TOTAL] ,

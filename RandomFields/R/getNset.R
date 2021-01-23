@@ -29,7 +29,7 @@ GetCurrentNrOfModels <- function() {
 }
 
 xylabs <- function(x, y, T=NULL, units=NULL) {
-  if (is.null(units)) units <- RFoptions()$coords$coordunits
+  if (is.null(units)) units <- getRFoptions(GETOPTIONS="coords")$coordunits
   xlab <- if (is.null(x)) NULL
           else if (units[1]=="") x else paste(x, " [", units[1], "]", sep="")
   ylab <- if (length(y)==0) NULL
@@ -41,67 +41,78 @@ xylabs <- function(x, y, T=NULL, units=NULL) {
 
 add.units <- function(x,  units=NULL) {
     if (is.null(x)) return(NULL)
-  if (is.null(units)) units <- RFoptions()$coords$varunits
+  if (is.null(units)) units <- getRFoptions(GETOPTIONS="coords")$varunits
   return(ifelse(units=="", x, paste(x, " [", units, "]", sep="")))
 }
 
 
-internal.rfoptions <- function(..., REGISTER=FALSE, COVREGISTER=as.integer(NA)){
-### TO DO: FLAG GLOBAL (ja/nein) an C_* funktion uebergeben
-### an RFoptions ; am besten eine PseudoOption aehnlich
-### zu "SAVEOPTIONS" und "GETOPTIONS"
+optionsDelete <- function(RFopt, register=NULL) {
+##  Print("opointsdel", RFopt$general$storing);
+  if (!RFopt$general$storing) {
+    if (length(register) > 0) setRFoptions(general.storing = c(FALSE,register))
+    else setRFoptions(general.storing=TRUE, general.storing = FALSE)
+      ## delete all registers in KEYT()
+  }
+##  Print("end del", getRFoptions()$general$storing)
+}
+
+## BEIM AUFRUF: entweder mit COPY = FALSE oder nachfolgend mit !hasArg("COPY")
+getRFoptions <- function(...) RFoptions(LOCAL=TRUE, ..., no.class=TRUE)
+setRFoptions <- function(...) {
+  RFoptions(LOCAL=TRUE, ..., no.class=TRUE)
+}
+
+
+internalRFoptions <- function(..., LOCAL=TRUE, GETOPTIONS=NULL,
+                              SAVEOPTIONS=NULL, FORMER = FALSE, RETURN = TRUE){
+  ## SAVEOPTIONS darf nicht in ... auftauchen, da dann ...length() > 0
+  ## um SAVEOPTIONS nicht als Extrafall zu behalten, verschmelzung mit
+  ## GETOPTIONS:
+   if (hasArg("SAVEOPTIONS"))
+     GETOPTIONS <- unique(c(GETOPTIONS, SAVEOPTIONS, "basic", "general"))
+
+  if (FORMER)
+    former <- if (length(GETOPTIONS) == 0) RFoptions(LOCAL=LOCAL, no.class=TRUE)
+              else RFoptions(LOCAL=LOCAL, GETOPTIONS=GETOPTIONS, no.class=TRUE)
   
-                                        #  Print(list(...))
-  RFopt <- list()
-#  Print(RFopt)
-  RFopt[[1]] <- RFoptions(#LOCAL=TRUE
-                                             )
-  if (is.logical(REGISTER)) {
-    REGISTER <- if (REGISTER) RFopt[[1]]$registers$register else as.integer(NA)
-  }
-  RFopt[[1]]$general$storing <-
-    c(RFopt[[1]]$general$storing, REGISTER, COVREGISTER)
-  l <- list(#LOCAL=TRUE,
-      asList=FALSE, warn_unknown_option = WARN_UNKNOWN_OPTION_CONDSINGLE,
-      ...)
-                                        #  l <- list(...)
-  if (length(l) > 1) { ## wegen asList; sonst  > 0 !!
-    storing <- (substr(names(l), 1, 3) == "sto" |
-                substr(names(l), 1, 9) == "general.sto")
-    if (any(storing)) last <- rev(which(storing))[1]
-    if (any(storing) && !l[[last]]) {
-      for (p in which(storing)) l[[p]] <- c(FALSE, REGISTER, COVREGISTER)
+  
+  if (setoptions <- ...length() > 0) {
+    ## verhindert, das eine RFfoo ohne ... parameter aufgerufen wird,
+    ## im Glauben, RFfoo setzt keine Optionen. Und dann wird hinterruecks
+    ## die gesetzten optionen ueberschrieben.
+    if (hasArg("COPY")) {
+      L <- list(...)
+      idx <- names(L) == "COPY"
+      if (all(unlist(L[idx]))) {
+        .Call(C_copyoptions)
+      }
+      L <- L[!idx]
+      if (length(L) > 0)
+        do.call("RFoptions",
+                c(list(LOCAL=LOCAL, WARN_UNKNOWN = WARN_UNKNOWN_OPTION_SINGLE),
+                  L))
+      setoptions <- FALSE
+    } else {
+      .Call(C_copyoptions) ## from global to KT (local)
     }
-    RFoptions(LIST=l)
-    RFopt[[2]] <- RFoptions(#LOCAL=TRUE
-                                               )
-  } else {
-    RFopt[[2]] <- RFopt[[1]]
   }
-  return(RFopt)
+  
+  ## sequence: LOCAL, WARN_UNKNOWN, LIST / SAVEOPTIONS / GETOPTION
+   if (setoptions) {
+    RFoptions(LOCAL=LOCAL,
+              WARN_UNKNOWN = WARN_UNKNOWN_OPTION_SINGLE,
+              ...)
+  } 
+
+  if (RETURN) {
+    new <- if (length(GETOPTIONS) == 0) RFoptions(LOCAL=LOCAL, no.class=TRUE)
+           else RFoptions(LOCAL=LOCAL, GETOPTIONS=GETOPTIONS, no.class=TRUE)
+    if (FORMER) list(former, new) else new
+  } else if (FORMER) former
+  
 }
 
 
-InitModel <- function(reg, model, dim, NAOK=FALSE){ # ok
-  for (y in list(double(0), matrix(nrow=dim, ncol=3, as.double(1:3)))) {
-    vdim <- Try(.Call(C_Init, as.integer(reg), model,
-                      list(x=matrix(nrow=dim, ncol=3, as.double(1:3)), #0 nur dummies
-                           y=y, #1 y 
-                           as.double(0), #2 T
-                           FALSE, #3 grid
-                           as.integer(dim), #4 spatdim
-                           FALSE, #5 Zeit
-                           FALSE #6 distances
-                           ),
-                      NAOK=NAOK # ok
-                      ))
-    if (is.numeric(vdim)) return(vdim)
-    msg <- strsplit(vdim$message, "\n")[[1]][2]
-    if (RFoptions()$basic$printlevel >= PL_ERRORS) cat(msg, "\n")
-  }
-  stop(msg)
-  ##  stop("model could not be initialized")
-}
 
 
 resolve.register <- function(register){
@@ -128,7 +139,8 @@ resolve.register <- function(register){
              "RFcrossvalidate" =  MODEL_MLE,
              "RFfit" =  MODEL_MLE,
              "RFgui" =  MODEL_GUI,
-             "RFinterpolate" =  MODEL_KRIGE,
+             ##                   interpolate und bedingte Simu
+             "RFinterpolate" =  RFoptions()$register$predict_register, 
              "RFlikelihood" = RFoptions()$register$likelihood_register,
              "RFlinearpart" = MODEL_USER,
              "RFratiotest" =  MODEL_MLE,
@@ -196,27 +208,28 @@ print.RFgetModelInfo <- function(x, ...) {
 
 RFgetModelInfo <- function(...) {
   x <- list(...)
-  if (length(x) > 0 &&
-      (is(x[[1]], CLASS_CLIST) || is(x[[1]], "list"))) RFgetModelInfo_model(...)
+  if (length(x) > 0 && is(x[[1]], CLASS_CLIST)) RFgetModelInfo_model(...)
   else RFgetModelInfo_register(...)
 }
 
 RFgetModelInfo_model <- function(model, params, dim = 1, Time = FALSE,
                                  kernel = FALSE, exclude_trend = TRUE, ...) {
   Reg <- MODEL_AUX
-  RFoptOld <- internal.rfoptions(...)
-  on.exit(RFoptions(LIST=RFoptOld[[1]]))
-  RFopt <- RFoptOld[[2]]
+  setRFoptions(...)
+  if (!hasArg("COPY")) {
+    saveopt <- RFoptions(SAVEOPTIONS=NULL)
+    on.exit(optionsDelete(RFopt=saveopt))
+  }
 
   if (!exclude_trend) {
     stop("'exclude_trend = FALSE' not programmed yet.")
   }
 
   dim <- as.integer(dim)
-  intern <- Try(.Call(C_SetAndGetModelInfo, Reg,
+  intern <- Try(.Call(C_SetAndGetModelFacts, Reg,
                       list("Dummy",
-                           PrepareModel2(model, params=params, ...,
-                                         return_transform=FALSE)$model),
+                           PrepareModel2(model, params=params,
+                                         xdim = dim)$model, ...),
                           dim, FALSE, as.logical(kernel), as.logical(Time), dim,
                           as.integer(10), ## ehemals RFoptions(short=10)
                           TRUE, as.logical(exclude_trend) ))
@@ -236,12 +249,14 @@ RFgetModelInfo_model <- function(model, params, dim = 1, Time = FALSE,
 }
 
 RFgetModelInfo_register <- function(register, level=1, 
-   spConform=RFoptions()$general$spConform,
+                                    spConform=RFoptions()$general$spConform,
    which.submodels = c("user", "internal",
 		       "call+user", "call+internal",
 		       "user.but.once", "internal.but.once",
 		       "user.but.once+jump", "internal.but.once+jump", "all"),
-   modelname=NULL, origin = "original model") {    
+   modelname=NULL, origin = "original model") {
+  ## Fctn darf intern nicht aufgerufen werden!
+  internalRFoptions(COPY=TRUE)
   register <- resolve.register(if (missing(register)) NULL
 			       else if (is.numeric(register)) register
 			       else deparse(substitute(register)))
@@ -276,6 +291,8 @@ RFgetModelInfo_register <- function(register, level=1,
 
 RFgetModel <- function(register, explicite.natscale, show.call=FALSE,
 		       origin = "original model") {
+   ## Fctn darf intern nicht aufgerufen werden!
+  internalRFoptions(COPY=TRUE) 
   register <- resolve.register(if (missing(register)) NULL else
                                if (is.numeric(register)) register else
                                deparse(substitute(register)))
@@ -369,6 +386,8 @@ RFgetModelNames <- function(type = RC_TYPE_NAMES, domain = RC_DOMAIN_NAMES,
                             internal,
                             newnames
                             ){ #, .internal=FALSE
+  ## Fctn darf intern nicht aufgerufen werden!
+  internalRFoptions(COPY=TRUE)
 
   group.names <- c("type", "domain", "isotropy", "operator",
 		   "monotone", "finiterange", "valid.in.dim", "vdim")
@@ -511,9 +530,11 @@ RFgetMethodNames <- function() {
 }
 
 
-RFformula <- function(f) return(parseModel(f))
+RFformula <- function(f) return(parseModel(f, Env=.GlobalEnv,
+                                           EnvDummies=.GlobalEnv))
 
 GetProcessType <- function(model) {
+##  print(model)
   stopifnot(is.list(model))
   .Call(C_GetProcessType, MODEL_INTERN, list("RFdummy", model))
 }
@@ -537,9 +558,7 @@ mergeWithGlobal <- function(dots) {
   dots
 }
 
-
 RFpar <- function(...) {
-  #l <- eval(substitute(list(...)))
   
   l <- list(...)
   if (length(l) == 1 && is.null(l[[1]]) && length(names(l)) ==0) {
@@ -553,8 +572,12 @@ RFpar <- function(...) {
   par <- get(par.storage, envir=.RandomFields.env)
   if (length(l) == 0) return(par)
 
-  par[names(l)] <- l
+  n <- names(l)
+  for (i in 1:length(l)) par[[n[i]]] <- l[[i]] ## NICHT!  par[names(l)] <- l
+  ##                                          da NULL dann nicht loescht
+  
+  
   assign(par.storage, par, envir=.RandomFields.env) 
 }
 
-resetWarnings <- function (all = FALSE) .C(C_ResetWarnings, as.integer(all))
+# resetWarnings <- function (all = FALSE) .C(C_ResetWarnings, as.integer(all))

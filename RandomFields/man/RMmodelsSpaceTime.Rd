@@ -84,7 +84,7 @@ plot(z)
 model <- RMexp(proj = "space") + RMgauss(proj = "time")
 x <- T <- seq(0, 10, 0.1)
 z <- RFsimulate(model, x=x, T=T)
-stopifnot(sum(abs(apply(apply(z, 1, diff), 1, diff))) < 1e-14)
+stopifnot(sum(abs(apply(apply(z, 1, diff), 1, diff))) < 1e-12)
 plot(z)
 \dontshow{FinalizeExample()}
 }

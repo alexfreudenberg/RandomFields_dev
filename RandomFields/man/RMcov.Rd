@@ -26,7 +26,7 @@
 }
 \usage{
 RMcov(gamma, x, y=NULL, z=NULL, T=NULL, grid, a,
-       var, scale, Aniso, proj, raw, norm)
+       var, scale, Aniso, proj, raw)
 }
 \arguments{
   \item{gamma}{a variogram model. Possibly multivariate.}
@@ -46,9 +46,8 @@ RMcov(gamma, x, y=NULL, z=NULL, T=NULL, grid, a,
   \command{\link{RMmodel}}. If not passed, the above covariance function
   remains unmodified.} 
   \item{raw}{\argRaw}
-  \item{norm}{\argNorm}
 }
-%\details{}
+%\details{ \NormDetails }
 \value{
  \command{\link{RMcov}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
 }

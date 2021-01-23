@@ -50,12 +50,19 @@ typedef int64_t  Long;
 // mit dummy ASSERT_GATTER : 0.194
 
 
-
 #define showfree !true 
 #define DOPRINT true
 
 // in /home/schlather/TMP/RandomFieldsUtils/include/utils.h:
 // #define MEMCOPY(A,B,C) memory_copy(A, B, C)
+
+
+
+
+// covariate_storage *S = cov->Scovariate;
+// M-x replace-regexp RET c[ad]+r RET \&-safe RET
+// grep "\(.*\)_storage.*\*\(.*\)=.*->S.*" getStorage(\2, \1); 
+
 
 
 #include <string.h>
@@ -186,6 +193,8 @@ typedef int64_t  Long;
 // BASICS
 ///////////////////////////////////////////////////////////////////////
 
+ 
+typedef enum usekernel_type {noKernel, allowKernel,forceKernel} usekernel_type;
 
 typedef enum ext_bool {falsch = false, 
 		       wahr = true, 
@@ -215,7 +224,8 @@ struct location_type {
   // Einfachheit nicht nochmals einen strukt drumrumgemacht, da sowieso
   // meist == 1
  
-  int lx, ly, // NEVER USE THIS EXCEPT IN RESETTING BY loc_set
+  int // deleted! lx, lY, -- 14.1.21
+  // NEVER USE THIS EXCEPT IN RESETTING BY loc_set
   /*          
 	      the total number of locations of the user's x vector, i.e.
 	      * except for grids where lx=3
@@ -223,22 +233,34 @@ struct location_type {
 	      * physical length = xdimOZ * lx else
 	     */
     spatialtotalpoints,
-    totalpoints;      /* number of pixels in total;
-			    == lx if grid==false
+    totalpoints,     /* 14.1.21 uebernimmt die Aufgabe von vorher lx,
+			um anzuzeigen, dass nichts gesetzt ist.
+			number of pixels in total;
+			
 			    == lengthx * lengthy * lengthz if grid==true
 			 */
-  bool grid,  /* simulation on a grid required by user? */
-    delete_x,delete_y,  /* is loc->x only a reference? -- used in MLE */
-    distances,// are distances given, and not locations ? -- mostly for matrices
+    spatialtotalpointsY,
+    totalpointsY,  /* number of pixels in total for conditioning points */
+    rawset, *rawidx;  /* for subset of the locations, e.g. from fitgauss
+			 or neighbourhood kriging;
+			 set of locations may have split into various 
+			 subsets. So i_idx and set do not refer to the 
+			 correct indices for data in 'covariate' and 'fix'.
+			 The correct indices are given here by transformations
+		      */
+  bool grid, gridY, /* simulation on a grid required by user? */
+    delete_x, delete_y,  /* is loc->x only a reference? -- used in MLE */
+    distances,//are distances given, and not locations ? -- mostly for matrices
     Time;             /* is a time component given ? */
 
-  coord_type xgr, ygr;      /* the coordinates */  
+  coord_type xgr, grY;      /* the coordinates */  
 
   double *x,   /* sortiert 1. Koord. 1. Punkt, 2. Koord 1. Punkt, ... */
-    *y, /* only used by Covariance function evualation */
     T[3],      /* gridtriple definition for the time components --
 		  doubled in last coordinate of *x
 	       */
+    *Y, /* only used by Covariance function evaluation */
+    TY[3], /* also only used by covariance fctn evaluation */
     *caniso;   /* only used for grid. Cummulates the 
 		  anisotropy matrices when initS is called
 	       */
@@ -347,7 +369,7 @@ struct mle_storage {
 
 
 #define MAXLOCALINSTANCES 3
-struct localinfotype {
+struct localfactstype {
   int instances;
   int msg[MAXLOCALINSTANCES];
   double value[MAXLOCALINSTANCES];
@@ -357,27 +379,40 @@ typedef bool allowedD_type[LAST_DOMAINUSER + 1];
 typedef bool allowedI_type[LAST_ISOUSER + 1];
 
 
+#define INFO_N_X 0
+#define INFO_IDX_X 1
+#define INFO_EXTRA_DATA_X 2
+#define INFO_N_Y 3
+#define INFO_IDX_Y 4
+#define INFO_EXTRA_DATA_Y 5 
+#define INFOS_PER_COORD 3
+#define INFO_SIZE (2 * INFOS_PER_COORD)
+#define INFO int * VARIABLE_IS_NOT_USED info
+#define DEFAULT_INFO(info)						\
+  int info[INFO_SIZE] = {1, NA_INTEGER, false, 1, NA_INTEGER, false}
+
+
 typedef void (*rangefct)(model *cov, range_type* ra);
 typedef void (*rangefct_multi)(model *cov, int, int, int,
 			       simple_range_type* ra);
 typedef int (*checkfct)(model *cov); 
-// typedef double (*inverse_fct)(double *v, model *cov, double *x); /* parameters,; natural scaling */
-typedef void (*covfct)(double *, model*, double*); /* h, cov, result */ 
-typedef void (*nonstat_covfct)(double *, double*, 
+typedef void (*covfct)(double *, int *, model*, double*);/* h, cov, result*/
+typedef void (*nonstat_covfct)(double *, double*, int *,
 			      model*,  double*); /* x,y, cov, result */
+typedef void (*logfct)(double *, int *, model*, double* v, double* Sign);
+typedef void (*nonstat_logfct)(double *, double*, int *,
+			      model*,  double* v, double* Sign); 
+typedef void (*inverse_fct)(double *v, model *cov, double *x); /* parameters,; natural scaling */
 typedef void (*nonstat_inv)(double *, model*, double*, 
 			       double*); /* fctvalue cov, inv.x inv.y */
-typedef void (*logfct)(double *, model*, double* v, double* Sign);
-typedef void (*nonstat_logfct)(double *, double*, 
-			      model*,  double* v, double* Sign); 
-typedef void (*aux_covfct)(double *, double*, double, // obsolete ?
-			      model*,  double*); /* x,y, Aux, cov, result */
+//typedef void (*aux_covfct)(double *, double*, int*, double, // obsolete ?
+//			      model*,  double*); /* x,y, Aux, cov, result */
 typedef void (*return_fct)(model*, double*); /* cov, result */ 
 typedef void (*return_fctalpha)(double, model*, double*); /* cov, result */ 
 typedef void (*tworeturns_fct)(model*, double*, double*); /* cov, result */ 
-typedef void (*return_covmat)(model*, double*); /* cov, result */ 
+typedef void (*return_covmat)(model*, bool, double*); /* cov, result */ 
 typedef char (*ext_bool_ret_fct)(model*); /* covt */ 
-typedef void (*getlocalparam)(model *, localinfotype *);
+typedef void (*getlocalparam)(model *, localfactstype *);
 typedef bool (*altlocalparam)(model *);
 typedef void (*minmaxfct)(model *, double *); 
 
@@ -469,18 +504,19 @@ struct defn {
   rangefct range;
   rangefct_multi range_multi;
   checkfct check;
-  ptwise_type ptwise_definite; 
+  ptwise_type ptwise_definite;
   pref_shorttype pref;
  
-  covfct cov, D, D2, D3, D4, tbm2, inverse, nabla, hess, random, logD; //Vtlgen 
-  logfct log; 
+  covfct cov, D, D2, D3, D4, tbm2, nabla, hess, random, logD; //Vtlgen 
+  logfct log;
+  inverse_fct inverse;
   nonstat_covfct nonstat_cov, nonstat_D, nonstat_random;
-  nonstat_inv nonstat_inverse, nonstat_loginverse, nonstat_inverse_D;
+  nonstat_inv inverse_nonstat, nonstat_loginverse, inverse_nonstat_D;
   nonstat_logfct nonstatlog;
   param_set_fct param_set;
-  aux_covfct aux_cov; // complicated cov-model that can be used only
-  //                     as submodels and that needs an auxiliary argument
-  //                     for the evaluation
+  //  aux_covfct aux_cov; // complicated cov-model that can be used only
+  //  //                     as submodels and that needs an auxiliary argument
+  //  //                     for the evaluation
   getlocalparam coinit, ieinit; // set within primitives
   altlocalparam alternative; //getparam: guess for good local 
     // param (cutoff, intrinsic); alternative gives alternative in a 
@@ -506,14 +542,12 @@ struct defn {
   int TaylorN, TailN;
 
   return_covmat covmatrix;
-  tworeturns_fct inversecovmatrix;
+  //  tworeturns_fct inversecovmatrix;
   ext_bool_ret_fct is_covmatrix;
   /* return value 0 : undefined
                   1 : defined
                 >=2 : defined & StandardCall will be very disadvantageous
   */
-  return_fct covariance, variogram;
-  return_fctalpha pseudomadogram;
 
   setDI_fct setDI;
 };
@@ -650,7 +684,6 @@ struct hyper_storage{
 
 
 struct plus_storage{
-  model *keys[MAXSUB];
   bool keys_given, conform[MAXSUB];
 };
 
@@ -666,8 +699,8 @@ struct union_m3 {
     *loccentre; // only dummy variable! 	
 };
 struct union_shift {
-  int  *mem2loc, *loc2mem, *locindex, memcounter;
-  double *loc;
+  int  *mem2location, *loc2mem, *locindex, memcounter;
+  double *location;
 };  
 struct union_normed {
   bool adaptive_nth, do_not_delete_C;
@@ -677,7 +710,6 @@ struct union_normed {
     **C, *dummyCi, fmaxDfprop, max;
  };  
 struct br_storage {
-  model *vario;  
   int trendlen, zeropos;
   double **trend;
   int nr;
@@ -692,7 +724,6 @@ struct br_storage {
 
 
 struct get_storage {
-  model *orig, *get_cov;
   int param_nr, size, vdim[2], // for nrow and ncol
     *idx;
   bool all;
@@ -731,8 +762,6 @@ struct pgs_storage {
      *own_grid_len; // only for HUETCHENOWNGRIDSIZE
   int *gridlen, *end, *start, *delta, *nx, *own_grid_cumsum;
   double *xstart, *x, *inc;// local dompp
-
-  model *cov;
 };
 
 
@@ -746,7 +775,7 @@ struct fctn_storage {
     *endy, *startny, *ny;
  
   double *xstart, *x, *inc, *ystart, *y, *incy,
-    *cross,  **Val,
+    *cross,  
     *C0x, *C0y;
   // param_set_fct param_set;
 
@@ -754,7 +783,6 @@ struct fctn_storage {
 
 
 struct set_storage {
-  model *remote;
   param_set_fct set;
   //  void **valueRemote,
   //    **valueLocal;
@@ -762,12 +790,22 @@ struct set_storage {
   //     *bytes; // to be transfered
 };
 
+struct model_storage { // OK
+  // Modelle nur hier, da diese rueckverfolgt werden muessen,
+  // wenn prevloc umgesetzt wird
+  model *cov, // OK
+    *vario,
+    *orig,
+    *get_cov,
+    *remote,
+    *keys[MAXSUB];
+};
 
 #define MAX_LIN_COMP (MAXSUB * MAXSUB)
 #define model_undefined -1
 #define model_morethan1 -2
 typedef char NAname_type[MAX_NA][255];
-struct likelihood_info {
+struct likelihood_facts {
   int varmodel, NAs, nas[MAX_LIN_COMP],
     effect[MAX_LIN_COMP];
   model *Var; // ja nicht free, da nur pointer
@@ -793,7 +831,7 @@ struct likelihood_storage {
     betas_separate, ignore_trend;
   char *betanames[MAX_LIN_COMP];
   model *fixed_effect[MAX_LIN_COMP], *det_effect[MAX_LIN_COMP], *rand_effect[MAX_LIN_COMP];
-  likelihood_info info;
+  likelihood_facts facts;
 };
 
 
@@ -848,11 +886,10 @@ struct extra_storage {
     n_i1, //n_i2,
     n_j1,// n_j2,
     n_k1, n_k2;
-  // location_type **loc; // in trafoproc, for instance
 };
 
 struct biwm_storage {
-  bool nudiag_given, cdiag_given;// 13.11.2017 : usr_bool instead of bool
+  bool nudiag_given, cdiag_given, donotcheck;// 13.11.2017 : usr_bool instead of bool
   double a[3], lg[3], aorig[3], nunew[3],
     scale[4], gamma[4], c[4];
 };
@@ -931,16 +968,21 @@ struct covariate_storage { // cov_storage, do_storage, init_storage
   // abgespeichert wird es immer im aktuell aufrufenden (fuer next oder key)
   location_type **loc;
   double *x;
-  int pts, matrix_err;
-} ;
+  int matrix_err,
+    pts; // used in var2cov
+  int *nrow;  
+  bool merged_x,
+    nrow_checked,
+    onlyOne,
+    coordinate_mismatch;
+};
 
 
 
 struct bubble_storage {
   double *tau;
   int *rank, *start, *end;
-} ;
-
+};
 
 
 
@@ -950,26 +992,27 @@ struct bubble_storage {
 struct cell_type {
     unsigned int *code;
     double colour;
-} ;
+};
 typedef int (*avl_comparison_func) (cell_type *, cell_type *, int *);
 typedef void (*avl_node_func) (cell_type*, int *);
 typedef cell_type *(*avl_copy_func) (cell_type*, int *);
-
 
 
 typedef
 struct KEY_type KEY_type;
 struct KEY_type {
   model *KEY[MODEL_MAX + 1];
-  int pid, currentRegister, visitingpid, nzero, zaehler;
-  bool ok,
+  int pid, currentRegister, visitingpid, nzero, zaehler, set;
+  bool ok, stored_init,
     naok_range; // default =false;
+  raw_type rawConcerns;
   char PREF_FAILURE[90 * Nothing];
   KEY_type *next;
   double *zerox;
-  errorloc_type error_loc;
+  errorloc_type error_location;
   model *error_causing_cov;
   globalparam global;
+  utilsparam global_utils;
 };
 #define PIDMODULUS 1000
 extern KEY_type *PIDKEY[PIDMODULUS];
@@ -982,13 +1025,13 @@ void set_currentRegister(int cR);
 
 
 
-// MPP
-int SetAndGetModelInfo(model *cov, int shortlen, 
-		       int allowforintegerNA, bool excludetrend, // IN
-		       int newxdim,  //IN
-		       usr_bool globvar,
-		       likelihood_info *info, // OUT	
-		       sort_origin original); 	
+// MLE.cc, gausdlikeli.cc
+int internalSetAndGet(model *cov, int shortlen, 
+		      int allowforintegerNA, bool excludetrend, // IN
+		      int newxdim,  //IN
+		      usr_bool globvar,
+		      likelihood_facts *facts, // OUT	
+		      sort_origin original);
 
 
 #define booleanRange(IDX)\
@@ -1029,23 +1072,15 @@ void InitModelList();
 
 
 #define GRIDEXPAND_AVOID Nan // cf TransformLoc
+// Brown.cc, extremes.cc, nugget.cc, operator.cc, RMS.cc, tbm.cc, 
 void TransformLoc(model *cov, bool timesep, usr_bool gridexpand,
 		    bool involvedollar);
-matrix_type TransformLocReduce(model *cov, bool timesep, usr_bool gridexpand, 
-			bool involvedollar);
+// sequential.cc, variogram.cc
 int TransformLoc(model *cov, double **xx, bool involvedollar);
-int TransformLoc(model *cov, location_type *loc, double **xx);
-int TransformLoc(model *cov, double **xx, double **yy, bool involvedollar);
-
-
-void ErrCov(double *x, model *cov, double *v);
-void ErrD(double *x, model *cov, double *v);
-void ErrInverse(double *x, model *cov, double *v);
-void ErrCovNonstat(double *x, double *y, model *cov, double *v);
-void ErrLogCov(double *x, model *cov, double *v, double *Sign);
-void ErrLogCovNonstat(double *x, double *y, model *cov, double *v, 
-		      double *Sign);
-
+// variogram.h:
+int TransformLoc(model *cov, location_type *loc, double **xx, double **yy, bool involvedollar);
+void TransformLocXY(model *cov, bool timesep, usr_bool gridexpand, 
+		    bool involvedollar);
 
 
 listoftype *LIST_CREATE(int len, int type);
@@ -1055,15 +1090,14 @@ void paramcpy(model *current, model *cov, bool freeing,
 	      bool allocating, bool copy_lists, bool recursive, bool copy_mpp);
 int covcpy(model **localcov, model *cov);
 int covcpy(model **localcov, model *cov, bool copy_lists);
-int covcpy(model **localcov, bool sub, model *cov,
-	   location_type **prevloc);
-int covcpy(model **localcov, model *cov,
-	   double *x, double *T, int spatialdim, int xdim, Long lx, bool Time, 
-	   bool grid, bool distances);
-int covcpyWithoutRandomParam(model **localcov, model *cov);
+//int covcpy(model **localcov, bool sub, model *cov, location_type **prevloc);
 int covcpy(model **localcov, bool sub, model *cov, // err
 	   location_type **prevloc, location_type **ownloc,
 	   bool copy_lists,  bool copy_randomparam, bool allowCopyingInterface);
+int covcpyX(model **localcov, model *cov, // rename to covcpy!!
+	   double *x, double *T, int spatialdim, int xdim, Long totalpoints, bool Time, 
+	   bool grid, bool distances);
+int covcpyWithoutRandomParam(model **localcov, model *cov);
 void Ssetcpy(model *localcov, model *remotecov, model *cov,
 	     model *rmt);
 
@@ -1077,58 +1111,62 @@ int getmodelnr(char *name);
 
 int setgrid(coord_type xgr, double *x, int spatialdim);
 int partial_loc_set(location_type *loc, double *x, double *y,
-		    Long lx, Long ly, bool dist, int xdim, double *T, 
-		    bool grid, bool cpy);
-//void partial_loc_set(model *cov, double *x, double *y,
-//		     Long lx, bool dist, int xdim, double *T);
-int loc_set(double *x, double *T, 
-	    int spatialdim, /* spatial dim only ! */
-	    int xdim, Long lx, bool Time, bool grid,
-	    bool distances, location_type **loc);
-int loc_set(double *x, double *y, double *T, 
-	    int spatialdim, /* spatial dim only ! */
-	    int xdim,
-	    Long lx, Long ly, bool Time, bool grid,
+		    Long totalpoints, Long totalpointsY, bool dist, int xdimOZ,
+		    double *T, double *Ty,
+		    bool grid, bool gridy, bool cpy);
+
+// main fctn: used by userinferfaces.cc
+int loc_set(double *x, double *y, double *T, double *Ty,
+	    int spatialdim, // spatial dim only ! 
+	    int xdimOZ,  Long totalpoints, Long totalpointsY,
+	    bool Time, bool grid, bool gridY,
 	    bool distances,
 	    location_type **Loc);
 
-int loc_set(double *x, double *y, double *T, 
-	    int spatialdim, /* spatial dim only ! */
-	    int xdimOZ,
-	    Long lx, Long ly, bool Time, bool grid,
+// used by RMS
+int loc_set(double *x, double *y, double *T, double *Ty,
+	    int spatialdim, // spatial dim only ! 
+	    int xdimOZ, Long totalpoints, Long totalpointsY,
+	    bool Time, bool grid, bool gridY,
 	    bool distances,
 	    model *cov);
 
+// used by Brown.cc, tbm.cc,
+// getNset.cc : TransformCovLoc, 
 int loc_set(double *x, double *T, 
-	    int spatialdim, /* spatial dim only ! */
-	    int xdimOZ, /* original ! */
-	    Long lx, bool Time, bool grid,
+	    int spatialdim, // spatial dim only !
+	    int xdimOZ, // original ! 
+	    Long totalpoints, bool Time, bool grid,
 	    bool distances,
 	    model *cov);
-location_type ** loc_set(SEXP xlist);
+
+// used by predict
+void loc_set(SEXP ylist, location_type **Loc);
+
+// used by operator.cc, shape.cc, userinterfaces.cc
+location_type ** loc_set(SEXP xlist); 
+location_type ** loc_set(location_type **Loc);
+int empty_loc_set(model *cov, int dim, Long totalpoints, Long totalpointsY);
+
+  
+/*
 int loc_set(double *x, double *T, 
-	    int spatialdim, /* spatial dim only ! */
-	    int xdimOZ, /* original ! */
-	    Long lx, bool Time, bool grid,
+	    int spatialdim, // spatial dim only !
+	    int xdimOZ, // original ! 
+	    Long totalpoints, bool Time, bool grid,
 	    bool distances, int n,
 	    location_type ***Loc);
-
-//int loc_set(model *cov, Long totalpoints);
-//int add_y_zero(location_type *loc);
+*/
 
 
-
-
-// void CMbuild(SEXP Model, int level, model **Cov);
-void CheckModel(SEXP Model, double *x, double *y, double *T, 
-			int spatialdim, /* spatial dim only ! */
-			int xdim,
-			int lx,  int ly,
-			bool grid,
-			bool distances,
-			bool Time, 
-			SEXP xlist,
-			KEY_type *KT, int reg);
+void CheckModel(SEXP Model, double *x, double *y, double *T,  double *Ty,
+		int spatialdim, /* spatial dim only ! */
+		int xdim, int totalpoints,  int totalpointsY,
+		bool grid, bool gridy,
+		bool distances, bool Time, 
+		SEXP xlist,
+		raw_type raw,
+		KEY_type *KT, int reg);
 
 matrix_type Type(double *m, int nrow, int ncol);
 double GetDiameter(location_type *loc);
@@ -1148,9 +1186,6 @@ int addUnifModel(model *cov, double radius, model **newmodel);
 
 void addVariable(char *name, double *x, int nrow, int ncol, SEXP env);
 void addIntVariable(char *name, int *x, int nrow, int ncol, SEXP env);
-
-
-//void addModel(model **pcov, int covnr, bool takeoverloc);
 
 
 void E1(spectral_storage *s, double A, double *e);
@@ -1177,7 +1212,6 @@ int get_ranges(model *cov, model **min, model **max,
 int check_recursive_range(model *cov, bool NAOK);
 
 void xtime2x(double *x, int nx, double *T, int len, double **newx, int nrow);
-void removeOnly(model **Cov);
 
 
 //int Checking(model **Cov);
@@ -1202,8 +1236,8 @@ int check2X(model *cov, int vdim0, int vdim1, Types frame, bool coord_trafo);
 int check2Xthroughout(model *cov, model *prev, 
 	   Types type, domain_type domprev, isotropy_type isoprev,
 		  int vdim, Types frame);
-int CheckPos2Neg(model *cov, int vdim, Types frame, int ntype,
-		 domain_type maxdom);
+int CheckPosVar(model *cov, Types type, domain_type dom, isotropy_type iso,
+		int vdim, Types frame);
 
 
 #define CHECK_GEN(C,V0, V1, F, CT) check2X(C,V0, V1, F, CT)
@@ -1213,8 +1247,7 @@ int CheckPos2Neg(model *cov, int vdim, Types frame, int ntype,
 #define CHECK_PASSFRAME(C,F) check2passframe(C, OWN, VDIM0, VDIM1, F)
 #define CHECK_PASSTYPE(C,T) check2passtype(C, OWN, T, VDIM0, VDIM1, cov->frame)
 #define CHECK_VDIM(C,T,X,type,D,I,V0,V1,F) check2X(C,T,X,type,D,I,V0,V1,F,true)
-#define CHECKPOS2NEG(C,V,F,D) CheckPos2Neg(C,V,F,3,D)
-#define CHECKPOS2VAR(C,V,F,D) CheckPos2Neg(C,V,F,2,D)
+#define CHECKPOSVAR(C,type,D,I,V,F) CheckPosVar(C,type,D,I,V,F)
 #define CHECK_R(C, vdim)				     \
   CHECK_VDIM(C, vdim, vdim, RandomType, KERNEL, CARTESIAN_COORD, \
 	  vdim, 1, RandomType)			       
@@ -1227,7 +1260,7 @@ int REINIT_intern(model *M, int moments, gen_storage *s);
 
 void kdefault(model *cov, int i, double v);
 
-// KeyInfo
+// KeyFacts
 void iexplDollar(model *cov, bool MLEnatsc_only);
 
 
@@ -1245,7 +1278,7 @@ double *getAnisoMatrix(model *cov, int *nrow, int *ncol);
 double *getAnisoMatrix(model *cov, bool null_if_id, int *nrow, int *ncol);
 
 
-void SetLoc2NewLoc(model *cov, location_type **loc);
+void SetLoc2NewLoc(model *cov, location_type **Loc);
 
 int ReturnOwnField(model *cov);
 int ReturnOtherField(model *cov, model *which);
@@ -1282,8 +1315,10 @@ struct model {
   double *q;
   int qlen, variant,
     nsub; /* current number of submodels */
-  model *sub[MAXSUB], *kappasub[MAXPARAM], *calling, *root;
+  model *sub[MAXSUB], *kappasub[MAXPARAM], *calling, *root, *key; 
   KEY_type *base;
+  location_type **prevloc, **ownloc;
+
   char **ownkappanames;
   user_given_type user_given;
   Systems_type prev, /* by previous model: logdim: required
@@ -1380,12 +1415,10 @@ struct model {
   Methods method; /* the current method (out of SimulationsMeth) which 
 			    is tried at the moment or which has been 
 			    successfully initialized */
-  mpp_properties mpp;
-  simu_storage simu;
-  location_type **prevloc, **ownloc;
-  model *key; // this one should be deleted
+  mpp_properties mpp; 
   ptwise_type ptwise_definite;
 
+  simu_storage simu;
   ce_storage *Sce;
   localCE_storage *SlocalCE;
   approxCE_storage *SapproxCE;
@@ -1395,8 +1428,7 @@ struct model {
   plus_storage *Splus;
   sequ_storage *Ssequ;
   tbm_storage *Stbm;
-  trend_storage *Strend;
-  br_storage *Sbr;
+   br_storage *Sbr;
   get_storage *Sget;
   pgs_storage *Spgs;
   fctn_storage *Sfctn;
@@ -1412,12 +1444,14 @@ struct model {
   bistable_storage *Sbistable;
   scatter_storage *Sscatter;
   mcmc_storage *Smcmc;
-  gen_storage *Sgen; // only once for the whole model tree
   likelihood_storage *Slikelihood;
   covariate_storage *Scovariate; // only once for the whole model tree
   bubble_storage *Sbubble;
   mle_storage *Smle;
- 
+  model_storage *Smodel;
+  trend_storage *Strend;
+  gen_storage *Sgen; // only once for the whole model tree
+
   //check in getNset:  COV_DELETE_WITHOUTSUB, COV_ALWAYS_NULL; add *_DEL, *_NULL
   
   //select_storage *Sselect;
@@ -1426,11 +1460,12 @@ struct model {
 
 void KEY_type_NULL(KEY_type  *x);
 void KEY_type_DELETE(KEY_type **S);
-void LOC_DELETE(location_type ***Loc);
+void LOC_DELETE(location_type ***Loc); // OK
 void LOC_SINGLE_NULL(location_type *loc, int len, int dim);
 //location_type **LOCLIST_CREATE(int n, int dim);
 void LOC_SINGLE_DELETE(location_type **Loc);
-location_type **LOCLIST_CREATE(int n, int dim);
+void LOC_SINGLE_DELETE_Y(location_type *loc);
+ location_type **LOCLIST_CREATE(int n, int dim);
 void COV_ALWAYS_NULL(model *cov);
 void SYSTEM_NULL(system_type *sys, int len);
 void COV_DELETE_(model **cov, model *save);
@@ -1450,20 +1485,20 @@ void hyper_DELETE(hyper_storage  **S);
 void nugget_NULL(nugget_storage *x);
 void nugget_DELETE(nugget_storage ** S);
 void plus_NULL(plus_storage *x);
-void plus_DELETE(plus_storage ** S, model *save);
+void plus_DELETE(plus_storage ** S);
 void sequ_NULL(sequ_storage *x);
 void sequ_DELETE(sequ_storage **S);
 void spectral_NULL(sequ_storage *x);
 void spectral_DELETE(sequ_storage **S);
 void tbm_DELETE(tbm_storage **S); 
 void tbm_NULL(tbm_storage* x);
-void br_DELETE(br_storage **S, model *save); 
+void br_DELETE(br_storage **S); 
 void br_NULL(br_storage* x);
 void get_NULL(get_storage *S);
 void get_DELETE(get_storage **S);
-void pgs_DELETE(pgs_storage **S, model *save); 
+void pgs_DELETE(pgs_storage **S); 
 void pgs_NULL(pgs_storage* x);
-void fctn_DELETE(fctn_storage **S, model *save); 
+void fctn_DELETE(fctn_storage **S); 
 void fctn_NULL(fctn_storage* x);
 void set_DELETE(set_storage **S); 
 void set_NULL(set_storage* x);
@@ -1490,23 +1525,30 @@ void mcmc_NULL(mcmc_storage* x);
 void likelihood_NULL(likelihood_storage *x);
 void likelihood_DELETE(likelihood_storage **S);
 //likelihood_storage * likelihood_CREATE(int n);
-void likelihood_info_NULL(likelihood_info *x);
-void likelihood_info_DELETE(likelihood_info *x);
+void likelihood_facts_NULL(likelihood_facts *x);
+void likelihood_facts_DELETE(likelihood_facts *x);
 void covariate_NULL(covariate_storage *x);
 void covariate_DELETE(covariate_storage **S);
 void bubble_NULL(bubble_storage *x);
 void bubble_DELETE(bubble_storage **S);
 void mle_NULL(mle_storage *x);
 void mle_DELETE(mle_storage **S);
-
+void model_NULL(model_storage *x);
+void model_DELETE(model_storage **S, model *save);
 void trend_DELETE(trend_storage ** S);
 void trend_NULL(trend_storage* x);
 void gen_NULL(gen_storage *x);
 void gen_DELETE(gen_storage **S);
+// grep Strend *; grep trend_NULL *
+
 void BRtrend_destruct(double **BRtrend, int trendlen);
 int StructBR(model *cov, gen_storage *s, model **atom);
-
 void FFT_destruct(FFT_storage *FFT);
+
+void globalparam_NULL(KEY_type *KT, bool copy_messages);
+void globalparam_NULL(KEY_type *KT);
+void globalparam_DELETE(KEY_type *S);
+
 
 double *ZERO(model *cov);
 double *ZERO(int dim, KEY_type *KT);
@@ -1562,69 +1604,82 @@ int rPoissonPolygon2(polygon_storage *S, double lambda, bool do_centering);
     PL++;								\
   }
 
-#define COV(X, Cov, V) {					\
-    ASSERT_GATTER(Cov); DefList[FIRSTGATTER].cov(X, Cov, V);}
-#define LOGCOV(X, Cov, V, S) {\
-    ASSERT_GATTER(Cov);DefList[FIRSTGATTER].log(X, Cov, V, S);}
+#define COV(X, Info, Cov, V) {						\
+    ASSERT_GATTER(Cov); ASSERT_XONLY(Cov); DefList[FIRSTGATTER].cov(X, Info, Cov, V);}
+#define LOGCOV(X, Info, Cov, V, S) {				\
+    ASSERT_GATTER(Cov);ASSERT_XONLY(Cov);DefList[FIRSTGATTER].log(X, Info, Cov, V, S);}
 #define SHAPE COV
 #define FCTN COV
-#define ABSFCTN(X, Cov, V) { COV(X, Cov, V); *(V) = FABS(*(V)); }
+#define ABSFCTN(X, Info, Cov, V) {ASSERT_XONLY(Cov); COV(X, Info, Cov, V); *(V) = FABS(*(V)); }
 #define LOGSHAPE LOGCOV
-#define VTLG_D(X, Cov, V) { \
-    ASSERT_CHECKED(Cov); DefList[MODELNR(Cov)].D(X, Cov, V);}//kein gatter notw.
-#define VTLG_DLOG(X, Cov, V) { \
-    ASSERT_CHECKED(Cov); DefList[MODELNR(Cov)].logD(X, Cov, V);}
-#define VTLG_P(X, Cov, V) {\
-    ASSERT_CHECKED(Cov); DefList[MODELNR(Cov)].cov(X, Cov, V);} 
-#define VTLG_P2SIDED(X, Y, Cov, V) {/* nicht gatter, da X=NULL sein kann !*/  \
-    ASSERT_CHECKED(Cov); DefList[MODELNR(Cov)].nonstat_cov(X, Y, Cov, V);} 
-#define VTLG_Q(V, Cov, X) { ASSERT_CHECKED(Cov);\
-    DefList[MODELNR(Cov)].inverse(V, Cov, X);}
-#define VTLG_R(X, Cov, V) { \
-    ASSERT_CHECKED(Cov); DefList[MODELNR(Cov)].random(X, Cov, V);} /* dito */
-#define VTLG_R2SIDED(X, Y, Cov, V) {\
-    ASSERT_CHECKED(Cov); DefList[MODELNR(Cov)].nonstat_random(X, Y, Cov, V);}
-#define NONSTATINVERSE_D(V, Cov, X, Y)		       \
-  { ASSERT_CHECKED(Cov); DefList[MODELNR(Cov)].nonstat_inverse_D(V, Cov, X, Y);}
+
+void nonstat2statcov(double *x, double *y, int*info, model *cov, double *v);
+void lognonstat2statcov(double *x, double *y, int*info, model *cov, double *v,
+		   double *sign);
+#define NONSTAT2STATCOV(X, Y, Info, Cov, V) {ASSERT_XONLY(Cov);nonstat2statcov(X, Y, Info, Cov, V);}
+#define LOGNONSTAT2STATCOV(X, Y, Info, Cov, V, S) {ASSERT_XONLY(Cov);	\
+    lognonstat2statcov(X, Y, Info, Cov, V, S);}
+
+#define NONSTATCOV(X, Y, Info, Cov, V) {ASSERT_KERNEL(Cov);		\
+    ASSERT_GATTER(Cov); DefList[FIRSTGATTER].nonstat_cov(X, Y, Info, Cov,V);}
+#define LOGNONSTATCOV(X, Y, Info, Cov, V, S) {	ASSERT_KERNEL(Cov);	\
+    ASSERT_GATTER(Cov);DefList[FIRSTGATTER].nonstatlog(X, Y, Info, Cov,V,S);}
+#define Abl1(X, Info, Cov, V) {ASSERT_XONLY(Cov); \
+    ASSERT_GATTER(Cov);DefList[FIRSTGATTER].D(X, Info, Cov, V);}
+#define Abl2(X, Info, Cov, V) {ASSERT_XONLY(Cov); \
+    ASSERT_GATTER(Cov);DefList[FIRSTGATTER].D2(X, Info, Cov, V);}
+#define Abl3(X, Info, Cov, V) {ASSERT_XONLY(Cov); \
+    ASSERT_GATTER(Cov);DefList[FIRSTGATTER].D3(X, Info, Cov, V);} /* OK ? */
+#define Abl4(X, Info, Cov, V) {ASSERT_XONLY(Cov); \
+    ASSERT_GATTER(Cov);DefList[FIRSTGATTER].D4(X, Info, Cov, V);} /* OK ? */
+
+#define INVERSE(V, Cov, X) {						\
+    ASSERT_GATTER(Cov);DefList[FIRSTGATTER].inverse(V, Cov, X);}
+#define INVERSENONSTAT(V, Cov, X, Y) {\
+    ASSERT_GATTER(Cov); DefList[FIRSTGATTER].inverse_nonstat(V, Cov, X, Y);}
+#define INVERSENONSTATLOG(V, Cov, X, Y) {\
+    ASSERT_GATTER(Cov); DefList[FIRSTGATTER].nonstat_loginverse(V, Cov, X, Y);}
+
+#define VTLG_D(X, Info, Cov, V) { /* ASSERT_XONLY(Cov); */		\
+    ASSERT_CHECKED(Cov); DefList[MODELNR(Cov)].D(X, Info, Cov, V);}//kein gatter notw.
+#define VTLG_DLOG(X, Info, Cov, V) { /* TO DO bei allen Verteilungsaufruefn statt ASSERT_XONLY(Cov); -- irgendeeine sicherheit waere gut*/		\
+    ASSERT_CHECKED(Cov); DefList[MODELNR(Cov)].logD(X, Info, Cov, V);}
+#define VTLG_P(X, Info, Cov, V) { /* ASSERT_XONLY(Cov); */		\
+    ASSERT_CHECKED(Cov); DefList[MODELNR(Cov)].cov(X, Info, Cov, V);} 
+#define VTLG_P2SIDED(X, Y, Info, Cov, V) {/* nicht gatter, da X=NULL sein kann !*/  \
+    ASSERT_CHECKED(Cov); DefList[MODELNR(Cov)].nonstat_cov(X, Y, Info, Cov, V);} 
+#define VTLG_Q(V, Cov, X) { \
+    ASSERT_CHECKED(Cov); DefList[MODELNR(Cov)].inverse(V, Cov, X);}
+#define VTLG_R(X, Info, Cov, V) { /* ASSERT_XONLY(Cov); */		\
+    ASSERT_CHECKED(Cov); DefList[MODELNR(Cov)].random(X, Info, Cov, V);} /* dito */
+#define VTLG_R2SIDED(X, Y, Info, Cov, V) {ASSERT_KERNEL(Cov);\
+    ASSERT_CHECKED(Cov); DefList[MODELNR(Cov)].nonstat_random(X, Y, Info, Cov, V);}
+#define INVERSENONSTAT_D(V, Cov, X, Y)		       \
+  { ASSERT_CHECKED(Cov); DefList[MODELNR(Cov)].inverse_nonstat_D(V, Cov, X, Y);}
 
 
 //#define DENSITYFCT(X, Dens, V) DefList[FIRSTGATTER].approx_dens(X, Dens, V)
-#define NONSTATCOV(X, Y, Cov, V) {\
-    ASSERT_GATTER(Cov); DefList[FIRSTGATTER].nonstat_cov(X, Y, Cov,V);}
-#define LOGNONSTATCOV(X, Y, Cov, V, S) {\
-    ASSERT_GATTER(Cov);DefList[FIRSTGATTER].nonstatlog(X, Y, Cov,V,S);}
-#define Abl1(X, Cov, V) {\
-    ASSERT_GATTER(Cov);DefList[FIRSTGATTER].D(X, Cov, V);}
-#define Abl2(X, Cov, V) {\
-    ASSERT_GATTER(Cov);DefList[FIRSTGATTER].D2(X, Cov, V);}
-#define Abl3(X, Cov, V) {\
-    ASSERT_GATTER(Cov);DefList[MODELNR(Cov)].D3(X, Cov, V);} /* OK ? */
-#define Abl4(X, Cov, V) {\
-    ASSERT_GATTER(Cov);DefList[MODELNR(Cov)].D4(X, Cov, V);} /* OK ? */
 #define SPECTRAL(Cov, S, E) {\
     ASSERT_GATTER(Cov); DefList[MODELNR(Cov)].spectral(Cov, S,E);}/*not gatter*/
-#define TBM2CALL(X, Cov, V) {						\
+#define TBM2CALL(X, Info, Cov, V) {ASSERT_KERNEL(Cov);			\
     ASSERT_GATTER(Cov); assert(DefList[MODELNR(Cov)].tbm2 != NULL);	\
-    DefList[MODELNR(Cov)].tbm2(X, Cov, V);}
-#define INVERSE(V, Cov, X) {\
-    ASSERT_GATTER(Cov);DefList[FIRSTGATTER].inverse(V, Cov, X);}
-#define NONSTATINVERSE(V, Cov, X, Y) {\
-    ASSERT_GATTER(Cov); DefList[FIRSTGATTER].nonstat_inverse(V, Cov, X, Y);}
-#define NONSTATLOGINVERSE(V, Cov, X, Y) {\
-    ASSERT_GATTER(Cov); DefList[FIRSTGATTER].nonstat_loginverse(V, Cov, X, Y);}
-#define HESSE(X, Cov, V) {\
-    ASSERT_GATTER(Cov);DefList[MODELNR(Cov)].hess(X, Cov, V);}
-#define NABLA(X, Cov, V) {\
-    ASSERT_GATTER(Cov);DefList[MODELNR(Cov)].nabla(X, Cov, V);}
+    DefList[MODELNR(Cov)].tbm2(X, Info, Cov, V);}
+#define HESSE(X, Info, Cov, V) {ASSERT_XONLY(Cov); \
+    ASSERT_GATTER(Cov);DefList[MODELNR(Cov)].hess(X, Info, Cov, V);}
+#define NABLA(X, Info, Cov, V) {ASSERT_XONLY(Cov); \
+    ASSERT_GATTER(Cov);DefList[MODELNR(Cov)].nabla(X, Info, Cov, V);}
+
+#define ASSERT_XONLY(Cov) assert(isXonly(PREVSYSOF(Cov)))
+#define ASSERT_KERNEL(Cov) assert(isKernel(PREVSYSOF(Cov)))
 
 
-#define FRAME_ASSERT(F) \
-  if (has##F##Frame(cov)){ /* NICHT! : '(Frame)'*/	\
-  } else {								\
-    assert(({PMI(cov) ; true;}));					\
-    SERR2("Frame '%.50s' not recognised by '%.50s'.",				\
-	  TYPE_NAMES[cov->frame], NICK(cov));				\
-  }
+//#define FRAME_ASSERT(F)				\
+//  if (has##F##Frame(cov)){ /* NICHT! : '(Frame)'*/	\
+//  } else {								\
+//    assert(({PMI(cov) ; true;}));					\
+//    SERR2("Frame '%.50s' not recognised by '%.50s'.",			\
+//	  TYPE_NAMES[cov->frame], NICK(cov));				\
+//  }
 
 #define ILLEGAL_FRAME							\
   NERR4(ERRORILLEGALFRAME, "cannot initiate '%.50s' within frame '%.50s' [debug info: '%.50s' at line %d]", \
@@ -1698,22 +1753,19 @@ int rPoissonPolygon2(polygon_storage *S, double lambda, bool do_centering);
     new##_NULL((cov)->S##new);						\
     if ((cov)->S##new == NULL) BUG;					\
   }   	
-#define NEW_STORAGE(new)	\
-  NEW_COV_STORAGE(cov, new)
+#define NEW_STORAGE(new) NEW_COV_STORAGE(cov, new)
 
 
-#define NEW_COV_STORAGE_WITH_SAVE(cov, new) {				\
+#define NEW_COV_STORAGE_SAVE(cov, new) {				\
     assert((cov)->S##new == NULL);					\
     if ((cov)->S##new != NULL) { /* should never be valid! */		\
-      new##_DELETE(&((cov)->S##new), cov);				\
+      new##_DELETE(&((cov)->S##new), cov); /* unterschied !*/	\
       assert((cov)->S##new == NULL);					\
     }									\
     (cov)->S##new = (new##_storage *) MALLOC(sizeof(new##_storage));	\
     new##_NULL((cov)->S##new);						\
     if ((cov)->S##new == NULL) BUG;					\
   }								
-#define NEW_STORAGE_WITH_SAVE(new)	\
-  NEW_COV_STORAGE_WITH_SAVE(cov, new)
 
 
 #define ONCE_NEW_COV_STORAGE(cov, new)					\
@@ -1856,11 +1908,17 @@ BUG
 #define TALLOC_GLOBAL_X3(Z, SIZE) TALLOCCOV_G_NEW(cov, Z, SIZE, XSIZE)
 #define TALLOC_GATTER_GLOBAL(Z,SIZE) TALLOCCOV_G_NEW(cov, Z, SIZE, XSIZE)
 #else
+#define TALLOC_GATTER_GLOBAL(Z,SIZE) TALLOCCOV_G_NEW(cov,Sgatter,Z,SIZE,Z,XSIZE)
+// !!! ACHTUNG ! bei Verwendung von TALLOC auf Sextra basierend, darf
+// bis zu END_TALLOC kein cov stehen, oder es muss sichergestellt werden
+// dass die Fkt mit argument 'cov' nicht auch noch TALLOC aufruft!!
 #define TALLOC_GLOBAL_X1(Z, SIZE) TALLOCCOV_G_NEW(cov, Sextra, Z,SIZE,a1,XSIZE) 
 #define TALLOC_GLOBAL_X2(Z, SIZE) TALLOCCOV_G_NEW(cov, Sextra, Z,SIZE,a2,XSIZE) 
 #define TALLOC_GLOBAL_X3(Z, SIZE) TALLOCCOV_G_NEW(cov, Sextra, Z, SIZE,a3,XSIZE)
-#define TALLOC_GATTER_GLOBAL(Z,SIZE) TALLOCCOV_G_NEW(cov,Sgatter,Z,SIZE,Z,XSIZE)
 #endif
+// !!! ACHTUNG ! bei Verwendung von TALLOC auf Sextra basierend, darf
+// bis zu END_TALLOC kein cov stehen, oder es muss sichergestellt werden
+// dass die Fkt mit argument 'cov' nicht auch noch TALLOC aufruft!!
 #define TALLOC_X1(Z, SIZE) TALLOC_NEW(Sextra, Z, SIZE, a1, XSIZE) 
 #define TALLOC_X2(Z, SIZE) TALLOC_NEW(Sextra, Z, SIZE, a2, XSIZE) 
 #define TALLOC_X3(Z, SIZE) TALLOC_NEW(Sextra, Z, SIZE, a3, XSIZE) 
@@ -1906,21 +1964,7 @@ int addShapeFct(model **Cov); /// ??
 /* bool isRObject(int type); */
 
 
-Types TypeConsistency(Types requiredtype, Types deliveredtype);
-Types TypeConsistency(Types requiredtype, model *cov,
-			 isotropy_type requirediso);
-
-
-int searchFirstGreater(double *v, int len, double z);
-int CeilIndex(double x, double *cum, int size);
-double searchInverse(covfct fct, model *cov, 
-		     double start, double value, double releps);
-double searchInverse(covfct fct, model *cov, 
-		     double start, double min, double value, double releps);
 // double gamma(double x);
-void ErrInverseNonstat(double *v, model *cov, double *x, double *y);
-void StandardInverseNonstat(double *v, model *cov,
-			    double *left, double *right);
 
 
 // Formerly in <R_ext/Applic.h>LinkedTo: 
@@ -1931,6 +1975,13 @@ Rboolean fft_work(double *a, double *b, int nseg, int n, int nspn,
 int fft_factor(int n, int *pmaxf, int *pmaxp, int *pkt, int *pm_fac, int*NFAC);
 
 
+
+
+double searchInverse(covfct fct, model *cov, 
+		     double start, double value, double releps);
+double searchInverse(covfct fct, model *cov, 
+		     double start, double min, double value, double releps);
+// int searchFirstGreater(double *v, int len, double z);
 
 
 
@@ -1979,6 +2030,8 @@ void printI(model *cov); //
 
 #define PMI(Cov) PMIL(Cov, 999999)    
 #define PMI0(Cov) PMIL(Cov, 0)
+#define PMI1(Cov) PMIL(Cov, 1)
+#define PMI2(Cov) PMIL(Cov, 2)
 #define APMIL(Cov, ML) { PMIL(Cov, ML); assert(false); }	  
 #define APMI(Cov)  APMIL(Cov, 999999)
 #define APMI0(Cov) APMIL(Cov, 0)
@@ -2109,6 +2162,25 @@ bool allowedIsubs(model *cov, model **sub, int z);
 #else
 #define ZZ
 #endif
+
+bool parallel();
+
+#define GETSTORAGE(Sx, From, Storage)			\
+  assert((From) != NULL && (From)->S##Storage != NULL);	\
+  Storage##_storage *Sx = (From)->S##Storage;		\
+  assert(Sx != NULL)
+#define getStorage(S, Storage)  GETSTORAGE(S, cov, Storage)
+
+#define STOMODEL stoModel
+#define GETSTOMODEL getStorage(STOMODEL, model)
+#define DELSTOMODEL model_DELETE(&(cov->Smodel), cov);    
+#define NEWSTOMODEL NEW_COV_STORAGE_SAVE(cov, model)
+#define ONCE_NEWSTOMODEL ONCE_NEW_STORAGE(model)
+
+// if (L == NULL) ERR("register not initialised as likelihood method");
+
+void Zero(model *cov, double *v);
+void Zero(int *info, model *cov, double *v);
 
 #endif
 

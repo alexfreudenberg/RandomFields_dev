@@ -84,32 +84,37 @@ int CopyModel(const char *name, int which, Types type);
 int CopyModel(const char *name, int which, checkfct check);
 void nickname(const char *nick);
 void AddVariant(Types type, isotropy_type iso);
-void addCov(covfct cf, covfct D, covfct inverse);
-void addCov(covfct cf, covfct D, covfct D2, covfct inverse);
-void addCov(covfct cf, covfct D, covfct D2, nonstat_inv inverse);
-void addCov(covfct cf, covfct D, covfct D2, 
-	    covfct inverse, nonstat_inv nonstat_inverse);
-void addCov(covfct cf, covfct D, covfct D2, covfct D3, covfct D4,
-	    covfct inverse);
-void addCov(covfct cf, covfct D, covfct D2, covfct D3, covfct D4,
-	    covfct inverse,  nonstat_inv nonstat_inverse);
-void addCov( int F_derivs, covfct cf, covfct D, covfct inverse);
-void addCov(int F_derivs, covfct cf, covfct D, covfct D2, covfct inverse,
-	    nonstat_inv nonstatinverse);
-void addCov( int F_derivs, covfct cf, covfct D, covfct D2, covfct D3, covfct D4,
-	    covfct inverse);
+
+// ACHTUNG: kritisch! int F_derivs wird als cf=NULL interpretiert !!
+void addCov(covfct cf);
 void addCov(nonstat_covfct cf);
-void addCov( int F_derivs , nonstat_covfct cf);
-void addCov(aux_covfct auxcf);
+//2
+void addCov(covfct cf, covfct D);
+//3
+void addCov(covfct cf, covfct D, inverse_fct inverse);
+void addCov(covfct cf, covfct D, covfct D2);
+// 4
+void addCov(covfct cf, covfct D, covfct D2, inverse_fct inverse);
+void addCov(covfct cf, covfct D, covfct D2, nonstat_inv inverse);
+//5
+void addCov(covfct cf, covfct D, covfct D2, 
+	    inverse_fct inverse, nonstat_inv inverse_nonstat);
+void addCov(covfct cf, covfct D, covfct D2, covfct D3, covfct D4);
+//6
+void addCov(covfct cf, covfct D, covfct D2, covfct D3, covfct D4,
+	    inverse_fct inverse);
+//7
+void addCov(covfct cf, covfct D, covfct D2, covfct D3, covfct D4,
+	    inverse_fct inverse,  nonstat_inv inverse_nonstat);
+//8
 void addCov(covfct distrD, covfct logdistrD, nonstat_inv Dinverse,
 	    covfct distrP, nonstat_covfct distrP2sided,
-	    covfct distrQ, covfct distrR, nonstat_covfct distrR2sided);
+	    inverse_fct distrQ, covfct distrR, nonstat_covfct distrR2sided);
 
-void addlogCov(logfct log, nonstat_logfct nonstatlog, 
-	       nonstat_inv lognonstat_inverse);
 void addlogCov(logfct log);
 void addlogCov(nonstat_logfct nonstatlog);
-
+void addlogCov(logfct log, nonstat_logfct nonstatlog,
+	       nonstat_inv loginverse_nonstat);
 
 void addlogD(covfct logD);
 
@@ -140,9 +145,9 @@ void RandomShape(int, initfct init, dofct Do);
 void addSpecial(minmaxfct minmaxeigen);
 void addGaussMixture(draw_random drawmix, log_mixdens logmixdens);
 
+int addFurtherCov(nonstat_covfct cf);
 int addFurtherCov(covfct cf, covfct D);
 int addFurtherCov(covfct cf, covfct D, covfct D2);
-int addFurtherCov(nonstat_covfct cf);
 void add_sortof(sortof_fct sortof);
 void change_sortof(int i, sortsofparam sort);
 void change_typeof(int i, Types type);
@@ -256,22 +261,33 @@ void subnames(const char* n1, const char* n2, const char* n3, const char* n4,
 
 int checkMissing(model *cov);
 
-void ScaleOne(double *x, model VARIABLE_IS_NOT_USED *cov, double *v);
+void inverseOne(double *x, model VARIABLE_IS_NOT_USED *cov, double *v);
 int struct_failed(model *cov, model **atom);
 int init_failed(model *cov, gen_storage *s);
 int init_statiso(model *cov, gen_storage *s);
 void do_failed(model *cov, gen_storage *s);
 void do_statiso(model *cov, gen_storage VARIABLE_IS_NOT_USED *s);
 int checkOK(model *cov);
-void ErrInverse(double *v, model *cov, double *x);
+void inverseErr(double *v, model *cov, double *x);
 void InverseIsotropic(double *U, model *cov, double *inverse);
+void inversenonstatStandard(double *v, model *cov, double *left, double*right);
+
+void ErrCov(double *x, int *, model *cov, double *v);
+void ErrD(double *x, int *, model *cov, double *v);
+void inverseErr(double *x, model *cov, double *v);
+void nonstatErrCov(double *x, double *y, int *, model *cov, double *v);
+void ErrLogCov(double *x, int*, model *cov, double *v, double *Sign);
+void nonstatErrLogCov(double *x, double *y, int*, model *cov, double *v, 
+		      double *Sign);
+void inversenonstatErr(double *v, model *cov, double *x, double *y);
+
+
 
 int structOK(model *cov, model **newmodel);
 int initOK(model *cov, gen_storage *s);
 void doOK(model *cov, gen_storage *s);
 void do_random_ok(model *cov, double *v);
 void do_random_failed(model *cov, double *v);
-
 					
 void setptwise(ptwise_type pt);
 

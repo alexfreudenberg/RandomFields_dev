@@ -45,26 +45,30 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 const char * OPTIM_VAR_NAMES[nOptimVar] = 
   {"never", "respect bounds", "try", "yes"}; // keep yes last !!
 
-
-void ResetWarnings(int * allwarnings) {
-  internal_param *w = &(GLOBAL.internal);
-  w->warn_oldstyle = w->warn_newstyle = w->warn_Aniso = 
-    w->warn_normal_mode = w->warn_mode = w->warn_coordinates =
-    w->warn_on_grid = w->warn_no_fit = w->warn_aspect_ratio = 
-    w->warn_coord_change = w->warn_color_palette = w->warn_zenit =
-    w->warn_constant = w->warn_negvar = w->warn_onlyvar = w->warn_no_fit =
-    w->warn_parallel = w->note_mle = w->warn_matrix_NA = true;
-  w->allow_duplicated_loc = false;   
-  w->warn_mathdef = w->detection_note = Nan;
-  if (*allwarnings) w->warn_ambiguous = true;
+/*
+void ResetWarnings(int * allwarnings, int *local) {
+  if (parallel() && !local) 
+     ERR("Warnings may not be reset from a parallel process.");        
+  messages_param *w = local ? KEYT() : &(GLO BAL.messages);
+  w->warn_oldstyle = w->help_newstyle = w->warn_Aniso = 
+    w->help_normal_mode = w->warn_mode =
+    w->warn_on_grid = w->note_no_fit = w->note_aspect_ratio = 
+    w->warn_coord_change = w->help_color_palette = w->warn_zenit =
+    w->warn_constant = w->warn_negvar = w->help_onlyvar = w->note_no_fit =
+    w->warn_parallel = w->help_mle = 
+    w->warn_raw_covariates = w->help_addNA = w->help_help =
+    w->warn_ambiguous = true;
+  w->warn_mathdef = Nan;
+  w->note_coordinates = w->note_detection = w->warn_seed = NOTE_WITH_HINT;
+  if (*allwarnings) w->note_ambiguous = true;
 }
+*/
 
 
 #define startmode normal
 #define NM ((int) startmode)   /* normal mode */
 //       {careless, sloppy, easygoing, normal, precise, pedantic, neurotic}
 bool
-  allowdistance0[nr_modes] = {true, false, false, false, false, false, false},
   skipchecks[nr_modes] =  {true, false, false, false, false, false, false},
   ce_force[nr_modes] =       {true, true, true, false, false, false, false},
   ce_dependent[nr_modes] =   {true, true, true, false, false, false, false},
@@ -116,8 +120,7 @@ const char *f_opt[nr_modes] = {"optim", "optim", "optim", "optim", "optim", "opt
 
 int 
 PL = 1,
-  CORES = INITCORES, // FINITE 
-  NS = NAT_SCALE;
+  CORES = INITCORES; //  return;  TO DO: replace by KEYT->global_utils
 globalparam GLOBAL = {
   general_START,
   gauss_START,
@@ -135,22 +138,30 @@ globalparam GLOBAL = {
   extreme_START,
   br_START,
   distr_START,
-  fit_START, 
+  {fit_START}, 
   
   empvario_START, 
   gui_START,  
   graphics_START,
   register_START,
   internal_START,
-  coords_START, 
+  messages_START,
+  {coords_START}, 
   special_START
 
 };   
 utilsparam *GLOBAL_UTILS;
   
 
-void SetDefaultOutputModeValues(output_modes mode){
+void SetDefaultOutputModeValues(output_modes mode, bool local){
+  if (!local && parallel())
+    ERR("global options may be set only by RFoptions()");
+  
   general_param *gp = &(GLOBAL.general);
+  if (local) {
+    KEY_type * KT = KEYT();
+    gp = &(KT->global.general);
+   }
   gp->output = mode;
   gp->sp_conform = mode == output_sp;
   gp->returncall = mode == output_geor;
@@ -170,40 +181,46 @@ void SetDefaultOutputModeValues(output_modes mode){
 }
 
 
-void SetDefaultModeValues(int old, int m){
+void SetDefaultModeValues(int old, int m, bool local){
   //                      high  fast, normal, save, pedantic
-  GLOBAL_UTILS->basic.skipchecks = skipchecks[m];
-  GLOBAL.general.pch = pch[m];
-  GLOBAL.general.exactness = exactness[m];
-  GLOBAL.general.allowdist0 = allowdistance0[m];
-  GLOBAL.krige.locmaxn = locmaxn[m];
-  GLOBAL.krige.locsplitn[NEIGHB_MIN]  = MINSPLITN(locmaxn[m]);
-  GLOBAL.krige.locsplitn[NEIGHB_SPLIT]  = MEDSPLITN(locmaxn[m]);
-  GLOBAL.krige.locsplitn[NEIGHB_MAX]  = MAXSPLITN(locmaxn[m]);
-  GLOBAL.ce.force = ce_force[m];
-  GLOBAL.ce.tol_im = ce_tolIm[m];
-  GLOBAL.ce.tol_re = ce_tolRe[m];
-  GLOBAL.ce.trials = ce_trials[m];
-  GLOBAL.ce.dependent = ce_dependent[m];
-  GLOBAL.ce.approx_grid_step = ce_approx_step[m];
-  GLOBAL_UTILS->solve.svd_tol = svd_tol[m];
-  GLOBAL.nugget.tol = nugget_tol[m];
-  for(int i=0; i<4; GLOBAL.spectral.lines[i++] = spectral_lines[m]);
-  GLOBAL.spectral.grid = sp_grid[m];
-  GLOBAL.tbm.lines[1] = tbm_lines[m];
-  GLOBAL.tbm.lines[2] = (tbm_lines[m] * 25) / 6;
-  GLOBAL.tbm.linesimufactor = tbm_linefactor[m];
-  GLOBAL.tbm.grid = sp_grid[m];
-  GLOBAL.mpp.n_estim_E = mpp_n_estim_E[m];
-  for(int i=0; i<4; GLOBAL.mpp.intensity[i++] = mpp_intensity[m]);
-  GLOBAL.mpp.about_zero = mpp_zero[m];
-  GLOBAL.hyper.superpos = hyper_superpos[m];
-  GLOBAL.extreme.standardmax = max_max_gauss[m];
-  GLOBAL.fit.locmaxn = maxclique[m];
-  GLOBAL.fit.locsplitn[NEIGHB_MIN] = MINCLIQUE(maxclique[m]);
-  GLOBAL.fit.locsplitn[NEIGHB_MED] = MEDCLIQUE(maxclique[m]);
-  GLOBAL.fit.locsplitn[NEIGHB_MAX] = MAXCLIQUE(maxclique[m]);
-  fit_param *f = &(GLOBAL.fit);
+  if (!local && parallel())
+    ERR("global options may be set only by RFoptions()");
+  KEY_type * KT = KEYT();
+  utilsparam *global_utils = local ? &(KT->global_utils) : GLOBAL_UTILS;
+  globalparam *global = local ? &(KT->global) : &GLOBAL;
+  
+			      
+  global_utils->basic.skipchecks = skipchecks[m];
+  global->general.pch = pch[m];
+  global->general.exactness = exactness[m];
+  global->krige.locmaxn = locmaxn[m];
+  global->krige.locsplitn[NEIGHB_MIN]  = MINSPLITN(locmaxn[m]);
+  global->krige.locsplitn[NEIGHB_SPLIT]  = MEDSPLITN(locmaxn[m]);
+  global->krige.locsplitn[NEIGHB_MAX]  = MAXSPLITN(locmaxn[m]);
+  global->ce.force = ce_force[m];
+  global->ce.tol_im = ce_tolIm[m];
+  global->ce.tol_re = ce_tolRe[m];
+  global->ce.trials = ce_trials[m];
+  global->ce.dependent = ce_dependent[m];
+  global->ce.approx_grid_step = ce_approx_step[m];
+  global_utils->solve.svd_tol = svd_tol[m];
+  global->nugget.tol = nugget_tol[m];
+  for(int i=0; i<4; global->spectral.lines[i++] = spectral_lines[m]);
+  global->spectral.grid = sp_grid[m];
+  global->tbm.lines[1] = tbm_lines[m];
+  global->tbm.lines[2] = (tbm_lines[m] * 25) / 6;
+  global->tbm.linesimufactor = tbm_linefactor[m];
+  global->tbm.grid = sp_grid[m];
+  global->mpp.n_estim_E = mpp_n_estim_E[m];
+  for(int i=0; i<4; global->mpp.intensity[i++] = mpp_intensity[m]);
+  global->mpp.about_zero = mpp_zero[m];
+  global->hyper.superpos = hyper_superpos[m];
+  global->extreme.standardmax = max_max_gauss[m];
+  global->fit.locmaxn = maxclique[m];
+  global->fit.locsplitn[NEIGHB_MIN] = MINCLIQUE(maxclique[m]);
+  global->fit.locsplitn[NEIGHB_MED] = MEDCLIQUE(maxclique[m]);
+  global->fit.locsplitn[NEIGHB_MAX] = MAXCLIQUE(maxclique[m]);
+  fit_param *f = &(global->fit);
   f->split = fit_split[m];
   f->reoptimise = fit_reoptimise[m];
   f->ratiotest_approx = fit_ratiotest_approx[m];
@@ -218,21 +235,20 @@ void SetDefaultModeValues(int old, int m){
    char dummy[10];
   STRCPY(dummy, f_opt[m]);
   f->suboptimiser = f->optimiser = Match(dummy, OPTIMISER_NAMES, nOptimiser);
-  GLOBAL.sequ.initial = -(GLOBAL.sequ.back = sequ_back_initial[m]);
+  global->sequ.initial = -(global->sequ.back = sequ_back_initial[m]);
 
   //  printf("optimiser %d %s\n", f->optimiser,  OPTIMISER_NAMES[f->optimiser]);
 
-  internal_param *w = &(GLOBAL.internal);
-  w->stored_init = false;
+  messages_param *w = &(global->messages);
   if (m < normal) {
-    w->warn_Aniso = w->warn_ambiguous = 
-      w->warn_on_grid = w->warn_aspect_ratio = w->warn_color_palette = false;
+    w->warn_Aniso = w->note_ambiguous =  w->warn_ambiguous = 
+      w->warn_on_grid = w->note_aspect_ratio = w->help_color_palette = false;
     w->warn_mathdef = False;
   } else if (m>old) { 
-    w->warn_oldstyle = w->warn_Aniso = w->warn_no_fit = 
-      w->warn_aspect_ratio = true;
+    w->warn_oldstyle = w->warn_Aniso = w->note_no_fit = 
+      w->note_aspect_ratio = true;
     w->warn_mathdef = Nan;
-    if (m > normal) w->warn_ambiguous = w->warn_negvar = true;
+    if (m > normal) w->note_ambiguous = w->warn_negvar = true;
   }
   if (m != normal && w->warn_mode) {
     // hier:  Syscall param sched_setaffinity(mask) points to unaddressable byte
@@ -311,7 +327,7 @@ void CE_set(SEXP el, int j, char *name, ce_param *cp, bool isList) {
   case 9: cp->dependent = LOGI; break;
   case 10: cp->approx_grid_step = POS0NUM; break;
   case 11: cp->maxgridsize = POS0INT; break;
-  default: RFERROR("unknown parameter for GLOBAL.general");
+  default: RFERROR("unknown parameter for 'RFoptions', section 'general'");
   }
 }
  
@@ -325,8 +341,8 @@ const char * prefixlist[prefixN] =
    "mpp", "hyper", "maxstable",  // 11
    "br", "distr", "fit",         // 14
    "empvario", "gui", "graphics",// 17 
-   "registers", "internal", "coords", // 20
-   "special", OBSOLETENAME, "ignore"  // 23
+   "registers", "internal", "messages", "coords", // 20
+   "special", OBSOLETENAME, "ignore"  // 24
 };
 
 
@@ -334,7 +350,7 @@ const char * prefixlist[prefixN] =
 const char *general[generalN] =
   { "modus_operandi", "storing", "every", "gridtolerance", // 3
     "pch", "practicalrange", "spConform",  // 6
-    "exactness", "allowdistanceZero", "na_rm_lines",
+    "exactness", "duplicated_locations", "na_rm_lines",
     "vdim_close_together", "expected_number_simu", // 11
     "detailed_output", "Ttriple",
     "returncall", "output", "reportcoord", "set", // 17
@@ -346,7 +362,7 @@ const char *gauss[gaussN]= {"paired", "stationary_only", "approx_zero",
 			    "direct_bestvar", "loggauss", "boxcox"};
 
 const char *krige[krigeN] = { "return_variance", "locmaxn",
-			     "locsplitn", "locsplitfactor", "fillall"};
+			      "locsplitn", "locsplitfactor", "fillall"};
 
 const char *CE[CEN] = {"force", "mmin", "strategy", "maxGB",
 		       "maxmem", "tolIm","tolRe", 
@@ -412,7 +428,7 @@ const char * fit[fitN] =
    "pgtol", "pgtol_recall",  "factr",
    "factr_recall" ,
    "addNAlintrend", "emp_alpha", "suggesting_bounds", "trace",
-   "sub_optimiser"
+   "sub_optimiser", "return_hessian"
   };
 
 
@@ -429,33 +445,38 @@ const char *graphics[graphicsN]=
   {"close_screen","grPrintlevel","height","increase_upto","always_open_device",
    "file", "onefile", "filenumber", "resolution", "split_screen",
    "width", "always_close_device", "grDefault", "xlim", "maxchar",
-   "n.points"};
+   "n_points"};
 
 const char *registers[registersN] = 
   {"register", "predict_register", "likelihood_register"};
 
 const char * internals[internalN] =  {
+  "do_tests", "examples_reduced"};
+
+const char * messages[messagesN] =  {
   // Achtung ! warn parameter werden nicht pauschal zurueckgesetzt
-  "warn_oldstyle", "warn_newstyle", "warn_newAniso", 
-  "warn_ambiguous", "warn_normal_mode", 
+  "warn_oldstyle", "help_newstyle", "warn_newAniso", 
+  "note_ambiguous", "help_normal_mode", 
   "warn_mode", // internal --- not documented in RFoptions!
-  "stored.init",  "warn_scale", "warn_coordinates", "warn_on_grid",
+   "warn_scale", "note_coordinates", "warn_on_grid",
   
-  "warn_no_fit", "warn_aspect_ratio", "warn_coord_change",
-  "warn_colour_palette", "warn_missing_zenit",
-  "do_tests", "warn_constant", "warn_negvar", "warn_onlyvar",
-  "warn_definite", // internal --- not documented in RFoptions!
+  "note_no_fit", "note_aspect_ratio", "warn_coord_change",
+  "help_colour_palette", "warn_missing_zenit",
+   "warn_constant", "warn_negvar", "help_onlyvar",
+  "warn_mathdef", // internal --- not documented in RFoptions!
   
-  "examples_reduced", "warn_parallel", "allow_duplicated_locations",
+  "warn_parallel", 
   "warn_seed", "warn_modus_operandi", // 17.11.20 to be deleted in near future
-  "warn_singlevariab", "note_mle", "warn_matrix_NA", "detection_note"
-};
+  "warn_singlevariab", "help_mle", "note_detection",
+  "warn_raw_covariates", "help_addNA", "help_help", "warn_ambiguous"};
 
 const char *coords[coordsN] =
   { "xyz_notation", "coord_system", "new_coordunits", "coordunits", "varunits",
     "varidx", "varnames", "coordidx", "coordnames", "new_coord_system",
     "zenit", // "radius",
-    "polar_coord", "angleunits", "allow_earth2cart"};
+    "polar_coord", "angleunits", "allow_earth2cart",
+    "dataframe_initial", "coord_initial", "max_columns", "max_coord",
+    "cartesian_names", "earth_coord_names"};
 
 const char * special[specialN] = {"multicopies"};
 
@@ -472,28 +493,29 @@ const char **all[prefixN] = {general, gauss, krige, CE, direct,
 			     pnugget, sequ, spectral, pTBM, mpp,
 			     hyper, extreme, br, distr, fit, 
 			     empvario, gui, graphics, registers, internals, 
-			     coords, special, obsolete, ignore};
+			     messages, coords, special, obsolete, ignore};
 
 int allN[prefixN] = {generalN, gaussN, krigeN, CEN, directN,
 		     pnuggetN,  sequN, spectralN, pTBMN, mppN,
 		     hyperN, extremeN, brN, distrN, fitN, 
 		     empvarioN, guiN, graphicsN, registersN, internalN, 
-		     coordsN, specialN, obsoleteN, ignoreN};
+		     messagesN, coordsN, specialN, obsoleteN, ignoreN};
 
 
-globalparam *WhichOptionList(int local) {  
-  globalparam *ans = &GLOBAL;
-  if (local != isGLOBAL) {
+globalparam *WhichOptionList(bool local) {  
+  if (local) {
     KEY_type *KT = KEYT();
-    ans = &(KT->global);
+    if (KT == NULL) BUG;
+    return &(KT->global);
   }
-  return ans;
+  return &GLOBAL;
 }
 
 void setparameter(int i, int j, SEXP el, char name[200], bool isList,
-		  int local) {
-  //  printf("setparameter %s %d %d\n", name, i, j);
-  // printf("sp %d %d ", i, j);
+		  bool local) {  
+  //  printf("setparameter %s %d %d local=%d\n", name, i, j, local);
+   
+  if (parallel()) ERR("'RFoptions' may not be set from a parallel process.")
 
   globalparam *options = WhichOptionList(local);
   //bool isList = options == &GLOBAL;
@@ -507,41 +529,48 @@ void setparameter(int i, int j, SEXP el, char name[200], bool isList,
       int old_mode = gp->mode;
       gp->mode = GetName(el, name, MODE_NAMES, nr_modes, normal);
 #ifndef SCHLATHERS_MACHINE
-      if (old_mode != gp->mode && GLOBAL.internal.warn_modus_operandi) {
+      if (old_mode != gp->mode && options->messages.warn_modus_operandi) {
 	  PRINTF("\n"); //verstehe wer will -- es gab hier eine valgrind warning
 	 PRINTF("Note that behaviour of 'modus_operandi' has changed within 'RFfit' in version 3.1.0 of RandomFields. Roughly:\nwhat was called 'careless' is now called 'sloppy';\n");
 PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'easygoing' is now called 'normal';\nwhat was called 'normal' is now called 'precise';\netc.\n");
-	GLOBAL.internal.warn_modus_operandi = false;
+	options->messages.warn_modus_operandi = false;
    }
 #endif  
-     SetDefaultModeValues(old_mode, gp->mode);
+      SetDefaultModeValues(old_mode, gp->mode, local);
   }
        break;
-   case GENERAL_STORING: {
-      gp->storing = LOGI;
-      if (!gp->storing) {
-	if  (length(el) > 1) {
-	  int len = length(el);
-	  for (int elnr=1; elnr < len; elnr++) {
-	    int nr = Integer(el, (char*) "storing (register)", elnr);
-	    if (nr != NA_INTEGER && nr>=0 && nr<=MODEL_MAX) {
-	      model **key = KEY() + nr;
+    case GENERAL_STORING: {
+      bool storing = LOGI;
+      if  (length(el) > 1) {
+	int len = length(el);
+	for (int elnr=1; elnr < len; elnr++) {
+	  int nr = Integer(el, (char*) "storing (register)", elnr);
+	  if (nr>=0 && nr<=MODEL_MAX) {
+	    model **key = KEY() + nr;
 	      if (*key != NULL) COV_DELETE(key, NULL);
-	    }
-	  }
-	} else {	  
+	  } else ERR("register number out of range");
+	}
+      } else if (gp->storing) {	  
 	  // delete all keys
+	if (local) {
+	  KEY_type *KT = KEYT();
+	  for (int nr=0; nr<=MODEL_MAX; nr++) {
+	    model **key = KEY() + nr;
+	    if (*key != NULL) COV_DELETE(key, NULL);
+	  }
+	} else {
 	  for (int kn=0; kn<PIDMODULUS; kn++) {
 	    KEY_type *KT = PIDKEY[kn];
 	    while (KT != NULL) {
 	      KEY_type *q = KT;
-	      KT = KT->next;
-	      KEY_type_DELETE(&q);
+		KT = KT->next;
+		KEY_type_DELETE(&q);
 	    }
 	    PIDKEY[kn] = NULL;
 	  }
 	}
       }
+      gp->storing = storing;
    }
       break;
    case 2: gp->every = POS0INT;      break;
@@ -552,13 +581,14 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
       n =INT;  
       if (n!=0 && n!=1 && n!=2 && n!=3)
 	RFERROR("PracticalRange out of range. It should be TRUE or FALSE.");
-      NS = gp->naturalscaling = n;
+       gp->naturalscaling = n;
       break;
     case 6: 
-      SetDefaultOutputModeValues(LOGI ? output_sp : output_rf);
+      SetDefaultOutputModeValues(LOGI ? output_sp : output_rf, local);
       break;
     case GENERAL_EXACTNESS: gp->exactness = USRLOG; break; 
-    case 8: gp->allowdist0 = LOGI; break;
+    case 8: gp->duplicated_loc =
+	GetName(el, name, DUPLICATEDLOC_NAMES, nDuplicatedloc); break; 
     case 9: gp->na_rm_lines = LOGI; break;
     case GENERAL_CLOSE: gp->vdim_close_together = LOGI;    
       if (gp->vdim_close_together) {
@@ -574,13 +604,17 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
     case 15:
       SetDefaultOutputModeValues((output_modes) 
 				 GetName(el, name, OUTPUTMODE_NAMES, 
-					 nr_output_modes, gp->output));
+					 nr_output_modes, gp->output), local);
       break;
     case GENERAL_REPORTCOORD:
       gp->reportcoord = GetName(el, name, REPORTCOORD_NAMES, 
 				nr_reportcoord_modes, gp->reportcoord);
       break;      
-    case 17: gp->set = POSINT - 1; break;
+    case 17: {      
+      // gp->set = POSINT - 1;
+      if (POSINT != 1) ERR("option 'set' currently disabled. Please contact maintainer if option is needed.");
+      break;
+    }
     case 18: gp->seed_incr = INT; break;
     case 19: gp->seed_sub_incr = INT; break;
     default: BUG;
@@ -678,8 +712,13 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
 	}	
       }
       dp->maxvariables = mv;
-      //    printf("sm=%d\n", GLOBAL_UTILS->solve.max_chol);
-      GLOBAL_UTILS->solve.max_chol = MAX(mv, DIRECT_ORIG_MAXVAR);
+      solve_param *sp;
+      if (local) {
+	KEY_type *KT = KEYT();
+	if (KT == NULL) BUG;
+	sp = &(KT->global_utils.solve);
+      } else sp = &(GLOBAL_UTILS->solve);
+      sp->max_chol= MAX(mv, DIRECT_ORIG_MAXVAR);
     }
      break;
     default: BUG;
@@ -926,7 +965,6 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
     case 36: ef->addNAlintrend = POS0NUM; break;
     case 37: {
       double m = NUM;
-      //      printf("m=%f\n", m);
       if (FABS(m) <= 2.0) ef->emp_alpha = m;
       else RFERROR("'emp_method' not witin {RC_VARIOGRAM, RC_PSEUDO, RC_COVARIANCE}");
       break;
@@ -936,6 +974,7 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
     case 40: ef->suboptimiser =  
 	GetName(el, name, OPTIMISER_NAMES, nOptimiser, 0); //
       break;
+    case 41: ef->return_hessian = LOGI; break;
      default:  BUG;
       }}
   break;
@@ -952,7 +991,13 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
       if (ep->theta0 > TWOPI) ep->theta0 = mod( ep->theta0, TWOPI);
       break;    
     case 2: ep->tol=NUM; break;    
-    case 3: ep->fft = LOGI; break;
+    case 3:
+      ep->fft = LOGI;
+      if (ep->fft) {
+	ERR("fft is currently disabled"); // TO DO
+	ep->fft = false;
+      }
+      break;
     case 4: ep->halveangles = LOGI; break;
 
     case 5: {
@@ -1030,7 +1075,6 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
       }}
       break;
       case 17: { // graphics
-	//   printf("not ok\n"); break;
 	graphics_param *gp = &(options->graphics);
 	switch(j) {
 	case 0 : gp->close_screen = LOGI; break;
@@ -1105,63 +1149,68 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
   case 19: {
     internal_param *wp = &(options->internal);
     // ACHTUNG internal wird nicht pauschal zurueckgesetzt !
-    if (!isList) {
-      switch(j) {
-      case 0: wp->warn_oldstyle = LOGI;       break;
-      case 1: wp->warn_newstyle = LOGI;       break;
-      case INTERNALS_NEWANISO: wp->warn_Aniso = LOGI;       break;
-      case 3: wp->warn_ambiguous = LOGI;       break;
-      case 4: wp->warn_normal_mode = LOGI;       break;
-      case 5: wp->warn_mode = LOGI;       break;
-      case INTERNALS_STORED_INIT: wp->stored_init = LOGI;       break;
-      case 7: wp->warn_scale = LOGI;       break;
-      case 8: wp->warn_coordinates = LOGI;	break;
-      case INTERNALS_ONGRID: wp->warn_on_grid = LOGI;       break;
-      case 10: wp->warn_no_fit = LOGI;       break;
-      case 11: wp->warn_aspect_ratio = LOGI;       break;
-      case INTERNALS_COORD_CHANGE: wp->warn_coord_change = LOGI;       break;
-      case 13: wp->warn_color_palette = LOGI;       break;
-      case INTERNALS_ZENIT: wp->warn_zenit = LOGI;       break;
-      case INTERNALS_DO_TESTS: wp->do_tests = LOGI;       break;
-      case 16: wp->warn_constant = LOGI;       break;
-      case 17: wp->warn_negvar = LOGI;       break;
-      case 18: wp->warn_onlyvar = LOGI;       break;
-      case 19: wp->warn_mathdef = USRLOG; break;
-      case INTERNALS_EX_RED: wp->examples_reduced= POS0INT;  
-	if (wp->examples_reduced > 0 && 
-	    wp->examples_reduced < MAX_LEN_EXAMPLES)
-	  wp->examples_reduced = MAX_LEN_EXAMPLES;
-	break;
-      case INTERNALS_PARALLEL : wp->warn_parallel = LOGI;       break;
-      case 22: wp->allow_duplicated_loc = LOGI; break;
-      case 23: wp->warn_seed = POS0INT; break;
-      case 24: wp->warn_modus_operandi = LOGI; break;
-      case 25: wp->warn_singlevariab = LOGI; break;
-      case 26: wp->note_mle = LOGI; break;
-      case 27: wp->warn_matrix_NA = LOGI; break;
-      case 28: wp->detection_note = USRLOG; break;
-      default: BUG; 
-      }
-    } else {
-      switch(j) {
-      case INTERNALS_STORED_INIT: wp->stored_init = LOGI;       break;
-      case INTERNALS_ONGRID :  wp->warn_on_grid = LOGI; break;
-      case INTERNALS_COORD_CHANGE: wp->warn_coord_change = LOGI;       break;
-      case INTERNALS_ZENIT: wp->warn_zenit = LOGI;       break;
+    switch(j) {
       case INTERNALS_DO_TESTS: wp->do_tests = LOGI;       break;
       case INTERNALS_EX_RED: wp->examples_reduced= POS0INT;  
 	if (wp->examples_reduced > 0 && 
 	    wp->examples_reduced < MAX_LEN_EXAMPLES)
 	  wp->examples_reduced = MAX_LEN_EXAMPLES;
 	break;
-      case INTERNALS_PARALLEL : wp->warn_parallel = LOGI;       break;
-  default : {} // none
-      }      
+    default: BUG; 
     }
   }
     break;
 
   case 20: {
+    messages_param *wp = &(options->messages);
+    // ACHTUNG messages wird nicht pauschal zurueckgesetzt !
+    if (!isList) {
+      switch(j) {
+      case 0: wp->warn_oldstyle = LOGI;       break;
+      case 1: wp->help_newstyle = LOGI;       break;
+      case MESSAGES_NEWANISO: wp->warn_Aniso = LOGI;       break;
+      case 3: wp->note_ambiguous = LOGI;       break;
+      case 4: wp->help_normal_mode = LOGI;       break;
+      case 5: wp->warn_mode = LOGI;       break;
+      case 6: wp->warn_scale = LOGI;       break;
+      case 7: wp->note_coordinates = POS0INT;	break;
+      case MESSAGES_ONGRID: wp->warn_on_grid = LOGI;       break;
+      case 9: wp->note_no_fit = LOGI;       break;
+      case 10: wp->note_aspect_ratio = LOGI;       break;
+      case MESSAGES_COORD_CHANGE: wp->warn_coord_change = LOGI;       break;
+      case 12: wp->help_color_palette = LOGI;       break;
+      case MESSAGES_ZENIT: wp->warn_zenit = LOGI;       break;
+      case 14: wp->warn_constant = LOGI;       break;
+      case 15: wp->warn_negvar = LOGI;       break;
+      case 16: wp->help_onlyvar = LOGI;       break;
+      case 17: wp->warn_mathdef = USRLOG; break;
+      case MESSAGES_PARALLEL : wp->warn_parallel = LOGI;       break;
+      case 19: wp->warn_seed = POS0INT; break;
+      case 20: wp->warn_modus_operandi = LOGI; break;
+      case 21: wp->warn_singlevariab = LOGI; break;
+      case 22: wp->help_mle = LOGI; break;
+      case 23: wp->note_detection = POS0INT; break;
+      case MESSAGES_RAW: wp->warn_raw_covariates = LOGI; break;
+      case 25: wp->help_addNA = LOGI; break;
+      case 26: wp->help_help = LOGI; break;
+      case 27: wp->warn_ambiguous = LOGI;       break;
+    default: BUG; 
+      }
+    } else {
+      switch(j) {
+      case MESSAGES_ONGRID :  wp->warn_on_grid = LOGI; break;
+      case MESSAGES_COORD_CHANGE: wp->warn_coord_change = LOGI;       break;
+      case MESSAGES_ZENIT: wp->warn_zenit = LOGI;       break;
+      case MESSAGES_PARALLEL : wp->warn_parallel = LOGI;       break;
+      case MESSAGES_RAW: wp->warn_raw_covariates = LOGI; break; 	
+      default : {} // none
+      }
+    }
+  }
+    break;
+
+
+  case 21: {
     coords_param *cp = &(options->coords);
     switch(j) {
     case COORDS_XYZNOTATION: cp->xyz_notation = USRLOG; break;
@@ -1184,12 +1233,10 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
       }
     } 
      break; 
-    case 2: getUnits(el, name, cp->newunits, NULL);
-      break;
+    case 2: getUnits(el, name, cp->newunits, NULL);  break;
     case 3: getUnits(el, name, cp->curunits, isList ? NULL : cp->newunits);
       break;
-    case 4: getUnits(el, name, cp->varunits, NULL);      
-      break;
+    case 4: getUnits(el, name, cp->varunits, NULL);  break;
     case COORDS_DATAIDX:
       // either exct column number must be given
       //                      or a set of potential variable names
@@ -1226,28 +1273,44 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
       if (cp->new_coord_system == coord_auto) cp->new_coord_system = coord_keep;
       break; 
 
-    case ZENIT: {
-      Real(el, name, cp->zenit, 2);
-    }
-    break; 
- 
-    case 11: cp->polar_coord = LOGI; 
+    case ZENIT: Real(el, name, cp->zenit, 2);
+      break;  
+    case 11: cp->polar_coord = LOGI; break;
+    case 12: cp->anglemode =
+	(angle_modes) GetName(el, name, ANGLE_NAMES, last_angle_mode + 1, -1);
+     break; 
+    case 13: cp->allow_earth2cart = LOGI; break;
+    case 14: STR(cp->data_col_initial, MAXCHAR-1);
+      if (STRLEN(cp->data_col_initial) > 0 &&
+	  !STRCMP(cp->data_col_initial,cp->coord_initial)) {
+	ERR("'data_col_initial' and 'coord_initia' may not be the same");
+	STRCPY(cp->data_col_initial, "");
+      }
       break;
-
-    case 12: {
-      cp->anglemode = (angle_modes) GetName(el, name, ANGLE_NAMES,
-					    last_angle_mode + 1, -1);
-    }
-     break;
-     
-    case 13: cp->allow_earth2cart = LOGI; 
+    case 15: STR(cp->coord_initial, MAXCHAR-1);
+      if (STRLEN(cp->coord_initial)>0 &&
+	  !STRCMP(cp->data_col_initial,cp->coord_initial)) {
+	ERR("'data_col_initial' and 'coord_initia' may not be the same.");
+	STRCPY(cp->coord_initial, "");
+      }
       break;
-  
+    case 16: cp->max_col = POSINT; break;
+    case 17: cp->max_coord = POSINT; break;
+    case 18:
+      if (length(el) != 4)
+	ERR("vector of cartesian names must have 4 elements.");
+      String(el, name, cp->cartesian_names, 4);
+      break;
+    case 19:
+      if (length(el) != 4)
+	ERR("vector of earth coordinates names must have 4 elements.");
+      String(el, name, cp->earthcoord_names, 4);
+      break;     
    default: BUG;
     }}
     break;
 
-  case 21: {
+  case 22: {
     special_param *sp = &(options->special);
     switch(j) {
     case 0: sp->multcopies = POSINT;
@@ -1257,14 +1320,14 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
     break;
 
 
-  case 22: { // obsolete
-    internal_param *wp = &(options->internal);
+  case 23: { // obsolete
+    messages_param *wp = &(options->messages);
     switch(j) {
     case 0: wp->warn_oldstyle = LOGI;       break;
-    case 1: wp->warn_newstyle = LOGI;       break;
+    case 1: wp->help_newstyle = LOGI;       break;
     case 2: wp->warn_Aniso = LOGI;       break;
-    case 3: wp->warn_ambiguous = LOGI;       break;
-    case 4: wp->warn_normal_mode = LOGI;       break;
+    case 3: wp->note_ambiguous = LOGI;       break;
+    case 4: wp->help_normal_mode = LOGI;       break;
     case 8: RFERROR("'matrix_inversion' has been changed to 'matrix_methods'" );
       break;
     case 9: RFERROR("'matrix_tolerance' has been changed to 'svd_tol'" );
@@ -1275,7 +1338,7 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
     }}
     break;
 
-  case 23: { // ignore
+  case 24: { // ignore
     switch(j) {
     case 0 : // printf("trend type = %d\n", TYPEOF(el));
       break;
@@ -1288,37 +1351,38 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
   // printf("end setparameter\n");
 }
 
-  
-void getRFoptions(SEXP sublist, int i, int local) {
-  int k=0;
+
+
+
+#define AddScalarLogInt(X)						\
+  if ((X)==0 || (X)==1) {ADD(ScalarLogical(X));} else {ADD(ScalarInteger(X));}
+
+void getRFoptions(SEXP sublist, int i, bool local) {
+  //  printf("get %d local=%d\n", i, local);
+    int k=0;
   char x[2]=" ";
   //#define ADD(ELT) {printf(#ELT"\n");SET_VECTOR_ELT(sublist, k++, ELT);}
   globalparam *options = WhichOptionList(local);
-  //  printf("i=%d\n", i);
-   switch(i) {
+  switch(i) {
   case 0 : { 
-    // printf("OK %d\n", i);
      general_param *p = &(options->general);
     ADD(ScalarString(mkChar(MODE_NAMES[p->mode])));
     ADD(ScalarLogical(p->storing));
     ADD(ScalarInteger(p->every));    
     ADD(ScalarReal(p->gridtolerance));
     ADDCHAR(p->pch);
-    if (p->naturalscaling==0 || p->naturalscaling==1) {
-      ADD(ScalarLogical(p->naturalscaling));
-    } else {
-      ADD(ScalarInteger(p->naturalscaling));
-    }
+    AddScalarLogInt(p->naturalscaling); 
     ADD(ScalarLogical(p->sp_conform));
     ADD(ExtendedBooleanUsr(p->exactness));    
-    ADD(ScalarLogical(p->allowdist0));   
+    ADD(ScalarString(mkChar(DUPLICATEDLOC_NAMES[p->duplicated_loc])));
+  
     ADD(ScalarLogical(p->na_rm_lines));   
     ADD(ScalarLogical(p->vdim_close_together));
     ADD(ScalarInteger(p->expected_number_simu));    
     ADD(ScalarLogical(p->detailed_output));   
     ADD(ScalarLogical(p->Ttriple == NA_INTEGER ? NA_LOGICAL
 		      : p->Ttriple != 0));
-    ADD(ScalarLogical(p->returncall));   
+    ADD(ScalarLogical(p->returncall));
     ADD(ScalarString(mkChar(OUTPUTMODE_NAMES[p->output])));
     ADD(ScalarString(mkChar(REPORTCOORD_NAMES[p->reportcoord])));
     ADD(ScalarInteger(p->set + 1));   
@@ -1326,8 +1390,6 @@ void getRFoptions(SEXP sublist, int i, int local) {
     ADD(ScalarInteger(p->seed_sub_incr));   
   }
   break;
-  
-  //  printf("OK %d\n", i);
   
   case 1 : {
     gauss_param *p = &(options->gauss);
@@ -1516,7 +1578,6 @@ void getRFoptions(SEXP sublist, int i, int local) {
     ADD(ScalarLogical(p->reoptimise));
     ADD(p->optimiser>=0 ? ScalarString(mkChar(OPTIMISER_NAMES[p->optimiser])) 
 	: R_NilValue);
-    // printf("alg %d %s\n", p->algorithm, NLOPTR_NAMES[p->algorithm]);
     ADD(//p->algorithm == UNSET ? R_NilValue :
 	ScalarString(mkChar(//p->optimiser == 3 ?
 			    NLOPTR_NAMES[p->algorithm]
@@ -1539,6 +1600,7 @@ void getRFoptions(SEXP sublist, int i, int local) {
     ADD(p->suboptimiser>=0
 	? ScalarString(mkChar(OPTIMISER_NAMES[p->suboptimiser])) 
 	: R_NilValue);
+    ADD(ScalarLogical(p->return_hessian));
    }  
    break;
    
@@ -1600,52 +1662,56 @@ void getRFoptions(SEXP sublist, int i, int local) {
   
   case 19 : {
     internal_param *p = &(options->internal);
+    ADD(ScalarLogical(p->do_tests));
+    ADD(ScalarInteger(p->examples_reduced));
+  }
+   break;
+
+  case 20 : {
+    messages_param *p = &(options->messages);
     ADD(ScalarLogical(p->warn_oldstyle));
-    ADD(ScalarLogical(p->warn_newstyle));
+    ADD(ScalarLogical(p->help_newstyle));
     ADD(ScalarLogical(p->warn_Aniso));
-    ADD(ScalarLogical(p->warn_ambiguous));
-    ADD(ScalarLogical(p->warn_normal_mode));
-    
+    AddScalarLogInt(p->note_ambiguous);
+    ADD(ScalarLogical(p->help_normal_mode));    
     ADD(ScalarLogical(p->warn_mode));
-    ADD(ScalarLogical(p->stored_init));
     ADD(ScalarLogical(p->warn_scale));
-    ADD(ScalarLogical(p->warn_coordinates));
-    ADD(ScalarLogical(p->warn_on_grid));
-    
-    ADD(ScalarLogical(p->warn_no_fit));
-    ADD(ScalarLogical(p->warn_aspect_ratio));
+    AddScalarLogInt(p->note_coordinates);
+    ADD(ScalarLogical(p->warn_on_grid));    
+    ADD(ScalarLogical(p->note_no_fit));
+    ADD(ScalarLogical(p->note_aspect_ratio));
     ADD(ScalarLogical(p->warn_coord_change));
-    ADD(ScalarLogical(p->warn_color_palette));
+    ADD(ScalarLogical(p->help_color_palette));
     ADD(ScalarLogical(p->warn_zenit));
     
-    ADD(ScalarLogical(p->do_tests));
     ADD(ScalarLogical(p->warn_constant));
     ADD(ScalarLogical(p->warn_negvar));
-    ADD(ScalarLogical(p->warn_onlyvar));
+    ADD(ScalarLogical(p->help_onlyvar));
     ADD(ExtendedBooleanUsr(p->warn_mathdef));
     
-    ADD(ScalarInteger(p->examples_reduced));
     ADD(ScalarLogical(p->warn_parallel));
-    ADD(ScalarLogical(p->allow_duplicated_loc));
     ADD(ScalarInteger(p->warn_seed));    
     ADD(ScalarLogical(p->warn_modus_operandi));
     
     ADD(ScalarLogical(p->warn_singlevariab));
-    ADD(ScalarLogical(p->note_mle));
-    ADD(ScalarLogical(p->warn_matrix_NA));
-    ADD(ExtendedBooleanUsr(p->detection_note));
-   }
+    ADD(ScalarLogical(p->help_mle));
+    AddScalarLogInt(p->note_detection);
+    ADD(ScalarLogical(p->warn_raw_covariates));
+    ADD(ScalarLogical(p->help_addNA));
+    ADD(ScalarLogical(p->help_help));
+    AddScalarLogInt(p->warn_ambiguous);
+  }
    break;
 
 
-  case 20 : {
+  case 21 : {
     coords_param *p = &(options->coords);
     ADD(ExtendedBooleanUsr(p->xyz_notation));    
     ADD(ScalarString(mkChar(COORD_SYS_NAMES[p->coord_system])));
     ADD(UNITS(p->newunits));
     ADD(UNITS(p->curunits));
     ADD(UNITS(p->varunits)); // 4
-    int idx_default[2] = {1, NA_INTEGER};
+    int idx_default[2] = {NA_INTEGER, NA_INTEGER};
     if (p->data_nr_names == 0) {
       SET_VECTOR_ELT(sublist, k++, Int(p->data_idx, 2));
       SET_VECTOR_ELT(sublist, k++, String(NULL, 0));
@@ -1665,21 +1731,27 @@ void getRFoptions(SEXP sublist, int i, int local) {
     ADD(ScalarLogical(p->polar_coord));
     ADD(ScalarString(mkChar(ANGLE_NAMES[p->anglemode])));
     ADD(ScalarLogical(p->allow_earth2cart));
- }
+    ADD(ScalarString(mkChar(p->data_col_initial)));
+    ADD(ScalarString(mkChar(p->coord_initial)));
+    ADD(ScalarInteger(p->max_col));
+    ADD(ScalarInteger(p->max_coord));    
+    SET_VECTOR_ELT(sublist, k++, String(p->cartesian_names, 4));
+    SET_VECTOR_ELT(sublist, k++, String(p->earthcoord_names, 4));
+  }
    break;
 
-  case 21 : {
+  case 22 : {
     special_param *p = &(options->special);
     ADD(ScalarInteger(p->multcopies));    
   }
    break;
 
-   case 22: {
+   case 23: {
      // obsolete arguments
    }
      break;
      
-    case 23: {
+    case 24: {
      // ignored arguments: e.g. trend
    }
      break;
@@ -1694,9 +1766,25 @@ void getRFoptions(SEXP sublist, int i, int local) {
 }
 
 
-void finalparameter(int VARIABLE_IS_NOT_USED local) {
-  PL = GLOBAL_UTILS->basic.Cprintlevel - PLoffset;
-  CORES = GLOBAL_UTILS->basic.cores;
+SEXP setlocalRFutils(SEXP seed, SEXP printlevel) {
+  KEY_type *KT = KEYT();
+  assert(KT != NULL);
+  utilsparam *global_utils = &(KT->global_utils);
+  assert(global_utils != NULL);
+  if (length(seed) > 0)
+    global_utils->basic.seed = Integer(seed, (char *) "seed", 0);
+  if (length(printlevel) > 0) {
+    PL = global_utils->basic.Rprintlevel =
+      Integer(printlevel, (char *) "printlevel", 0);
+    global_utils->basic.Cprintlevel = global_utils->basic.Rprintlevel +PLoffset;
+  }
+  return R_NilValue;
+}
+
+void finalparameter() {
+  utilsparam *global_utils = GLOBAL_UTILS;
+  PL = global_utils->basic.Cprintlevel - PLoffset;
+  CORES = global_utils->basic.cores;
 }
 
 
@@ -1704,23 +1792,22 @@ void finalparameter(int VARIABLE_IS_NOT_USED local) {
 
 
 void loadRandomFields() { // no print commands!!!
-   includeXport();
-   // printf("GLO RU start %l/d\n", (Long) GLOBAL_UTILS);
+   //  printf("loading\n");
+  includeXport();
+  Ext_pid(&parentpid);
   Ext_getUtilsParam(&GLOBAL_UTILS);
-  // printf("GLO RU %ld\n", (Long) GLOBAL_UTILS);
-  //  GLOBAL_UTILS->basic.cores = 2;
-  //  PRINTF("Some default options in pkg 'RandomFieldsUtils' for matrix decomposition have been changed by 'RandomFields'. Only if you use 'RandomFieldsUtils' directly, you might notice these changes."); 
-  GLOBAL_UTILS->solve.max_chol = DIRECT_ORIG_MAXVAR;
-  // printf("xx %d\n",  GLOBAL_UTILS->solve.max_chol);
-  
-  GLOBAL_UTILS->solve.max_svd = 6555;
-  GLOBAL_UTILS->solve.pivot = PIVOT_AUTO;
-  GLOBAL_UTILS->solve.pivot_check = Nan;
+  utilsparam *global_utils = GLOBAL_UTILS;
+  global_utils->solve.max_chol = DIRECT_ORIG_MAXVAR;
+  global_utils->solve.max_svd = 6555;
+  global_utils->solve.pivot = PIVOT_AUTO;
+  global_utils->solve.pivot_check = Nan;
   Ext_attachRFoptions(prefixlist, prefixN, all, allN,
-		      setparameter, finalparameter, getRFoptions, NULL,
-		      PLoffset, true);
-   finalparameter(isGLOBAL);
-   InitModelList();
+  		      setparameter, finalparameter, getRFoptions, NULL,
+  		      PLoffset, true);
+  //  printf("before final\n");
+  finalparameter();
+  //  printf("before init\n");
+  InitModelList();
 }
 
 SEXP attachRandomFields() { // no print commands!!!
@@ -1736,8 +1823,8 @@ SEXP attachRandomFields() { // no print commands!!!
 #endif
 }
 
-
 void detachRandomFields() {
   Ext_detachRFoptions(prefixlist, prefixN);
 }
+
 

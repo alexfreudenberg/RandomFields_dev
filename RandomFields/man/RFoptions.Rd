@@ -53,7 +53,12 @@
   \bold{20. \code{special}: Options for some special methods}\cr
   \bold{21. \code{spectral}: Options for the spectral (turning bands) method}\cr
   \bold{22. \code{tbm}: Options for the turning bands method}\cr
-  \bold{23. \code{internal}: Internal}\cr\cr\cr
+  \bold{23. \code{\link{messsage}}: Options for hints, notes and
+    warnings}\cr
+ \bold{24. \code{internal}: Internal options, which should not be
+   changed by the user}\cr
+  \cr\cr
+  
   
 
   
@@ -69,18 +74,60 @@
 \bold{1. General options}
 \describe{
   % only works for RFsimulate, not for RFsimulate
-  \item{\code{allowdistanceZero}}{boolean. Only used in
-    \command{\link{RFinterpolate}} and in \command{\link{RFfit}}.
-    If true, then
-    multiple observations or identical locations
-    are allowed within a single data set.
-    In this case, the coordinates are slightly scattered, so that
-    the points have some tiny distances.
+  
+  \item{\code{duplicated_locations}}{Allowed values are \code{"error"},
+    \code{"risk error"},
+    \code{"regard as repeated"} and \code{"scatter"}:
+    \describe{
+      \item{\code{"error"}}{
+	In case of kriging, locations that appear in both the given data
+	and the locations to be predicted, are searched and eliminated.
+	This can be very time consuming.
+
+	In other situations (nearly)
+	duplicated locations will mostly end up in an
+	error, e.g. as covariance matrices cannot be inverted, or by
+	explicit detection (in some cases).
+      }
+
+      \item{\code{"risk error"}}{
+	No strategy is applied to avoid errors.
+	But also no early error checks are performed.
+	Duplicated locations will mostly end up in an
+	error.
+      }
+
+      \item{\code{"regard as repeated"}}{ duplicated locations are
+	considered 
+	as repeated measurement. The (standard) nugget effect becomes a
+	non-stationary 
+	model in an abstract space that cannot be extended outside the given
+	locations. See also \link{RPnugget} for the distinction between
+	measurement error (leading always to a non-stationary model!)
+	and spatial nugget.
+	When kriging is performed, an error
+	model must be given and kriging is not an exact interpolator
+	anymore.
+      }
+
+      \item{\code{"scatter"}}{
+	Coordinates that are not on a grid are slightly scattered, so that
+	the points have some tiny distances.
+
+	The exact behaviour behaves heavily on
+	\code{RFoption(nugget.tol=)}.
+	If the latter is zero, scattering will lead to different locations
+	that have different (spatial) nugget value.
+	If \code{nugget.tol}\eqn{>0}, then scattering will leave
+	identical locations within a neighbourhood less than
+	\code{nugget.tol}, so that they have still the same nugget
+	value.
+      }
+    }
     
-    Default: \code{FALSE}. 
+    Default: \code{"risk error"}.
   }
-  
-  
+
   \item{\code{cPrintlevel}}{
     \code{cPrintlevel} is automatically set to \code{printlevel}
     when \code{printlevel} is changed.
@@ -394,22 +441,18 @@
   
   \item{\code{storing}}{Logical.
     If \code{FALSE} then the intermediate results are
-    destroyed after the simulation of the random field(s)
-    or if an error had occured.
-    If \code{storing=TRUE}, then
+    destroyed after the call of a function \code{\link[RF]{RFfoo}}.
+    
+    If \code{storing=TRUE}, in particular
     additional simulations can be performed by calling
     \command{\link{RFsimulate}} with at most the argument \code{n}.
-    This call can then be much faster, but the a rather large
-    amount of memory could be kept.
+    This call can then be much faster, but a rather large
+    amount of memory will be kept.
     
-    When \code{storing} turned from \code{TRUE} to \code{FALSE} by
-    global call then all registers are deleted.
-    Advanced:
-    With \code{\link{RFoptions}(storing=list(FALSE, register,
-      model_register))}
-    single registers can be deleted.
+    When \code{storing} is turned from \code{TRUE} to \code{FALSE} by
+    global call then all is deleted.
     
-    Default: \code{FALSE} %[do]. 
+    Default: \code{FALSE} 
   }
   
   \item{\code{Ttriple}}{Logical or \code{NA}.
@@ -749,10 +792,10 @@
  
  
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
- \bold{8. \code{fit}: Options for \command{\link{RFfit}},
+ \bold{8. \code{\link{fit}}: Options for \command{\link{RFfit}},
    \command{\link{RFratiotest}}, and \command{\link{RFcrossvalidate}}}
 
- see \link{fit}.
+ see \code{\link{fit}}.
 
  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -812,6 +855,7 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \bold{10. \code{graphics}: Options for graphical output}
+These parameters should be set always globally by \command{RFoptions}.
 \describe{
   \item{\code{always_close_device}}{logical.
     If \code{FALSE} the current device is kept as it is;
@@ -1031,6 +1075,18 @@
 \bold{13. \code{krige}: Options for Kriging}
 \describe{
   
+ % \item{\code{apart_linear_fit}}{
+%    logical value in case the linear part
+%    (and/or the global variance) of the model are not determined yet,
+%    i.e. contain \code{NA}s.
+ %   
+%    If \code{TRUE} repeated measurements are always split up
+%%2    into different data sets, to which different linear parts of
+%    the model are fitted. See also \command{\link{RFinterpolate}}.
+%    
+%    Default: \code{FALSE}.
+%  }
+ 
   \item{\code{cholesky_R}}{ obsolete }
 
   \item{\code{fillall}}{
@@ -1040,7 +1096,7 @@
     
     Default: \code{TRUE}.
   }
-  
+   
   \item{\code{locmaxn}}{
     Kriging is conditions on maximal \code{locmaxn} points.
     If the data contain more points, neighbourhood kriging is performed.
@@ -1075,7 +1131,7 @@
   
   \item{\code{method}}{ obsolete }
   
-  \item{\code{return.variance}}{logical.
+  \item{\code{return_variance}}{logical.
     If \code{FALSE} the kriged field is
     returned. If \code{TRUE} a list of two elements, \code{estim} and
     \code{var}, i.e. the kriged field and the kriging variances,
@@ -1083,10 +1139,7 @@
     
     Default: \code{FALSE}. 
   }
-  
 }
-
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \bold{14. \code{maxstable}: Options for simulating max-stable random fields}
@@ -1575,266 +1628,35 @@ The user can use the registers 0..9.
  
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\bold{23. \code{internal}: Internal options mostly for warnings and
-  messages}
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \bold{23. \code{\link{messages}}: Options for specific messages}
 
-All these options should not be changed by the user unless
-he/she really known what he/she is doing.
-
-Most of the options below change their value in a session
-without the user's notice.
+ See \code{\link{messages}}.
 
 
-\describe{
 
-  \item{\code{allow_duplicated_locations}}{logical.
-    If \code{FALSE} duplicated locations are not allowed.
-    If \code{TRUE} then the (standard) nugget effect becomes a non-stationary
-    model in an abstract space that cannot be extended outside the given
-    locations. See also \link{RPnugget} for the distinction between
-    measurement error and spatial nugget.
-    
-    Default: \code{FALSE}.
-  }
-  
-  \item{\code{detection_note}}{
-    
-    
-    Default: \code{TRUE}.
-  }
 
-  \item{\code{do_tests}}{
-    Internal variable. Do not use it.
-    Default: \code{FALSE}.
-  }
 
-  \item{\code{examples_reduced}}{non-negative integer.
-    If positve, then the design of any simulation in \pkg{RandomFields}
-    is internally reduced in size (roughly downto the given value in each
-    direction). Warnings report this behaviour.
-    This option is necessary to run the examples of \pkg{RandomFields}
-    under the time constraint of CRAN.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \bold{24. Internal options}
+  Internal options should not be changed by the user.
+  \describe{    
+    \item{\code{do_tests}}{
+      Internal variable. Do not use it.
+      Default: \code{FALSE}.
     }
+
+    \item{\code{examples_reduced}}{non-negative integer.
+      If positve, then the design of any simulation in \pkg{RandomFields}
+      is internally reduced in size (roughly downto the given value in each
+      direction). Warnings report this behaviour.
+      This option is necessary to run the examples of \pkg{RandomFields}
+      under the time constraint of CRAN.
+    }
+  }
+
  
-  \item{\code{stored.init}}{Logical.
-    This option is closely related to 
-    \code{storing} which controls whether intermediate calculations
-    should be stored to have faster repeated simulations.
-
-    This user option is internally overwritten if the user calls several
-    simulations at once. This current value is stored in \code{stored.init}.
-  
-    Default: \code{FALSE}.
-  }
-
-  \item{\code{note.mle}}{Logical.
-    \command{\link{RFfit}} returns a list of fitted models according to
-    set of fitting methods used. Usually the user is interested in the
-    result obtained by MLE. So this result is extracted.
-    If \code{note.mle=TRUE} the user is given information how to extract
-    and to use other results.
-  
-    Default: \code{TRUE}.
-  }
-   
-  \item{\code{warn_ambiguous}}{Logical.
-    Usually, the argument \code{grid} in \command{\link{RFsimulate}},
-    for instance, can or should be given. If not given,
-    the system takes a default definition.
-    Additionally a message is displayed in this case if
-    \code{ambiguous=TRUE}.
-    
-    Default: \code{FALSE}.
-  }
-  \item{\code{warn_aspect_ratio}}{Logical.
-    if \code{TRUE} then a warning is given not a standard graphical
-    device is used and the package plots try to keep a certain aspect
-    ratio. 
-    
-    Default: \code{TRUE}
-  }
-      
-  \item{\code{warn_colour_palette}}{Logical.
-    If none of the packages \pkg{RColorBrewer} and \pkg{colorspace}
-    are available and graphics are displayed, a message is displayed.
-
-    Default: \code{TRUE}.
-  }
-  \item{\code{warn_constant}}{Logical.
-    The definition of \command{\link{RMconstant}} has changed.
-    A warning is displayed if the command is used. \code{warn_constant}
-    will become obsolete in future versions.
-    
-    Default: \code{TRUE}.
-  }
-  
-  \item{\code{warn_coordinates}}{Logical.
-    If \code{TRUE} then a transformation from earth coordinates to
-    cartesian coordinates is reported.
-    
-    Default: \code{TRUE}.
-  }
-
-   \item{\code{warn_coordinates}}{Logical.
-    If \code{TRUE} then a transformation from earth coordinates to
-    cartesian coordinates is reported.
-    
-    Default: \code{TRUE}.
-  }
- 
-   \item{\code{warn_coord_change}}{Logical.
-    If \code{TRUE} then it is reported if the covariance model relies on
-    to different coordinate systems.
-    
-    Default: \code{TRUE}.
-  }
-   \item{\code{warn_definite}}{Logical.
-    If \code{TRUE} then 
-    
-    Default: \code{TRUE}.
-  }
- 
-  
-  \item{\code{warn_missing_zenit}}{Logical. % to do
-    Only for Earth systems: a missing zenit is frequently a cause
-    for errors that are difficult to understand. Therefore, in such
-    cases an additional warning message is displayed.
-    
-    Default: \code{TRUE}
-  }
-
-   \item{\code{warn_negvar}}{Logical. In very special constructions of
-    the argument \code{var} the non-negativiy of the variance cannot be
-    detected, e.g. when the variance is given spatially varying function.
-    If \code{warn_negvar=TRUE} it is reported when the determination of
-    non-negativity is not possible.
-     
-    Default: \code{TRUE}.
-  }
-  
-  \item{\code{warn_newAniso}}{ obsolete.\cr
-    Logical.
-    If \code{newAniso=TRUE} and the argument \code{Aniso} is used in the model
-    definition, then a message is displayed that the matrix \code{Aniso}
-    is multiplied from the right by \eqn{x}, where up to Version 2.0
-    the argument \code{aniso} was available which was multiplied from
-    the left by \eqn{x}.
-     
-    Default: \code{TRUE}.
-  }
-  
-  \item{\code{warn_newstyle}}{Logical.
-    If \code{TRUE} a message is displayed the by the argument
-    \code{spConform=FALSE} oldstyle return values are obtained instead
-    of S4 objects.
-    
-    Default: \code{TRUE}.
-  }
-  
-  \item{\code{warn_normal_mode}}{Logical.
-    If \code{TRUE} then the function \command{\link{RFfit}}
-    displays the message that other values for the option
-    \code{modus_operandi} are available.
-    
-     Default: \code{TRUE}.
-   }
-
-   \item{\code{warn_no_fit}}{Logical.
-    If \code{TRUE} then the function \command{\link{RFfit}}
-    displays the message if, maybe except linear function parts, no
-    parameter has to estimated. Note that purely linear function parts can be
-    estimated by \command{\link{RFlikelihood}}.
-    
-     Default: \code{TRUE}.
-   }
-  
-   
-  \item{\code{warn_oldstyle}}{Logical.
-    If \code{TRUE} a warning is given if an obsolete function
-    from Version 2 is used.
-
-    Default: \code{TRUE}.
-  }
-
-  \item{\code{warn_onlyvar}}{Logical.
-    If \code{TRUE} a warning is given if \command{\link{RFfit}} is used
-    to fit the variance only, what should be done by
-    \command{\link{RFlikelihood}}.
-    
-    
-    Default: \code{TRUE}.
-  }
-
-  \item{\code{warn_on_grid}}{Logical.
-    If a (one-dimensional) grid is given, but the argument
-    \code{grid=FALSE}, e.g. in \code{RFsimulate}, this contraction is
-    reported if \code{warn_on_grid=TRUE}
-    
-    
-    Default: \code{TRUE}.
-  }
-  
-  \item{\code{warn_parallel}}{Logical.
-    The package \pkg{RandomFields} should not be called from within
-    functions of the packages \pkg{parallel} and alike.
-    If \code{TRUE} and \pkg{RandomFields} parallel calls a warning is
-    given.     
-    
-    Default: \code{TRUE}.
-  }
-
-  
-  \item{\code{warn_scale}}{Logical.
-    If \code{warn_scale=TRUE} then a scale less than 10 [km] is reported
-    if earth coordinates are transformed to cartesian coordinates.
-    
-    Default: \code{TRUE}.
-  }
-
-  \item{\code{warn_seed}}{integer.
-    If \code{warn_scale}\eqn{> 0} a note is given when the seed is fixed.    
-    Default: \code{2}.
-  }
-
-  \item{\code{warn_singlevariab}}{logical.
-    If covariance model is not stationary and pairs of
-    coordinates are not given, the second part of the pair is set to
-    zero. If \code{warn_singlevariab=TRUE}, additionally a warning is
-    given. 
-   
-    Default: \code{TRUE}.
-  }
-  
- \item{\code{warn_unknown_option}}{integer. This options is
-   best set by a separate call, i.e. by
-   \code{RFoptions(warn_unkown_option= )}. Values
-   \itemize{
-     \item{0}{no warning at all}
-     \item{+1,-1}{unkown option with lower case initial leads to an
-       error}
-     \item{+2,-2}{unknown option that does not consist of a single
-       capital letter leads to an error}
-     \item{+3}{any unknown options leads to an error}
-   }
-   Positive values lead to a message about the ignored unknown option.
-
-   Further values are used for internal purposes and should not be used.   
-   
-   Default: \code{3}.
-  }
-  
-  \item{\code{warn_var}}{
-    In some cases, \pkg{RandomFields} cannot detect whether the
-    variance is non-negative. If \code{TRUE} then a warning is displayed
-    in such a case.
-    Default: \code{TRUE}.
-  }
- 
-}
-
-
-
-
 %\bold{General comments}\cr
 %Most of the above arguments determine the basic settings of a
 %simulation, e.g. \code{matrix_method} (which chooses the method to
@@ -1857,7 +1679,6 @@ without the user's notice.
 %\code{n}.
 
 }
-
  
  
 \section{Value}{
@@ -1901,7 +1722,10 @@ without the user's notice.
 
 \me
 
-\seealso{\command{\link{RFsimulate}},
+\seealso{
+  \link{fit},
+  \link{messages},
+  \command{\link{RFsimulate}},
   \link{RFoptionsAdvanced},
  \code{\link[RandomFieldsUtils]{RFoptions}},
  and \command{\link{RFgetMethodNames}}.}
@@ -1912,7 +1736,7 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 
 RFoptions()
 
-
+\dontshow{\dontrun{
 ############################################################
 ##                                                        ## 
 ## use of exactness                                       ##
@@ -1925,8 +1749,9 @@ for (exactness in c(NA, FALSE, TRUE)) {
   readline(paste("\n\nexactness: `", exactness, "'; press return"))
   z <- RFsimulate(model, x, x, exactness=exactness,
                   stationary_only=NA, storing=TRUE)
-  print(RFgetModelInfo(which="internal")$internal$name)
+  print(RFgetModelInfo(RFsimulate,which="internal")) # $internal$name)
 }
+}}
 
 \dontshow{FinalizeExample()}}
 

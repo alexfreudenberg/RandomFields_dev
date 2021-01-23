@@ -150,14 +150,14 @@ double getDet(double *Aniso, int dim) { // arbitrary squared matrix !
 
 /*
 void InvChol(double *C, int dim) {
-  int i, info, ii, endfor,
+  int i, msg, ii, endfor,
     job = 01,
     dimP1 = dim + 1,
     dimsq = dim * dim;
   Long ve, ho;
   double Det = 1.0;
-  F 77_ CALL(dpofa)(C, &dim, &dim, &info); // C is now cholesky
-  if (info != 0) E RR("InvChol: Inversion failed, bad functions\n");
+  F 77_ CALL(dpofa)(C, &dim, &dim, &msg); // C is now cholesky
+  if (msg != 0) E RR("InvChol: Inversion failed, bad functions\n");
   for (i=0; i<dimsq; i+=dimP1) Det *= C[i];
   Det = Det * Det;
   F 77_ CALL(dpodi)(C, &dim, &dim, &Det, &job); // C is now Cinv
@@ -336,17 +336,18 @@ double searchInverse(isofct fct, double start, double *value,
 
 double searchInverse(covfct fct, model *cov, 
 		     double start, double value, double releps) {
+  DEFAULT_INFO(info);
   double v;
-  fct(&start, cov, &v);
-  while (v > value) {start *= 2.0; fct(&start, cov, &v);}
-  while (v < value) {start *= 0.5; fct(&start, cov, &v);}
+  fct(&start, info, cov, &v);
+  while (v > value) {start *= 2.0; fct(&start, info, cov, &v);}
+  while (v < value) {start *= 0.5; fct(&start, info, cov, &v);}
  
   double x = start,
     step = start;
   releps *= step;
   while (step > releps) {
     step *= 0.5;
-    fct(&step, cov, &v);
+    fct(&step, info, cov, &v);
     if (v < value) x -= step; else x += step;
   }
   return x;
@@ -354,18 +355,19 @@ double searchInverse(covfct fct, model *cov,
 
 double searchInverse(covfct fct, model *cov, 
 		     double start, double min, double value, double releps) {
+  DEFAULT_INFO(info);
   double v;
   assert(start > min);
-  fct(&start, cov, &v);
-  while (v > value) {start = 2.0 * (start - min) + min; fct(&start, cov, &v);}
-  while (v < value) {start = 0.5 * (start - min) + min; fct(&start, cov, &v);}
+  fct(&start, info, cov, &v);
+  while (v > value) {start = 2.0 * (start - min) + min; fct(&start, info, cov, &v);}
+  while (v < value) {start = 0.5 * (start - min) + min; fct(&start, info, cov, &v);}
  
   double x = start,
     step = start - min;
   releps *= step;
   while (step > releps) {
     step *= 0.5;
-    fct(&step, cov, &v);
+    fct(&step, info, cov, &v);
     if (v < value) x -= step; else x += step;
   }
   return x;
@@ -590,3 +592,39 @@ double LegendrePolynome(int n, double x) {
  */
 
 double mod(double x, double modulus) { return (x - FLOOR(x / modulus) * modulus); }
+
+SEXP scatter(SEXP X) {
+  // bei bedingter Simualation sollte 
+  KEY_type *KT = KEYT();
+  int 
+    n = length(X),
+    dim = nrows(X);
+  GetRNGstate();
+  double delta = 1.0 + UNIFORM_RANDOM;
+  PutRNGstate();
+  double *x = REAL(X),
+    c = COS(delta),
+    s = SIN(delta),
+    ccum = c,
+    scum = s,
+    nuggettol =  KT->global.nugget.tol;
+
+  if (nuggettol == 0) nuggettol = 1e-6;
+  double tol = 0.2 * nuggettol / SQRT((double) dim);// within nugget tolerance
+  //  fuer x=y gilt:
+  // \|scattered(x) - scattered(y) \| <= Sqrt(d (2 tol)^2) <= 0.6 nuggettol
+  //                                  < 0.5 nuggettol
+  // "< 0.5 nuggettol", da moeglicherweise 2x gescattered wird, siehe unify.R
+  
+  for (int i=0; i<n; i++) {    
+    x[i] += tol * scum;    
+    double scumneu = s * ccum + c * scum;
+    ccum = c * ccum - s * scum;
+    scum = scumneu;
+    assert(FABS(ccum) < 1.01 && FABS(scum) < 1.01);
+  }
+
+  return R_NilValue;
+}
+
+		

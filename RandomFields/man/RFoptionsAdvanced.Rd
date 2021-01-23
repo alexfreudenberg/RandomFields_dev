@@ -93,7 +93,7 @@ mar <- c(2.2, 2.2, 0.1, 0.1)
 points <- 700
 
 ###### simulation of a random field on long thin stripe
-z1 <- RFsimulate(model, x1, y1, center=0, seed=0,
+z1 <- RFsimulate(model, x1, y1, center=0, 
                  points=points, storing=TRUE, spConform=FALSE)
 ScreenDevice(height=1.55, width=12)
 par(mar=mar)
@@ -103,7 +103,7 @@ polygon(range(x2)[c(1,2,2,1)], range(y1)[c(1,1,2,2)],
 
 
 ###### definition of a random field on a square of shorter diagonal
-z2 <- RFsimulate(model, x2, x2, register=1, seed=0,
+z2 <- RFsimulate(model, x2, x2, register=1, 
                  center=0, points=points, spConform=FALSE)
 ScreenDevice(height=4.3, width=4.3)
 par(mar=mar)

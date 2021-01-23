@@ -70,8 +70,8 @@ RFplotEmpVariogram(x, model = NULL, nmax.phi = NA, nmax.theta = NA,
     the values of empirical variogram nor does the mean values
     need to be close the empirical variogram.  
   }
-  \item{...}{arguments to be passed to methods; mainly graphical
-    arguments.
+  \item{...}{arguments to be passed to methods; only graphical
+    parameters can be passe, no \command{\link{RFoptions}}.
     %see Details.
   }
 }

@@ -16,7 +16,10 @@ RPpoisson(shape, phi, intensity, support)
  \item{shape}{the model, \command{\link{RMmodel}}, gives the shape
    function to be used}
  \item{phi}{alternative to define a Poisson field through the covariance
- function. Note that the field is not uniquely given by \code{phi}.}
+   function. Note that the field is not uniquely given by \code{phi}.
+   I.e. a shot noise field will be simulated that has the given covariance
+ function. 
+ }
  \item{intensity}{the intensity of the underlying stationary Poisson
    point process}
  \item{support}{positive real value. Particularly in random token models

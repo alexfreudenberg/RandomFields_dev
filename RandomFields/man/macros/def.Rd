@@ -18,19 +18,14 @@
 
 \newcommand{\argTheta}{an integer defining the number of sectors one half of the X/Z plane shall be divided into. Use only for dimension \eqn{d=3}{d=3} if phi is already specified.}
 
-\newcommand{\argDeltaT}{vector of length 2, specifying the temporal bins. The internal bin vector becomes \code{seq(from=0, to=deltaT[1], by=deltaT[2])}}
+\newcommand{\argDeltaT}{real valued vector of length 2, specifying the temporal  bins. The temporal bin centers becomes \code{seq(from=0, to=deltaT[1], by=deltaT[2])}. \code{deltaT[2]} must be a multiple of the grid step.}
 
 \newcommand{\argDistances}{another alternative for the argument \code{x} to pass the (relative) coordinates, see \link{RFsimulateAdvanced}.}
 
-\newcommand{\argVdim}{the number of variables of a multivariate data
-  set. If not given and \code{data} is an \code{RFsp} object created by
-  \pkg{RandomFields}, the information there is  taken from
-  there. Otherwise \code{vdim} is assumed to be one. NOTE: still the
-  argument \code{vdim} is an experimental stage.} % to do
+\newcommand{\argVdim}{the number of variables of a multivariate data set. If not given and \code{data} is an \code{RFsp} object created by \pkg{RandomFields}, the information there is  taken from there. Otherwise \code{vdim} is assumed to be one. NOTE: still the argument \code{vdim} is an experimental stage.} % to do
 
 \newcommand{\argDotsEx}{for further arguments, e.g. }
-\newcommand{\argDotsSec}{, and further options and control arguments see
-  \command{\link{RFoptions}}, in partiuclar section(s) }
+\newcommand{\argDotsSec}{, and further options and control arguments see \command{\link{RFoptions}}, in partiuclar section(s) }
 
 
 \newcommand{\argDots}{for advanced use: further options and control arguments for the simulation that are passed to and processed by \command{\link{RFoptions}}. If \code{params} is given, then \code{...} may include also the variables used in \code{params}.}
@@ -41,7 +36,7 @@
 
 \newcommand{\argUsersguess}{ User's guess of the parameters. All the parameters must be given using the same rules as for \code{lower} (except that no NA's should be contained).}
 
-\newcommand{\argTransform}{obsolete for users; use \code{param} instead. \code{transform=list()} will return structural information to set up the correct function.}
+\newcommand{\NoteTransform}{\cr The former argument \code{transform} is obsolete; use \code{\link[RFformula]{param}} instead. \code{transform=list()} returns structural information to set up the transform correctly.}
 
 \newcommand{\argOptimcontrol}{control list for \command{\link[stats]{optim}}, which uses \sQuote{L-BFGS-B}. However \code{parscale} may not be given.}
 
@@ -49,7 +44,7 @@
 
 \newcommand{\argDataGiven}{ If \code{given} is not given and \code{data} is a matrix or \code{data} is  a data.frame, \pkg{RandomFields} tries to identify  where the data and the coordinates are, e.g. by names in formulae or by fixed names,  see \link{Coordinate systems}. See also \link{RFsimulateAdvanced}.  If all fails, the first columns are interpreted as coordinate vectors, and the last column(s) as (multiple) measurement(s) of the field. Notes that also lists of data can be passed.}
 
-\newcommand{\argErrmodel}{In case of (assumed) error-free measurements (which is mostly the case in geostatistics) the argument \code{err.model} is not given. In case of measurement errors we have  \code{err.model=RMnugget(var=var)}.\cr \code{err.param} plays the same role as \code{params} for \code{model}.}
+\newcommand{\argErrmodel}{In case of (assumed) error-free measurements (which is mostly the case in geostatistics) the argument \code{err.model} is not given. In case of measurement errors we have usually \code{err.model=RMnugget(var=var)}, but any other \code{RMmodel} with mean zero is allowed.\cr \code{err.param} plays the same role as \code{params} for \code{model}.}
 
 \newcommand{\argFitmethods}{ Main methods to be used for estimating. If several methods are given, estimation will be performed with each method and the results reported.}
 
@@ -58,12 +53,14 @@
 
 \newcommand{\argOrigin}{character; one of \code{"original"}, \code{"MLE conform"}, \code{"all"}. This argument determines the parameters that are returned.}
 
-\newcommand{\argRaw}{ logical. If \code{FALSE} then the data are interpolated. This approach is always save, but might be slow. If \code{TRUE} then the data may be accessed when covariance  matrices are calculated. No rescaling or anisotropy definition  is allowed in combination with the model. The use is dangerous, but fast.\cr  Default: \code{FALSE}.
+\newcommand{\argRaw}{ logical. If \code{FALSE} then the data are interpolated. This approach is always save, but might be slow.\cr If \code{TRUE} then the data may be accessed when covariance matrices are calculated; no rescaling or anisotropy definition is allowed in combination with the model. The use is dangerous, but fast.\cr  Default: \code{FALSE}.
 }
 
-\newcommand{\argNorm}{optional model that gives the norm between locations}
+%\newcommand{\argNorm}{optional model that gives the norm between locations, see Details. Default: Euclidean norm}
 
-\newcommand{\GEV}{The argument \code{xi} is always a number, i.e. \eqn{\xi} is constant in space. In contrast, \eqn{\mu} and \eqn{s} might be constant numerical values or (in future!) be given by an \code{\link{RMmodel}}, in particular by an \code{\link{RMtrend}} model.  \cr For \eqn{xi=0}, the default values of \eqn{mu} and \eqn{s} are \eqn{0} and \eqn{1}, respectively. For \eqn{xi\not=0}, the default values of \eqn{mu} and \eqn{s} are \eqn{1} and \eqn{|\xi|}, respectively, so that it defaults to the standard Frechet case if \eqn{\xi > 0}.}
+%\newcommand\NormDetails{If \code{raw=FALSE} the model extends to the space through a Voronoi tessellation, that is, any point in space gets the value of its nearest neighbour. In case the points given by \code{x}, \code{y}, \code{z} and \code{T} ly on a grid (\code{grid=TRUE}), always the Euclidean distance to the grid points is taken. Otherwise, the Euclidean distance is the default distance, but any other \code{norm} might be used instead. It is completely within the users responsability that \code{norm} is well defined. In particular, \code{RMcovariates} may not be included in the definition of the norm. There is no check by the package.\cr Default: Euclidean norm}
+
+\newcommand{\GEV}{The argument \code{xi} is always a number, i.e. \eqn{\xi} is constant in space. In contrast, \eqn{\mu} and \eqn{s} might be constant numerical values or (in future!) be given by an \code{\link{RMmodel}}, in particular by an \code{\link{RMshape}} model.  \cr For \eqn{xi=0}, the default values of \eqn{mu} and \eqn{s} are \eqn{0} and \eqn{1}, respectively. For \eqn{xi\not=0}, the default values of \eqn{mu} and \eqn{s} are \eqn{1} and \eqn{|\xi|}, respectively, so that it defaults to the standard Frechet case if \eqn{\xi > 0}.}
  
 
 

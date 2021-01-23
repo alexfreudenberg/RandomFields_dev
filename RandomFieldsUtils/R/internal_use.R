@@ -10,7 +10,7 @@ Try <- function(expr) {
 checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
                           ask=FALSE, echo=TRUE, halt=FALSE, ignore.all=FALSE,
                           path=package, package="RandomFields",
-                          read.rd.files=TRUE, local = TRUE,
+                          read.rd.files=TRUE, local = FALSE,
                           libpath = NULL, single.runs = FALSE,
                           reset) {
   .exclude <- exclude
@@ -21,9 +21,10 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
   .package <- package
   .path <- path
   .local <- local
-  useDynLib <- importClassesFrom <- import <-
-  importFrom <- exportClasses <-
-  importMethodsFrom <- exportMethods <- S3method <- function(...) NULL
+ ## useDynLib <- importClassesFrom <- import <-
+ ## importFrom <- exportClasses <-
+    ## importMethodsFrom <- exportMethods <- S3method <-
+  ##  function(...) NULL
   .env <- new.env()
   stopifnot(is.na(RFoptions()$basic$seed)) # OK
 
@@ -90,7 +91,7 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
           (substr(.content[1], 1, 1) != "%" || substr(.content[2], 1, 5) != "\\name"))
         stop(.files[i], " does not start with '\\name' -- what at least in 2018 has caused problems in valgrind")
       
-      .content <- scan(.fn, what=character(), quiet=TRUE)
+      .content <- scan(.fn, what=character(), quiet=TRUE)      
       .content <- strsplit(.content, "alias\\{")
       .content <- .content[which(lapply(.content, length) > 1)][[1]][2]
       .fct.list[i] <-
@@ -118,8 +119,6 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
     .include.name <- sapply(strsplit(.include.name, ".Rd"), function(x) x[1])
   }
 
- 
-  ENVIR <- new.env()
   .allwarnings <- list()
   for (.idx in .include) {
     if (is.character(.include.name) && !(.fct.list[.idx] %in% .include.name))
@@ -128,10 +127,11 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
     if (.idx %in% .exclude) next
     cat("\n\n\n\n\n", .idx, " ", .package, ":", .fct.list[.idx],
         " (total=", length(.fct.list), ") \n", sep="")
-     RFoptions(LIST=.RFopt)
+    RFoptions(LIST=.RFopt)
     if (!missing(reset)) do.call(reset)
     if (.echo) cat(.idx, "")
     .tryok <- TRUE
+    require(sp)
     if (single.runs) {
       txt <- paste("library(", package,", ", libpath, "); example(",
 		   .fct.list[.idx],
@@ -142,14 +142,16 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
       command <- paste("R < ", file.in, ">>", file.out)
     } else {
       ##s topifnot(RFoptions()$basic$print <=2)
-      ##
-      .time <- system.time(.res <- Try(do.call(utils::example, 
-                                               list(.fct.list[.idx], ask=.ask,
-					       echo=.echo, local=.local))))
+        .time <- system.time(.res <- Try(do.call(utils::example, 
+                                                 list(.fct.list[.idx], ask=.ask,
+                                                      package=package,
+                                                    echo=.echo, local=.local))))
       w <- warnings()
       .allwarnings <- c(.allwarnings, list(c("Help page ", .idx)), w)
       print(w) ## ok
       if (is(.res, "try-error")) {
+        cat("ERROR:\n")
+        str(.res, give.head=FALSE) #  OK
 	if (.halt) {
 	  stop("\n\n\t***** ",.fct.list[.idx], " (", .idx,
 	       " out of ", max(.include), "). has failed. *****\n\n")
@@ -159,7 +161,7 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
 	  .tryok <- FALSE
 	}
       }
-      if (exists("RMexp")) RFoptions(storing = FALSE)
+       if (exists("RMexp")) RFoptions(storing = FALSE)
       cat("****** '", .fct.list[.idx], "' (", .idx, ") done. ******\n")
       print(.time) #
       if (.tryok && !is.na(RFoptions()$basic$seed)) {

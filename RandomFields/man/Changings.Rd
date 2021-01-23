@@ -10,8 +10,15 @@
 \title{Documentation of some further changings}
 
 
+    
 \description{
   \itemize{
+    \item{Version 4.0}
+    \itemize{
+      \item{Options}
+      many \sQuote{internal} options have moved to a
+      new subsection and have been renamed, see \link{Hints}.
+    }
     \item{Version 3.3}
      \itemize{
        \item\code{RFempiricalvariogram}, \code{RFempiricalcovariance}

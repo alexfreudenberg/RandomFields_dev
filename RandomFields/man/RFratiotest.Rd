@@ -13,7 +13,7 @@ RFratiotest(nullmodel, alternative, x, y = NULL, z = NULL, T = NULL,
             grid=NULL, data, alpha, n = 5 / alpha, seed = 0, 
             lower = NULL, upper = NULL, methods,
             sub.methods, optim.control = NULL, users.guess = NULL,
-            distances = NULL, dim, transform = NULL, ...)
+            distances = NULL, dim, ...)
 }
 \arguments{  
   \item{nullmodel, alternative}{See Details.
@@ -44,7 +44,6 @@ RFratiotest(nullmodel, alternative, x, y = NULL, z = NULL, T = NULL,
  \item{users.guess}{\argUsersguess}
  \item{distances,dim}{\argDistances}
  \item{optim.control}{\argOptimcontrol}
- \item{transform}{\argTransform}
  \item{...}{\argDots}
 }
 
@@ -128,24 +127,18 @@ RFratiotest(nullmodel, alternative, x, y = NULL, z = NULL, T = NULL,
 }
 
 \examples{\dontshow{StartExample()}
-\dontshow{\dontrun{
+%\dontshow{\dontrun{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
-data(soil)  ## see also ?soil
-soil <- RFspatialPointsDataFrame(
- coords = soil[, c("x.coord", "y.coord")],
- data = soil[, c("moisture", "NO3.N", "Total.N",
- "NH4.N", "DOC", "N20N")],
- RFparams=list(vdim=6, n=1)
- )
+data(soil)
+RFoptions(coordnames=c("x.coord", "y.coord"))
 
-model <- ~1 + RMplus(RMwhittle(scale=NA, var=NA, nu=NA), RMnugget(var=NA))
-submodel <- ~1 + RMplus(RMwhittle(scale=NA, var=NA, nu=NA), RMnugget(var=0))
+model <- moisture ~ 1 + RMwhittle(scale=NA, var=NA, nu=NA) + RMnugget(var=NA)
+submodel <- moisture ~ 1 + RMwhittle(scale=NA, var=NA, nu=NA) + RMnugget(var=0)
 
-RFratiotest(submodel, model, data=soil["moisture"],
-            modus_operandi="sloppy")
-}}
+RFratiotest(submodel, model, data=soil, modus_operandi="sloppy")
+%}}
 
 \dontshow{FinalizeExample()}}
 

@@ -29,7 +29,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define Questions_H 1
 
 #include "RF.h"
-#include "primitive.others.h"
 
 typedef bool (*systemfct)(system_type *sys); /* h, cov, result */ 
 typedef bool (*typefct)(Types type); /* h, cov, result */ 
@@ -210,6 +209,7 @@ bool equalsnowSchlather(model *cov);
 bool equalsnowSmith(model *cov);
 //bool equalsnowOther(model *cov);
 
+bool equalsTcf(Types type);
 bool equalsPosDef(Types type);
 bool equalsNegDef(Types type);
 bool equalsVariogram(Types type);
@@ -336,6 +336,10 @@ bool TrafoOK(model *cov);
 bool EmptySubOK(int covnr);
 
 bool isNotEstimable(int pt);
+
+Types TypeConsistency(Types requiredtype, Types deliveredtype);
+Types TypeConsistency(Types requiredtype, model *cov,
+			 isotropy_type requirediso);
 
 #endif
 

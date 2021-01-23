@@ -30,7 +30,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "questions.h"
 #include "RF.h"
-#include "primitive.others.h"
 #include "Coordinate_systems.h"
 #include "operator.h"
 #include "QMath.h"
@@ -42,19 +41,21 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // Sigma(x) = diag>0 + A'xx'A
 void kappa_Angle(int i, model *cov, int *nr, int *nc){
   int dim = OWNXDIM(0);
+  //  printf("angle: %d %d\n", i, dim);
   *nr = i == ANGLE_DIAG ? dim : 1;
   *nc = i <= ANGLE_DIAG && (dim==3 || i != ANGLE_LATANGLE) &&  
-    (dim==2 || i != ANGLE_RATIO)  ? 1 : -1;
+    (dim==2 || i != ANGLE_RATIO) ? 1 : -1;
 }
 
 void AngleMatrix(model *cov, double *A) {
+  globalparam *global = &(cov->base->global);
   double c, s, 
      *diag = P(ANGLE_DIAG);
-  if (GLOBAL.coords.anglemode == radians) {
+  if (global->coords.anglemode == radians) {
     c = COS(P0(ANGLE_ANGLE));
     s = SIN(P0(ANGLE_ANGLE));
   } else {
-    assert(GLOBAL.coords.anglemode == degree);
+    assert(global->coords.anglemode == degree);
     c = COS(P0(ANGLE_ANGLE) * piD180);
     s = SIN(P0(ANGLE_ANGLE) * piD180); 
   }
@@ -69,7 +70,7 @@ void AngleMatrix(model *cov, double *A) {
     A[3] = c;
   } else {
     double pc, ps;
-    if (GLOBAL.coords.anglemode == radians) {
+    if (global->coords.anglemode == radians) {
       pc = COS(P0(ANGLE_LATANGLE));
       ps = SIN(P0(ANGLE_LATANGLE));
     } else {
@@ -108,7 +109,7 @@ void AngleMatrix(model *cov, double *A) {
 
 
 
-void Angle(double *x, model *cov, double *v) { /// to do: extend to 3D!
+void Angle(double *x, INFO, model *cov, double *v) { /// to do: extend to 3D!
   double A[9];
   int 
     dim = OWNXDIM(0) ;
@@ -240,7 +241,7 @@ void rangeAngle(model *cov, range_type* range){
  
 
 
-void idcoord(double *x, model *cov, double *v){
+void idcoord(double *x, INFO, model *cov, double *v){
   int d,
     vdim = VDIM0;
   for (d=0; d<vdim; d++) v[d]=x[d];
@@ -256,10 +257,10 @@ int checkidcoord(model *cov){
 
 // obsolete??!!
 #define NULL_TYPE 0
-void NullModel(double VARIABLE_IS_NOT_USED *x, 
+void NullModel(double VARIABLE_IS_NOT_USED *x, INFO, 
 	       model VARIABLE_IS_NOT_USED *cov, 
 	       double VARIABLE_IS_NOT_USED *v){ return; }
-void logNullModel(double VARIABLE_IS_NOT_USED *x, 
+void logNullModel(double VARIABLE_IS_NOT_USED *x, INFO, 
 		  model VARIABLE_IS_NOT_USED *cov, 
 		  double VARIABLE_IS_NOT_USED *v, 
 		  int VARIABLE_IS_NOT_USED *Sign){ return; }
@@ -320,7 +321,7 @@ int checkMath(model *cov){
     }
   }
 
-  cov->pref[Trendproc] = 5;
+  cov->pref[Shapefctproc] = 5;
   cov->pref[Direct] = 1;
   RETURN_NOERROR;
 }
@@ -342,28 +343,28 @@ void rangeMath(model VARIABLE_IS_NOT_USED *cov, range_type *range){
   }
 }
 
-void Mathminus(double *x, model *cov, double *v){
+void Mathminus(double *x, int *info, model *cov, double *v){
   MATH_DEFAULT;
   double f = P0(MATH_FACTOR); 
   if (ISNAN(f)) f = 1.0;
   *v = ( (PisNULL(1) && cov->kappasub[1]==NULL) ? -w[0] : w[0]- w[1]) * f;
 }
 
-void Mathplus(double *x, model *cov, double *v){
+void Mathplus(double *x, int *info, model *cov, double *v){
   MATH_DEFAULT;
   double f = P0(MATH_FACTOR); 
   if (ISNAN(f)) f = 1.0;
   *v = ( (PisNULL(1) && cov->kappasub[1]==NULL)? w[0] : w[0] + w[1]) * f;
 }
 
-void Mathdiv(double *x, model *cov, double *v){
+void Mathdiv(double *x, int *info, model *cov, double *v){
   MATH_DEFAULT;
    double f = P0(MATH_FACTOR); 
    if (ISNAN(f)) f = 1.0;
    *v =  (w[0] / w[1]) * f;
 }
 
-void Mathmult(double *x, model *cov, double *v){
+void Mathmult(double *x, int *info, model *cov, double *v){
   MATH_DEFAULT;
    double f = P0(MATH_FACTOR); 
    if (ISNAN(f)) f = 1.0;
@@ -372,25 +373,26 @@ void Mathmult(double *x, model *cov, double *v){
  
 
 #define IS_IS 1
-void Mathis(double *x, model *cov, double *v){
+void MathIs(double *x, int *info, model *cov, double *v){
+  globalparam *global = &(cov->base->global);
   int i,								
     variables = DefList[COVNR].kappas; 		
   double w[3];							
   for (i=0; i<variables; i++) {					
     model *sub = cov->kappasub[i];				
     if (sub != NULL) {						
-      COV(x, sub, w + i);						
+      COV(x, info, sub, w + i);						
     } else {  
       w[i] = i == IS_IS ? P0INT(i) : P0(i);	      
     }					
   }									
   switch((int) w[IS_IS]) {
-  case 0 : *v = (double) (FABS(w[0] - w[2]) <= GLOBAL.nugget.tol); break;
-  case 1 : *v = (double) (FABS(w[0] - w[2]) > GLOBAL.nugget.tol); break;
-  case 2 : *v = (double) (w[2] + GLOBAL.nugget.tol >= w[0]); break;
-  case 3 : *v = (double) (w[2] + GLOBAL.nugget.tol > w[0]); break;
-  case 4 : *v = (double) (w[0] + GLOBAL.nugget.tol >= w[2]); break;
-  case 5 : *v = (double) (w[0] + GLOBAL.nugget.tol > w[2]); break;
+  case 0 : *v = (double) (FABS(w[0] - w[2]) <= global->nugget.tol); break;
+  case 1 : *v = (double) (FABS(w[0] - w[2]) > global->nugget.tol); break;
+  case 2 : *v = (double) (w[2] + global->nugget.tol >= w[0]); break;
+  case 3 : *v = (double) (w[2] + global->nugget.tol > w[0]); break;
+  case 4 : *v = (double) (w[0] + global->nugget.tol >= w[2]); break;
+  case 5 : *v = (double) (w[0] + global->nugget.tol > w[2]); break;
   default : BUG;
   }
 }
@@ -406,7 +408,7 @@ void rangeMathIs(model *cov, range_type *range){
   range->openmax[IS_IS] = false;
 }
 
-void Mathbind(double *x, model *cov, double *v){
+void Mathbind(double *x, int *info, model *cov, double *v){
   int vdim = VDIM0;
   MATH_DEFAULT_0(vdim); 
   double f = P0(DefList[COVNR].kappas - 1); 
@@ -542,7 +544,7 @@ Types Typebind(Types required, model *cov,
   return required;
 }
 
-void Mathc(double VARIABLE_IS_NOT_USED *x, model *cov, double *v) {
+void Mathc(double VARIABLE_IS_NOT_USED *x, INFO,model *cov, double *v) {
   double f = P0(CONST_C); 
   *v =  ISNAN(f) ?  1.0 : f;
 }
@@ -571,9 +573,9 @@ int check_c(model *cov){
   cov->ptwise_definite = p > 0.0 ? pt_posdef : p < 0.0 ? pt_negdef : pt_zero;
   if (tcf) MEMCOPY(cov->pref, PREF_ALL, sizeof(pref_shorttype));
 
-   GLOBAL.internal.warn_mathdef = GLOBAL.internal.warn_mathdef == False ? False
-     : isNegDef(PREVTYPE(0)) ? True : Nan;
-
+  globalparam *global = &(cov->base->global);
+  global->messages.warn_mathdef = global->messages.warn_mathdef == False ? False
+    : isNegDef(PREVTYPE(0)) ? True : Nan;
 
   RETURN_NOERROR;
 }
@@ -617,7 +619,7 @@ bool allowedIp(model *cov) {
 }
 
 
-void proj(double *x, model *cov, double *v){
+void proj(double *x, INFO, model *cov, double *v){
   double f = P0(PROJ_FACTOR); 
   if (ISNAN(f)) f = 1.0;
   int p = P0INT(PROJ_PROJ);
@@ -689,7 +691,7 @@ int checkproj(model *cov){
   //	  ISO_NAMES[isoown], ISO_NAMES[iso]);
   //  }
 
-   if (P0INT(PROJ_PROJ) < 0 && !GetTime(cov)) 
+   if (P0INT(PROJ_PROJ) < 0 && !LocTime(cov)) 
     SERR2("'%.50s' or '%.50s' used in a context that is not spatio-temporal.",
 	  PROJECTION_NAMES[0], PROJECTION_NAMES[1]);
 
@@ -734,13 +736,14 @@ void kappa_declare(int i, model *cov, int *nr, int *nc){
   *nc = SIZE_NOT_DETERMINED;
 }
 
-void declarefct(double  VARIABLE_IS_NOT_USED *x, model *cov, double *v){
+void declarefct(double  VARIABLE_IS_NOT_USED *x, INFO, model *cov, double *v){
   int vdimSq = VDIM0 * VDIM1;
   for (int i=0; i<vdimSq; v[i++] = 0.0);
 }
 
-void declarefctnonstat(double  VARIABLE_IS_NOT_USED *x,
-		       double  VARIABLE_IS_NOT_USED *y, model *cov, double *v){
+void nonstat_declarefct(double  VARIABLE_IS_NOT_USED *x,
+			double  VARIABLE_IS_NOT_USED *y,
+			INFO, model *cov, double *v){
   int vdimSq = VDIM0 * VDIM1;
   for (int i=0; i<vdimSq; v[i++] = 0.0);
 }

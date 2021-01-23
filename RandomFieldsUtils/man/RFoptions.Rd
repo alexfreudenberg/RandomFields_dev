@@ -14,7 +14,7 @@
  and the simulation of random fields
 }
 \usage{
- RFoptions(..., no.readonly = TRUE)
+ RFoptions(..., no.readonly = TRUE, no.class=FALSE)
 }
 \arguments{
  \item{...}{arguments in \code{tag = value} form, or a list of tagged
@@ -22,7 +22,11 @@
  \item{no.readonly}{If \command{\link{RFoptions}} is called without
    argument then all arguments are returned in a list. If
    \code{no.readonly=TRUE} then only rewritable arguments are returned.
-   Currenlty all arguments are rewritable. So the list is empty.
+   Currently all arguments are rewritable. So, no effect for package
+   \pkg{RandomFieldsUtils}
+ }
+ \item{no.class}{logical. If \code{TRUE} the list is returned without
+   class specification.
  }
 }
 \details{
@@ -163,21 +167,7 @@
     }
 
     \item{\code{warn_unknown_option}}{integer. Internal.
-      
       Default: \code{3}
-    }
-
-    \item{\code{warn_parallel_write}}{logical. If \code{TRUE} and a
-      hidden global variable is written by several parallel processes
-      simultaneously, first the programme tries to solve the conflict
-      safely. If this does not help, a warning is given and proceeded
-      slightly unsafely.
-
-      Note: simultaneous writing intentionally risked by the
-      user is not checked and at the risk of the user. For instance,
-      \code{RFoptions} should not be set within parallel processing.
-
-      Default: \code{TRUE} %[also do]. 
     }
   }
 
@@ -313,8 +303,9 @@
       sparse matrix algorithms automatically. The second value is used
       in case the GPU is activated.
       
-      Default: \code(c(400, 4000))
+      Default: \code{c(400, 4000)}
     }
+    
     \item{\code{spam_min_p}}{
       number in \eqn{(0,1)} giving the proportion of
       zero above which an sparse matrix algorithm is used.

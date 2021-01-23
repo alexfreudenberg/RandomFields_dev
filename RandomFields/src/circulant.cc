@@ -131,8 +131,9 @@ int fastfourier(double *data, int *m, int dim,  bool inverse,
 
 
 int init_circ_embed(model *cov, gen_storage VARIABLE_IS_NOT_USED  *S){
-  int err=NOERROR;
-  if (!Getgrid(cov)) SERR("circ embed requires a grid");
+   globalparam *global = &(cov->base->global);
+ int err=NOERROR;
+  if (!Locgrid(cov)) SERR("circ embed requires a grid");
 
   double  steps[MAXCEDIM], 
       **c = NULL, // For multivariate *c->**c
@@ -155,7 +156,7 @@ int init_circ_embed(model *cov, gen_storage VARIABLE_IS_NOT_USED  *S){
     lenmmin = cov->nrow[CE_MMIN],
     vdimSq = vdim * vdim, // PM 12/12/2008
     maxmem = P0INT(CE_MAXMEM),
-    trials = GLOBAL.internal.examples_reduced ? 1 : P0INT(CE_TRIALS),
+    trials = global->internal.examples_reduced ? 1 : P0INT(CE_TRIALS),
     strategy = P0INT(CE_STRATEGY),
     worksize = vdim * 33;
   bool 
@@ -169,6 +170,7 @@ int init_circ_embed(model *cov, gen_storage VARIABLE_IS_NOT_USED  *S){
   complex
     *R = (complex*) MALLOC(vdim * vdim * sizeof(complex)),
     *work = (complex *) MALLOC(worksize * sizeof(complex));
+  DEFAULT_INFO(info);
 
  
 assert(VDIM0 == VDIM1);
@@ -178,7 +180,7 @@ assert(VDIM0 == VDIM1);
   cov->method = CircEmbed;
 
   NEW_STORAGE(ce);
-  ce_storage *s = cov->Sce;
+getStorage(s ,   ce); 
 #ifdef DO_PARALLEL
   //  printf("%d %d\n", vdimSq, sizeof(FFT_storage));
   s->FFT = (FFT_storage *) CALLOC(vdimSq,  sizeof(FFT_storage)); 
@@ -347,7 +349,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
     }
     for (int l=0; l<vdimSq; l++) {
       //     printf("%d maxmem=%d %d %10g\n", 2 * mtot * sizeof(double), maxmem, mtot, realmtot);
-      if( (c[l] = (double *) MALLOC(2 * mtot * sizeof(double))) == NULL) {
+      if( (c[l] = (double *) MALLOC(2L * mtot * sizeof(double))) == NULL) {
 	err=ERRORMEMORYALLOCATION; goto ErrorHandling;
       }
       //printf("delte");      
@@ -379,8 +381,8 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
      if (isaniso) {
 	double z[MAXCEDIM];
 	xA_noomp(hx, caniso, cani_nrow, cani_ncol, z);
-	COV(z, next, tmp);
-     } else COV(hx, next, tmp);
+	COV(z, info, next, tmp);
+     } else COV(hx, info, next, tmp);
 
      // printf("-- %d %10e %10e \n", dim, hx[0], hx[1]);
      //     printf("\n");
@@ -404,7 +406,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 	for (int k=0; k<dim; k++) {
 	  if (index[k]==halfm[k]) hx[k] -= steps[k] * (double) mm[k];
 	}
-	COV(hx, next, tmp);
+	COV(hx, info, next, tmp);
 	//	printf("c%10g %10g %10g %10g\n", tmp[0], tmp[1], tmp[2], tmp[3]);
 	for (int l=0; l<vdimSq; l++) {
 	  c[l][dummy] = 0.5 *(c[l][dummy] + tmp[l]);
@@ -539,7 +541,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 #endif      
       for(int i = 0; i<mtot; i++) {
       // printf("%d %d ", i, mtot);
-	int info,
+	int msg,
 	  lwork = worksize,
 	  twoi=2*i,
 	  twoi_plus1=twoi+1;
@@ -574,7 +576,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 			  &vdim, // integer
 			  tmpLambda,  // double
 			  &optim_lwork, // complex
-			  &lwork, rwork, &info); 
+			  &lwork, rwork, &msg); 
 
 
 
@@ -598,7 +600,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 	// optim vdim * 
 
 	F77_CALL(zheev)("V", "U", &vdim, R, &vdim, // Eigen
-			tmpLambda, work, &lwork, rwork, &info);
+			tmpLambda, work, &lwork, rwork, &msg);
 
 
 
@@ -745,7 +747,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 	      hx[i] = steps[i] * mm[i]; 
 
 	      cc=0;
-	      COV(hx, next, tmp);
+	      COV(hx, info, next, tmp);
 	      for (int l=0; l<vdimSq; l++) cc += FABS(tmp[l]);
 	      //if (PL>2) { LPRINT("%d cc=%10e (%10e)",i,cc,hx[i]); }
 	      if (cc>maxcc) {
@@ -832,7 +834,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
       err=ERRORMEMORYALLOCATION; goto ErrorHandling;
   }
   for(int l=0; l<vdim;l++) {
-      if( (s->d[l] = (double *) CALLOC(2 * mtot, sizeof(double))) == NULL) {
+      if( (s->d[l] = (double *) CALLOC(2L * mtot, sizeof(double))) == NULL) {
 	  err=ERRORMEMORYALLOCATION;goto ErrorHandling;
       }
   }
@@ -873,12 +875,13 @@ void kappa_ce(int i, model *cov, int *nr, int *nc){
 
 
 int check_ce_basic(model *cov) { 
+  globalparam *global = &(cov->base->global);
   // auf co/stein ebene !
   //  model *next=cov->sub[0];
   //  location_type *loc = Loc(cov);
   int i, //err,
     dim = ANYDIM; // taken[MAX DIM],
-  ce_param *gp  = &(GLOBAL.ce); // ok
+  ce_param *gp  = &(global->ce); // ok
   
   FRAME_ASSERT_GAUSS_INTERFACE;
   ASSERT_CARTESIAN;
@@ -911,14 +914,15 @@ int check_ce(model *cov) {
   int err,
     dim = ANYDIM;
 
-  FRAME_ASSERT_GAUSS_INTERFACE;
+  //  PMI0(cov); printf("%d %s\n", hasInterfaceFrame(cov->calling), NAME(cov->calling));
+  FRAME_ASSERT_GAUSS_INTERFACE; 
   ASSERT_UNREDUCED;
   ASSERT_ONESYSTEM;
 
   if (dim > MAXCEDIM) RETURN_ERR(ERRORCEDIM);
   if ((err = check_ce_basic(cov)) != NOERROR) RETURN_ERR(err);
   if ((err = checkkappas(cov, false)) != NOERROR) RETURN_ERR(err);
-  if (GetLoctsdim(cov) > MAXCEDIM || OWNTOTALXDIM > MAXCEDIM)
+  if (Loctsdim(cov) > MAXCEDIM || OWNTOTALXDIM > MAXCEDIM)
     RETURN_ERR(ERRORCEDIM);
    
   if (cov->key != NULL) {
@@ -1036,9 +1040,10 @@ void range_ce(model VARIABLE_IS_NOT_USED *cov, int k, int i, int j,
  
 
 void do_circ_embed(model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
+  globalparam *global = &(cov->base->global);
   //printf("start do\n");
   assert(cov != NULL);
-  assert(Getgrid(cov));
+  assert(Locgrid(cov));
   SAVE_GAUSS_TRAFO;
       
   int  HalfMp1[MAXCEDIM], HalfMaM[2][MAXCEDIM], index[MAXCEDIM], 
@@ -1051,7 +1056,7 @@ void do_circ_embed(model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
     *res = cov->rf; // MULT *c->**c
   bool vfree[MAXCEDIM+1], noexception; // MULT varname free->vfree
   Long mtot, start[MAXCEDIM], end[MAXCEDIM];
-  ce_storage *s = cov->Sce;
+getStorage(s ,   ce); 
   location_type *loc = Loc(cov);
   
   complex *gauss1 = s->gauss1, *gauss2 = s->gauss2;
@@ -1077,7 +1082,7 @@ void do_circ_embed(model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
   vdim = s->vdim; // so p=vdim
   
 #ifdef DO_PARALLEL
-  omp_set_num_threads(GLOBAL_UTILS->basic.cores);
+  omp_set_num_threads(CORES);
 #endif
   
   for (int i=0; i<dim; i++) {
@@ -1246,7 +1251,6 @@ void do_circ_embed(model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
       
     // MULT
     //
-    //    printf("xx ABCD %d %d %d\n", vdim, omp_get_num_threads(),GLOBAL_UTILS->basic.cores); 
 #ifdef DO_PARALLEL
 #pragma omp parallel for num_threads(CORES) schedule(static,1)
 #endif	    
@@ -1294,7 +1298,7 @@ void do_circ_embed(model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
 
   for(int k=0; k<dim; k++) index[k] = start[k];
 
-  bool vdim_close_together = GLOBAL.general.vdim_close_together;
+  bool vdim_close_together = global->general.vdim_close_together;
   for (int L=0; L<totpts; L++) {
     int j=0;
     for (int k=0; k<dim; k++) {j+=index[k];}
@@ -1502,9 +1506,8 @@ int init_circ_embed_local(model *cov, gen_storage *S){
   model //*dummy = NULL,
     *key = cov->key;
   location_type *loc = Loc(cov);
-  //  simu_storage *simu = &(cov->simu);
   int instance, i, d, 
-    timespacedim = GetLoctsdim(cov),
+    timespacedim = Loctsdim(cov),
     cncol = ANYDIM,
     err = NOERROR;
   //  localCE_storage *s=NULL;
@@ -1569,7 +1572,7 @@ int init_circ_embed_local(model *cov, gen_storage *S){
   
 
   model *local = key->sub[0];
-  localCE_storage *ss = local->SlocalCE; 
+  GETSTORAGE(ss , local,   localCE); 
   assert(ss != NULL);
   localvariab *q = ss->q;
   assert(q != NULL);
@@ -1651,6 +1654,7 @@ int struct_ce_local(model *cov, model VARIABLE_IS_NOT_USED **newmodel) {
 
 
 void do_circ_embed_cutoff(model *cov, gen_storage *S) {  
+  globalparam *global = &(cov->base->global);
   double   *res = cov->rf;
   model *key = cov->key,
      *sub = key;
@@ -1660,12 +1664,12 @@ void do_circ_embed_cutoff(model *cov, gen_storage *S) {
    
    int // k, row = loc->timespacedim,
      vdim = VDIM0;
-   Long totpts = Gettotalpoints(cov);
+   Long totpts = Loctotalpoints(cov);
 
 
     // printf("--- \n \n do_circ_embed_cutoff \n \n  ---");
     //PMI(sub);
-    localCE_storage *s = sub->SlocalCE;
+   GETSTORAGE(s , sub,     localCE); 
     assert(s != NULL);
     localvariab *q = s->q;
     assert(q != NULL);
@@ -1689,7 +1693,7 @@ void do_circ_embed_cutoff(model *cov, gen_storage *S) {
         x[0] = SQRT(c11)*normal1 ;
         x[1] = c12/SQRT(c11)*normal1 + SQRT(c22 - c12*c12/c11 )*normal2;
 
-        if (GLOBAL.general.vdim_close_together) {
+        if (global->general.vdim_close_together) {
             //one location two values
             for (int i = 0; i < totpts; i++)  {
                 for (int j = 0; j < vdim; j++)  {
@@ -1785,7 +1789,7 @@ void do_circ_embed_intr(model *cov, gen_storage *S) {
     row = dim,
     col = dim,
     rowcol =  row * col;
-  localCE_storage *s = sub->SlocalCE;
+  GETSTORAGE(s, sub ,   localCE); 
   assert(s != NULL);
   // PMI(cov->calling);
   // printf("%d %d %d %d %d\n", s==NULL, s->correction == NULL, cov->SlocalCE == NULL, cov->calling->SlocalCE == NULL, cov->zaehler);
@@ -1849,9 +1853,9 @@ int struct_ce_approx(model *cov, model **newmodel) {
   //PMI(cov);
 
 
-  // assert(!Getgrid(cov));
+  // assert(!Locgrid(cov));
  
-  if (!Getgrid(cov)) {    
+  if (!Locgrid(cov)) {    
     ASSERT_NEWMODEL_NULL;
     location_type *loc = Loc(cov);  
     double max[MAXCEDIM], min[MAXCEDIM],  centre[MAXCEDIM], 
@@ -1864,7 +1868,7 @@ int struct_ce_approx(model *cov, model **newmodel) {
     if (approx_gridstep < 0)
       SERR("approx_step < 0 forbids approximative circulant embedding");
     
-    if (OWNTOTALXDIM  != GetLoctsdim(cov))
+    if (OWNTOTALXDIM  != Loctsdim(cov))
       SERR("the dimensions of the coordinates and those of the process differ");
     
     GetDiameter(loc, min, max, centre);
@@ -1895,8 +1899,8 @@ int struct_ce_approx(model *cov, model **newmodel) {
     }
   
     if (cov->key!=NULL) COV_DELETE(&(cov->key), cov);
-    err = covcpy(&(cov->key), cov, x, loc->T, spatialdim, spatialdim,
-		 3, loc->Time, true, false);
+    err = covcpyX(&(cov->key), cov, x, loc->T, spatialdim, spatialdim,
+		  3, loc->Time, true, false);
     if (err != NOERROR) RETURN_ERR(err);
     SET_CALLING(cov->key, cov);
 
@@ -1908,7 +1912,7 @@ int struct_ce_approx(model *cov, model **newmodel) {
   }
 
   if (COVNR == CIRCEMBED) { RETURN_NOERROR; }
-  else return struct_ce_local(Getgrid(cov) ? cov : cov->key, newmodel);
+  else return struct_ce_local(Locgrid(cov) ? cov : cov->key, newmodel);
 
 }
 
@@ -1916,7 +1920,7 @@ int struct_ce_approx(model *cov, model **newmodel) {
 
 
 int init_ce_approx(model *cov, gen_storage *S) {  
-  if (Getgrid(cov)) {
+  if (Locgrid(cov)) {
     if (COVNR==CIRCEMBED) return init_circ_embed(cov, S);
     else return init_circ_embed_local(cov, S); 
   }
@@ -1970,7 +1974,7 @@ int init_ce_approx(model *cov, gen_storage *S) {
 }
 
 void do_ce_approx(model *cov, gen_storage *S){
-  if (Getgrid(cov)) {
+  if (Locgrid(cov)) {
     if (COVNR==CIRCEMBED) do_circ_embed(cov, S);
     else if (COVNR== CE_CUTOFFPROC_INTERN) do_circ_embed_cutoff(cov, S);
     else do_circ_embed_intr(cov, S);
@@ -1982,7 +1986,7 @@ void do_ce_approx(model *cov, gen_storage *S){
 
   model *key=cov->key;
   location_type *loc = Loc(cov);
-  approxCE_storage *s = cov->SapproxCE;
+  getStorage(s ,   approxCE); 
   //model *cov = meth->cov;
   Long i;
   int

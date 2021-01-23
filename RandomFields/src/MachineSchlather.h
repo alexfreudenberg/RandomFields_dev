@@ -23,8 +23,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 
-
-
 #ifndef RF_MACHINE_SCHLATHERS
 #define RF_MACHINE_SCHLATHERS 1
 
@@ -57,12 +55,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
   SERR2("locations not initialised (%.50s line %d).", __FILE__, __LINE__)
 #define LNRC(I,rc) __extension__ \
   ({assert(PLIST(I) != NULL); PLIST(I)->rc[SET_IDX(cov, I)];})
-#ifndef DO_PARALLEL
-#define STOPAFTER(COND, DO) 				\
-  static bool __stopafter__ = false; /* ok, since only allowed for not DO_PARALLEL */ \
-  if (__stopafter__ && !(COND)) { DO; BUG;}		\
-  __stopafter__  = (COND);
-#endif
 
 
 
@@ -104,10 +96,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define SYSTYPE(sys,s) __extension__\
   ({iCorrect(sys,10,s); TYPEi((sys)[s]); })
 #define ANYDIMOF(cov) __extension__({ \
-      assert(OWNTOTALXDIM == PREVTOTALXDIM &&\
+       assert(OWNTOTALXDIM == PREVTOTALXDIM &&\
 	     OWNTOTALXDIM == total_logicaldim(SYSOF(cov)) &&\
 	     PREVLASTSYSTEM  == OWNLASTSYSTEM && \
-	     GetLoctsdim(cov) == OWNTOTALXDIM); \
+	     Loctsdim(cov) == OWNTOTALXDIM); \
       OWNTOTALXDIM;})
 //#define ANYDIMOF(cov)  __extension__({assert_cov(cov); assert(false); OWNTOTALXDIM; })
 #define ANYOWNDIM __extension__\
@@ -139,7 +131,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define SET_IDX(Cov, IDX) __extension__({\
       assert((Cov)!=NULL && (Cov)->nrow[IDX] >=0 && (Cov)->nrow[IDX]<=1000000);\
-      (GLOBAL.general.set % (Cov)->nrow[IDX]);})
+      ((Cov)->base->set % (Cov)->nrow[IDX]);})
 
 #define CHECK(C,L,X,type,D,I,V,F) __extension__\
   ({assert((type)!=RandomType); check2X(C,L,X,type,D,I,V,F);})
@@ -242,5 +234,30 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define set_NAOK_RANGE(X) {				\
     assert(cov != NULL && cov->base != NULL);		\
     KEYtypeOf(cov)->naok_range = (X);}
+
+
+#undef LocP
+#undef Loc
+#undef Loctsdim
+#undef Loctsdim
+#undef LocxdimOZ
+#undef Locspatialdim
+#undef Loctotalpoints
+
+#define Loc(cov) __extension__({			\
+      assert(cov != NULL);					\
+      assert((cov)->ownloc!=NULL || (cov)->prevloc != NULL);	\
+      ((cov)->ownloc!=NULL ? LocLoc((cov)->ownloc, cov) :	\
+       LocLoc((cov)->prevloc, cov));})
+#define LocP(cov) __extension__({				\
+      assert(cov != NULL);					\
+      assert(((cov)->ownloc != NULL ? (cov)->ownloc : (cov)->prevloc)!=NULL); \
+      ((cov)->ownloc != NULL ? (cov)->ownloc : (cov)->prevloc) ;	\
+     })
+#define Loctsdim(cov) __extension__({assert( (LocP(cov) != NULL ? Loc(cov)->timespacedim : 0) > 0); (LocP(cov) != NULL ? Loc(cov)->timespacedim : 0);})
+#define LocxdimOZ(cov) __extension__({assert( (LocP(cov) != NULL ? Loc(cov)->xdimOZ : 0)); (LocP(cov) != NULL ? Loc(cov)->xdimOZ : 0);})
+#define Locspatialdim(cov) __extension__({assert((LocP(cov) != NULL ? Loc(cov)->spatialdim : 0));(LocP(cov) != NULL ? Loc(cov)->spatialdim : 0);})
+#define Loctotalpoints(cov) __extension__({assert((LocP(cov) != NULL ? Loc(cov)->totalpoints : 0)); (LocP(cov) != NULL ? Loc(cov)->totalpoints : 0);})
+
 
 #endif

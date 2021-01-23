@@ -78,7 +78,7 @@ RFsimulate(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
 
 \details{
  By default, all Gaussian random fields have zero mean. 
- Simulating with trend can be done by including \command{\link{RMtrend}}
+ Simulating with trend can be done by including \command{\link{RMshape}}
  in the model, see the examples below.
 
 
@@ -218,7 +218,7 @@ RFgetModelNames(type="positive definite", domain="single variable",
 ## the model includes nugget effect and the mean:
 model <- RMexp(var=5, scale=10) + # with variance 4 and scale 10
  RMnugget(var=1) + # nugget
- RMtrend(mean=0.5) # and mean
+ RMshape(mean=0.5) # and mean
  
 ## define the locations:
 from <- 0

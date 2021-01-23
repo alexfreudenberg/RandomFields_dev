@@ -56,7 +56,7 @@ matrix\cr
 
 \bold{Trend models}
 \tabular{ll}{
-  \command{\link{RMtrend}} \tab for explicit trend modelling\cr
+  \command{\link{RMshape}} \tab for explicit trend modelling\cr
   \command{\link{R.models}} \tab for implicit trend modelling\cr
   \command{\link{R.c}} \tab binding univariate trend models into a vector\cr
 }

@@ -11,7 +11,7 @@ const char // muss in separater Zeile sein
 
   *OPTIMISER_NAMES[nOptimiser] = { // RC
   "optim", "optimx", "soma", "nloptr", // nloptr muss immer 4. sein
-    "GenSA", "minqa", "pso", "DEoptim", "lbfgs"},
+    "GenSA", "minqa", "pso", "DEoptim"},
   
   *NLOPTR_NAMES[nNLOPTR] = { // RC
     "NLOPT_GN_DIRECT", "NLOPT_GN_DIRECT_L", 
@@ -25,6 +25,9 @@ const char // muss in separater Zeile sein
 
   *LIKELIHOOD_NAMES[nLikelihood] = { // RC 
     "auto", "full", "composite", "tesselation"},
+
+  *DUPLICATEDLOC_NAMES[nDuplicatedloc] = { // RC 
+  "error", "risk error", "regard as repeated", "scatter"},
 
   *ISO_NAMES[LAST_ISO + 1] =  { // RC
     "isotropic", "space-isotropic", "vector-isotropic", "symmetric",
@@ -95,15 +98,9 @@ const char // muss in separater Zeile sein
   *COORD_SYS_NAMES[nr_coord_sys] = {
     "auto", "keep", "cartesian", "earth",
     "sphere", "gnomonic", "orthographic", "coordinate system mix"},
-
-  *COORD_NAMES_CART[4] = {
-    "x", "y", "z", "T"},
   
   *COORD_NAMES_GENERAL[2] = {
     "coords.x", "coords.T"},
-  
-  *COORD_NAMES_EARTH[4] = {
-    "longitude", "latitude", "height", "time"},
   
   *CARTESIAN_SYS_NAMES[3] = {
     "cartesian", "gnomonic", "orthographic"},

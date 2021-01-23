@@ -34,6 +34,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "Processes.h"
 #include "shape.h"
 #include "rf_interfaces.h"
+#include "QMath.h"
 
 
 bool is_top(model *cov) {
@@ -86,8 +87,8 @@ int GetNAPosition(model *cov, double *values, int nvalues,
   
   depth++;
   if (SHORTlen >= 255) SHORTlen = 254;
-  KEY_type *KT = cov->base;
-  SPRINTF(KT->error_loc, "'%.50s'", NICK(cov));
+  char *error_location = cov->base->error_location;  
+  SPRINTF(error_location, "'%.50s'", NICK(cov));
 
   model *sub;
   int i, c, r,
@@ -142,7 +143,7 @@ int GetNAPosition(model *cov, double *values, int nvalues,
   SEXPTYPE *type = C->kappatype;
   for (i=0; i<C->kappas; i++) {
     bool istrend = equalsnowTrendParam(cov, i);
-    // printf("%s %d %d %d\n", NAME(cov), i, istrend, excludetrends);
+    //    printf("NApos : %s %d %d %d\n", NAME(cov), i, istrend, excludetrends);
     if (istrend && excludetrends) continue;
     /*
     if (i==0 && type[i] == INTSXP && STRCMP(C->kappanames[i], ELEMENT) == 0){
@@ -190,7 +191,7 @@ int GetNAPosition(model *cov, double *values, int nvalues,
 	    v = P(i)[idx];
 	    mem[*NAs] = P(i) + idx;
 	    found[*NAs] = required(v, values, nvalues);
-	    // printf("%s %s %d %d %d NAs=%d %d v=%f\n", C->name, C->kappanames[i], r, c, found[*NAs], *NAs, nfillvalues, v);
+	    //	    printf("%s %s %d %d %d NAs=%d %d v=%f\n", C->name, C->kappanames[i], r, c, found[*NAs], *NAs, nfillvalues, v);
 	    if (*NAs < nfillvalues && found[*NAs]>=0)
 	      mem[*NAs][0] = fillvalues[*NAs];
 	    covModels[*NAs] = cov;
@@ -202,7 +203,7 @@ int GetNAPosition(model *cov, double *values, int nvalues,
 	    } else {
 	      sortsofparam s = SortOf(cov, i, r, c, mle_conform);
 	      if (!isNotEstimable(s) && required(v, values, nvalues) >= 0)
-		SERR1("%20s: integer variables currently not allowed to be 'NA'", KNAME(i)); // !!!
+		SERR1("%.20s: integer variables currently not allowed to be 'NA'", KNAME(i)); // !!!
 	    }
 	  }    
 	    break;
@@ -415,17 +416,19 @@ SEXP GetNAPositions(SEXP Model_reg, SEXP Model, SEXP x,
   NAname_type names;
   SEXP ans;
   KEY_type *KT = KEYT();
+  char *error_location = KT->error_location;  
+  globalparam *global = &(KT->global);
+  utilsparam *global_utils = &(KT->global_utils);
+ 
   model *cov = KT->KEY[Reg];
-
   if (Model != R_NilValue) {
-    bool skipchecks = GLOBAL_UTILS->basic.skipchecks;
-    GLOBAL_UTILS->basic.skipchecks = true;
-    cov = InitIntern(Reg, Model, x, true);
-    GLOBAL_UTILS->basic.skipchecks = skipchecks;
+    bool skipchecks = global_utils->basic.skipchecks;
+    global_utils->basic.skipchecks = true;
+    cov = InitIntern(Reg, Model, x, true, ignoreValues);
+    global_utils->basic.skipchecks = skipchecks;
   }
-  KT = cov->base;
 
-  SPRINTF(KT->error_loc, "getting positions with NA");
+  SPRINTF(error_location, "getting positions with NA");
 
   
   if (length(values) == 0) {
@@ -441,10 +444,10 @@ SEXP GetNAPositions(SEXP Model_reg, SEXP Model, SEXP x,
 			    coord, covModels,
 			    covzaehler,
 			    INTEGER(integerNA)[0],
-			    GLOBAL.fit.lengthshortname, 
+			    global->fit.lengthshortname, 
 			    INTEGER(Print)[0], 
 			    0, false, true);
-   SPRINTF(KT->error_loc, "'%.50s'", NICK(cov));
+   SPRINTF(error_location, "'%.50s'", NICK(cov));
    OnErrorStop(err, cov);
  
     //    printf("found %d NAs\n", NAs);
@@ -602,14 +605,9 @@ void Take21internal(model *cov, model *cov_bound,
 
 
 SEXP Take2ndAtNaOf1st(SEXP model_reg, SEXP Model, SEXP model_bound,
-		      SEXP Totalpoints,
-		      SEXP spatialdim, SEXP Time, SEXP XdimOZ, 
-		      SEXP nbounds, SEXP skipchecks) {
+		      SEXP X, SEXP nbounds, SEXP skipchecks, SEXP rawConcerns) {
   int m,
     d = 0,
-    xdimOZ = INTEGER(XdimOZ)[0],
-    xdimOZ3 =xdimOZ * 3,
-    totalpoints = INTEGER(Totalpoints)[0],
     NBOUNDS_INT =INTEGER(nbounds)[0],
     *NBOUNDS= &NBOUNDS_INT,
     nr[2] = {INTEGER(model_reg)[0], MODEL_BOUNDS};
@@ -617,52 +615,23 @@ SEXP Take2ndAtNaOf1st(SEXP model_reg, SEXP Model, SEXP model_bound,
    
   SEXP bounds,
     models[2] = {Model, model_bound};
-  bool oldskipchecks = GLOBAL_UTILS->basic.skipchecks;
   KEY_type *KT = KEYT();
+  utilsparam *global_utils = &(KT->global_utils);
+  bool oldskipchecks = global_utils->basic.skipchecks;
 
 #define MAXDIM0 4  
-  double *bounds_pointer,
-    T[3] = {0.0, 1.0, 1.0},
-    X0[MAXDIM0 * 3],
-    *X = xdimOZ <= MAXDIM0 ? X0 : (double*) MALLOC(xdimOZ3 * sizeof(double));
-  // falls CheckModel abbricht, sammelt sich *X als Muell an
-  // MAXDIM0 = 4 hat alle Standardfaelle abgedeckt
- 
-  X[d++] = 0.0;
-  X[d++] = 1.0;
-  X[d++] =  (double) totalpoints;
-  while(d<xdimOZ3) {
-    X[d++] = 0.0;
-    X[d++] = 1.0;
-    X[d++] = 1.0;
-  }
-
-
- setKT_NAOK_RANGE(KT, true);
-  if (LOGICAL(skipchecks)[0]) GLOBAL_UTILS->basic.skipchecks = true;
+  double *bounds_pointer;
+  
+  setKT_NAOK_RANGE(KT, true);
+  if (LOGICAL(skipchecks)[0]) global_utils->basic.skipchecks = true;
   for (m=1; m>=0; m--) { // 2er Schleife !!
-    // assert(m==1);
-    double *zero = ZERO(xdimOZ + LOGICAL(Time)[0], KT);
-
-    //    printf("T3 = %f\n", T[2]);
-    
-    CheckModel(models[m], X, zero, T,
-	       INTEGER(spatialdim)[0], // spatialdim
-	       xdimOZ,
-	       3, 0, // lx, ly
-	       true, // grid
-	       false, // distances
-	       LOGICAL(Time)[0], 
-	       R_NilValue, // xlist
-	       KT, nr[m]);  
-    //    TREE(key[nr[m]]);
-
-    //   printf("XT3 = %f\n", T[2]);
- 
-    
-    GLOBAL_UTILS->basic.skipchecks = oldskipchecks;
+    // assert(m==1);   
+    CheckModel(models[m], NULL, NULL, NULL, NULL, 0, 0, 0, 0,
+	       false, false, false, false, X,
+	       (raw_type) INTEGER(rawConcerns)[0],
+	       KT, nr[m]);
+    global_utils->basic.skipchecks = oldskipchecks;
   }
-
 
   PROTECT(bounds = allocVector(REALSXP, *NBOUNDS));
   bounds_pointer = NUMERIC_POINTER(bounds);
@@ -672,7 +641,6 @@ SEXP Take2ndAtNaOf1st(SEXP model_reg, SEXP Model, SEXP model_bound,
 
   model **key = KT->KEY;
   Take21internal(key[nr[0]], key[nr[1]], &bounds_pointer, NBOUNDS);
-  if (xdimOZ > MAXDIM0) FREE(X);
 
   if (*NBOUNDS != 0) RFERROR("lower/upper does not fit to model");
   UNPROTECT(1);
@@ -715,11 +683,9 @@ void GetNARanges(model *cov, model *min, model *max,
 	  ? RF_NA : (double) PARAM0INT(max, i);
 	break;
       case LISTOF + REALSXP : {
-	int store = GLOBAL.general.set;
-	GLOBAL.general.set = 0;
+	cov->base->set = 0;
 	dmin = LPARAM0(min, i);
 	dmax = LPARAM0(max, i);
-	GLOBAL.general.set = store;
 	break;
       }
       default:
@@ -798,16 +764,15 @@ sortsofeffect getTrendEffect(model *cov) {
   for (int j=0; j<nkappa; j++) {
     if (equalsnowTrendParam(cov, j)) {
       if (!PisNULL(j)) {
-	return ISNAN(P0(j)) ? FixedTrendEffect : DetTrendEffect;
-      } else {
-	if (cov->kappasub[j] == NULL) {	  
-	  return DetTrendEffect; // 30.4.15 vorher FixedTrendEffect
-	}
-	else if (isnowRandom(cov->kappasub[j])) {
-	  RFERROR("priors not allowed in the context of trends"); // return RandomEffect;
-	} else if (COVNR == TREND && j == TREND_MEAN) return DetTrendEffect;
-	else RFERROR("model too complex");
+	return ISNAN(P0(j)) ? FixedEffect : DetTrendEffect;
+      } else if (cov->kappasub[j] == NULL) {	  
+	  return DetTrendEffect; // 30.4.15 vorher FixedEffect
+      } else if (isnowRandom(cov->kappasub[j])) {
+	// siehe Factor in COVARIATE!
+	RFERROR("priors currently not allowed in the context of trends");
+	return RandomEffect;
       }
+      else RFERROR("model too complex");
     }
   }
   //  printf("here A \n");
@@ -815,31 +780,10 @@ sortsofeffect getTrendEffect(model *cov) {
 }
 
 
-int CheckEffect(model *cov) {
+int CheckEffect(model *cov, likelihood_facts *facts) {
   int nr;    
   // bool na_var = false;
   double *p;
- 
-  if (COVNR == TREND) {
-    int trend = TREND_MEAN, 
-      effect = effect_error;
-    bool isna ;
-    
-    if ((nr = cov->nrow[trend] * cov->ncol[trend]) > 0) {
-      p = P(trend);
-      isna = ISNAN(p[0]);
-      if ((effect != effect_error) && ((effect==FixedTrendEffect) xor isna))
-	SERR1("do not mix known effect with fixed effects in '%.50s'", 
-	      NICK(cov));
-      for (int i = 1; i<nr; i++) {
-	if (ISNAN(p[i]) xor isna) 
-	  SERR("mu and linear trend:  all coefficient must be known or all must be estimated");
-      }
-      effect = isna ? FixedTrendEffect : DetTrendEffect;
-    } else if (cov->kappasub[trend] != NULL) effect = DetTrendEffect;
-    return effect;
-  }
-    
       
   if (equalsnowTrend(cov)) {
     if (COVNR == MULT) {
@@ -852,16 +796,32 @@ int CheckEffect(model *cov) {
 	  ERR("trend parameter to be estimated given twice");
 	if (current == DetTrendEffect) current = dummy;
       }
-      if (current == effect_error) ERR("trend mismatch");
+      if (current == RandomEffect || current == ErrorEffect) {
+	facts->isotropic = false;
+	facts->trans_inv = false;
+      }
       return current;
-    } else return getTrendEffect(cov);
+    }
+    return getTrendEffect(cov);
   }
- 
+
+  if (isRandom(cov)) { // nicht isnowrandom, da cov modelle bayesianisch
+    model *sub = cov->sub[0];
+    if (!isProcess(cov) || !isAnyIsotropic(SUBISO(0))) facts->isotropic = false;
+    if (!isProcess(cov) || !equalsXonly(SUBDOM(0))) facts->trans_inv = false;
+    // sein koennen
+    RFERROR("random effects are currently not allowed");
+    // muss EW = 0 haben
+    return RandomEffect; // Process (or multivariate distribution)
+  }
+  
+  if (!isAnyIsotropic(OWNISO(0))) facts->isotropic = false;
+  if (!equalsXonly(OWNDOM(0))) facts->trans_inv = false;
+	
   return ErrorEffect;
-  }
+}
 
-
-int GetEffect(model *cov,  likelihood_info *info, sort_origin origin) {
+int GetEffect(model *cov,  likelihood_facts *facts, sort_origin origin) {
   if (isnowProcess(cov)) {
     assert(cov->key == NULL);
     assert(!PisNULL(GAUSS_BOXCOX));
@@ -870,12 +830,12 @@ int GetEffect(model *cov,  likelihood_info *info, sort_origin origin) {
     for (int i=0; i<total; i++)
       nas += ((bool) (ISNAN(P(GAUSS_BOXCOX)[i])));// see remark in Arith.h
     if (nas > 0) {
-      if (info->neffect >= MAX_LIN_COMP) ERR("too many linear components");
-      info->nas[info->neffect] = nas;
-      info->effect[info->neffect] = DataEffect;
-      (info->neffect)++;
+      if (facts->neffect >= MAX_LIN_COMP) ERR("too many linear components");
+      facts->nas[facts->neffect] = nas;
+      facts->effect[facts->neffect] = DataEffect;
+      (facts->neffect)++;
     }
-    return GetEffect(cov->sub[0], info, origin);
+    return GetEffect(cov->sub[0], facts, origin);
   }
   
   bool excludetrend = true,
@@ -886,41 +846,60 @@ int GetEffect(model *cov,  likelihood_info *info, sort_origin origin) {
     model *component = plus ? cov->sub[i] : cov;
 
     if (MODELNR(component) == PLUS) {
-      GetEffect(component, info, origin);
+      GetEffect(component, facts, origin);
       continue;
     }
     
-    if (info->neffect >= MAX_LIN_COMP) ERR("too many linear components");
-    info->effect[info->neffect] = CheckEffect(component);
-    info->nas[info->neffect] = countnas(component, excludetrend, 0, origin);
-    if (info->effect[info->neffect] == effect_error) 
-      SERR("scaling parameter appears with constant matrix in the mixed effect part");
-    if (info->effect[info->neffect] >= ErrorEffect || 
-	info->effect[info->neffect] <= // 5.8.17 >=
-	DataEffect) {
-      //    printf("varmodel = %d %d %d  %d\n", info->varmodel,model_undefined, 
-      //   model_morethan1, info->effect);
-      info->varmodel =
-	info->varmodel == model_undefined ? info->neffect : model_morethan1;
-      info->Var = component;
+    if (facts->neffect >= MAX_LIN_COMP) ERR("too many linear components");
+    facts->effect[facts->neffect] = CheckEffect(component, facts);
+    facts->nas[facts->neffect] = countnas(component, excludetrend, 0, origin);
+    if (facts->effect[facts->neffect] >= ErrorEffect || 
+	facts->effect[facts->neffect] == RandomEffect) {
+      //    printf("varmodel = %d %d %d  %d\n", facts->varmodel,model_undefined, 
+      //   model_morethan1, facts->effect);
+      facts->varmodel =
+	facts->varmodel == model_undefined ? facts->neffect : model_morethan1;
+      facts->Var = component;
     } 
-    (info->neffect)++;
+    (facts->neffect)++;
   }
  
   RETURN_NOERROR;
 }
-  
 
 
 
-int SetAndGetModelInfo(model *key, int shortlen, 
-		       int allowforintegerNA, bool excludetrend, // IN
-		       int newxdim,  usr_bool globalvariance, // IN 
-		       likelihood_info *info, sort_origin origin){
-			// OUT
-		       //  bool *trans_inv, bool *isotropic, double **Matrix,
-		       //int *neffect, int effect[MAXSUB],
-		       //int *NAs, int nas[MAXSUB], NAname_type names) {
+// Achtung! removeonly muss zwingend mit dem originalen SUB + i aufgerufen
+// werden. Der **Cov ueberschrieben wird. Ansonsten muessen die
+// Kommentarzeilen geloescht werden !
+void removeOnly(model **Cov) {
+  model *cov = *Cov,
+    *next = cov->sub[0];
+ 
+  if (cov->calling == NULL) next->calling = NULL;  
+  else {
+    model *calling = cov->calling;
+    //    for (i=0; i<MAXSUB; i++) if (calling->sub[i] == cov) break;
+    //    assert (i<MAXSUB);
+    //    calling->sub[i] = cov->sub[0];
+    SET_CALLING(next, calling);
+    assert(false); // next->prevloc ff haengt frei bei geg cov->ownloc
+  }
+  *Cov = next;
+  COV_DELETE_WITHOUTSUB(&cov, next);
+}
+
+
+
+// called by gausslikeli.cc and MLE.cc
+int internalSetAndGet(model *key, int shortlen, 
+		      int allowforintegerNA, bool excludetrend, // IN
+		      int newxdim,  usr_bool globalvariance, // IN 
+		      likelihood_facts *facts, sort_origin origin){
+  // OUT
+  //  bool *trans_inv, bool *isotropic, double **Matrix,
+  //int *neffect, int effect[MAXSUB],
+  //int *NAs, int nas[MAXSUB], NAname_type names) {
   int i, rows,
     mem_vdim1[MAX_NA],
     mem_vdim2[MAX_NA],
@@ -942,28 +921,22 @@ int SetAndGetModelInfo(model *key, int shortlen,
     *matrix = NULL;
 #define nvalues 2
   double values[nvalues] = { RF_NA, RF_NAN };
-  mle_storage *s = key->calling != NULL ? key->calling->Smle : key->Smle;
-  KEY_type *KT = cov->base; 
+
+  // mle_storage *s = key->calling != NULL ? key->calling->Smle : key->Smle;  
+  GETSTORAGE(s,  key->calling != NULL ? key->calling : key,   mle);
+
+ 
+  char *error_location = cov->base->error_location;  
   assert(s != NULL);
 
-  SPRINTF(KT->error_loc, "checking model");
+  SPRINTF(error_location, "checking model");
  
   if (sub->pref[Nothing] == PREF_NONE) {
     err = ERRORINVALIDMODEL;
     goto ErrorHandling;
   }
   
-  info->newxdim = newxdim;
-  info->trans_inv = isXonly(SUB) && isnowNegDef(sub);
-  info->isotropic = isAnyIsotropic(ISO(SUB, 0));
-  if (info->trans_inv && info->isotropic) {
-      info->newxdim = 1;
-//	removeOnly(KEY() + modelnr); nicht wegnehmen
-// da derzeit negative distanczen in GLOBAL.CovMatrixMult auftreten -- obsolete ?!
-  }
-
   
-  // GLOBAL_UTILS->basic.skipchecks = skipchecks;
   check_recursive_range(key, true);
 
   if ((err = get_ranges(cov, &min, &max, &pmin, &pmax, &openmin, &openmax))
@@ -975,8 +948,8 @@ int SetAndGetModelInfo(model *key, int shortlen,
   // !! ZWINGEND VOR  GetEffect DA BAYESSCHE VARIABLE AUF NA GESETZT WERDEN
   if ((err = GetNAPosition(cov, values, nvalues, NULL, 0,
 			   &(s->NAS), s->MEMORY, 
-		//s->ELMNTS , s->MEMORY_ELMNTS,
-			   info->names, mem_sorts, mem_vdim1, mem_vdim2,
+			   //s->ELMNTS , s->MEMORY_ELMNTS,
+			   facts->names, mem_sorts, mem_vdim1, mem_vdim2,
 			   mem_found,
 			   mem_bayesian,
 			   mem_coord,
@@ -987,62 +960,66 @@ int SetAndGetModelInfo(model *key, int shortlen,
 			   (PL >= PL_COV_STRUCTURE) + (PL >= PL_DETAILS) + 
 		           (PL >= PL_SUBDETAILS), 
 			   0, false, excludetrend))
-       != NOERROR) goto ErrorHandling;
+      != NOERROR) goto ErrorHandling;
 
-  SPRINTF(KT->error_loc, "'%.50s'", NICK(key));
+  SPRINTF(error_location, "'%.50s'", NICK(key));
 
   //  PMI(sub);
   
-  info->NAs = 0; GetNARanges(cov, min, max, mle_min, mle_max, &(info->NAs),
-			     false, origin);
-  //   PMI(cov);
-  //   print("XXz modelnr=%d %d\n",info->NAs, s->NAS);
-  if (info->NAs != s->NAS) BUG;
-  info->NAs = 0; GetNARanges(cov, pmin, pmax, mle_pmin, mle_pmax, &(info->NAs),
+  facts->NAs = 0; GetNARanges(cov, min, max, mle_min, mle_max, &(facts->NAs),
+			      false, origin);
+  //  PMI(cov);
+  //  printf("XXz modelnr=%d %d\n",facts->NAs, s->NAS);
+  if (facts->NAs != s->NAS) BUG;
+  facts->NAs = 0;
+  GetNARanges(cov, pmin, pmax, mle_pmin, mle_pmax, &(facts->NAs),
 			     true, origin);
-  //print("XX-------- amodelnr=%d\n",info->NAs);
-  if (info->NAs != s->NAS) BUG;
-  info->NAs = 0; GetNARanges(cov, openmin, openmax, mle_openmin, mle_openmax,
-			     &(info->NAs), false, origin);
-  if (info->NAs != s->NAS) BUG;
- // print("XX-------- amodelnr=%d %d\n",info->NAs, s->NAS); BUG;
 
-  assert(info->varmodel == model_undefined);
-  assert(info->neffect == 0);
+  //print("XX-------- amodelnr=%d\n",facts->NAs);
+  if (facts->NAs != s->NAS) BUG;
+  facts->NAs = 0; GetNARanges(cov, openmin, openmax, mle_openmin, mle_openmax,
+			     &(facts->NAs), false, origin);
+  if (facts->NAs != s->NAS) BUG;
+ // print("XX-------- amodelnr=%d %d\n",facts->NAs, s->NAS); BUG;
+
+  assert(facts->varmodel == model_undefined);
+  assert(facts->neffect == 0);
   // GetEffect ersetzt NA-variance durch 1.0 
-  if ((err = GetEffect(cov, info, origin)) != NOERROR) goto ErrorHandling;
-  if (info->NAs != s->NAS) BUG;
-  //  
+  facts->trans_inv = true;
+  facts->isotropic = true;
+  if ((err = GetEffect(cov, facts, origin)) != NOERROR) goto ErrorHandling;
+  facts->newxdim = facts->trans_inv && facts->isotropic ? 1 : newxdim;
+  if (facts->NAs != s->NAS) BUG;
 
-  //  print("XX-------- amodelnr=%d\n",info->NAs); BUG;
+  //  printf("transi + iso %d %d \n", facts->trans_inv, facts->isotropic);facts->trans_inv =  facts->isotropic = false;
  
   rows = s->NAS; // bevor NA-variance durch 1.0 ersetzt wird
-  info->globalvariance = false;
-  info->pt_variance = NULL;
+  facts->globalvariance = false;
+  facts->pt_variance = NULL;
   assert(COVNR == GAUSSPROC || hasAnyEvaluationFrame(cov));
 
   if ((COVNR == GAUSSPROC || hasAnyEvaluationFrame(cov)) && 
       (globalvariance == Nan || globalvariance == True) &&
-       info->varmodel != model_undefined &&
-       info->varmodel != model_morethan1){
+       facts->varmodel != model_undefined &&
+       facts->varmodel != model_morethan1){
     // does a global variance exist?
      
-    if (isDollar(info->Var) && !PARAMisNULL(info->Var, DVAR) &&
-	info->Var->ncol[DVAR]==1 && info->Var->nrow[DVAR]==1) {
-      double var = PARAM0(info->Var, DVAR);
-      if ((info->globalvariance = (bool) (ISNAN(var)) &&
-	   info->Var->kappasub[DVAR] == NULL)) {	
-	info->pt_variance = PARAM(info->Var, DVAR);
-	assert(info->pt_variance != NULL);
-	*(info->pt_variance) = 1.0;
-	(info->NAs)--;
-	info->nas[info->varmodel]--;
+    if (isDollar(facts->Var) && !PARAMisNULL(facts->Var, DVAR) &&
+	facts->Var->ncol[DVAR]==1 && facts->Var->nrow[DVAR]==1) {
+      double var = PARAM0(facts->Var, DVAR);
+      if ((facts->globalvariance = (bool) (ISNAN(var)) &&
+	   facts->Var->kappasub[DVAR] == NULL)) {	
+	facts->pt_variance = PARAM(facts->Var, DVAR);
+	assert(facts->pt_variance != NULL);
+	*(facts->pt_variance) = 1.0;
+	(facts->NAs)--;
+	facts->nas[facts->varmodel]--;
 	for (i=0; i<rows; i++) {
-	  if (s->MEMORY[i] == info->pt_variance) {
+	  if (s->MEMORY[i] == facts->pt_variance) {
 	    jump = i;
 	    for (int j=i+1; j<rows; j++) {
 	      s->MEMORY[j-1] = s->MEMORY[j];
-	      STRCPY(info->names[j-1],info->names[j]);
+	      STRCPY(facts->names[j-1],facts->names[j]);
 	    }
 	    break;
 	  }
@@ -1052,16 +1029,16 @@ int SetAndGetModelInfo(model *key, int shortlen,
 	rows--;
       }
     }
-    info->globalvariance |= (globalvariance == true);    
+    facts->globalvariance |= (globalvariance == true);    
   }
-  if (info->NAs != s->NAS) BUG;
-  s->PT_VARIANCE = info->pt_variance;
+  if (facts->NAs != s->NAS) BUG;
+  s->PT_VARIANCE = facts->pt_variance;
 
   if (rows == 0) {
-    info->Matrix = NULL;
+    facts->Matrix = NULL;
   } else {
-    info->Matrix = (double*) MALLOC(rows * MINMAX_ENTRIES * sizeof(double));
-    matrix = info->Matrix;
+    facts->Matrix = (double*) MALLOC(rows * MINMAX_ENTRIES * sizeof(double));
+    matrix = facts->Matrix;
     for (int k=i=0; i<rows; i++, k++) {
       if (i == jump) k++;
       int j = i - rows;
@@ -1104,27 +1081,12 @@ int SetAndGetModelInfo(model *key, int shortlen,
 }
 
 
-SEXP SetAndGetModelInfo(SEXP Model_reg, SEXP Model, SEXP x, 
-			int spatialdim, 
-			bool distances, int lx, int ly, bool Time, int xdimOZ,
-			int shortlen, int allowforintegerNA, 
-			bool excludetrend,
-			sort_origin origin) {
-  //printf("set&get\n");
-   // ex MLEGetNAPos
-    /*
-      basic set up of covariance model, determination of the NA's
-      and the corresponding ranges.
-     */
-//  bool skipchecks = GLOBAL_UTILS->basic.skipchecks;
-  int 
-    // NAs,
-    //   unp = 0,
-    //  effect[MAXSUB], nas[MAXSUB],
-    //*pnas = nas,
-    // neffect = 0,
-    err = NOERROR;
-  // double *Matrix = NULL;
+SEXP SetAndGetModelFacts(model *cov, int shortlen, int allowforintegerNA,
+			    bool excludetrend, sort_origin origin) {
+  // main goal: put facts into SEXP variables
+  globalparam *global = &(cov->base->global);
+  int err = NOERROR,
+    xdimOZ = Locspatialdim(cov);
   const char *colnames[MINMAX_ENTRIES] =
     {"pmin", "pmax", "type", "NAN", "min", "max", "omin", "omax",
      "row", "col", "bayes", "iso"};
@@ -1132,38 +1094,13 @@ SEXP SetAndGetModelInfo(SEXP Model_reg, SEXP Model, SEXP x,
    matrix, nameAns, nameMatrix, RownameMatrix, 
    ans=R_NilValue;
   bool 
-    do_not_del_info, isList_x = TYPEOF(x) == VECSXP;
-  likelihood_info local,
-    *info = NULL;
+    do_not_del_facts;
+  likelihood_facts local,
+    *facts = NULL;
  //  isListofList_x = isList_x;
  
-  if (isList_x) {
-    if (length(x) == 0) BUG;
-   //  isListofList_x = TYPEOF(VECTOR_ELT(x, 0)) == VECSXP;
-  }
  
-  int Reg = INTEGER(Model_reg)[0];
-  set_currentRegister(Reg);
-  KEY_type *KT = KEYT();
-  double *zero = ZERO(xdimOZ + Time, KT), *x0 = zero, *y0 = zero;
-  setKT_NAOK_RANGE(KT, true);
-  if (length(x) != 0) {
-    x0 = isList_x ? NULL : REAL(x);
-    y0 = NULL;
-  }
-  //  printf("set^get A\n");
-  CheckModel(Model, x0, y0, y0,
-	     spatialdim, xdimOZ,
-	     lx, ly, // lx, ly
-	     false, //grid
-	     distances, //distances
-	     Time, 
-	     isList_x ? x : R_NilValue,
-	     KT, Reg);
- 
-  //  printf("set^get B\n");
-  model *cov = KT->KEY[Reg],
-    *Likeli = cov;
+  model *Likeli = cov;
   //TREE(cov);
  
   if (equalsnowInterface(Likeli)) {
@@ -1172,36 +1109,32 @@ SEXP SetAndGetModelInfo(SEXP Model_reg, SEXP Model, SEXP x,
       Likeli = process;
   }
 
-  
   ONCE_NEW_STORAGE(mle);
-  mle_storage *s = cov->Smle;
-
+getStorage(s ,   mle); 
   
-  //  PMI0(Likeli);
-  //  printf("set^get C\n");
-
-  if ((do_not_del_info = Likeli->Slikelihood != NULL)) {    
-    info = &(Likeli->Slikelihood->info);
+  if ((do_not_del_facts = Likeli->Slikelihood != NULL)) {    
+    facts = &(Likeli->Slikelihood->facts);
     // pmi(cov,1);   BUG;
   } else {
-    info = &local;
-    likelihood_info_NULL(info);
-    err = SetAndGetModelInfo(cov, shortlen, allowforintegerNA,// no PROTECT( needed
+    facts = &local;
+    likelihood_facts_NULL(facts);
+    err = internalSetAndGet(cov, shortlen,//no PROTECT(needed
+			     allowforintegerNA,
 			     excludetrend, 
-			     xdimOZ, GLOBAL.fit.estimate_variance,
-			     info, origin);
+			     xdimOZ, global->fit.estimate_variance,
+			     facts, origin);
     OnErrorStop(err, cov);
   }
   assert(s != NULL);
 
   int rows, NaNs;
-  double *infoNaN;
+  double *factsNaN;
   rows = s->NAS;
   NaNs = 0;
-  infoNaN = info->Matrix + rows * (MINMAX_NAN - 1); // MINMAX_NAN is R coded
+  factsNaN = facts->Matrix + rows * (MINMAX_NAN - 1); // MINMAX_NAN is R coded
   for (int i=0; i<rows; i++) {
-    //printf("i=%d %10g %d; %d %d %d %d\n", i, infoNaN[i], rows,MINMAX_PMIN,  MINMAX_PMAX, MINMAX_TYPE, MINMAX_NAN);
-    NaNs += infoNaN[i];
+    //printf("i=%d %10g %d; %d %d %d %d\n", i, factsNaN[i], rows,MINMAX_PMIN,  MINMAX_PMAX, MINMAX_TYPE, MINMAX_NAN);
+    NaNs += factsNaN[i];
   }
   //  printf("set^get CD\n");
   assert(s != NULL);
@@ -1213,12 +1146,12 @@ SEXP SetAndGetModelInfo(SEXP Model_reg, SEXP Model, SEXP x,
   PROTECT(ans = allocVector(VECSXP, total));
   PROTECT(nameAns = allocVector(STRSXP, total));
 
-  //printf("%d\n", info->Matrix != NULL);
+  //printf("%d\n", facts->Matrix != NULL);
 
   if (rows > 0) {
-    MEMCOPY(REAL(matrix), info->Matrix, rows * MINMAX_ENTRIES * sizeof(double));
+    MEMCOPY(REAL(matrix), facts->Matrix, rows * MINMAX_ENTRIES * sizeof(double));
     for (int i=0; i<rows; i++) {
-      SET_STRING_ELT(RownameMatrix, i, mkChar(info->names[i]));
+      SET_STRING_ELT(RownameMatrix, i, mkChar(facts->names[i]));
     }
   }
   //  printf("set^get CE\n");
@@ -1231,17 +1164,17 @@ SEXP SetAndGetModelInfo(SEXP Model_reg, SEXP Model, SEXP x,
   SET_STRING_ELT(nameAns, i, mkChar("minmax"));
   SET_VECTOR_ELT(ans, i++, matrix);
   SET_STRING_ELT(nameAns, i, mkChar("trans.inv")); // !!
-  SET_VECTOR_ELT(ans, i++, ScalarLogical(info->trans_inv));  
+  SET_VECTOR_ELT(ans, i++, ScalarLogical(facts->trans_inv));  
   SET_STRING_ELT(nameAns, i, mkChar("isotropic"));
-  SET_VECTOR_ELT(ans, i++, ScalarLogical(info->isotropic));  
+  SET_VECTOR_ELT(ans, i++, ScalarLogical(facts->isotropic));  
   SET_STRING_ELT(nameAns, i, mkChar("effect"));
-  SET_VECTOR_ELT(ans, i++, Int(info->effect, info->neffect));  
+  SET_VECTOR_ELT(ans, i++, Int(facts->effect, facts->neffect));  
   SET_STRING_ELT(nameAns, i, mkChar("NAs"));
-  SET_VECTOR_ELT(ans, i++, Int(info->nas, info->neffect));  
+  SET_VECTOR_ELT(ans, i++, Int(facts->nas, facts->neffect));  
   SET_STRING_ELT(nameAns, i, mkChar("NaNs"));
   SET_VECTOR_ELT(ans, i++, ScalarInteger(NaNs));  
   SET_STRING_ELT(nameAns, i, mkChar("xdimOZ"));
-  SET_VECTOR_ELT(ans, i++, ScalarInteger(info->newxdim));  
+  SET_VECTOR_ELT(ans, i++, ScalarInteger(facts->newxdim));  
   SET_STRING_ELT(nameAns, i, mkChar("matrix.indep.of.x"));
   SET_VECTOR_ELT(ans, i++,
 		 ScalarLogical(cov->matrix_indep_of_x));  
@@ -1249,38 +1182,60 @@ SEXP SetAndGetModelInfo(SEXP Model_reg, SEXP Model, SEXP x,
   assert(i==total);
 
   UNPROTECT(5);
-  if (info != NULL && !do_not_del_info) likelihood_info_DELETE(info);
+  if (facts != NULL && !do_not_del_facts) likelihood_facts_DELETE(facts);
 
   return ans;
 
 }
 
 
- 
- 
-SEXP SetAndGetModelLikelihood(SEXP Model_reg, SEXP Model, SEXP x, SEXP origin) {
+SEXP SetAndGetModelLikelihood(SEXP Model_reg, SEXP Model, SEXP x,
+			      SEXP rawConcerns, SEXP origin) {
   //  printf("set^get\n");
-  return SetAndGetModelInfo(Model_reg, Model, x, 0,			    
-			    false, 0, 0, false, 0,// only dummy variables
-			    GLOBAL.fit.lengthshortname, LIKELI_NA_INTEGER,
-			    LIKELI_EXCLUDE_TREND,
-			    (sort_origin) INTEGER(origin)[0]);
+  int Reg = INTEGER(Model_reg)[0];
+  set_currentRegister(Reg);
+  KEY_type *KT = KEYT();
+  setKT_NAOK_RANGE(KT, true);  
+  CheckModel(Model, NULL, NULL, NULL,NULL, 0, 0, 0, 0,
+	     false, false, false, false, x,
+	     (raw_type) INTEGER(rawConcerns)[0],
+	     KT, Reg);
+  return SetAndGetModelFacts(KT->KEY[Reg], 
+			     KT->global.fit.lengthshortname, LIKELI_NA_INTEGER,
+			     LIKELI_EXCLUDE_TREND,
+			     (sort_origin) INTEGER(origin)[0]);
 }
 
 
-
-SEXP SetAndGetModelInfo(SEXP Model_reg, SEXP Model, SEXP spatialdim, 
-			SEXP distances, SEXP ygiven, SEXP Time,
-			SEXP xdimOZ, SEXP shortlen, SEXP allowforintegerNA, 
+// called by rfgui: y=NULL: Time == FALSE
+// called by rfgetmodelinfo
+SEXP SetAndGetModelFacts(SEXP Model_reg, SEXP Model, SEXP spatialdim, 
+			SEXP distances, SEXP Ygiven, SEXP Time,
+			SEXP XdimOZ, SEXP shortlen, SEXP allowforintegerNA, 
 			SEXP excludetrend) {
-  return SetAndGetModelInfo(Model_reg, Model, R_NilValue, 
-			    INTEGER(spatialdim)[0], LOGICAL(distances)[0], 1,
-			    LOGICAL(ygiven)[0] ? 1 : 0,
-			    LOGICAL(Time)[0], INTEGER(xdimOZ)[0], 
-			    INTEGER(shortlen)[0],
-			    INTEGER(allowforintegerNA)[0],
-			    LOGICAL(excludetrend)[0],
-			    original_model);
+  // called with ygiven=TRUE only RFgetModelInfo_model
+  // also called from RFgui
+  int Reg = INTEGER(Model_reg)[0],
+    xdimOZ = INTEGER(XdimOZ)[0];
+  set_currentRegister(Reg);
+  KEY_type *KT = KEYT();
+  setKT_NAOK_RANGE(KT, true);
+  bool time = LOGICAL(Time)[0],
+    ygiven = LOGICAL(Ygiven)[0]  ;
+  double 
+    *x0 = ZERO(xdimOZ + time, KT),
+    *y0 = ygiven ? x0 : NULL,    
+    T[3] = {0.0, 1.0, 1.0},
+    *T0 = LOGICAL(Time)[0] ? T : NULL;
+  //  printf("set^get A\n");
+  CheckModel(Model, x0, y0, T0, ygiven ? T0 : NULL,
+	     INTEGER(spatialdim)[0], xdimOZ, 1, (int) ygiven,
+	     false, false, LOGICAL(distances)[0], Time, R_NilValue,
+	     ignoreValues, KT, Reg);
+
+  return SetAndGetModelFacts(KT->KEY[Reg], INTEGER(shortlen)[0],
+			     INTEGER(allowforintegerNA)[0],
+			     LOGICAL(excludetrend)[0], original_model);
 }
 
 
@@ -1289,15 +1244,15 @@ SEXP SetAndGetModelInfo(SEXP Model_reg, SEXP Model, SEXP spatialdim,
 
 void expliciteDollarMLE(int* reg, double *values) { // 
     // userinterfaces.cc 
-  model *key = KEY()[*reg];
-  mle_storage *s = key->Smle; assert(s != NULL);
+  model *cov = KEY()[*reg];
+getStorage(s ,   mle); 
   int i, un,
     NAs = s->NAS;
  	
   // first get the naturalscaling values and devide the preceeding 
   // scale model by this value 
-  if (GLOBAL.general.naturalscaling==NATSCALE_MLE) {
-    iexplDollar(key, true);
+  if (cov->base->global.general.naturalscaling==NATSCALE_MLE) {
+    iexplDollar(cov, true);
   }
 
   // Then get the values out of the model
@@ -1311,7 +1266,7 @@ void expliciteDollarMLE(int* reg, double *values) { //
 
 void PutValuesAtNAintern(int *reg, double *values, bool init){
   model *key = KEY()[*reg];
-  mle_storage *s = key->Smle; assert(s != NULL);
+  GETSTORAGE(s , key,  mle); 
   int i, un,
     NAs = s->NAS;
   defn *C = NULL;

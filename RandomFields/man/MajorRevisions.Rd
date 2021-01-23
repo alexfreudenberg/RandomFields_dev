@@ -113,7 +113,7 @@
        fields} are now fully included 
      \item The \link[=RMuser]{user}
        may now define his own functions, to some extend.
-     \item The \link[=RMtrend]{trend} allows for much more flexibility
+     \item The \link[=RMshape]{trend} allows for much more flexibility
      \item \link[=RR]{Distributions} may now be included which will be
      extended to \link{Bayesian} modelling in future.
    }
@@ -129,7 +129,9 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ## S4 vs S3
 x <- seq(0, 10, 0.1)
 model <- RMexp()
-plot(RFsimulate(model, x)) ## S4
-plot(RFsimulate(model, x, spConform=FALSE)) ## no class
-
+y <- RFsimulate(model, x)
+Print(y)
+plot(y) ## S4
+y <- RFsimulate(model, x, spConform=FALSE)
+plot(y)
 \dontshow{FinalizeExample()}}

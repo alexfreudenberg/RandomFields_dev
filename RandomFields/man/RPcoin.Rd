@@ -99,7 +99,7 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
 x <- seq(0, 10, 0.1)
-z <- RFsimulate(RPcoins(RMcircular(), intensity=0.1), x, x, seed=0)
+z <- RFsimulate(RPcoins(RMcircular(), intensity=0.1), x, x)
 plot(z)
 
 \dontshow{\dontrun{

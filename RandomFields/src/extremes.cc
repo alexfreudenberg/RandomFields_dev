@@ -45,9 +45,9 @@ double GetTotal(model* cov) {
   if (C->Type == RandomType) {
     if (cov->total_n >= 0) {
       int VARIABLE_IS_NOT_USED old_n = cov->total_n;
-      if (cov->total_n < GLOBAL.distr.repetitions) {
+      if (cov->total_n < glob al->distr.repetitions) {
 	double *r = (double*) MALLOC(cov->xdimown * sizeof(double));
-	while(cov->total_n < GLOBAL.distr.repetitions) {
+	while(cov->total_n < glo bal->distr.repetitions) {
 	  DORANDOM(cov, r);
 	  assert(cov->total_n > cov->total_n);
 	}
@@ -101,7 +101,6 @@ int init_mpp(model *cov, gen_storage *S) { // cov ist process
   if (sub == NULL) sub = cov->sub[cov->sub[0] == NULL];
   if (sub == NULL) SERR("substructure could be detected");
   location_type *loc = Loc(cov);
-  //window_info *w = &(S->window);
   int err;
   bool compoundpoisson = hasPoissonFrame(sub),
     poissongauss = hasPoissonGaussFrame(sub),
@@ -167,14 +166,16 @@ int init_mpp(model *cov, gen_storage *S) { // cov ist process
  
 
 void dompp(model *cov, gen_storage *s, double *simuxi) { // cov ist process
+  globalparam *global = &(cov->base->global);
   assert(cov->simu.active);
   location_type *loc = Loc(cov);	
-  if (Getcaniso(cov) != NULL) BUG;
-
+  if (Loccaniso(cov) != NULL) BUG;
+  DEFAULT_INFO(info);
+  
   model *sub = NULL,
     *key = cov->key;
   pgs_storage *pgs = NULL;
-  Long spatial = Getspatialpoints(cov);
+  Long spatial = Locspatialpoints(cov);
   int  err,
     *gridlen = NULL,
     *end = NULL,
@@ -182,7 +183,7 @@ void dompp(model *cov, gen_storage *s, double *simuxi) { // cov ist process
     *delta = NULL,
     *nx = NULL,
     dim = ANYOWNDIM,
-     every = GLOBAL.general.every, //
+     every = global->general.every, //
     nthreshold = (every>0) ? every : MAXINT,	
     deltathresh = nthreshold;			
  
@@ -197,21 +198,21 @@ void dompp(model *cov, gen_storage *s, double *simuxi) { // cov ist process
     frechet = RF_NA,
     threshold = RF_NA,
     poisson=0.0,
-    Minimum = GLOBAL.extreme.min_shape_gumbel, // -10 // TO DO; -1e150
+    Minimum = global->extreme.min_shape_gumbel, // -10 // TO DO; -1e150
     *res = cov->rf;
-  coord_type xgr = Getxgr(cov);
+  coord_type xgr = Locxgr(cov);
 
   assert(res != NULL);
   ext_bool fieldreturn, loggiven;
   bool   
     maxstable = hasMaxStableFrame(key),
-    simugrid = Getgrid(cov),
+    simugrid = Locgrid(cov),
     partialfield = false,
     // AVERAGE braucht Sonderbehandlung:
      randomcoin = cov->method == RandomCoin //only for FRAME_ POISSON_ GAUSS
     ;
   Long zaehler, nn, cumgridlen[MAXMPPDIM +1], Total_n,			
-    total = Gettotalpoints(cov), 
+    total = Loctotalpoints(cov), 
     vdim = VDIM0,
     vdimtot = total * vdim,
     control = 0;
@@ -273,7 +274,7 @@ void dompp(model *cov, gen_storage *s, double *simuxi) { // cov ist process
     assert(simuxi == NULL);
     for (int i=0; i<vdimtot; res[i++] = 0.0);
     logM2 =LOG(sub->mpp.mM[2]);
-    pgs->currentthreshold = GLOBAL.mpp.about_zero;
+    pgs->currentthreshold = global->mpp.about_zero;
   }
 
   for(nn=1; ; nn++) {
@@ -288,8 +289,6 @@ void dompp(model *cov, gen_storage *s, double *simuxi) { // cov ist process
       nn--; // for final printing 
       break;
     }
-    
-    // for (d=0; d<dim; d++) info->min[d] = info->max[d] = 0.0;
     
     if (sub->randomkappa) {
       if ((err = REINIT(sub, sub->mpp.moments, s)) != NOERROR) BUG;
@@ -323,9 +322,9 @@ void dompp(model *cov, gen_storage *s, double *simuxi) { // cov ist process
     } else { // max-stable field          
       assert(hasMaxStableFrame(sub));
 
-      if (nn > GLOBAL.extreme.maxpoints) {
+      if (nn > global->extreme.maxpoints) {
 	PRINTF("'maxpoints' (= %d) exceeded. Simulation is likely to be a rough approximation only. Consider increasing 'maxpoints'.\n", 
-	       GLOBAL.extreme.maxpoints
+	       global->extreme.maxpoints
 		);
 	nn--; // for final printing 
        	break;
@@ -360,8 +359,8 @@ void dompp(model *cov, gen_storage *s, double *simuxi) { // cov ist process
       }
       
        
-       //     printf("n=%d every =%d %d %d\n", (int) n, GLOBAL.extreme.check_every, PL, PL_STRUCTURE);
-      if (nn % GLOBAL.extreme.check_every == 0) {
+       //     printf("n=%d every =%d %d %d\n", (int) n, global->extreme.check_every, PL, PL_STRUCTURE);
+      if (nn % global->extreme.check_every == 0) {
 	double min = res[control];
 	for (int i=control + 1; i<total; i++)  {
 	  //printf("i=%d control=%d total=%d %10g\n", i, control, total,  res[i]);
@@ -371,7 +370,7 @@ void dompp(model *cov, gen_storage *s, double *simuxi) { // cov ist process
 	if (PL >= PL_STRUCTURE) {
 	  PRINTF("control: %ld %10g %10g glob=%10g n=%ld every=%d %10g log.max=%10g\n", // %ld OK
 		 control, res[control], threshold, min,
-		 nn, GLOBAL.extreme.check_every, sub->mpp.maxheights[0],
+		 nn, global->extreme.check_every, sub->mpp.maxheights[0],
 		 LOG(sub->mpp.maxheights[0]));	 
 	}
 	pgs->globalmin = min < Minimum ? Minimum : min;     
@@ -410,7 +409,6 @@ void dompp(model *cov, gen_storage *s, double *simuxi) { // cov ist process
 
 
 	if (start[d] >= end[d]) { // 
-	  //	  printf("broken %d %d %d supp=%10g %10g, loc.start=%10g %10g\n", d, start[d], end[d], pgs->supportmin[d], pgs->supportmax[d], xgr[d][XSTART], inc[d]); 
 	  break;
 	}
 	delta[d] = (end[d] - start[d]) * cumgridlen[d];
@@ -452,8 +450,8 @@ void dompp(model *cov, gen_storage *s, double *simuxi) { // cov ist process
     // end define StandardInkrement
 
  
-#define GET SHAPE(x, sub, value); /* // printf("%10g : %10g fctr=%10g %ld \n", x[0], *value, factor, zaehler); // */
-#define LOGGET LOGSHAPE(x, sub, value, Sign);
+#define GET SHAPE(x, info, sub, value); /* // printf("%10g : %10g fctr=%10g %ld \n", x[0], *value, factor, zaehler); // */
+#define LOGGET LOGSHAPE(x, info, sub, value, Sign);
 #define LOGGETPOS LOGGET if (Sign[0] > 0)
 #define GETRF *value = (double) (rf[zaehler]);
 
@@ -663,32 +661,33 @@ void dompp(model *cov, gen_storage *s) {
 
 
 void finalmaxstable(model *cov, double *Res, int n, gen_storage *s) {
-  
+   globalparam *global = &(cov->base->global);
+ 
   // cov is process
   model *key = cov->key,
     *sub = cov->key;/* if changed, change do_max_pgs! */
   if (sub == NULL) sub = cov->sub[cov->sub[0] == NULL];			
   if (sub == NULL) ERR("substructure could be detected");		
   Long
-    total = Gettotalpoints(cov), 
+    total = Loctotalpoints(cov), 
     vdim = VDIM0,
     vdimtot = total * vdim;  
   double meansq, var,
      mean = RF_NA, 
     n_min = RF_INF,      
-    eps = GLOBAL.extreme.eps_zhou,
+    eps = global->extreme.eps_zhou,
     *endres = Res + n * vdimtot;
   ext_bool loggiven = key == NULL ? cov->sub[0]->loggiven : key->loggiven;
-  pgs_storage *pgs = sub->Spgs;							
+  GETSTORAGE(pgs, sub ,   pgs); 
   assert(pgs != NULL);						
 
   
   if (pgs->estimated_zhou_c) {
     if (PL > 5) {
-      PRINTF("zhou_c: %ld %d",pgs->n_zhou_c, GLOBAL.extreme.min_n_zhou);
+      PRINTF("zhou_c: %ld %d",pgs->n_zhou_c, global->extreme.min_n_zhou);
     }
     
-    while (pgs->n_zhou_c < GLOBAL.extreme.min_n_zhou) {
+    while (pgs->n_zhou_c < global->extreme.min_n_zhou) {
       int err;
       if ((err = REINIT(sub, sub->mpp.moments, s)) != NOERROR) BUG;
       DO(sub, s);   
@@ -706,7 +705,7 @@ void finalmaxstable(model *cov, double *Res, int n, gen_storage *s) {
 	       n_min, (double) pgs->sum_zhou_c, mean, pgs->zhou_c, eps);
       }
 
-      if (n_min >= GLOBAL.extreme.max_n_zhou || pgs->n_zhou_c >= n_min) break;
+      if (n_min >= global->extreme.max_n_zhou || pgs->n_zhou_c >= n_min) break;
 
       int endfor=(n_min - pgs->n_zhou_c); 
       endfor = endfor < 10 ? 10 : endfor > 50 ? 50 : endfor;
@@ -806,7 +805,7 @@ int addStandardPoisson(model **Cov) { // a submodel of poisson only
   addModel(Cov, STANDARD_SHAPE, cov);
   model *key = *Cov;
 
-  SetLoc2NewLoc(key, PLoc(cov));
+  SetLoc2NewLoc(key, LocP(cov));
   assert(key->calling == cov);
   assert(key->sub[PGS_LOC] == NULL && key->sub[PGS_FCT] != NULL);
 
@@ -839,12 +838,13 @@ int addStandardPoisson(model **Cov) { // a submodel of poisson only
 }
 
 int check_poisson(model *cov) {
+  globalparam *global = &(cov->base->global);
   model *shape=cov->sub[POISSON_SHAPE],
     *key = cov->key,
     *sub = key == NULL ? shape : key;
   int err,
-    dim = ANYDIM; // taken[MAX DIM],
-  mpp_param *gp  = &(GLOBAL.mpp);
+    dim = OWNXDIM(0); // taken[MAX DIM],
+  mpp_param *gp  = &(global->mpp);
 
   ASSERT_ONE_SUBMODEL(cov);
   //print("eee\n");
@@ -920,7 +920,7 @@ int struct_poisson(model *cov, model **newmodel){
     shape = cov->key;
   }
   
-  int dim = ANYDIM;
+  int dim = OWNXDIM(0);
   if ((err = CHECK(shape, dim, dim, ShapeType, XONLY,
 		     CoordinateSystemOf(OWNISO(0)),
 		     SUBMODEL_DEP, PoissonType)) != NOERROR)
@@ -928,7 +928,8 @@ int struct_poisson(model *cov, model **newmodel){
 
   if (loc->Time || (loc->grid && loc->caniso != NULL)) {
     TransformLoc(cov, false, GRIDEXPAND_AVOID, false);
-    SetLoc2NewLoc(shape, PLoc(cov)); // passt das?
+    SetLoc2NewLoc(shape, LocP(cov)); // passt das?
+    loc = Loc(cov);
    }
 
   if (!equalsnowPointShape(shape)) {
@@ -942,8 +943,6 @@ int struct_poisson(model *cov, model **newmodel){
 
 
 int init_poisson(model *cov, gen_storage *S) {
-  //  location_type *loc = Loc(cov);
-  // mpp_storage *s = &(S->mpp);
   model *key=cov->key;
   int err;
  
@@ -966,10 +965,10 @@ int init_poisson(model *cov, gen_storage *S) {
 ////////////////////////////////////////////////////////////////////
 // Schlather
 
-void extremalgaussian(double *x, model *cov, double *v) {
+void extremalgaussian(double *x, int *info, model *cov, double *v) {
   // schlather process
   model *next = cov->sub[0]; 
-  COV(x, next, v);
+  COV(x, info, next, v);
   if (hasGaussMethodFrame(next)) *v = 1.0 - SQRT(0.5 * (1.0 - *v));
 }
 	
@@ -978,8 +977,9 @@ void extremalgaussian(double *x, model *cov, double *v) {
 //#define MPP_TCF 1
 
 int SetGEVetc(model *cov) { // cov is process
+  globalparam *global = &(cov->base->global);
   int err;
-  extremes_param *ep = &(GLOBAL.extreme);
+  extremes_param *ep = &(global->extreme);
 
   if (cov->sub[MPP_TCF] != NULL && cov->sub[MPP_SHAPE]!=NULL)
     SERR2("either '%.50s' or '%.50s' must be given",
@@ -1004,8 +1004,8 @@ int check_schlather(model *cov) {
     *key = cov->key,
     *next = cov->sub[cov->sub[MPP_TCF] != NULL ? MPP_TCF : MPP_SHAPE];
   int err,
-    dim = ANYDIM; // taken[MAX DIM],
-  // mpp_param *gp  = &(GLOBAL.mpp);
+    dim = OWNXDIM(0); // taken[MAX DIM],
+  // mpp_param *gp  = &(global->mpp);
   double v;
   bool schlather = DefList[COVNR].Init == init_mpp; // else opitz
 
@@ -1049,7 +1049,7 @@ int check_schlather(model *cov) {
 
     if (hasEvaluationFrame(next)) {
       if (next->pref[Nothing] == PREF_NONE) RETURN_ERR(ERRORPREFNONE);
-      COV(ZERO(next), next, &v);
+      Zero(next, &v);
       if (v != 1.0) 
 	SERR2("a correlation function is required as submodel, but '%.50s' has variance %10g.", NICK(next), v);
     }
@@ -1136,7 +1136,7 @@ int init_opitzprocess(model *cov, gen_storage *S) {
   model *key = cov->key;
   assert(key != NULL);
   assert(key->mpp.moments == 1);
-  pgs_storage *pgs = key->Spgs;
+  GETSTORAGE(pgs , key,  pgs); 
   assert(pgs != NULL);
   key->mpp.mMplus[1] = INVSQRTTWOPI *POW(2, 0.5 * alpha - 0.5) * 
     gammafn(0.5 * alpha + 0.5); 
@@ -1192,7 +1192,8 @@ void param_set_identical(model *to, model *from, int depth) {
 int FillInPts(model *cov,  // struct of shape
 			model *shape // shape itself
 			) {
-  // fuegt im max-stabilen Fall diegleiche Funktion als
+   globalparam *global = &(cov->base->global);
+ // fuegt im max-stabilen Fall diegleiche Funktion als
   // intensitaetsfunktion fuer die Locationen ein; random scale
   // wird mitbeachtet
   //
@@ -1234,7 +1235,7 @@ int FillInPts(model *cov,  // struct of shape
       assert(dim > 0 && dim <= MAXMPPDIM);
       addModel(cov, PGS_LOC, POW);
       assert(cov->nsub == 2);
-      kdefault(cov->sub[PGS_LOC], POW_ALPHA, GLOBAL.mpp.shape_power);
+      kdefault(cov->sub[PGS_LOC], POW_ALPHA, global->mpp.shape_power);
       addModel(cov, PGS_LOC, SCATTER);
       model *scatter = cov->sub[PGS_LOC];
 
@@ -1242,10 +1243,10 @@ int FillInPts(model *cov,  // struct of shape
  
       PARAMALLOC(scatter, SCATTER_MAX, dim, 1);
       for (i=0; i<dim; i++) 
-	PARAMINT(scatter, SCATTER_MAX)[i] = GLOBAL.mpp.scatter_max[i];
+	PARAMINT(scatter, SCATTER_MAX)[i] = global->mpp.scatter_max[i];
       PARAMALLOC(scatter, SCATTER_STEP, dim, 1);
       for (i=0; i<dim; i++) 
-	PARAM(scatter, SCATTER_STEP)[i] = GLOBAL.mpp.scatter_step[i];
+	PARAM(scatter, SCATTER_STEP)[i] = global->mpp.scatter_step[i];
       BUG;
       addModel(cov, PGS_FCT, RANDOMSIGN); 
     } else if (!hasSmithFrame(shape))  BUG; 
@@ -1297,10 +1298,9 @@ int addPGS(model **Key, // struct of shape
   bool maxstable = hasMaxStableFrame(shape);
   int i,
     err = NOERROR,
-    method = GLOBAL.extreme.scatter_method,
     pgs[specific] = {maxstable ? ZHOU : BALLANI, STANDARD_SHAPE}; 
- #define infoN 200
-  char info[nPOISSON_SCATTER - 1][LENERRMSG];
+ #define msgN 200
+  char msg[nPOISSON_SCATTER - 1][LENERRMSG];
   assert(shape != NULL);
   assert(*Key == NULL);
 
@@ -1308,14 +1308,16 @@ int addPGS(model **Key, // struct of shape
   // praeferenzen programmieren?
   // printf("specific=%d\n", specific);
   
+  globalparam *global = &(shape->base->global);
+  int method = global->extreme.scatter_method;
   for (i=0; i<specific; i++) {
     if (method != POISSON_SCATTER_ANY && i != method) continue;    
     if (i > 0) {
-      errorMSG(err, info[i-1]);
+      errorMSG(err, msg[i-1]);
       //     XERR(err);  // eigentlich muss das hier weg
     }
     //    if (i > 0) XERR(err); assert(i ==0);
-    if (*Key != NULL) COV_DELETE(Key, shape);
+    if (*Key != NULL) COV_DELETE(Key, shape); 
     assert(shape->calling != NULL);
     addModel(Key, pgs[i], shape->calling);
     model *cov = *Key;
@@ -1372,8 +1374,8 @@ int addPGS(model **Key, // struct of shape
   if (err != NOERROR) {
     SERR("error occured when creating the point-shape fctn");
     //   errorstring_type xx = "error occured when creating the point-shape fctn";
-    // errorMSG(err, xx, cov->base, info[i-1]);
-    // SERR2("no method found to simulate the given model:\n\tpgs: %.50s\n\tstandard: %.50s)", info[0], info[1]);
+    // errorMSG(err, xx, cov->base, msg[i-1]);
+    // SERR2("no method found to simulate the given model:\n\tpgs: %.50s\n\tstandard: %.50s)", msg[0], msg[1]);
   }
   RETURN_NOERROR;
 }
@@ -1490,7 +1492,7 @@ int check_smith(model *cov) {
     *key = cov->key;
     // *sub = (key==NULL) ? next : key;
   int err, 
-    dim = ANYDIM; // taken[MAX DIM],
+    dim = OWNXDIM(0); // taken[MAX DIM],
   
 
   ASSERT_ONE_SUBMODEL(cov);
@@ -1552,7 +1554,8 @@ int struct_smith(model *cov,  model **newmodel){
   assert(hasSmithFrame(sub));
   if (loc->Time || (loc->grid && loc->caniso != NULL)) {
     TransformLoc(cov, false, GRIDEXPAND_AVOID, false);
-    SetLoc2NewLoc(sub, PLoc(cov));
+    SetLoc2NewLoc(sub, LocP(cov));
+    loc = Loc(cov);
   }
   if (cov->key != NULL) COV_DELETE(&(cov->key), cov);
   ASSERT_NEWMODEL_NULL;
@@ -1573,7 +1576,7 @@ int struct_smith(model *cov,  model **newmodel){
   // 
 
   if ((err = struct_ppp_pts(&(cov->key), tmp_shape, cov,
-			    ANYDIM, VDIM0, SmithType))
+			    OWNXDIM(0), VDIM0, SmithType))
       != NOERROR) goto ErrorHandling;
 
   err = NOERROR;
@@ -1613,25 +1616,25 @@ double schlatherlogD(double *data, double gamma) {
 
 
 void loglikelihoodMaxstable(double *data,
+			    int *info, 
 			    model *cov, // = process
 			    logDfct logD, double *v) {
   // DARF JA NICHT DURCH MEHRERE CORES AUFGERUFEN WERDEN!!
+  globalparam *global = &(cov->base->global);
   model *sub = cov;
   while (isnowProcess(sub))
     sub = sub->key != NULL ? sub->key : sub->sub[0];
+  Long len = LoctotalpointsY(cov);    
 
   if (cov->q == NULL) {
-    location_type *loc = Loc(cov);
-    Long len = loc->totalpoints;    
     QALLOC(len);
-    if (loc->grid || loc->Time) TransformLoc(sub, false, True, false);   
+    if (LocgridY(cov) // 2.1.21 -- info really not to be used??
+	|| LocTime(cov)) TransformLocXY(sub, false, True, false);
   }
 
   ASSERT_ONESYSTEM;
-  location_type *loc = Loc(cov);
   int dim = OWNTOTALXDIM;
-  int len = loc->totalpoints;    
-    
+
   if (data != NULL) {
     double 
       xi = P0(GEV_XI),
@@ -1648,19 +1651,18 @@ void loglikelihoodMaxstable(double *data,
     }
   }
 
-  switch(GLOBAL.fit.likelihood) {
+  switch(global->fit.likelihood) {
   case LL_AUTO: case LL_COMPOSITE: {
-    double z[2], gamma, gamma0, x[MAXMPPDIM + 1], y[MAXMPPDIM + 1],
-      *xx = loc->x;    
-    COV(ZERO(sub), sub, &gamma0);
+    double z[2], gamma, gamma0,
+      *xx = LocY(cov);
+    Zero(sub, &gamma0);
+    Zero(info, sub, &gamma0);
     for (int i=0; i<len; i++, xx += dim) {
-      MEMCOPY(x, xx, dim);
-      x[dim] = i;
+      info[INFO_IDX_X] = i;
       double *yy = xx + dim;
       for (int j=i+1; j<len; j++, yy += dim) {
-	MEMCOPY(y, yy, dim);
-	y[dim] = j;
-	NONSTATCOV(x, y, sub, &gamma);
+	info[INFO_IDX_Y] = j;
+	NONSTAT2STATCOV(xx, yy, info, sub, &gamma);
 	z[0] = cov->q[i];
 	z[1] = cov->q[j];
 	*v += logD(z, gamma0 - gamma);
@@ -1676,12 +1678,12 @@ void loglikelihoodMaxstable(double *data,
 }
 
 
-void loglikelihoodBR(double *data, model *cov, double *v) {
-  loglikelihoodMaxstable(data, cov, HueslerReisslogD, v);
+void loglikelihoodBR(double *data, int *info, model *cov, double *v) {
+  loglikelihoodMaxstable(data, info, cov, HueslerReisslogD, v);
 }
 
-void loglikelihoodSchlather(double *data, model *cov, double *v) {
-  loglikelihoodMaxstable(data, cov, schlatherlogD, v);
+void loglikelihoodSchlather(double *data, int *info, model *cov, double *v) {
+  loglikelihoodMaxstable(data, info, cov, schlatherlogD, v);
 }
 
 
@@ -1698,15 +1700,16 @@ void loglikelihoodSchlather(double *data, model *cov, double *v) {
 #define COIN_BALLANI 2
 
 int check_randomcoin(model *cov) {
+  globalparam *global = &(cov->base->global);
   model 
     *pdf = cov->sub[COIN_COV],
     *shape = cov->sub[COIN_SHAPE],
     *next = shape != NULL ? shape : pdf,
     *key = cov->key;
   int err,
-    dim = ANYDIM; // taken[MAX DIM],
-  mpp_param *gp  = &(GLOBAL.mpp);
-  //extremes_param *ep = &(GLOBAL.extreme);
+    dim = OWNXDIM(0); // taken[MAX DIM],
+  mpp_param *gp  = &(global->mpp);
+  //extremes_param *ep = &(global->extreme);
 
   ASSERT_CARTESIAN;
   ASSERT_ONESYSTEM;
@@ -1730,8 +1733,6 @@ int check_randomcoin(model *cov) {
     // note: key calls first function to simulate the points
     // if this is true then AverageIntern/RandomCoinIntern calls Average/RandomCoin  
     //  printf("\n check random coin : key=%d %s %s Method=%d %d: %s key=%s\n", key!=NULL, TYPE_NAMES[cov->f rame], TYPE_NAMES[next->f rame],hasGaussMethodFrame(key), hasPoissonGaussFrame(key), NAME(next), key != NULL ? NAME(key) : "none" );
-
-
 
   // model *intern = cov;
   /// while (intern != NULL && MODELNR(intern) != AVERAGE_INTERN &&
@@ -1817,16 +1818,18 @@ int struct_randomcoin(model *cov, model **newmodel){
 
   //  printf("\n\n\n\nstruct random coin\n");
   
+  globalparam *global = &(cov->base->global);
   model *tmp_shape = NULL,
     *pdf = cov->sub[COIN_COV],
     *shape = cov->sub[COIN_SHAPE];
   location_type *loc = Loc(cov);
   int err,
-    dim = ANYDIM; // taken[MAX DIM],
+    dim = OWNXDIM(0); // taken[MAX DIM],
 
   if (loc->Time || (loc->grid && loc->caniso != NULL)) {
     TransformLoc(cov, true, GRIDEXPAND_AVOID, false);
-    SetLoc2NewLoc(pdf == NULL ? shape : pdf, PLoc(cov)); 
+    SetLoc2NewLoc(pdf == NULL ? shape : pdf, LocP(cov));
+    loc = Loc(cov);
   }
   if (cov->key != NULL) COV_DELETE(&(cov->key), cov);
   ASSERT_NEWMODEL_NULL;
@@ -1900,7 +1903,7 @@ int struct_randomcoin(model *cov, model **newmodel){
     if ((err = covcpy(key->sub + PGS_LOC, shape)) != NOERROR)
 	  goto ErrorHandling;
     addModel(key, PGS_LOC, POW);
-    kdefault(key->sub[PGS_LOC], POW_ALPHA, GLOBAL.mpp.shape_power);
+    kdefault(key->sub[PGS_LOC], POW_ALPHA, global->mpp.shape_power);
     addModel(key, PGS_LOC, SCATTER);
     model *scatter = key->sub[PGS_LOC];
     PARAMALLOC(scatter, SCATTER_MAX, dim, 1);
@@ -1938,11 +1941,9 @@ int init_randomcoin(model *cov, gen_storage *S) {
   char name[] = "Poisson-Gauss";
   location_type *loc = Loc(cov);
   //mpp_storage *s = &(S->mpp);  
-  int 
-    err = NOERROR;
-  KEY_type *KT = cov->base;
+  int err = NOERROR;
 
-  SPRINTF(KT->error_loc, "%.50s process", name);
+  SPRINTF(cov->base->error_location, "%.50s process", name);
 
   assert(hasPoissonGaussFrame(sub));
 

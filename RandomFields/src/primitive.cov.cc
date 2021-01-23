@@ -33,6 +33,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "questions.h"
 #include "primitive.h"
+#include "primitive.bivariate.h"
 #include "operator.h"
 #include "AutoRandomFields.h"
 #include "shape.h"
@@ -94,7 +95,7 @@ double interpolate(double y, double *stuetz, int nstuetz, int origin,
 #define BCW_TAYLOR_ZETA \
   (- LOG2 * (1.0 + 0.5 * zetalog2 * (1.0 + ONETHIRD * zetalog2)))
 #define BCW_CAUCHY (POW(1.0 + POW(*x, alpha), zeta) - 1.0)
-void bcw(double *x, model *cov, double *v){
+void bcw(double *x, INFO, model *cov, double *v){
   double alpha = P0(BCW_ALPHA), beta=P0(BCW_BETA),
     zeta = beta / alpha,
     absZeta = FABS(zeta);
@@ -116,7 +117,7 @@ void bcw(double *x, model *cov, double *v){
 }
 
 
-void Dbcw(double *x, model *cov, double *v){
+void Dbcw(double *x, INFO, model *cov, double *v){
   double ha,
     alpha = P0(BCW_ALPHA), 
     beta=P0(BCW_BETA),
@@ -138,7 +139,7 @@ void Dbcw(double *x, model *cov, double *v){
 }
 
 
-void DDbcw(double *x, model *cov, double *v){
+void DDbcw(double *x, INFO, model *cov, double *v){
   double 
   alpha = P0(BCW_ALPHA), 
   beta = P0(BCW_BETA),
@@ -162,7 +163,7 @@ void DDbcw(double *x, model *cov, double *v){
   }
 }
 
-void D3bcw(double *x, model *cov, double *v){
+void D3bcw(double *x, INFO, model *cov, double *v){
   double
     alpha = P0(BCW_ALPHA),
     beta=P0(BCW_BETA),
@@ -188,7 +189,7 @@ void D3bcw(double *x, model *cov, double *v){
   }
 }
 
- void D4bcw(double *x, model *cov, double *v){
+ void D4bcw(double *x, INFO, model *cov, double *v){
   double
     alpha = P0(BCW_ALPHA),
     beta=P0(BCW_BETA),
@@ -294,7 +295,7 @@ void rangebcw(model *cov, range_type *range) {
 
 
 
-void coinitbcw(model *cov, localinfotype *li) {
+void coinitbcw(model *cov, localfactstype *li) {
   double
     beta=P0(BCW_BETA); 
   if (beta < 0) coinitgenCauchy(cov, li);
@@ -335,7 +336,7 @@ void coinitbcw(model *cov, localinfotype *li) {
   }
 }
 
-//void coinitbcw(model *cov, localinfotype *li) {
+//void coinitbcw(model *cov, localfactstype *li) {
 //  double
 //    beta=P0(BCW_BETA);
 //  if (beta < 0) coinitgenCauchy(cov, li);
@@ -343,7 +344,7 @@ void coinitbcw(model *cov, localinfotype *li) {
 //    li->instances = 0;
 //  }
 //}
-void ieinitbcw(model *cov, localinfotype *li) {
+void ieinitbcw(model *cov, localfactstype *li) {
   if (P0(BCW_BETA) < 0) ieinitgenCauchy(cov, li);
   else {
     ieinitBrownian(cov, li); // to do: can nicht passen!!
@@ -356,7 +357,7 @@ void ieinitbcw(model *cov, localinfotype *li) {
 #define LOW_BESSELJ 1e-20
 #define LOW_BESSELK 1e-20
 #define BESSEL_NU 0
-void Bessel(double *x, model *cov, double *v){
+void Bessel(double *x, int *info, model *cov, double *v){
   // printf("bessel chec \n");
    /*
  GR 8.402:  Bessel(2 x SQRT(nu), nu) -> e^(-x^2)
@@ -388,7 +389,7 @@ void Bessel(double *x, model *cov, double *v){
     double w,
       g = BESSEL_NU_THRES / nu;
     y = 0.5 * *x / SQRT(nuThres);
-    Gauss(&y, NULL, &w);
+    Gauss(&y, info, NULL, &w);
     *v = *v * g + (1.0 - g) * w;
   }
 }
@@ -422,8 +423,9 @@ int checkBessel(model *cov) {
   //  printf("chec e\n");
   RETURN_NOERROR;
 }
-void spectralBessel(model *cov, gen_storage *S, double *e) { 
+void spectralBessel(model *cov, gen_storage *S, double *e) {
   spectral_storage *s = &(S->Sspectral);
+  assert(s != NULL);
   double 
     nu =  P0(BESSEL_NU);
 /* see Yaglom ! */
@@ -457,12 +459,12 @@ void rangeBessel(model *cov, range_type *range){
 
 
 /* circular model */
-void circular(double *x, model VARIABLE_IS_NOT_USED  *cov, double *v) {
+void circular(double *x, INFO, model VARIABLE_IS_NOT_USED  *cov, double *v) {
   double y = *x;
   *v = 0.0;
   if (y < 1.0) *v = 1.0 - (2.0 * (y * SQRT(1.0 - y * y) + ASIN(y))) * INVPI;
 }
-void Dcircular(double *x, model VARIABLE_IS_NOT_USED *cov, double *v){
+void Dcircular(double *x, INFO, model VARIABLE_IS_NOT_USED *cov, double *v){
   double y = *x * *x;
   *v = 0.0;
   if (y < 1.0) *v =-4 * INVPI * SQRT(1.0 - y);
@@ -508,12 +510,12 @@ int structcircular(model *cov, model **newmodel) {
 // see Gneiting.cc
 
 /* cubic */
-void cubic(double *x, model VARIABLE_IS_NOT_USED *cov, double *v) {
+void cubic(double *x, INFO, model VARIABLE_IS_NOT_USED *cov, double *v) {
   double y=*x, y2=y * y;
   *v = 0.0;
   if (y < 1.0) *v = (1.0 + (((0.75 * y2 - 3.5) * y2 + 8.75) * y - 7) * y2);
 }
-void Dcubic(double *x, model VARIABLE_IS_NOT_USED *cov, double *v) { 
+void Dcubic(double *x, INFO, model VARIABLE_IS_NOT_USED *cov, double *v) { 
   double y=*x, y2=y * y;
   *v =  0.0;
   if (y < 1.0) *v = y * (-14.0 + y * (26.25 + y2 * (-17.5 + 5.25 * y2)));
@@ -537,7 +539,7 @@ void Dcubic(double *x, model VARIABLE_IS_NOT_USED *cov, double *v) {
   if ((xerr=init(cov, &s)) != NOERROR) RETURN_ERR(xerr);
 
 
-void dagum(double *x, model *cov, double *v){
+void dagum(double *x, INFO, model *cov, double *v){
   double gamma = P0(DAGUM_GAMMA), 
     beta=P0(DAGUM_BETA);
   *v = 1.0 - POW((1 + POW(*x, -beta)), -gamma/beta);
@@ -550,7 +552,7 @@ void Inversedagum(double *x, model *cov, double *v){
     *x <= 0.0 ? RF_INF :
     POW(POW(1.0 - *x, - beta / gamma ) - 1.0, 1.0 / beta);
 }
-void Ddagum(double *x, model *cov, double *v){
+void Ddagum(double *x, INFO, model *cov, double *v){
   double y=*x, xd, 
     gamma = P0(DAGUM_GAMMA), 
     beta=P0(DAGUM_BETA);
@@ -560,7 +562,7 @@ void Ddagum(double *x, model *cov, double *v){
 
 int checkdagum(model *cov){
   if (PisNULL(DAGUM_GAMMA) || PisNULL(DAGUM_BETA))
-    SERR("parameters are not given all");
+    ERR("parameters are not all given.");
   double
     gamma = P0(DAGUM_GAMMA), 
     beta = P0(DAGUM_BETA);
@@ -624,11 +626,11 @@ void rangedagum(model *cov, range_type *range){
 
 /*  damped cosine -- derivative of e xponential:*/
 #define DC_LAMBDA 0
-void dampedcosine(double *x, model *cov, double *v){
+void dampedcosine(double *x, INFO, model *cov, double *v){
   double y = *x, lambda = P0(DC_LAMBDA);
   *v = (y == RF_INF) ? 0.0 : EXP(-y * lambda) * COS(y);
 }
-void logdampedcosine(double *x, model *cov, double *v, double *Sign){
+void logdampedcosine(double *x, INFO, model *cov, double *v, double *Sign){
   double 
     y = *x, 
     lambda = P0(DC_LAMBDA);
@@ -644,7 +646,7 @@ void logdampedcosine(double *x, model *cov, double *v, double *Sign){
 void Inversedampedcosine(double *x, model *cov, double *v){ 
   Inverseexponential(x, cov, v);
 } 
-void Ddampedcosine(double *x, model *cov, double *v){
+void Ddampedcosine(double *x, INFO, model *cov, double *v){
   double y = *x, lambda = P0(DC_LAMBDA);
   *v = - EXP(-lambda*y) * (lambda * COS(y) + SIN(y));
 }
@@ -670,16 +672,16 @@ void rangedampedcosine(model *cov, range_type *range){
 /* De Wijsian */
 #define DEW_ALPHA 0 // for both dewijsian models
 #define DEW_D 1
-void dewijsian(double *x, model *cov, double *v){
+void dewijsian(double *x, INFO, model *cov, double *v){
   double alpha = P0(DEW_ALPHA);
   *v = -LOG(1.0 + POW(*x, alpha));
 }
-void Ddewijsian(double *x, model *cov, double *v){
+void Ddewijsian(double *x, INFO, model *cov, double *v){
   double alpha = P0(DEW_ALPHA),
       p  = POW(*x, alpha - 1.0) ;
   *v = - alpha * p / (1.0 + *x * p);
 }
-void DDdewijsian(double *x, model *cov, double *v){
+void DDdewijsian(double *x, INFO, model *cov, double *v){
   double alpha = P0(DEW_ALPHA),
       p = POW(*x, alpha - 2.0),
       ha = p * *x * *x,
@@ -687,7 +689,7 @@ void DDdewijsian(double *x, model *cov, double *v){
   *v = alpha * p * (1.0 - alpha + ha) / (haP1 * haP1);
 }
 
-void D3dewijsian(double *x, model *cov, double *v){
+void D3dewijsian(double *x, INFO, model *cov, double *v){
   double alpha = P0(DEW_ALPHA),
     p = POW(*x, alpha - 3.0),
     ha = p * *x * *x * *x,
@@ -697,7 +699,7 @@ void D3dewijsian(double *x, model *cov, double *v){
       / (haP1 * haP12);
 }
 
-void D4dewijsian(double *x, model *cov, double *v){
+void D4dewijsian(double *x, INFO, model *cov, double *v){
   double alpha = P0(DEW_ALPHA),
     alpha2 = alpha*alpha,
     p = POW(*x, alpha - 4.0),
@@ -729,7 +731,7 @@ void rangedewijsian(model VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->openmax[DEW_ALPHA] = false; 
 }
 
-void coinitdewijsian(model *cov, localinfotype *li) {
+void coinitdewijsian(model *cov, localfactstype *li) {
   double
       thres[3] = {0.5, 1.0, 1.8},
       alpha=P0(DEW_ALPHA);
@@ -762,7 +764,7 @@ void coinitdewijsian(model *cov, localinfotype *li) {
 
 /* De Wijsian B */
 #define DEW_RANGE 1
-void DeWijsian(double *x, model *cov, double *v){
+void DeWijsian(double *x, INFO, model *cov, double *v){
   double alpha = P0(DEW_ALPHA),
     range = P0(DEW_RANGE);
   *v = 0.0;
@@ -847,14 +849,14 @@ void rangelsfbm(model VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->openmax[LOCALLY_BROWN_C] = P(LOCALLY_BROWN_ALPHA)==NULL;
 }
 
-void lsfbm(double *x, model *cov, double *v) {
+void lsfbm(double *x, INFO, model *cov, double *v) {
   if (*x > 1.0)
     ERR1("the coordinate distance in '%.50s' must be at most 1.", NICK(cov));
   double alpha = P0(LOCALLY_BROWN_ALPHA);
   *v = QVALUE - POW(*x, alpha);
 }
 /* lsfbm: first derivative at t=1 */
-void Dlsfbm(double *x, model *cov, double *v) 
+void Dlsfbm(double *x, INFO, model *cov, double *v) 
 {// FALSE VALUE FOR *x==0 and  alpha < 1
   if (*x > 1.0)
     ERR1("the coordinate distance in '%.50s' must be at most 1.", NICK(cov));
@@ -865,7 +867,7 @@ void Dlsfbm(double *x, model *cov, double *v)
 	      : -1.0;
 }
 /* lsfbm: second derivative at t=1 */
-void DDlsfbm(double *x, model *cov, double *v)  
+void DDlsfbm(double *x, INFO, model *cov, double *v)  
 {// FALSE VALUE FOR *x==0 and  alpha < 2
   if (*x > 1.0)
     ERR1("the coordinate distance in '%.50s' must be at most 1.", NICK(cov));
@@ -876,7 +878,7 @@ void DDlsfbm(double *x, model *cov, double *v)
 	      : alpha < 2.0 ? RF_NEGINF 
 			: -2.0;
 }
-void D3lsfbm(double *x, model *cov, double *v)  
+void D3lsfbm(double *x, INFO, model *cov, double *v)  
 {// FALSE VALUE FOR *x==0 and  alpha < 2
   if (*x > 1.0)
     ERR1("the coordinate distance in '%.50s' must be at most 1.", NICK(cov));
@@ -887,7 +889,7 @@ void D3lsfbm(double *x, model *cov, double *v)
 			: RF_INF;
 }
 
-void D4lsfbm(double *x, model *cov, double *v)  
+void D4lsfbm(double *x, INFO, model *cov, double *v)  
 {// FALSE VALUE FOR *x==0 and  alpha < 2
   if (*x > 1.0)
     ERR1("the coordinate distance in '%.50s' must be at most 1.", NICK(cov));
@@ -907,14 +909,14 @@ void Inverselsfbm(double *x, model *cov, double *v) {
 }
 
 // Brownian motion 
-void fractalBrownian(double *x, model *cov, double *v) {
+void fractalBrownian(double *x, INFO, model *cov, double *v) {
   double alpha = P0(BROWN_ALPHA);
   *v = - POW(*x, alpha);//this is an invalid covariance function!
   // keep definition such that the value at the origin is 0
 }
 
 
-void logfractalBrownian(double *x, model *cov, double *v, double *Sign) {
+void logfractalBrownian(double *x, INFO, model *cov, double *v, double *Sign) {
   double alpha = P0(BROWN_ALPHA);
   *v = LOG(*x) * alpha;//this is an invalid covariance function!
   *Sign = - 1.0;
@@ -922,7 +924,7 @@ void logfractalBrownian(double *x, model *cov, double *v, double *Sign) {
 }
 
 /* fractalBrownian: first derivative at t=1 */
-void DfractalBrownian(double *x, model *cov, double *v) 
+void DfractalBrownian(double *x, INFO, model *cov, double *v) 
 {// FALSE VALUE FOR *x==0 and  alpha < 1
   double alpha = P0(BROWN_ALPHA);
   *v = (*x != 0.0) ? -alpha * POW(*x, alpha - 1.0)
@@ -931,7 +933,7 @@ void DfractalBrownian(double *x, model *cov, double *v)
     : -1.0;
 }
 /* fractalBrownian: second derivative at t=1 */
-void DDfractalBrownian(double *x, model *cov, double *v)  
+void DDfractalBrownian(double *x, INFO, model *cov, double *v)  
 {// FALSE VALUE FOR *x==0 and  alpha < 2
   double alpha = P0(BROWN_ALPHA);
   *v = (alpha == 1.0) ? 0.0
@@ -940,7 +942,7 @@ void DDfractalBrownian(double *x, model *cov, double *v)
     : alpha < 2.0 ? RF_NEGINF 
     : -2.0;
 }
-void D3fractalBrownian(double *x, model *cov, double *v)  
+void D3fractalBrownian(double *x, INFO, model *cov, double *v)  
 {// FALSE VALUE FOR *x==0 and  alpha < 2
   double alpha = P0(BROWN_ALPHA);
   *v = alpha == 1.0 || alpha == 2.0 ? 0.0 
@@ -949,7 +951,7 @@ void D3fractalBrownian(double *x, model *cov, double *v)
     : RF_INF;
 }
 
-void D4fractalBrownian(double *x, model *cov, double *v)  
+void D4fractalBrownian(double *x, INFO, model *cov, double *v)  
 {// FALSE VALUE FOR *x==0 and  alpha < 2
   double alpha = P0(BROWN_ALPHA);
   *v = alpha == 1.0 || alpha == 2.0 ? 0.0 
@@ -991,7 +993,7 @@ void rangefractalBrownian(model VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->openmin[BROWN_ALPHA] = true;
   range->openmax[BROWN_ALPHA] = false;
 }
-void ieinitBrownian(model *cov, localinfotype *li) {
+void ieinitBrownian(model *cov, localfactstype *li) {
   li->instances = 1;
   li->value[0] = (OWNLOGDIM(0) <= 2)
     ? ((P0(BROWN_ALPHA) <= 1.5) ? 1.0 : 2.0)
@@ -1003,38 +1005,42 @@ void ieinitBrownian(model *cov, localinfotype *li) {
 
 /* FD model */
 #define FD_ALPHA 0
-void FD(double *x, model *cov, double *v){
+#define FD_K 0
+#define FD_SK 1
+#define FD_D 2
+void FD(double *x, INFO, model *cov, double *v){
   double
     alpha = P0(FD_ALPHA),
     d = alpha * 0.5,
     y = *x;
   if (y == RF_INF) {*v = 0.0; return;}
   double
+    *q = cov->q,
     k = TRUNC(y);
-#ifdef DO_PARALLEL
-  double sk = 1.0,
-    kold = 0.0;
-#else
-  static double kold = RF_INF, // only if not parallel
-    sk = RF_INF,
-    dold=RF_INF;
-  if (dold!=d || kold > k) {
-    sk = 1;
-    kold = 0.0;
+
+  if (q[FD_D] !=d || q[FD_K] > k) {
+    q[FD_D] = d;
+    q[FD_SK] = 1;
+    q[FD_K] = 0.0;
   }
-#endif	    
+
   // Sign (-1)^k is (kold+d), 16.11.03, checked. 
-  for (; kold<k; kold += 1.0) sk =  sk * (kold + d) / (kold + 1.0 - d);
-#ifndef DO_PARALLEL
-  dold = d;
-  kold = k;
-#endif	    
+  for (; q[FD_K]<k; q[FD_K] += 1.0)
+    q[FD_SK] *= (q[FD_K] + d) / (q[FD_K] + 1.0 - d);
   if (k == y) {
-    *v = sk;
+    *v = q[FD_SK];
   } else {
-    double skP1 = sk * (kold + d) / (kold + 1.0 - d);
-    *v = sk + (y - k) * (skP1 - sk);
+    double skP1 = q[FD_SK] * (q[FD_K] + d) / (q[FD_K] + 1.0 - d);
+    *v = q[FD_SK] + (y - k) * (skP1 - q[FD_SK]);
   }
+}
+
+int checkFD(model *cov) {
+  if (cov->qlen == 0) {
+    QALLOC(3);
+    cov->q[0] = cov->q[1] = cov->q[2] = RF_INF;
+  }
+  RETURN_NOERROR;
 }
 
 void rangeFD(model VARIABLE_IS_NOT_USED *cov, range_type *range){
@@ -1050,7 +1056,7 @@ void rangeFD(model VARIABLE_IS_NOT_USED *cov, range_type *range){
 
 /* fractgauss */
 #define FG_ALPHA 0
-void fractGauss(double *x, model *cov, double *v){
+void fractGauss(double *x, INFO, model *cov, double *v){
   double y = *x, alpha = P0(FG_ALPHA);
   *v = (y == 0.0) ? 1.0 :  (y==RF_INF) ? 0.0 : 
     0.5 *(POW(y + 1.0, alpha) - 2.0 * POW(y, alpha) + POW(FABS(y - 1.0),alpha));
@@ -1067,7 +1073,7 @@ void rangefractGauss(model VARIABLE_IS_NOT_USED *cov, range_type *range){
 
 
 /* generalised fractal Brownian motion */
-void genBrownian(double *x, model *cov, double *v) {
+void genBrownian(double *x, INFO, model *cov, double *v) {
   double 
     alpha = P0(BROWN_ALPHA),
     beta =  P0(BROWN_GEN_BETA),
@@ -1077,8 +1083,8 @@ void genBrownian(double *x, model *cov, double *v) {
   // keep definition such that the value at the origin is 0
 }
 
-void loggenBrownian(double *x, model *cov, double *v, double *Sign) {
-  genBrownian(x, cov, v);
+void loggenBrownian(double *x, int *info, model *cov, double *v, double *Sign) {
+  genBrownian(x, info, cov, v);
   *v = LOG(-*v);
   *Sign = - 1.0;
 }
@@ -1113,8 +1119,7 @@ void rangegenBrownian(model VARIABLE_IS_NOT_USED *cov, range_type *range){
 
 
 /* gengneiting */
-void genGneiting(double *x, model *cov, double *v)
-{
+void genGneiting(double *x, INFO, model *cov, double *v) {
   int kk = P0INT(GENGNEITING_K);
   double s,
     mu=P0(GENGNEITING_MU),
@@ -1147,8 +1152,7 @@ void genGneiting(double *x, model *cov, double *v)
 
 // control thanks to http://calc101.com/webMathematica/derivatives.jsp#topdoit
 
-void DgenGneiting(double *x, model *cov, double *v)
-{
+void DgenGneiting(double *x, INFO, model *cov, double *v) {
   int kk = P0INT(GENGNEITING_K);
   double s,
     mu=P0(GENGNEITING_MU), 
@@ -1177,7 +1181,7 @@ void DgenGneiting(double *x, model *cov, double *v)
   *v *=  -POW(1.0 - y, s - 1.0);
   
 }
-void DDgenGneiting(double *x, model *cov, double *v){
+void DDgenGneiting(double *x, INFO, model *cov, double *v){
   int kk = P0INT(GENGNEITING_K);
   double s,
     mu=P0(GENGNEITING_MU), 
@@ -1321,7 +1325,7 @@ int initbiGneiting(model *cov, gen_storage *stor) {
     *c = P(GNEITING_C),
     *cdiag = P(GNEITING_CDIAG);
   bool check = stor->check;
-  biwm_storage *S = cov->Sbiwm;
+getStorage(S ,   biwm); 
   assert(S != NULL);
   
   if (scale == NULL) {
@@ -1358,8 +1362,8 @@ int initbiGneiting(model *cov, gen_storage *stor) {
       QERRC2(GNEITING_RHORED, 
 	     "'%.50s' and '%.50s' must be set at the same time ", GNEITING_CDIAG,
 	     GNEITING_RHORED);
-    if (c != NULL) {
-      if (PisNULL(GNEITING_C)) PALLOC(GNEITING_C, 3, 1);
+    if (c == NULL) {
+      PALLOC(GNEITING_C, 3, 1);
       c = P(GNEITING_C);
       biGneitingbasic(cov, S->scale, S->gamma, S->c);
     } else if (check) {
@@ -1410,11 +1414,11 @@ void kappa_biGneiting(int i, model *cov, int *nr, int *nc){
     if (i==GNEITING_GAMMA || i==GNEITING_C) *nr=3 ;
 }
 
-void biGneiting(double *x, model *cov, double *v) { 
+void biGneiting(double *x, int *info, model *cov, double *v) { 
   double z, 
     mu = P0(GNEITING_MU);
   int i;
-  biwm_storage *S = cov->Sbiwm;
+getStorage(S ,   biwm); 
   assert(S != NULL);
   // wegen ML aufruf immer neu berechnet
  
@@ -1427,18 +1431,18 @@ void biGneiting(double *x, model *cov, double *v) {
     }
     z = FABS(*x / S->scale[i]);
     P(GENGNEITING_MU)[0] = mu + S->gamma[i] + 1.0;
-    genGneiting(&z, cov, v + i);
+    genGneiting(&z, info, cov, v + i);
     v[i] *= S->c[i]; 
   }
   P(GENGNEITING_MU)[0] = mu;
 }
 
 
-void DbiGneiting(double *x, model *cov, double *v){ 
+void DbiGneiting(double *x, int *info, model *cov, double *v){ 
   double z, 
     mu = P0(GENGNEITING_MU);
   int i;
-  biwm_storage *S = cov->Sbiwm;
+getStorage(S ,   biwm); 
   assert(S != NULL);
   assert(cov->initialised);
  
@@ -1450,18 +1454,18 @@ void DbiGneiting(double *x, model *cov, double *v){
     }
     z = FABS(*x / S->scale[i]);
     P(GENGNEITING_MU)[0] = mu + S->gamma[i] + 1.0;
-    DgenGneiting(&z, cov, v + i);
+    DgenGneiting(&z, info, cov, v + i);
     v[i] *= S->c[i] / S->scale[i];
   }
   P(GENGNEITING_MU)[0] = mu;
 }
 
 
-void DDbiGneiting(double *x, model *cov, double *v){ 
+void DDbiGneiting(double *x, int *info, model *cov, double *v){ 
   double z,
     mu = P0(GENGNEITING_MU);
   int i;
- biwm_storage *S = cov->Sbiwm;
+getStorage(S ,  biwm); 
   assert(S != NULL);
   assert(cov->initialised);
 
@@ -1473,7 +1477,7 @@ void DDbiGneiting(double *x, model *cov, double *v){
     }
     z = FABS(*x / S->scale[i]);
     P(GENGNEITING_MU)[0] = mu + S->gamma[i] + 1.0;
-    DDgenGneiting(&z, cov, v + i);
+    DDgenGneiting(&z, info, cov, v + i);
     v[i] *= S->c[i] / (S->scale[i] * S->scale[i]);
   }
   P(GENGNEITING_MU)[0] = mu;
@@ -1492,7 +1496,7 @@ int checkbiGneiting(model *cov) {
 
   if (cov->Sbiwm == NULL) {
     NEW_STORAGE(biwm);
-    biwm_storage *S = cov->Sbiwm;
+getStorage(S ,     biwm); 
     S->cdiag_given = !PisNULL(GNEITING_CDIAG) || !PisNULL(GNEITING_RHORED);
   }
  
@@ -1506,8 +1510,8 @@ int checkbiGneiting(model *cov) {
 sortsofparam sortof_biGneiting(model *cov, int k, int VARIABLE_IS_NOT_USED row,
 			       int VARIABLE_IS_NOT_USED col,
 			       sort_origin origin){
-  biwm_storage *S = cov->Sbiwm;
-  if (S == NULL) return UNKNOWNPARAM;
+  if (cov->Sbiwm == NULL) return UNKNOWNPARAM;
+  getStorage(S ,   biwm); 
   switch(k) {
   case GNEITING_K :     return ONLYRETURN;
   case GNEITING_MU :    return CRITICALPARAM;
@@ -1527,24 +1531,6 @@ sortsofparam sortof_biGneiting(model *cov, int k, int VARIABLE_IS_NOT_USED row,
   }
 }
 
-/*
-sortsofparam sortof_biGneiting_INisOUT(model *cov, int k, int VARIABLE_IS_NOT_USED row,
-			  int VARIABLE_IS_NOT_USED col){
-  biwm_storage *S = cov->Sbiwm;
-  if (S == NULL) return UNKNOWNPARAM;
-  switch(k) {
-  case GNEITING_K :     return ONLYRETURN;
-  case GNEITING_MU :    return CRITICALPARAM;
-  case GNEITING_S :     return SCALEPARAM;
-  case GNEITING_SRED :  return ANYPARAM;
-  case GNEITING_GAMMA : return ANYPARAM;
-  case GNEITING_CDIAG : return S->cdiag_given ? VARPARAM : VARONLYMLE;
-  case GNEITING_RHORED :return S->cdiag_given ? ANYPARAM : ONLYMLE;
-  case GNEITING_C:      return S->cdiag_given ? IGNOREPARAM : ONLYRETURN;
-  default : BUG;
-  }
-}
-*/
 
 void rangebiGneiting(model *cov, range_type *range){
  // *n = P0(GNEITING_K], 
@@ -1620,22 +1606,22 @@ void rangebiGneiting(model *cov, range_type *range){
 #define kk_gneiting 3
 #define mu_gneiting 2.683509
 #define s_gneiting 0.2745640815
-void Gneiting(double *x, model VARIABLE_IS_NOT_USED *cov, double *v){ 
+void Gneiting(double *x, int *info, model *cov, double *v){
   double y = *x * cov->q[0];
-  genGneiting(&y, cov, v);
+  genGneiting(&y, info, cov, v);
 }
 
  
-void DGneiting(double *x, model VARIABLE_IS_NOT_USED *cov, double *v){ 
+void DGneiting(double *x, int *info, model *cov, double *v){ 
   double y = *x * cov->q[0];
-  DgenGneiting(&y, cov, v);
+  DgenGneiting(&y, info, cov, v);
   *v  *= cov->q[0];
 }
 
 
-void DDGneiting(double *x, model VARIABLE_IS_NOT_USED *cov, double *v){ 
+void DDGneiting(double *x, INFO, model *cov, double *v){ 
   double y = *x * cov->q[0];
-  DgenGneiting(&y, cov, v);
+  DgenGneiting(&y, info, cov, v);
   *v  *= cov->q[0] * cov->q[0];
 }
 
@@ -1673,7 +1659,7 @@ void rangeGneiting(model VARIABLE_IS_NOT_USED *cov, range_type *range){
 #define CES_NU 0
 #define CES_LAMBDA 1
 #define CES_DELTA 2
-void IacoCesare(double *x, model *cov, double *v){
+void IacoCesare(double *x, INFO, model *cov, double *v){
     double
       nu = P0(CES_NU), 
       lambda=P0(CES_LAMBDA), 
@@ -1708,7 +1694,7 @@ void rangeIacoCesare(model VARIABLE_IS_NOT_USED *cov, range_type *range){
 
 
 /* Kolmogorov model */
-void Kolmogorov(double *x, model *cov, double *v){
+void Kolmogorov(double *x, INFO, model *cov, double *v){
 #define fourthird 1.33333333333333333333333333333333333
 #define onethird 0.333333333333333333333333333333333
   int d, i, j,
@@ -1749,7 +1735,7 @@ int checkKolmogorov(model *cov) {
 /* local-global distinguisher */
 #define LGD_ALPHA 0
 #define LGD_BETA 1
-void lgd1(double *x, model *cov, double *v) {
+void lgd1(double *x, INFO, model *cov, double *v) {
   double y = *x, alpha = P0(LGD_ALPHA), beta=P0(LGD_BETA);
   *v = 1.0;
   if (y != 0.0) {
@@ -1767,7 +1753,7 @@ void Inverselgd1(double *x, model *cov, double *v) {
   *v = POW(y, -1.0 / beta) * (alpha + beta) / alpha;
   if (*v < 1) *v = POW(1.0 - y, 1.0 / alpha) * (alpha + beta) / beta;
 }
-void Dlgd1(double *x, model *cov, double *v){
+void Dlgd1(double *x, INFO, model *cov, double *v){
   double y=*x, pp, alpha = P0(LGD_ALPHA), beta=P0(LGD_BETA);
   if (y == 0.0) {
     *v = 0.0;// falscher Wert, aber sonst NAN-Fehler#
@@ -1803,7 +1789,7 @@ void rangelgd1(model *cov, range_type *range) {
 #define MULTIQUAD_DELTA 0
 #define MULTIQUAD_TAU 1
 #define MULTIQUAD_EPS 1e-7
-void multiquad(double *x, model *cov, double *v){
+void multiquad(double *x, INFO, model *cov, double *v){
   
   double delta = P0(MULTIQUAD_DELTA), // Auslesen der Parameter aus cov
     deltaM1 = delta - 1.0,
@@ -1837,7 +1823,7 @@ void rangemultiquad(model VARIABLE_IS_NOT_USED *cov, range_type *range){
 
 // Brownian motion 
 #define OESTING_BETA 0
-void oesting(double *x, model *cov, double *v) {
+void oesting(double *x, INFO, model *cov, double *v) {
   // klein beta interagiert mit 'define beta Rf_beta' in Rmath
   double Beta = P0(OESTING_BETA),
     x2 = *x * *x;
@@ -1845,14 +1831,14 @@ void oesting(double *x, model *cov, double *v) {
   // keep definition such that the value at the origin is 0
 }
 /* oesting: first derivative at t=1 */
-void Doesting(double *x, model *cov, double *v) 
+void Doesting(double *x, INFO, model *cov, double *v) 
 {// FALSE VALUE FOR *x==0 and  Beta < 1
   double Beta = P0(OESTING_BETA),
     x2 = *x * *x;
   *v = 2 * *x  * (1 + (1-Beta) * x2) * POW(1 + x2, -Beta-1);
 }
 /* oesting: second derivative at t=1 */
-void DDoesting(double *x, model *cov, double *v)  
+void DDoesting(double *x, INFO, model *cov, double *v)  
 {// FALSE VALUE FOR *x==0 and  beta < 2
   double Beta = P0(OESTING_BETA),
     x2 = *x * *x;
@@ -1886,7 +1872,7 @@ void rangeoesting(model VARIABLE_IS_NOT_USED *cov, range_type *range){
 
 
 /* penta */
-void penta(double *x, model VARIABLE_IS_NOT_USED *cov, double *v)
+void penta(double *x, INFO, model VARIABLE_IS_NOT_USED *cov, double *v)
 { ///
   double y=*x, y2 = y * y;
   *v = 0.0;
@@ -1898,7 +1884,7 @@ void penta(double *x, model VARIABLE_IS_NOT_USED *cov, double *v)
 					 y2 * (-5.5 + 
 					       y2 * 0.833333333333333))))));
 }
-void Dpenta(double *x, model VARIABLE_IS_NOT_USED *cov, double *v)
+void Dpenta(double *x, INFO, model VARIABLE_IS_NOT_USED *cov, double *v)
 { 
   double y=*x, y2 = y * y;
   *v = 0.0;
@@ -1918,20 +1904,19 @@ void Inversepenta(double *x, model VARIABLE_IS_NOT_USED *cov, double *v) {
 
 /* power model */ 
 #define POW_ALPHA 0
-void power(double *x, model *cov, double *v){
+void power(double *x, INFO, model *cov, double *v){
   double alpha = P0(POW_ALPHA), y = *x;
   *v = 0.0;
   if (y < 1.0) *v = POW(1.0 - y, alpha);
 }
-void TBM2power(double *x, model *cov, double *v){
+void TBM2power(double *x, INFO, model *cov, double *v){
   // only alpha=2 up to now !
   double y = *x;
-  if (P0(POW_ALPHA) != 2.0) 
-    ERR("TBM2 of power only allowed for alpha=2");
+  if (P0(POW_ALPHA) != 2.0) ERR("TBM2 of power only allowed for alpha=2");
   if (y > 1.0) *v = (1.0 - 2.0 * y *(ASIN(1.0 / y) - y + SQRT(y * y - 1.0) ));
   else *v = 1.0 - y * (PI - 2.0 * y);
 }
-void Dpower(double *x, model *cov, double *v){
+void Dpower(double *x, INFO, model *cov, double *v){
   double alpha = P0(POW_ALPHA), y = *x;
   *v = 0.0;
   if (y < 1.0) *v = - alpha * POW(1.0 - y, alpha - 1.0);
@@ -1963,7 +1948,7 @@ int initpower(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
     RETURN_NOERROR;
   }
 
-  else ERR1("'%50s' isn't defined in required frame", NAME(cov));
+  else ERR1("'%.50s' isn't defined in required frame", NAME(cov));
   
   RETURN_NOERROR;
 }
@@ -1988,7 +1973,7 @@ void rangepower(model *cov, range_type *range){
 
 /* qexponential -- derivative of exponential */
 #define QEXP_ALPHA 0
-void qexponential(double *x, model *cov, double *v){
+void qexponential(double *x, INFO, model *cov, double *v){
   double 
     alpha = P0(QEXP_ALPHA),
     y = EXP(-*x);
@@ -2001,7 +1986,7 @@ void Inverseqexponential(double *x, model *cov, double *v){
   *v = y <= 0.0 ? RF_INF : y >= 1.0 ? 1.0
     : -LOG( (1.0 - SQRT(1.0 - alpha * (2.0 - alpha) * y)) / alpha);
 } 
-void Dqexponential(double *x, model *cov, double *v) {
+void Dqexponential(double *x, INFO, model *cov, double *v) {
   double 
     alpha = P0(QEXP_ALPHA), 
     y = EXP(-*x);
@@ -2019,7 +2004,7 @@ void rangeqexponential(model VARIABLE_IS_NOT_USED *cov, range_type *range){
 
 
 #define SINEPOWER_ALPHA 0
-void sinepower(double *x, model *cov, double *v){
+void sinepower(double *x, INFO, model *cov, double *v){
   double alpha = P0(SINEPOWER_ALPHA);  // Auslesen des Parameters aus cov  
   double y = *x;
   if (y < 0.0 || y >= PI) BUG;
@@ -2040,23 +2025,23 @@ void rangesinepower(model VARIABLE_IS_NOT_USED *cov, range_type *range){
 
 
 /* spherical model */ 
-void spherical(double *x, model VARIABLE_IS_NOT_USED *cov, double *v){
+void spherical(double *x, INFO, model VARIABLE_IS_NOT_USED *cov, double *v){
   double y = *x;
   *v = 0.0;
   if (y < 1.0) *v = 1.0 + y * 0.5 * (y * y - 3.0);
 }
 // void Inversespherical(model *cov){ return 1.23243208931941;}
-void TBM2spherical(double *x, model VARIABLE_IS_NOT_USED *cov, double *v){
+void TBM2spherical(double *x, INFO, model VARIABLE_IS_NOT_USED *cov, double *v){
   double y = *x , y2 = y * y;
   if (y>1.0) *v = (1.0- 0.75 * y * ((2.0 - y2) * ASIN(1.0/y) + SQRT(y2 -1.0)));
   else *v = (1.0 - 0.375 * PI * y * (2.0 - y2));
 }
-void Dspherical(double *x, model VARIABLE_IS_NOT_USED *cov, double *v){
+void Dspherical(double *x, INFO, model VARIABLE_IS_NOT_USED *cov, double *v){
   double y = *x;
   *v = (y >= 1.0) ? 0.0 : 1.5 * (y * y - 1.0);
 }
 
-void DDspherical(double *x, model VARIABLE_IS_NOT_USED *cov, double *v){
+void DDspherical(double *x, INFO, model VARIABLE_IS_NOT_USED *cov, double *v){
   *v = (*x >= 1.0) ? 0.0 : 3 * *x;
 }
 
@@ -2066,7 +2051,6 @@ int structspherical(model *cov, model **newmodel) {
 void dospherical(model VARIABLE_IS_NOT_USED *cov, gen_storage VARIABLE_IS_NOT_USED *s) { 
   // todo diese void do... in Primitive necessary??
   //  mppinfotype *info = &(s->mppinfo);
-  //info->radius = cov->mpp.refradius;
 }
 
 
@@ -2106,7 +2090,7 @@ void kappaSteinST1(int i, model *cov, int *nr, int *nc){
   *nc = 1;
   *nr = (i == STEIN_NU) ? 1 : (i==STEIN_Z) ? OWNLOGDIM(0) - 1 : -1;
 }
-void SteinST1(double *x, model *cov, double *v){
+void SteinST1(double *x, INFO, model *cov, double *v){
 /* 2^(1-nu)/Gamma(nu) [ h^nu K_nu(h) - 2 * tau (x T z) t h^{nu-1} K_{nu-1}(h) /
    (2 nu + d + 1) ]
 
@@ -2141,6 +2125,7 @@ void SteinST1(double *x, model *cov, double *v){
 
 
 int checkSteinST1(model *cov) {  
+ utilsparam *global_utils = &(cov->base->global_utils);
   double nu = P0(STEIN_NU), *z= P(STEIN_Z), absz;
    int d, 
     spatialdim=OWNLOGDIM(0) - 1;
@@ -2155,7 +2140,7 @@ int checkSteinST1(model *cov) {
   for (absz=0.0, d=0;  d<spatialdim; d++)  absz += z[d] * z[d];
   if (ISNAN(absz))
     SERR("currently, components of z cannot be estimated by MLE, so NA's are not allowed");
-  if (absz > 1.0 + UNIT_EPSILON && !GLOBAL_UTILS->basic.skipchecks) {
+  if (absz > 1.0 + UNIT_EPSILON && !global_utils->basic.skipchecks) {
     SERR("||z|| must be less than or equal to 1");
   }
   if (cov->q == NULL) {
@@ -2221,7 +2206,7 @@ void rangeSteinST1(model VARIABLE_IS_NOT_USED *cov, range_type *range){
 
 
 /* wave */
-void wave(double *x, model VARIABLE_IS_NOT_USED *cov, double *v) {
+void wave(double *x, INFO, model VARIABLE_IS_NOT_USED *cov, double *v) {
   double y = *x;
   *v = (y==0.0) ? 1.0 : (y==RF_INF) ? 0 : SIN(y) / y;
 }
@@ -2239,8 +2224,8 @@ int initwave(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
 
 }
 void spectralwave(model *cov, gen_storage *S, double *e) { 
-  spectral_storage *s = &(S->Sspectral);
-  /* see Yaglom ! */
+ spectral_storage *s = &(S->Sspectral);
+ /* see Yaglom ! */
   double x;  
   x = UNIFORM_RANDOM; 
   E12(s, PREVLOGDIM(0), SQRT(1.0 - x * x), e);
@@ -2307,21 +2292,22 @@ void kappaUser(int i, model *cov, int *nr, int *nc){
   if (i == USER_BETA) *nr=*nc=SIZE_NOT_DETERMINED;
 }
 
-void User(double *x, model *cov, double *v){
+void User(double *x, INFO, model *cov, double *v){
   evaluateUser(x, NULL, Loc(cov)->Time, cov, PLANG(USER_FCTN), v);
 }
-void UserNonStat(double *x, double *y, model *cov, double *v){
+void nonstatUser(double *x, double *y, INFO, model *cov, double *v){
   evaluateUser(x, y, false, cov, PLANG(USER_FCTN), v);
 }
-void DUser(double *x, model *cov, double *v){
+void DUser(double *x, INFO, model *cov, double *v){
   evaluateUser(x, NULL, Loc(cov)->Time, cov, PLANG(USER_FST), v);
 }
-void DDUser(double *x, model *cov, double *v){
+void DDUser(double *x, INFO, model *cov, double *v){
   evaluateUser(x, NULL, Loc(cov)->Time, cov, PLANG(USER_SND), v);
 }
 
 
 int checkUser(model *cov){
+  globalparam *global = &(cov->base->global);
   defn *C = DefList + COVNR;
 
   kdefault(cov, USER_DOM, XONLY);
@@ -2384,10 +2370,10 @@ int checkUser(model *cov){
   } 
   Time = variab[nvar-1] == 4;
 
-  if (((nvar >= 3 || variab[nvar-1] == 4) && GLOBAL.coords.xyz_notation==False)
+  if (((nvar >= 3 || variab[nvar-1] == 4) && global->coords.xyz_notation==False)
       //  ||
-      //  (nrow[USER_COORD] == 1 && !ISNA_INT(GLOBAL.coords.xyz_notation) 
-      //  && GLOBAL.coords.xyz_notation)
+      //  (nrow[USER_COORD] == 1 && !ISNA_INT(glo bal->coords.xyz_notation) 
+      //  && glo bal->coords.xyz_notation)
       )
     SERR("mismatch of indicated xyz-notation");
 
@@ -2399,10 +2385,10 @@ int checkUser(model *cov){
   
   if (nvar == 2 && variab[1] == 2) {
     // sowohl nonstat also auch x, y Schreibweise moeglich
-    if (GLOBAL.coords.xyz_notation == Nan)
+    if (global->coords.xyz_notation == Nan)
       SERR1("'%.50s' equals 'NA', but should be a logical value.", 
 	   coords[COORDS_XYZNOTATION]);     
-    //if (isKernel(OWN) && GLOBAL.coords.xyz_notation==2) // RFcov
+    //if (isKernel(OWN) && glo bal->coords.xyz_notation==2) // RFcov
 	// SERR1("'%.50s' is not valid for anisotropic models", 
     //  coords[COORDS_XYZNOTATION]);
   }
@@ -2418,8 +2404,8 @@ int checkUser(model *cov){
     }
   }
 
-  if (GLOBAL.coords.xyz_notation != Nan) {    
-    if (//(GLOBAL.coords.xyz_notation == 2 && isKernel(OWN)) ||
+  if (global->coords.xyz_notation != Nan) {    
+    if (//(glo bal->coords.xyz_notation == 2 && isKernel(OWN)) ||
 	((nvar > 2 || (nvar == 2 && isXonly(OWN))) && variab[1] == -2)) {
       SERR("domain assumption, model and coordinates do not match.");
     }

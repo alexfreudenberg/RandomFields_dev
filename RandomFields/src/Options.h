@@ -27,6 +27,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define NAT_SCALE 1
 #define MAX_CE_MEM 16777216
+
 #define generalN 20
 // IMPORTANT: all names of general must have at least 3 letters !!!
 extern const char *general[generalN];
@@ -41,7 +42,7 @@ struct general_param {
     except for "!", then the numbers are shown
 	   */
   bool 
-    allowdist0, na_rm_lines, vdim_close_together, storing,
+  na_rm_lines, vdim_close_together, storing,
   /* true: intermediate results are stored: might be rather memory consuming,
          but the simulation can (depending on the method chosen) be much faster
 	 when done the second time with exactly the same parameters
@@ -107,7 +108,7 @@ struct general_param {
 		 but it is slower
 	      */
     Ttriple, 
-    set, seed_incr, seed_sub_incr;
+    set, seed_incr, seed_sub_incr, duplicated_loc;
  
   double gridtolerance;
   usr_bool exactness;
@@ -116,12 +117,12 @@ struct general_param {
 
 #define general_START \
   {pch[NM],								\
-      allowdistance0[NM], false, false, false /*storing*/, true, /* 5 */ \
-      false, false,							\
+      false, false, false /*storing*/, true, /* 5 */ \
+      false, false, 						\
       startmode/* mode */ , output_sp, reportcoord_warnings,		\
-      false,							\
+      false /* naturalscaling */,					\
       1, 0,								\
-      NA_INTEGER, 0, 0,	101101,						\
+      NA_INTEGER, 0, 0,	101101,	DUPLICATEDLOC_RISKERROR,		\
       1e-6, exactness[NM]						\
      }
 
@@ -151,12 +152,14 @@ struct gauss_param{
 #define KRIGE_SPLITN 2
 extern const char *krige[krigeN];
 struct krige_param {
-  bool ret_variance,  fillall;
+  bool ret_variance,  fillall
+     ;
   int locmaxn,
     locsplitn[3], // 0:when splitting is done; 1:min pts in a neighbourhood ; 2:max pts when still neighbourhoods are included
     locsplitfactor;
 };
-#define krige_START {false, true, locmaxn[NM], \
+#define krige_START {false, true,					\
+      locmaxn[NM],							\
       {MINSPLITN(locmaxn[NM]), MEDSPLITN(locmaxn[NM]), MAXSPLITN(locmaxn[NM])},\
       2}
 
@@ -324,7 +327,7 @@ struct distr_param{
 #define MAXCLIQUE(locmaxn) (((locmaxn) * 3) / 5)
 
 #define FLAT_UNDETERMINED -1
-#define fitN 41
+#define fitN 42
 #define FIT_BC_LB 10
 #define FIT_BC_UB 11
 #define FIT_MAXNEIGHBOUR 19
@@ -350,31 +353,31 @@ struct fit_param{
   usr_bool estimate_variance;
   bool  use_naturalscaling, onlyuser, 
    reoptimise, ratiotest_approx,
-    split_refined, cross_refit, suggesting_bounds;      // 8
+    split_refined, cross_refit, suggesting_bounds, return_hessian;      // 8
   char lengthshortname; // 1..255
 };
 #define fit_START\
-  {0.4, 3.0, 5.0, 3.0, 10.0, 1e4, /* 6 */				\
-      1000.0, 0.001, 0.02,  /* 11 */					\
-      {RF_NEGINF, RF_NEGINF, RF_NEGINF, RF_NEGINF, RF_NEGINF, RF_NEGINF,\
-	  RF_NEGINF, RF_NEGINF, RF_NEGINF, RF_NEGINF, RF_NEGINF, RF_NEGINF, \
-	  RF_NEGINF, RF_NEGINF, RF_NEGINF, RF_NEGINF, RF_NEGINF, RF_NEGINF, \
-	  RF_NEGINF, RF_NEGINF},					\
-	{RF_INF, RF_INF, RF_INF, RF_INF, RF_INF, RF_INF, RF_INF, RF_INF,\
-	    RF_INF, RF_INF, RF_INF, RF_INF, RF_INF, RF_INF, RF_INF, RF_INF,\
+  0.4, 3.0, 5.0, 3.0, 10.0, 1e4, /* 6 */				\
+    1000.0, 0.001, 0.02,  /* 11 */					\
+  {RF_NEGINF, RF_NEGINF, RF_NEGINF, RF_NEGINF, RF_NEGINF, RF_NEGINF,	\
+      RF_NEGINF, RF_NEGINF, RF_NEGINF, RF_NEGINF, RF_NEGINF, RF_NEGINF, \
+      RF_NEGINF, RF_NEGINF, RF_NEGINF, RF_NEGINF, RF_NEGINF, RF_NEGINF, \
+      RF_NEGINF, RF_NEGINF},						\
+	{RF_INF, RF_INF, RF_INF, RF_INF, RF_INF, RF_INF, RF_INF, RF_INF, \
+	    RF_INF, RF_INF, RF_INF, RF_INF, RF_INF, RF_INF, RF_INF, RF_INF, \
 	    RF_INF, RF_INF, RF_INF, RF_INF},				\
-	  0.1, 1e-7, fit_pgtol[NM], fit_pgtol_recall[NM], /* */	\
-	    fit_factr[NM], fit_factr_recall[NM], PSEUDO,	\
-	    /* int: */							\
-	    50,  0 /* critical */,            /* 6 */			\
-	    5 /* ncrit */ , maxclique[NM],				\
+    0.1, 1e-7, fit_pgtol[NM], fit_pgtol_recall[NM], /* */		\
+    fit_factr[NM], fit_factr_recall[NM], PSEUDO,			\
+    /* int: */								\
+    50,  0 /* critical */,            /* 6 */				\
+    5 /* ncrit */ , maxclique[NM],					\
 	    {MINCLIQUE(maxclique[NM]), MEDCLIQUE(maxclique[NM]),	\
 		MAXCLIQUE(maxclique[NM]) }, 2, 2000 /* small */,  /* 11 */ \
-   0, 0, 0 /* UNSET algorithm */, 0, fit_split[NM], 1, 0, /*  */ \
-      /* usr_bool */ Nan,                                      \
+    0, 0, 0 /* UNSET algorithm */, 0, fit_split[NM], 1, 0, /*  */	\
+    /* usr_bool */ Nan,							\
 	  /* bool */ false, false, fit_reoptimise[NM],  /* 5 */ \
-          fit_ratiotest_approx[NM], true, fit_cross_refit[NM], false, \
-      12} // fit
+    fit_ratiotest_approx[NM], true, fit_cross_refit[NM], false, true,	\
+    12 // fit
 
 #define MAXBINS 50
 #define empvarioN 9
@@ -389,7 +392,7 @@ struct empvario_param{
 #define empvario_START							\
   {0.0, 0.0, 1e-13,							\
       { 20 }, {0, 0},							\
-	     true, true,						\
+	     false, true,						\
 	       1,  0, 0}
 
 #define guiN 3
@@ -426,40 +429,58 @@ struct registers_param {
 #define register_START {0, MODEL_PREDICT, MODEL_USER}
 
 
-#define internalN 29
+#define internalN 2
 extern const char * internals[internalN];
-#define INTERNALS_NEWANISO 2
-#define INTERNALS_STORED_INIT 6
-#define INTERNALS_ONGRID 9
-#define INTERNALS_COORD_CHANGE 12
-#define INTERNALS_ZENIT 14
-#define INTERNALS_DO_TESTS 15
-#define INTERNALS_EX_RED 20
-#define INTERNALS_PARALLEL 21
+#define INTERNALS_DO_TESTS 0
+#define INTERNALS_EX_RED 1
 struct internal_param{ 
   // if changed, CHANGE ALSO RestWarnings in 'userinterfaces.cc';
-  bool
-  warn_oldstyle, warn_newstyle, warn_Aniso, warn_ambiguous, warn_normal_mode,
-    warn_mode, stored_init, warn_scale, warn_coordinates, warn_on_grid,
-    warn_no_fit, warn_aspect_ratio, warn_coord_change, warn_color_palette,
-    warn_zenit, // not used anymore
-    do_tests, warn_constant, warn_negvar,  warn_onlyvar, warn_parallel,
-    allow_duplicated_loc, warn_modus_operandi, warn_singlevariab, note_mle,
-    warn_matrix_NA;
-  usr_bool warn_mathdef,  // obsolete?!
-    detection_note;//   
-  int  warn_seed, examples_reduced;
+  bool do_tests;
+  int examples_reduced;
 };
 #define internal_START			\
-  {true, true, true, false, true,		\
-      true, false, true, true, true,		\
-      true, true, true, true, true,		\
-      DO_TESTS, true, true, true, true,		\
-      false, true, true, true, true,		\
-      Nan, Nan,					\
-      2 ,0}
+  {DO_TESTS, 0}
 
-#define coordsN 14
+
+#define NO_NOTE 0
+#define NOTE_ONCE 1
+#define NOTE_WITHOUT_HINT 2
+#define NOTE_WITH_HINT 3
+
+#define messagesN 28
+extern const char * messages[messagesN];
+#define MESSAGES_NEWANISO 2
+#define MESSAGES_ONGRID 8
+#define MESSAGES_COORD_CHANGE 11
+#define MESSAGES_ZENIT 13
+#define MESSAGES_PARALLEL 18
+#define MESSAGES_RAW 24
+struct messages_param{ 
+  // if changed, CHANGE ALSO RestWarnings in 'userinterfaces.cc';
+  bool
+  warn_oldstyle, help_newstyle, warn_Aniso, note_ambiguous, help_normal_mode,
+    warn_mode, warn_scale, warn_on_grid, warn_ambiguous, 
+    note_no_fit, note_aspect_ratio, warn_coord_change, help_color_palette,
+    warn_zenit, // not used anymore
+    warn_constant, warn_negvar,  help_onlyvar, warn_parallel,
+    warn_modus_operandi, warn_singlevariab, help_mle,
+    warn_raw_covariates, help_addNA, help_help;
+  usr_bool warn_mathdef  // obsolete?!
+    ;//   
+  int  note_detection, note_coordinates, warn_seed;
+};
+#define messages_START			\
+  {true, true, true, false, true,		\
+      true, true, true, true,		\
+      true, true, true, true, true,		\
+      true, true, true, true,		\
+      true, true, true, \
+      true, true, true,				\
+      Nan,					\
+      NOTE_WITH_HINT, NOTE_WITH_HINT, NOTE_WITH_HINT}
+
+
+#define coordsN 20
 #define COORDS_XYZNOTATION 0
 #define COORDS_DATAIDX 5
 #define COORDS_DATANAMES 6
@@ -472,27 +493,35 @@ struct coords_param {
   double zenit[2]; // 8
   coord_sys_enum coord_system, // 1
     new_coord_system; // 7
-  char newunits[MAXCOORDNAMES][MAXUNITSCHAR], // 2; only to read
+  char
+     newunits[MAXCOORDNAMES][MAXUNITSCHAR], // 2; only to read
     curunits[MAXCOORDNAMES][MAXUNITSCHAR], // 3
     varunits[MAXDATANAMES][MAXUNITSCHAR], // 4
 
   // 2 user variables for data.frames
     data_names[MAXDATANAMES][MAXCHAR],// (5C)
-    x_names[MAXCOORDNAMES][MAXCHAR]; // (6 C)
+    x_names[MAXCOORDNAMES][MAXCHAR], // (6 C)
+    data_col_initial[MAXCHAR],
+    coord_initial[MAXCHAR],
+    cartesian_names[4][MAXCHAR],
+    earthcoord_names[4][MAXCHAR];
   // auxiliary variables 
-  int 
+  int
     data_nr_names, //  5; needed by data_names and x_names
     x_nr_names, //  5; needed by data_names and x_names
     data_idx[2],
-    x_idx[2]; // (5B, 6B) alternatives for data_names and x_namwe
+    x_idx[2], // (5B, 6B) alternatives for data_names and x_namwe
+    max_col, max_coord;
   bool polar_coord, // 9
     allow_earth2cart; // 11
   angle_modes anglemode; // 10
 };
-#define coords_START							\
-  {Nan, {1, RF_NA}, coord_auto, coord_keep, {""}, {""}, {""}, {""}, {""}, \
-   0, 0, {NA_INTEGER, NA_INTEGER}, {NA_INTEGER, NA_INTEGER}, \
-   false, false, radians}
+#define coords_START 							\
+  Nan, {1, RF_NA}, coord_auto, coord_keep,				\
+    {""}, {""}, {""}, {""}, {""},				\
+    "X", "V", {"x", "y", "z", "T"}, {"longitude","latitude","height","time"},	\
+    0, 0, {NA_INTEGER, NA_INTEGER}, {NA_INTEGER, NA_INTEGER}, 99, 4,	\
+    false, false, radians
 
 
 #define specialN 1
@@ -535,13 +564,13 @@ struct globalparam{
   graphics_param graphics;
   registers_param registers;
   internal_param internal;
+  messages_param messages;
   coords_param coords;
   special_param special;
-   
 };
 extern globalparam GLOBAL;
 
-#define prefixN 24
+#define prefixN 25
 extern const char * prefixlist[prefixN], **all[prefixN];
 extern int allN[prefixN];
 void setparameter(int i, int j, SEXP el, char name[200], bool isList,

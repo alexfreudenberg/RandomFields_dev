@@ -51,7 +51,6 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ## ##
 ################################################################
 
-
 data(soil)
 str(soil)
 soil <- RFspatialPointsDataFrame(
@@ -85,7 +84,7 @@ gui.model <- RFgui(dta)
 \dontshow{if (!interactive()) gui.model <- RMexp()} %ok
 
 ## fit by ML
-model <- ~1 + RMwhittle(scale=NA, var=NA, nu=NA) + RMnugget(var=NA)
+model <- moisture ~ 1 + RMwhittle(scale=NA, var=NA, nu=NA) + RMnugget(var=NA)
 (fit <- RFfit(model, data=dta))
 plot(fit, method=c("ml", "plain", "sqrt.nr", "sd.inv"),
      model = gui.model, col=1:8)

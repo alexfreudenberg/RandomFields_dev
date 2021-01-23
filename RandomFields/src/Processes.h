@@ -28,20 +28,24 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 #define  GAUSS_BOXCOX_RANGE				      \
-  case GAUSS_BOXCOX :					      \
-  if (j >= MAXBOXCOXVDIM) {				      \
-    range->min =  RF_NEGINF;				      \
-    range->max = RF_INF;				      \
-    range->pmin = -2;					      \
-    range->pmax = 2;					      \
-  } else {						      \
-    range->min = GLOBAL.fit.BC_lambdaLB[2 * j + i];	      \
-    range->max = GLOBAL.fit.BC_lambdaUB[2 * j + i];	      \
-    range->pmin = range->min == RF_NEGINF ? -2 : range->min;   \
-    range->pmax = range->max == RF_INF ? 2 : range->max;    \
+  case GAUSS_BOXCOX :	{					       \
+  globalparam *global = &(cov->base->global);			       \
+  if (j >= MAXBOXCOXVDIM || !R_FINITE(global->fit.BC_lambdaLB[2 * j + i]) ||   \
+      !R_FINITE(global->fit.BC_lambdaUB[2 * j + i])) {			       \
+    range->min =  RF_NEGINF;					       \
+    range->max = RF_INF;					       \
+    range->pmin = -2;						       \
+    range->pmax = 4;						       \
+  } else {							       \
+    range->min = global->fit.BC_lambdaLB[2 * j + i];		       \
+    range->max = global->fit.BC_lambdaUB[2 * j + i];		       \
+    range->pmin = range->min == RF_NEGINF ? -2 : range->min;	       \
+    range->pmax = range->max == RF_INF ? 4 : range->max;	       \
+  }								       \
+  assert(R_FINITE(range->pmin) && R_FINITE(range->pmax ));	       \
+  range->openmin = false;					       \
+  range->openmax = false;				       \
   }							      \
-  range->openmin = false;				      \
-  range->openmax = false;				      \
   break
 
 #define BooleanRange(IDX)			\
@@ -109,10 +113,10 @@ int check_co_intern(model *cov);
 void range_co_proc(model *cov, int k, int i, int j,
 		      simple_range_type *range);
 
-void distrD(double *x, model *cov, double *v);
-void distrP(double *x, model *cov, double *v);
+void distrD(double *x, int *, model *cov, double *v);
+void distrP(double *x, int *, model *cov, double *v);
 void distrQ(double *x, model *cov, double *v);
-void distrR(double *x, model *cov, double *v);
+void distrR(double *x, int *, model *cov, double *v);
 void kappa_distr(int i, model *cov, int *nr, int *nc);
 int check_distr(model *cov);
 int init_distr(model *cov, gen_storage *s);
@@ -210,11 +214,10 @@ void rangegaussprocess(model *cov, int k, int i, int j,
 int struct_gaussprocess(model *cov, model **newmodel);
 int init_gaussprocess(model *cov, gen_storage *s);
 void do_gaussprocess(model *cov, gen_storage *s);
-void gaussprocessDlog(double *x, model *cov, double *v);
+void gaussprocessDlog(double *x, int *, model *cov, double *v);
 int struct_gauss_logli(model *cov);
 SEXP gauss_linearpart(SEXP model_reg, SEXP Set);
-void gauss_predict(model *predict, model *Cov, double *v);
-void gauss_trend(model *predict, model *cov, double *v, int set);
+void gauss_predict(model *cov, double *v);
 int struct_gaussmethod(model *cov, model **newmodel);
 
 
@@ -222,15 +225,14 @@ void boxcox_trafo(double boxcox[], int vdim, double *res, Long pts, int repet);
 void boxcox_inverse(double boxcox[], int vdim, double *res, int pts, 
 		    int repet);	
 #define SAVE_GAUSS_TRAFO    
-#define BOXCOX_TRAFO boxcox_trafo(boxcox, res, Gettotalpoints(cov) * VDIM0); 
+//#define BOXCOX_TRAFO boxcox_trafo(boxcox, res, Loctotalpoints(cov) * VDIM0); 
 #define BOXCOX_INVERSE_PARAM(GAUSS_BOXCOX)				\
-  boxcox_inverse(P(GAUSS_BOXCOX), VDIM0, res, Gettotalpoints(cov), 1)
+  boxcox_inverse(P(GAUSS_BOXCOX), VDIM0, res, Loctotalpoints(cov), 1)
 #define BOXCOX_INVERSE BOXCOX_INVERSE_PARAM(GAUSS_BOXCOX)
 int kappaBoxCoxParam(model *cov, int BC);
 
-
 #define FRAME_ASSERT_GAUSS assert(hasGaussMethodFrame(cov));
-#define FRAME_ASSERT_GAUSS_INTERFACE assert(hasGaussMethodFrame(cov) || (hasInterfaceFrame(cov) && cov->calling != NULL && cov->calling->calling == NULL));
+#define FRAME_ASSERT_GAUSS_INTERFACE assert(hasGaussMethodFrame(cov) || (cov->calling != NULL && hasInterfaceFrame(cov->calling) && cov->calling->calling == NULL));
 
 //-----------------------------------------------------------------
 // max-stable processes
@@ -242,23 +244,23 @@ int kappaBoxCoxParam(model *cov, int BC);
 #define MPP_SHAPE 0
 #define MPP_TCF 1
 
-void extremalgaussian(double *x, model *cov, double *v);
+void extremalgaussian(double *x, int *, model *cov, double *v);
 int check_schlather(model *cov);
 int struct_schlather(model *cov, model **newmodel);
-void loglikelihoodSchlather(double *data, model *cov, double *v);
+void loglikelihoodSchlather(double *data, int *, model *cov, double *v);
 
 int struct_smith(model *cov, model **newmodel);
 int check_smith(model *cov);
 int struct_smith_pts(model **Key, model *shape, model *calling,
 		     int logicaldim, int vdim);
 
-void BrownResnick(double *x, model *cov, double *v);
+void BrownResnick(double *x, int *, model *cov, double *v);
 int checkBrownResnickProc(model *cov);
 int structBrownResnick(model *cov, model **newmodel);
 int initBrownResnick(model *cov, gen_storage *s);
 void doBrownResnick(model *cov, gen_storage *s);
 void finaldoBrownResnick(model *cov, double *res, int n, gen_storage *s);
-void loglikelihoodBR(double *data, model *cov, double *v);
+void loglikelihoodBR(double *data, int *, model *cov, double *v);
 
 
 int init_opitzprocess(model *cov, gen_storage *s);
@@ -316,7 +318,7 @@ void domultproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) ;
 
 // other processes
 void kappa_binaryprocess(int i, model *cov, int *nr, int *nc);
-void binary(double *x, model *cov, double *v);
+void binary(double *x, int *, model *cov, double *v);
 int checkbinaryprocess(model *cov);
 void rangebinaryprocess(model *cov, int k, int i, int j,
 			simple_range_type *range);
@@ -365,12 +367,12 @@ int structMproc(model *cov, model **newmodel);
 int initMproc(model *cov, gen_storage *s);
 void doMproc(model *cov, gen_storage *s);
 
-int checkTrendproc(model *cov);
-int init_Trendproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s);
-void do_Trendproc(model *cov, gen_storage *s);
-bool settrendproc(model *cov);
-bool allowedItrendproc(model *cov);
-Types Typetrendproc(Types required, model *cov, isotropy_type required_iso);
+int checkShapefctproc(model *cov);
+int init_Shapefctproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s);
+void do_Shapefctproc(model *cov, gen_storage *s);
+bool setshapefctproc(model *cov);
+bool allowedIshapefctproc(model *cov);
+Types Typeshapefctproc(Types required, model *cov, isotropy_type required_iso);
   
 int checkvar2covproc(model *cov);
 int structvar2covproc(model *cov, model **newmodel);

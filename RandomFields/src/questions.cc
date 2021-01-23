@@ -28,22 +28,19 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "Processes.h"
 
 // domain
+bool assertLastDom(system_type *s) {
+  int i=1; 
+  for (; i<=LASTSYSTEM(s); i++) if (DOM(s, i) != DOM(s,0)) break;
+  return i > LASTSYSTEM(s);
+}
 bool equalsXonly(domain_type dom) { return dom == XONLY; }
 bool isXonly(system_type *s) {
-#ifdef SCHLATHERS_MACHINE  
-  assert({int _i_; 
-      for (_i_=1; _i_<=LASTSYSTEM(s); _i_++) if (DOM(s, _i_) != DOM(s,0)) break;
-      _i_ > LASTSYSTEM(s);});
-#endif
+  assert(assertLastDom(s));
   return equalsXonly(DOM(s, 0));
 }
 bool equalsKernel(domain_type dom) { return dom == KERNEL; }
 bool isKernel(system_type *s) { 
-#ifdef SCHLATHERS_MACHINE  
-  assert({int _i_; 
-      for (_i_=1; _i_<=LASTSYSTEM(s); _i_++) if (DOM(s, _i_) != DOM(s,0)) break;
-      _i_ > LASTSYSTEM(s);});
-#endif
+   assert(assertLastDom(s));
   return equalsKernel(DOM(s, 0));
 } 
 
@@ -304,7 +301,7 @@ bool isManifold(defn *C) {
 }
 
 bool isTrend(model *cov) {
-  return COVNR == TREND_PROC || isMathDef(DefList + COVNR) || COVNR==COVARIATE;
+  return COVNR == SHAPE_FCT_PROC || isMathDef(DefList + COVNR) || COVNR==COVARIATE;
 }
 
 bool isMathDef(defn *C) {
@@ -350,9 +347,7 @@ bool isNow(typefct isTypus, model *cov, bool OneSystem) {
 }
 
 
-//if (false) printf("Qu: "#typus" '%s'  %d\n", TYPE_NAMES[type], type == cond);
-
-#define QuestionGenNowNoIsNow(typus, cond, condFrame, OneSystem)	\
+#define QuestionGenNow(typus, cond, condFrame, OneSystem)		\
   bool is##typus(Types type) {						\
     return type == cond;						\
   }									\
@@ -373,31 +368,31 @@ bool isNow(typefct isTypus, model *cov, bool OneSystem) {
   bool hasAny##typus##Frame(model *cov) {				\
     Types type = cov->frame;						\
     return type == condFrame;						\
-  }
-
-
-#define QuestionGenNow(typus, cond, condFrame, OneSystem)		\
-  QuestionGenNowNoIsNow(typus, cond, condFrame, OneSystem)		\
+  }									\
+									\
   bool isnow##typus(model *cov) {					\
     return isNow(is##typus, cov, OneSystem);				\
   } 									
-  
+
+
+#define QuestionNow(typus, cond, OneSys) QuestionGenNow(typus,cond,cond,OneSys)
+#define Question(typus, OneSystem)					\
+  QuestionGenNow(typus, typus##Type, typus##Type, OneSystem)		\
+  bool is##typus(model *cov) {						\
+    return isDefCL(is##typus, cov, OneSystem);				\
+  }
 
 #define QuestionGen(typus, cond, condFrame, OneSystem)			\
   QuestionGenNow(typus, cond, condFrame, OneSystem)			\
   bool is##typus(model *cov) {						\
     return cov != NULL && isDefCL(is##typus, cov, OneSystem);		\
   }									
-								       
-#define Question(typus, OneSystem)					\
-  QuestionGenNow(typus,typus##Type, typus##Type, OneSystem)		\
-  bool is##typus(model *cov) {						\
-    return isDefCL(is##typus, cov, OneSystem);				\
-  }									
- 
 
-#define QuestionIsNow(typus, cond, OneSystem) QuestionGen(typus,cond,cond,OneSystem)
-#define QuestionNow(typus, cond, OneSys) QuestionGenNow(typus,cond,cond,OneSys)
+#define QuestionIsNow(typus, cond, OneSystem) \
+  QuestionGen(typus,cond,cond,OneSystem)
+								       
+
+
 
 
 bool isMaxStable(Types type) {
@@ -471,6 +466,9 @@ bool isnowTrendParam(model *cov, int i) {
 bool equalsnowTrendParam(model *cov, int i) {
   //  PMI(cov);
   //  assert(cov->initialised);
+  //  defn *C = DefList + COVNR;
+
+  //printf("equalsnowTrend %s i=%d %s %d %d\n", NAME(cov), i, C->kappanames[i], equalsnowTrend(cov), SortOf(cov, i, 0, 0, original_model) == TRENDPARAM);
   return
     equalsnowTrend(cov) && (SortOf(cov, i, 0, 0, original_model) == TRENDPARAM);
 }
@@ -896,7 +894,7 @@ Types TypeConsistency(Types requiredtype, model *cov, isotropy_type requirediso)
   defn *C = DefList + COVNR; // nicht gatternr
   if (C->TypeFct != NULL) {
 #ifdef TypeDebug
-    PRINTF("TypeFct != NULL, %d ", atleastSpecialised(OWNISO(0), requirediso));
+    PRINTF("TypeFct != NULL, %d \n", atleastSpecialised(OWNISO(0), requirediso));
 #endif
     if (!atleastSpecialised(OWNISO(0), requirediso)) return BadType;
 
@@ -1029,11 +1027,12 @@ bool isCallingSet(model *cov) { // is calling model correctly set in
   
   if (cov->key != NULL && !isCallingSet(cov->key)) return false;
   if (cov->Splus != NULL && cov->Splus->keys_given) {
+    GETSTOMODEL;
     for (int i=0; i<nsub; i++) {
-      model *sub = cov->Splus->keys[i];
+      model *sub = STOMODEL->keys[i];
       if (sub == NULL) { 
-	if (i > 0 && cov->Splus->keys[i-1] != NULL) { //either all or none NULL!
-	  PRINTF("cov->Splus->keys[i-1] != NULL\n");
+	if (i > 0 && STOMODEL->keys[i-1] != NULL) { //either all or none NULL!
+	  PRINTF("stomodel->keys[i-1] != NULL\n");
 	  PMI0(cov); //
 	  return false;
 	}
@@ -1052,9 +1051,11 @@ bool isCallingSet(model *cov) { // is calling model correctly set in
 
 
 bool TrafoOK(model *cov) {// check other things, too, besides gatter ?
-  //  PMI0(cov);
-  //   if (!PREV_INITIALISED) crash();
+  // if (cov == NULL) crash();
+  // PMI0(cov);
+  // if (!PREV_INITIALISED) {PMI0(cov); crash();}
   //  assert(PREV_INITIALISED);
+ 
   int gatter = GATTERNR,
     trafo = TRAFONR;
     
@@ -1095,3 +1096,9 @@ bool isNotEstimable(int pt) {
     pt == FORBIDDENPARAM;
 }
 
+
+void assertNoLocY(model *cov){
+  if (LocHasY(cov))						\
+    ERR1("'%50.s' cannot be used within kriging or conditional simulation", \
+	  NICK(cov));
+}

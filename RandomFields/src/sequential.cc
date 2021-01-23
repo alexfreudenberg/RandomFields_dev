@@ -38,14 +38,14 @@ bool debugging = true;
 
 
 int check_sequential(model *cov) {
+  globalparam *global = &(cov->base->global);
 #define nsel 4
   model *next=cov->sub[0];
   int err,
     dim = ANYDIM; // taken[MAX DIM],
-  sequ_param *gp  = &(GLOBAL.sequ);
-  location_type *loc = Loc(cov);
+  sequ_param *gp  = &(global->sequ);
 
-  if (!loc->grid && !loc->Time) 
+  if (!Locgrid(cov) && !LocTime(cov)) 
     SERR1("'%.50s' only possible if at least one direction is a grid", NICK(cov));
 
   kdefault(cov, SEQU_BACK, gp->back);
@@ -100,6 +100,7 @@ void range_sequential(model VARIABLE_IS_NOT_USED *cov, int k, int i, int j,
 // start mit S_22; dann nur zeilenweise + Einschwingen
 
 int init_sequential(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
+  globalparam *global = &(cov->base->global);
   model *next = cov->sub[0];
   location_type *loc = Loc(cov);
   if (loc->distances) RETURN_ERR(ERRORFAILED);
@@ -109,7 +110,7 @@ int init_sequential(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
     dim = ANYDIM,
     spatialdim = dim - 1,
     vdim = next->vdim[0],
-    max = GLOBAL.direct.maxvariables,
+    max = global->direct.maxvariables,
     back= P0INT(SEQU_BACK), 
     initial= P0INT(SEQU_INIT);
   assert(dim == loc->timespacedim);
@@ -138,9 +139,10 @@ int init_sequential(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
     spatialpntsSQback = totpnts * spatialpnts;
 
   bool 
-    storing = GLOBAL.internal.stored_init,
+    storing = cov->base->stored_init,
     Time = loc->Time;
- 
+   DEFAULT_INFO(info);
+
   if (hasEvaluationFrame(cov)) {
     RETURN_NOERROR;
   }
@@ -208,9 +210,6 @@ int init_sequential(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   double *y;
   y = (double*) MALLOC(dim * sizeof(double));
 
-  // *** S22
-  // loc->i sollte beim sub eigentlich nie gebraucht werden!!!
-  // somit nur zur erinnerung die laufvariablen icol und irow verwendet
   if (PL >= PL_SUBDETAILS) { LPRINT("covariance matrix...\n"); }
   k = 0;
   for (k0 = icol = 0; icol<totpnts; icol++, k0+=dim) {
@@ -221,7 +220,7 @@ int init_sequential(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
       for (d=0; d<dim; d++) {
 	y[d] = xx[k1++] - xx[k2++];
       }
-      COV(y, next, U22 + segment);
+      COV(y, info, next, U22 + segment); 
       U22[k++] = U22[segment];
       segment += totpnts;
     }
@@ -275,7 +274,7 @@ int init_sequential(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
 	for (d=0; d<spatialdim; d++) {
 	    y[d] = xx[k1++] - xx[k2++];
 	}
-	COV(y, next, COV21 + k);	
+	COV(y, info, next, COV21 + k);	
 	k++; k2++;
     }
     k += withoutlast;

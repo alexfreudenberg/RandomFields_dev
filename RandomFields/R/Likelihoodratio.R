@@ -297,16 +297,14 @@ RFratiotest <- function(nullmodel, alternative, ## no params as output of RFfit
                         optim.control=NULL,
                         users.guess=NULL,  
                         distances=NULL, dim,
-                        transform=NULL,
                         ##type = c("Gauss", "BrownResnick", "Smith", "Schlather",
                         ##             "Poisson"),
                         ...
                         ) {
    
-  
-  RFoptOld <- internal.rfoptions(..., basic.seed=NA)
-  on.exit(RFoptions(LIST=RFoptOld[[1]]))
-  RFopt <- RFoptOld[[2]]
+  .Call(C_setlocalRFutils, NA, NULL)
+  RFopt <- internalRFoptions(...)
+  if (!hasArg("COPY")) on.exit(optionsDelete(RFopt))
   printlevel <- RFopt$basic$printlevel
   if (RFopt$general$modus_operandi == "neurotic")
     stop("crossvalidation is not a precise method")
@@ -363,11 +361,13 @@ RFratiotest <- function(nullmodel, alternative, ## no params as output of RFfit
     set.seed(RFopt$basic$seed)
   }
   
-  Z <- UnifyData(model = nullmodel, x=x, y=y, z=z, T=T, grid=grid, data=data,
-                 distances=distances, dim=dim, RFopt=RFopt, ...)
-  nullmodel <- Z$model ## P repareModel2(nullmodel, ...) ## ok no params
-  alternative <- PrepareModel2(alternative, ...,
-                               return_transform=FALSE)$model ## ok no params
+  Z <- UnifyData(model = nullmodel, ## ok no params for p reparemodels2
+                 x=x, y=y, z=z, T=T, grid=grid, data=data,
+                 distances=distances, dim=dim, RFopt=RFopt,
+                 further.models = list(alternative),
+                 ...)
+  aternative <- Z$further.models[[1]]
+  nullmodel <- Z$model 
 
   values <- Try(GetValuesAtNA(NAmodel=nullmodel, valuemodel=alternative,
                             #  spatialdim=Z$spatialdim, Time=Z$has.time.comp,
@@ -384,13 +384,13 @@ RFratiotest <- function(nullmodel, alternative, ## no params as output of RFfit
 
   for (m in 1:length(model.list)) {
     data.fit[[m]] <-
-      RFfit(model.list[[m]], x=x, y=y, z=z, T=T, grid=grid, data=data,
+      RFfit(COPY=FALSE,
+            model.list[[m]], x=x, y=y, z=z, T=T, grid=grid, data=data,
             lower=lower, upper=upper,
-             methods=methods,
+            methods=methods,
             sub.methods=sub.methods, optim.control=optim.control,
             users.guess=guess,
             distances=distances, dim=dim,
-            transform=transform,
             ..., spConform = FALSE)
     guess <- if (isSubmodel) data.fit[[m]]$ml$model else NULL
   }
@@ -427,19 +427,20 @@ RFratiotest <- function(nullmodel, alternative, ## no params as output of RFfit
     if (printlevel>=PL_SUBIMPORTANT)
       cat("\n ", i, "th simulation out of", simu.n)
     else cat(pch)
-    simu <- RFsimulate(model, x=newx, T=newT, grid=grid, 
+    simu <- RFsimulate(COPY=FALSE, # OK
+                       model, x=newx, T=newT, grid=grid, 
                        distances=if (dist.given) Coords, dim=dim, spC=FALSE)
     guess <- users.guess   
     for (m in 1:length(model.list)) {
       simufit <-
-        RFfit(model.list[[m]], x=newx, T=newT, grid=grid,
+        RFfit(COPY=FALSE, 
+              model.list[[m]], x=newx, T=newT, grid=grid,
               data=simu,
               lower=lower, upper=upper, 
               methods=methods,
               sub.methods=sub.methods, optim.control=optim.control,
               users.guess=guess,
               distances=if (dist.given) Coords, dim=dim,
-              transform=transform,
               ..., spConform=FALSE)
       fit[m] <- simufit$ml$ml
       guess <- if (isSubmodel) simufit$ml$model else NULL

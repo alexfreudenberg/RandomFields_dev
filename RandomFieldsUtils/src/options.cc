@@ -1,4 +1,3 @@
-
 /*
  Authors 
  Martin Schlather, schlather@math.uni-mannheim.de
@@ -29,6 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "General_utils.h"
 #include "kleinkram.h"
 #include "zzz_RandomFieldsUtils.h"
+#include "own.h"
 
 #define PLverbose 2
 
@@ -36,7 +36,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 const char *basic[basicN] =
   { "printlevel","cPrintlevel", "seed", "cores", "skipchecks",
     "asList", "verbose", "kahanCorrection", "helpinfo", "warn_unknown_option",
-    "warn_parallel_write", "useGPU"};
+    "useGPU"};
 
 const char * solve[solveN] = 
   { "use_spam", "spam_tol", "spam_min_p", "svdtol", "eigen2zero",
@@ -49,7 +49,6 @@ const char * solve[solveN] =
   };
 
 
-#define ownprefixN 2
 const char * ownprefixlist[ownprefixN] = {"basic", "solve"};
 const char **ownall[ownprefixN] = {basic, solve};
 int ownallN[ownprefixN] = {basicN, solveN};
@@ -73,13 +72,12 @@ int numCPU = MAXINT;
 #endif
 
 
-
 void setparameterUtils(int i, int j, SEXP el, char name[LEN_OPTIONNAME], 
-		       bool isList, int VARIABLE_IS_NOT_USED local) {
-#ifdef DO_PARALLEL
-  if (local != isGLOBAL) ERR1("Options specific to RandomFieldsUtils, here '%.50s', can be set only via 'RFoptions' outside any parallel code.", name);
-#endif
-  //printf("i=%d j=%d\n", i, j);
+		       bool isList, bool local) {
+  //  printf("i=%d j=%d\n", i, j);
+  if (local)
+    ERR1("Parameter '%.25s' in RandomFieldsUtils can be set only by 'RFoptions'",
+	 ownall[i][j])
   utilsparam *options = &GLOBAL; 
   switch(i) {
   case 0: {// general
@@ -116,7 +114,7 @@ void setparameterUtils(int i, int j, SEXP el, char name[LEN_OPTIONNAME],
       break;
     case 7: gp->kahanCorrection = LOGI; break;
     case 8: gp->helpinfo = LOGI; break;
-    case BASIC_WARN_OPTION: {
+    case BASIC_WARN_OPTION:{
 	int v = INT;
 	if (v > -3) gp->warn_unknown_option = MIN(v, 3);
 	else if (gp->warn_unknown_option == WARN_UNKNOWN_OPTION_DEFAULT) {
@@ -125,8 +123,7 @@ void setparameterUtils(int i, int j, SEXP el, char name[LEN_OPTIONNAME],
 	} // else idle (respect the changing of the user)
       }
 	break;
-    case 10: gp->warnparallelwrite = LOGI; break;
-    case 11:
+    case 10:
 #ifdef USEGPU
       gp->useGPU = LOGI; 
 #else
@@ -143,7 +140,12 @@ void setparameterUtils(int i, int j, SEXP el, char name[LEN_OPTIONNAME],
    
     solve_param *so = &(options->solve);
     switch(j) {
-    case 0: so->sparse = USRLOG; break; // USRLOGRELAXED??
+    case 0: so->sparse = USRLOG;
+      if (so->sparse != False) {
+	so->sparse = False;
+	ERR("'spam' is currently disabled.")
+      }      
+      break; // USRLOGRELAXED??
     case 1: so->spam_tol = POS0NUM; break;      
     case 2: Real(el, name, so->spam_min_p, 2);
       for (int u=0; u<=1; u++)
@@ -209,12 +211,12 @@ void setparameterUtils(int i, int j, SEXP el, char name[LEN_OPTIONNAME],
 
 
 void getparameterUtils(SEXP sublist, int i,
-		       int VARIABLE_IS_NOT_USED local) {
+		       bool VARIABLE_IS_NOT_USED local) {
   //  printf("hier %d\n", i);
   int  k = 0;
     //#define ADD(ELT) {printf(#ELT"\n");SET_VECTOR_ELT(sublist[i], k++, ELT);}
 #ifdef DO_PARALLEL
-  //  if (local != isGLOBAL) ERR("Options specific to RandomFieldsUtils can be obtained only on a global level and outside any parallel code.");
+  // if (local != isGLOBAL) ERR("Options specific to RandomFieldsUtils can be obtained only on a global level and outside any parallel code.");
 #endif  
   utilsparam *options = &GLOBAL; 
   switch(i) {
@@ -231,7 +233,6 @@ void getparameterUtils(SEXP sublist, int i,
     ADD(ScalarLogical(p->kahanCorrection));   
     ADD(ScalarLogical(p->helpinfo));    
     ADD(ScalarInteger(p->warn_unknown_option));    
-    ADD(ScalarLogical(p->warnparallelwrite));   
     ADD(ScalarLogical(p->useGPU));    
   }
     break;
@@ -272,9 +273,23 @@ void getparameterUtils(SEXP sublist, int i,
   //printf("EE A\n");
 }
 
-void delparameterUtils(int VARIABLE_IS_NOT_USED local) {
+void utilsparam_NULL(utilsparam *S) {
+  assert(solveN == 20 && basicN == 12 && ownprefixN==2);
+  MEMCOPY(S, &GLOBAL, sizeof(utilsparam));
+  S->solve.pivot_idx = NULL;
+  S->solve.pivot_idx_n = 0;
+}
+
+void utilsparam_DELETE(utilsparam *S) {
+  FREE(S->solve.pivot_idx);
+  S->solve.pivot_idx_n = 0;
+}
+
+
+
+void delparameterUtils(bool local) {
 #ifdef DO_PARALLEL
-  if (local != isGLOBAL) RFERROR("'pivot_idx' cannot be freed on a local level");
+  if (local) RFERROR("'pivot_idx' cannot be freed on a local level");
 #endif  
   utilsparam *options = &GLOBAL;
   FREE(options->solve.pivot_idx);

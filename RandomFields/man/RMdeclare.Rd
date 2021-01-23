@@ -21,7 +21,8 @@ RMdeclare(...)
     additional parameter, which can be a scalar, vector, or matrix.
     In the \code{params} list of \link{RFfunction}, this name must appear on
     the left hand side of a definition of an object
-    (frequently with NAs inside).
+    (frequently with NAs inside). Arguments must all be of the form
+    \code{arg=arg}, e.g. \code{RMdeclare(u=u)}.
   }
 }
 
@@ -48,13 +49,10 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ## argument 'params'. The purpose is not to give nice statistical models 
 
 x <- seq(1, 3, 0.1)
-%# geht nicht: model <- ~ 1+  RMexp(sc=sc1, var=var) + RMgauss(var=var2,
-%sc=sc2) + RMdeclare(v=5, u, z)
-## note that there isn't any harm to declare variables ('u'),
-## but a warni
-## RMdeclare that are of no use in a simulation
-model <- ~ RMexp(sc=sc1, var=var1) + RMgauss(var=var2, sc=sc2) + RMdeclare(u)
-p <- list(sc1=2, var1=3, sc2=4, var2=5)
+## note that u is of no use in the simulation,
+## but it will be used when estimating
+model <- ~ RMexp(sc=sc1, var=var1) + RMgauss(var=var2, sc=sc2) + RMdeclare(u=u)
+p <- list(sc1=2, var1=3, sc2=4, var2=5, u=0)
 z <- RFsimulate(model = model, x=x, y=x, params=p)
 plot(z)
 
@@ -74,11 +72,16 @@ print(f)
 ## 'var's a unknown variable and an argument for RMwhittle
 \dontrun{%hier ein speicherfehler in Randomfieldsutils - falsch
 	 %erkanntes lin modell??
-model2 <- ~ RMexp(sc) + RMwhittle(var = g, nu=Nu) + 
-  RMnugget(var=nugg) +  RMexp(var=var, Aniso=matrix(A, nc=2)) +
-  RMdeclare(CCC, DD)
-p.fit <- list(g=~sc^1.5,  nugg=~sc * var * abc, sc=NA, var=~DD, Nu=NA, abc=123,
-	      A = ~c(1, 2, DD * CCC, CCC), CCC = NA, DD=NA)
+model2 <- ~ RMexp(var=sc) + RMwhittle(var = g, nu=Nu) + RMnugget(var=nugg) +
+            RMexp(var=var, Aniso=A) + RMdeclare(CCC=CCC, DD=DD)
+p.fit <- list(g=~sc^1.5,
+              nugg=~sc * var * abc,
+              sc=NA,
+              var=~DD,
+              Nu=NA,
+              abc=123,
+	      A = ~ matrix(c(1, 2, DD * CCC, CCC), nc=2),
+              CCC = NA, DD=NA)
 lower <- list(sc=1, CCC=1, DD=1)
 upper <- list(sc=100, CCC=100, DD=100)
 f2 <- RFfit(model2, data=z, params=p.fit, lower = lower, upper = upper)

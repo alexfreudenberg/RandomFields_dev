@@ -63,6 +63,7 @@ setClass("RFpointsDataFrame",
          prototype(data=data.frame(NULL), coords=NULL, .RFparams=list()))
 setValidity("RFpointsDataFrame", 
             function(object) {
+##              Print(object)
               if (nrow(object@data) != length(object@coords))
                 return("data and coords must have the same length")
               if (ncol(object@coords)!=1)
@@ -117,11 +118,12 @@ setClass(CLASS_CLIST,
 
 ## rules for validity checking of CLASS_CLIST objects
 isModel <- function(model) return(is.list(model) && is.character(model[[1]]) )
-isRMmodel <- function(x) isS4(x) && is(x, CLASS_CLIST)
+##isRMmodel <- function(x) isS4(x) && is(x, CLASS_CLIST)
 setValidity(CLASS_CLIST, 
             function(object){
               if (length(object@submodels) > 0 &&
-                  !all(sapply(object@submodels, function(x) isRMmodel(x)
+                  !all(sapply(object@submodels,
+                              function(x) isS4(x) && is(x, CLASS_CLIST)
                                         # || is(x, "formula")
                                      )))
                 return(paste("submodels must be of class '", CLASS_CLIST,
@@ -163,7 +165,8 @@ setClass(CLASS_SINGLEFIT, # contains=CLASS_CLIST,
              AIC = "numeric",
              AICc = "numeric",
              BIC = "numeric",
-             residuals = "ANY"
+             residuals = "ANY",
+             params.list = "list"
              )
          )
 
@@ -197,8 +200,6 @@ setClass(CLASS_FITLIST,
                         n.covariates = "integer",
                         lowerbounds = CLASS_CLIST,
                         upperbounds = CLASS_CLIST,
-                        transform = "list",
-                        #vario = "character",
                         coordunits = "character",
                         varunits = "character",
                         number.of.data = "integer",
@@ -211,6 +212,7 @@ setClass(CLASS_FITLIST,
                         true.tsdim = "integer",
                         true.vdim = "integer",
                         report = "character",
+                        trafo = "function",
                         submodels = "ANY",
                         autostart = CLASS_SINGLEFIT,
                         users.guess = CLASS_SINGLEFIT, # Martin: 2.4.: eingefuegt

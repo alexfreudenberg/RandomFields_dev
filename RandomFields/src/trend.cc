@@ -50,11 +50,11 @@ z, x z, x^2 z, ...., x^(k-1) z, y z, x y z, x^2 y z, ..., z^k
 #include <R_ext/Linpack.h>
 
 #include "questions.h"
-#include "primitive.others.h"
 #include "Processes.h"
 #include "shape.h"
 #include "Coordinate_systems.h"
 #include "rf_interfaces.h"
+#include "QMath.h"
 
 
 
@@ -74,10 +74,10 @@ int binomialcoeff(int n, int k) {
 
 
 //////////////////////////////////////////////////////////////////////
-//    trend
+//    shape
 //////////////////////////////////////////////////////////////////////
 
-void trend(double *x, model *cov, double *v){
+void shapefct(double *x, int *info, model *cov, double *v){
   int vdim = VDIM0;
 
   assert(isnowShape(cov) || isnowTrend(cov));
@@ -89,25 +89,25 @@ void trend(double *x, model *cov, double *v){
     return;
   }
 
-  model *musub = cov->kappasub[TREND_MEAN];
-  double *mu = P(TREND_MEAN);
+  model *musub = cov->kappasub[SHAPE_FCT_MEAN];
+  double *mu = P(SHAPE_FCT_MEAN);
   if (musub != NULL) {
-    FCTN(x, musub, v);
-  } else for (int i=0; i<vdim; i++) v[i] = ISNAN(mu[i]) ? 1.0 : mu[i];
+    FCTN(x, info, musub, v);
+  } else for (int i=0; i<vdim; i++) v[i] = ISNAN(mu[i]) ? 0.0 : mu[i];
   // 1.0 notwendig fuer likelihood berechnung;
 }
 
-void kappatrend(int i, model VARIABLE_IS_NOT_USED *cov, int *nr, int *nc){
-  *nr = i == TREND_MEAN ? SIZE_NOT_DETERMINED : -1; 
+void kappashapefct(int i, model VARIABLE_IS_NOT_USED *cov, int *nr, int *nc){
+  *nr = i == SHAPE_FCT_MEAN ? SIZE_NOT_DETERMINED : -1; 
   *nc = 1;
 }
 
 
-bool settrend(model *cov) {
-  model *musub = cov->kappasub[TREND_MEAN]; 
+bool setshapefct(model *cov) {
+  model *musub = cov->kappasub[SHAPE_FCT_MEAN]; 
   isotropy_type iso = CONDPREVISO(0); 
   if (!isFixed(iso)) return false;
-  set_type(OWN, 0, TrendType);
+  set_type(OWN, 0, ShapeType);
   if (musub == NULL) { // derzeit alles coordinatesystems falls trend,
     // da FCTN dies voraussetzt
     set_iso(OWN, 0, PREVISO(0));
@@ -123,8 +123,8 @@ bool settrend(model *cov) {
 }
 
 
-bool allowedItrend(model *cov) {
-  model *musub = cov->kappasub[TREND_MEAN]; 
+bool allowedIshapefct(model *cov) {
+  model *musub = cov->kappasub[SHAPE_FCT_MEAN]; 
   if (musub == NULL) return allowedItrue(cov);
 
   bool *I = cov->allowedI;
@@ -134,85 +134,48 @@ bool allowedItrend(model *cov) {
 }
 
 
-
-Types Typetrend(Types required, model *cov, isotropy_type required_iso){
-  if (cov->kappasub[TREND_MEAN] == NULL) return required;
-  return equalsCoordinateSystem(required_iso) ? required : BadType;
+Types Typeshapefct(Types required, model *cov, isotropy_type required_iso){
+  if (!isTrend(required)) return BadType; // 16.1.21 neu
+  model *musub = cov->kappasub[SHAPE_FCT_MEAN]; 
+  if (musub == NULL) return required;
+  return TypeConsistency(required, musub, required_iso);
 }
 
-int checktrend(model *cov){
-  // if (cov->ncol[TREND_LINEAR] > 0 || cov->ncol[TREND_FCT]>0
-  //    || cov->ncol[TREND_PARAM_FCT] > 0)
-  //  return(ERRORNOTPROGRAMMED);
 
-  if (cov->nsub==1) { //this manoevre allows the trend, mu, to be passed unnamed
-    assert(cov->sub[0] != NULL);
-    if (cov->kappasub[TREND_MEAN] != NULL)
-      ERR("exactly one trend argument must be given");
-    cov->kappasub[TREND_MEAN] = cov->sub[0];
-    cov->sub[0] = NULL;
-    cov->nsub = 0;
-  }
-  
+int checkshapefct(model *cov){
 
   model 
     *calling = cov->calling,
-    *musub = cov->kappasub[TREND_MEAN];
+    *musub = cov->kappasub[SHAPE_FCT_MEAN];
   int i,  err,
     vdim = 0, 
     logdim = OWNLOGDIM(0);
-
-  //SEXP Rx, fctbody, envir;
-
-  //PMI(cov->calling->calling);
-  
-  if (musub!=NULL && !equalsCoordinateSystem(PREVISO(0)))
-    RETURN_ERR(ERRORWRONGISO);
-  assert(calling != NULL);
-  if ((musub != NULL) xor PisNULL(TREND_MEAN))
+    
+  if ((musub != NULL) xor PisNULL(SHAPE_FCT_MEAN))
     ERR("exactly one trend argument must be given");
-  bool ok = calling == NULL ||   // passt das so alles??
-    ( CALLINGNR == MULT && musub!=NULL && equalsnowTrend(calling) ) ||
-    //   (musub == NULL && // warum dies verlangt wird ist nicht klar
-    CALLINGNR == TREND_PROC || CALLINGNR == SIMULATE ||
-    CALLINGNR == GAUSSPROC || CALLINGNR == SPECIFIC ||
-    (CALLINGNR == PLUS &&
-     (calling->calling == NULL || isnowProcess(calling->calling) ||
-      equalsnowInterface(calling->calling) || equalsnowTrend(calling) ));
 
-  //PMI(cov);
-  if (!ok) {
-     SERR("trend model may not be used within the given frame.");
-  }
   if (!hasTrendFrame(cov) && !hasAnyEvaluationFrame(cov)) {
-    //TREE0(cov); PMI(cov);
-    ILLEGAL_FRAME;
+     ILLEGAL_FRAME;
   }
 
+  //  PMI(cov);
   if ((cov->matrix_indep_of_x = musub == NULL)) {
-    if (calling != NULL && CALLINGNR != PLUS && isnowProcess(calling) && 
-	!equalsnowInterface(calling) && CALLINGNR != TREND_PROC) {
-      if (OWNLASTSYSTEM > 0) BUG;
-
-      //BUG;
-      //set_type(OWN, 0, ShapeType); // 26.9.18
-    }
-    vdim = cov->nrow[TREND_MEAN];
+    vdim = cov->nrow[SHAPE_FCT_MEAN];
   } else {
     ASSERT_ONESYSTEM;
-    if ((err = CHECK(musub, logdim, OWNXDIM(0), ShapeType, XONLY, OWNISO(0),
-		     SUBMODEL_DEP, TrendType)) != NOERROR) RETURN_ERR(err);
-    if (isnowRandom(musub)) NotProgrammedYet("mixed effects");
+    assert(musub != NULL);
+    if ((err = CHECK(musub, logdim, OWNXDIM(0), ShapeType, XONLY,
+		     PREVISO(0), SUBMODEL_DEP, TrendType)) != NOERROR) {
+      //    APMI(cov);
+      RETURN_ERR(err);
+    }
+    // PMI(cov);
+    // printf("err = %d\n", err);
     vdim = musub->vdim[0];
-  } 
-
-  if (vdim <= 0) {
-    if (calling == NULL || (vdim = calling->vdim[0]) <= 0)
-      SERR("multivariate dimension for trend cannot be determined.");
-    PALLOC(TREND_MEAN, vdim, 1);
-    for(i=0; i<vdim; i++) P(TREND_MEAN)[i] = 0.0;
   }
-  VDIM0 = VDIM1 = vdim;
+
+  VDIM0 = vdim;
+  VDIM1 = 1;
   set_iso(OWN, 0, cov->matrix_indep_of_x ? IsotropicOf(OWNISO(0)) 
 	  : CoordinateSystemOf(OWNISO(0)));
 
@@ -222,80 +185,63 @@ int checktrend(model *cov){
 
 
 
-void rangetrend(model  VARIABLE_IS_NOT_USED *cov, range_type *range){
-  //P(TREND_MEAN]: mu / mean
+void rangeshapefct(model  VARIABLE_IS_NOT_USED *cov, range_type *range){
+  //P(SHAPE_FCT_MEAN]: mu / mean
   
-  range->min[TREND_MEAN] = RF_NEGINF;
-  range->max[TREND_MEAN] = RF_INF;
-  range->pmin[TREND_MEAN] = -1e10;
-  range->pmax[TREND_MEAN] = 1e10;
-  range->openmin[TREND_MEAN] = true;
-  range->openmax[TREND_MEAN] = true;
+  range->min[SHAPE_FCT_MEAN] = RF_NEGINF;
+  range->max[SHAPE_FCT_MEAN] = RF_INF;
+  range->pmin[SHAPE_FCT_MEAN] = -1e10;
+  range->pmax[SHAPE_FCT_MEAN] = 1e10;
+  range->openmin[SHAPE_FCT_MEAN] = true;
+  range->openmax[SHAPE_FCT_MEAN] = true;
 }
 
-				
-void GetInternalMeanI(model *cov, int vdim, double *mean){
-  // assuming that mean[i]=0.0 originally for all i
-  int i;
-  if (COVNR == TREND) {
-    if (cov->ncol[TREND_MEAN]==1) {
-      if (cov->nrow[TREND_MEAN] != vdim || cov->kappasub[TREND_MEAN] != NULL) {
-	for (i=0; i<vdim; i++) mean[i] = RF_NA;
-	return; // only scalar allowed !
-      }
-      for (i=0; i<vdim; i++) mean[i] += P(TREND_MEAN)[i];
-    } 
-  } else if (COVNR == CONST && equalsnowTrend(cov)) {
-    for (i=0; i<vdim; i++) mean[i] += P(CONST_C)[i];
-  } else if (equalsnowTrend(cov)) {
-    FCTN(ZERO(cov), cov, mean);//to be improved! to do
-  }
-  if (COVNR == PLUS || COVNR == TREND) {
-    int nsub = cov->nsub;
-    for (i=0; i<nsub; i++) GetInternalMeanI(cov->sub[i], vdim, mean);
-  }
-}
+	
 
-void GetInternalMean(model *cov, int vdim, double *mean){
-  for (int i=0; i<vdim; mean[i++]=0.0);
-  GetInternalMeanI(cov, vdim, mean);
-}
-
-
-
-int checkTrendproc(model *cov) { // auch fuer Trendproc
-  model *next = cov->sub[0],
-    *musub = cov->kappasub[TREND_MEAN];
-  int err;
+int checkShapefctproc(model *cov) { // auch fuer Shapefctproc
+  //  PMI0(cov);
+   int err;
   ASSERT_ONESYSTEM;
-  if ((next != NULL) + (musub != NULL) + !PisNULL(TREND_MEAN) != 1)
-    SERR("either 'mu' or a 'sub model' must be given");
-  if (musub != NULL) {
-    next = cov->sub[0] = musub;
-    cov->kappasub[TREND_MEAN] = NULL;
+  // printf("proc %d %d %d %d\n", musub != NULL, PisNULL(SHAPE_FCT_MEAN), cov->sub[0] == NULL, cov->key==NULL);
+  if (cov->nsub == 0) {
+    if (cov->kappasub[SHAPE_FCT_MEAN] == NULL) ERR("a function must be given");
+    assert(PisNULL(SHAPE_FCT_MEAN));
+    cov->sub[SHAPE_FCT_MEAN] = cov->kappasub[SHAPE_FCT_MEAN];
+    cov->kappasub[SHAPE_FCT_MEAN] = NULL;
+    cov->nsub = 1;
   }
-  if (next != NULL) {
-     if ((err = CHECK_PASSTF(next, ShapeType, SUBMODEL_DEP, TrendType)) !=
+  assert(cov->kappasub[SHAPE_FCT_MEAN] == NULL);
+  model *musub = cov->sub[SHAPE_FCT_MEAN];
+  if ((musub != NULL) xor PisNULL(SHAPE_FCT_MEAN))
+    SERR("either a mean 'mu' or an RMmodel must be given");
+  if (musub != NULL) {
+    int newdim = PREVLOGDIM(0);
+
+    //    PMI(cov);   printf("iso = %s\n", ISO_NAMES[ PREVISO(0)]);
+    
+    if ((err = CHECK(musub, newdim, newdim, ShapeType, XONLY,
+		     PREVISO(0), SUBMODEL_DEP, TrendType)) !=
 	NOERROR) RETURN_ERR(err);
     
-     assert(isnowShape(next) || isnowTrend(next)); // inlcuding trend
-    setbackward(cov, next);
-    VDIM0 = next->vdim[0]; 
-    VDIM1 = next->vdim[1];
+    setbackward(cov, musub);
+    VDIM0 = musub->vdim[0]; 
+    VDIM1 = musub->vdim[1];
   } else {
-    VDIM0 = cov->nrow[TREND_MEAN];
-    VDIM1 = cov->ncol[TREND_MEAN];
+    VDIM0 = cov->nrow[SHAPE_FCT_MEAN];
+    VDIM1 = cov->ncol[SHAPE_FCT_MEAN];
   }
+  if (VDIM1 != 1) ERR("matrix-valued functions not allowed as trend")
 
   RETURN_NOERROR;
 }
  
 
-int init_Trendproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){// auch fuer Trendproc
+int init_Shapefctproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){// auch fuer Shapefctproc
   // FRAME_ASSERT_GAUSS;
-  if (VDIM0 != 1) NotProgrammedYet("");
+   model *musub = cov->sub[SHAPE_FCT_MEAN];
+   if (VDIM0 != 1) NotProgrammedYet("");
   int err;
-  if (cov->sub[0] != NULL && (err = check_fctn(cov)) != NOERROR)
+  if (musub != NULL && (err = check_fctn_intern(cov)) != NOERROR)
     goto ErrorHandling;
   if ((err = ReturnOwnField(cov)) != NOERROR) goto ErrorHandling;
   if (PL>= PL_STRUCTURE) { PRINTF("\n'%s' is now initialized.\n", NAME(cov));}
@@ -305,34 +251,34 @@ int init_Trendproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){// auch fuer
   RETURN_ERR(err);
 }
 
-void do_Trendproc(model *cov, gen_storage  VARIABLE_IS_NOT_USED *s){
+void do_Shapefctproc(model *cov, gen_storage  VARIABLE_IS_NOT_USED *s){
+   model *musub = cov->sub[SHAPE_FCT_MEAN];
   double
     *res = cov->rf;
   assert(res != NULL);
   errorloc_type errorloc_save;
-  KEY_type *KT = cov->base;
-  STRCPY(errorloc_save, KT->error_loc);
-  SPRINTF(KT->error_loc, "%.50s%.50s", errorloc_save, "add trend model");
-  if (cov->sub[0] != NULL) Fctn(NULL, cov, res);
+  char *error_location = cov->base->error_location;  
+  STRCPY(errorloc_save, error_location);
+  SPRINTF(error_location, "%.50s%.50s", errorloc_save, "add trend model");
+  if (musub != NULL) Fctn(cov, true, res);
   else {
-    location_type *loc = Loc(cov);
     int
       vdim = VDIM0,
-      vdimtot = loc->totalpoints * vdim;
+      vdimtot = Loctotalpoints(cov) * vdim;
     double *mu = (double *) MALLOC(vdim * sizeof(double));
-    assert(cov->nrow[TREND_MEAN] == vdim);
-    MEMCOPY(mu, P(TREND_MEAN), sizeof(double) * vdim);
+    assert(cov->nrow[SHAPE_FCT_MEAN] == vdim);
+    MEMCOPY(mu, P(SHAPE_FCT_MEAN), sizeof(double) * vdim);
     for (int i=0; i<vdimtot; i++) res[i] = mu[i % vdim];
     FREE(mu);
   }
-  STRCPY(KT->error_loc, errorloc_save);
+  STRCPY(error_location, errorloc_save);
   return; 
 }
 
 
 
-bool settrendproc(model *cov) {
-  model *musub = cov->kappasub[TREND_MEAN]; 
+bool setshapefctproc(model *cov) {
+  model *musub = cov->sub[SHAPE_FCT_MEAN]; 
   isotropy_type iso = CONDPREVISO(0); 
   if (!isFixed(iso)) return false;
   set_type(OWN, 0, ProcessType);
@@ -351,9 +297,9 @@ bool settrendproc(model *cov) {
 }
 
 
-bool allowedItrendproc(model *cov) {
-  model *musub = cov->kappasub[TREND_MEAN]; 
-  if (DistancesGiven(cov) && musub != NULL) return allowedIfalse(cov);
+bool allowedIshapefctproc(model *cov) {
+  model *musub = cov->sub[SHAPE_FCT_MEAN]; 
+  if (LocDist(cov) && musub != NULL) return allowedIfalse(cov);
 
   bool *I = cov->allowedI;
   for (int i=(int) FIRST_ISOUSER; i<=(int) LAST_ISOUSER; I[i++] = false);
@@ -364,7 +310,7 @@ bool allowedItrendproc(model *cov) {
 }
 
 
-Types Typetrendproc(Types required, model VARIABLE_IS_NOT_USED*cov,
+Types Typeshapefctproc(Types required, model VARIABLE_IS_NOT_USED*cov,
 		    isotropy_type VARIABLE_IS_NOT_USED required_iso){
   return equalsProcess(required) ? required : BadType;
 }

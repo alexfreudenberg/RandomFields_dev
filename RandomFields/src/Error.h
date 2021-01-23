@@ -29,12 +29,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "RF.h"
 
-#ifdef DO_PARALLEL
 #define LOCAL_MSG char MSG[LENERRMSG]
-#else  // not DO_PARALLEL
-#define LOCAL_MSG
-extern char ERRMSG[LENERRMSG],MSG[LENERRMSG], MSG2[LENERRMSG];
-#endif
 
 // used only in function where model *cov does not exists
 #define FAILED(M) {PRINTF(M); return ERRORFAILED;}
@@ -60,6 +55,9 @@ void OnErrorStop(int err, model *cov);
 #define QERRC(NR,X) {LOCAL_ERRORSTRING; SPRINTF(cov->err_msg, "%.50s '%.50s': %.800s", NAME(cov), DefList[COVNR].kappanames[NR], X); DEBUGINFOERR; RETURN_ERR(ERRORM);}
 #define QERRC1(NR,X,Y) {LOCAL_ERRORSTRING; LOCAL_MSG; SPRINTF(MSG, "%.50s '%.50s': %.800s",NAME(cov), DefList[COVNR].kappanames[NR], X); SPRINTF(cov->err_msg, MSG, KNAME(Y)); DEBUGINFOERR; RETURN_ERR(ERRORM);}
 #define QERRC2(NR,X,Y,Z) {LOCAL_ERRORSTRING; LOCAL_MSG; SPRINTF(MSG, "%.50s '%.50s': %.800s", NAME(cov), DefList[COVNR].kappanames[NR], X); SPRINTF(cov->err_msg, MSG, KNAME(Y), KNAME(Z)); DEBUGINFOERR; RETURN_ERR(ERRORM);}
+#define GQERRC(NR,X) {LOCAL_ERRORSTRING; SPRINTF(cov->err_msg, "%.50s '%.50s': %.800s", NAME(cov), DefList[COVNR].kappanames[NR], X); DEBUGINFOERR; goto ErrorHandling;}
+#define GQERRC1(NR,X,Y) {LOCAL_ERRORSTRING; LOCAL_MSG; SPRINTF(MSG, "%.50s '%.50s': %.800s",NAME(cov), DefList[COVNR].kappanames[NR], X); SPRINTF(cov->err_msg, MSG, KNAME(Y)); DEBUGINFOERR; goto ErrorHandling;}
+#define GQERRC2(NR,X,Y,Z) {LOCAL_ERRORSTRING; LOCAL_MSG; SPRINTF(MSG, "%.50s '%.50s': %.800s", NAME(cov), DefList[COVNR].kappanames[NR], X); SPRINTF(cov->err_msg, MSG, KNAME(Y), KNAME(Z)); DEBUGINFOERR; goto ErrorHandling;}
 
 #define NotProgrammedYet(X) {						\
     if (STRCMP(X, "") == 0)	{					\
@@ -193,10 +191,10 @@ void OnErrorStop(int err, model *cov);
 /* don't use numbers 800 -- 900 : reserved to MPP package */
 
 #ifdef RANDOMFIELDS_DEBUGGING
-#define M1ERR(X,M) __extension__({ LPRINT("%s [%d] ", M, X); \
-      errorstring_type msg_0;				    \
-      errorMSG(X, cov->err_msg, cov->base, msg_0); \
-      if (true || PL<PL_ERRORS) {PRINTF("*%s*", msg_0);}		\
+#define M1ERR(X,M) __extension__({ LPRINT("%s [%d] ", M, X);	\
+      errorstring_type msg_0;					\
+      errorMSG(X, cov->err_msg, cov->base, msg_0);		\
+      if (true || PL<PL_ERRORS) {PRINTF("*%s*", msg_0);}	\
       PRINTF("\t\tfile=%s line=%d\n",__FILE__,__LINE__); X;})
 
 #define ERRX(E)  M1ERR(X##E, "error: ")
@@ -210,7 +208,6 @@ void OnErrorStop(int err, model *cov);
 #define ERRX(E) X##E
 #define ERRC(E) X##E
 #endif
-
 
 #define ERRORCHANGESYSTEM ERRX(ERRORCHANGESYSTEM)
 #define ERRORILLEGALFRAME ERRX(ERRORILLEGALFRAME)
@@ -258,7 +255,7 @@ void OnErrorStop(int err, model *cov);
 #define ERRORTOOMANYLOC ERRX(ERRORTOOMANYLOC)
 #define ERRORNONSTATSCALE ERRX(ERRORNONSTATSCALE)
 #define ERRORDISTANCES ERRX(ERRORDISTANCES)
-  
+
 #define ERRORNORMALMIXTURE ERRX(ERRORNORMALMIXTURE)
 #define ERRORNOMULTIVARIATE ERRX(ERRORNOMULTIVARIATE)
 #define ERROR_MATRIX_SQUARE ERRX(ERROR_MATRIX_SQUARE) 
@@ -331,7 +328,6 @@ void OnErrorStop(int err, model *cov);
 #define CERRORTOOMANYLOC ERRC(ERRORTOOMANYLOC)
 #define CERRORDISTANCES ERRC(ERRORDISTANCES)
 
-  
 #define CERRORNORMALMIXTURE ERRC(ERRORNORMALMIXTURE)
 #define CERRORNOMULTIVARIATE ERRC(ERRORNOMULTIVARIATE)
 #define CERROR_MATRIX_SQUARE ERRC(ERROR_MATRIX_SQUARE) 
@@ -367,3 +363,14 @@ void OnErrorStop(int err, model *cov);
 #define TOOLS_DIM 373
 #define TOOLS_UNKNOWN_CHAR 374
 #define MATRIX_NOT_CHECK_YET -999  /* must be a negative value that isn't used somewhere else ! */
+
+
+  
+  
+void assertNoLocY(model *cov);
+
+
+
+
+
+  

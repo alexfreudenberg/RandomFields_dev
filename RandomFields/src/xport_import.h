@@ -36,7 +36,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
   CALL(solvePosDefSp);				\
   CALL(sqrtPosDefFree);				\
   CALL(sqrtRHS);				\
-  CALL(getErrorString);				\
   CALL(setErrorLoc);				\
   CALL(I0mL0);					\
   CALL(invertMatrix);				\
@@ -54,7 +53,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
   CALL(chol);					\
   CALL(chol2inv);				\
   CALL(sleepMicro);				\
-  CALL(pid)					\
+  CALL(pid);					\
+  CALL(utilsparam_DELETE);			\
+  CALL(utilsparam_NULL)				\
  
 #ifdef CALL
 #undef CALL

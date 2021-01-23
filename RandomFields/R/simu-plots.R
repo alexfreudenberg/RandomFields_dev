@@ -25,14 +25,11 @@
 ## 'plotRFspatialPointsDataFrame'
 
 default.image.par <- function(data.range, var.range, legend=TRUE) {
-  var.col <- Try(colorspace::rainbow_hcl(12, c = 50, l = 70), silent=TRUE)
+  var.col <- Try(colorspace::rainbow_hcl(12, c = 50, l = 70))
   if (is(var.col, "try-error")) {
-    var.col <- Try(RColorBrewer::brewer.pal(9, "Blues"), silent=TRUE)
+    var.col <- Try(RColorBrewer::brewer.pal(9, "Blues"))
     if (is(var.col, "try-error")) {
-      if (RFoptions()$internal$warn_colour_palette) {
-	RFoptions(warn_colour_palette = FALSE)
-	message("Better install one of the packages 'colorspace' or 'RColorBrewer'. (This message appears only once per session.)")
-      }
+      Help("colour_palette")
       data.colour <- heat.colors(36)
       var.col <- cm.colors(36)       
     } else {
@@ -40,7 +37,7 @@ default.image.par <- function(data.range, var.range, legend=TRUE) {
     }    
   } else {
     data.colour <- colorspace::heat_hcl(12, c. = c(80, 30), l = c(30, 90),
-                             power = c(1/5, 1.5))     
+                                        power = c(1/5, 1.5))     
   }
  
   list(data=list(dot.name="col", default.col=data.colour,
@@ -71,7 +68,7 @@ my.arrows <- function(xy, z, r, thinning, col, nrow) {
 }
 
 
-prepareplotRFsp <- function(x, vdim, select, plot.var,
+prepareplotRFsp <- function(x, vdim, select, plot.variance,
                             data.range, var.range,
                             MARGIN, n,
                             n.slices, plot.legend, zlim,
@@ -80,11 +77,11 @@ prepareplotRFsp <- function(x, vdim, select, plot.var,
   if (vdim == 1 && !identical(select, vdim))
     stop("the given 'select.variables' do not match the data")
    
-  timespacedim <-
+  tsdim <-
     if (is(x, "RFspatialGridDataFrame")) length(x@grid@cellsize)
     else ncol(x@coords)
   if (!(length(MARGIN)==2)) stop("MARGIN must have length 2")
-  if (!all(MARGIN %in% 1:timespacedim)) stop("chosen MARGINS are out of bounds")
+  if (!all(MARGIN %in% 1:tsdim)) stop("chosen MARGINS are out of bounds")
 
   if (!missing(zlim)){
     if (is.character(zlim)) stopifnot(zlim=="joint")
@@ -100,10 +97,10 @@ prepareplotRFsp <- function(x, vdim, select, plot.var,
   coordunits=x@.RFparams$coordunits
   varunits=x@.RFparams$varunits;
 
-  graphics <- RFoptions()$graphics
+  graphics <- RFoptions(GETOPTIONS="graphics")
  
   image.par <- default.image.par(data.range, var.range, legend=plot.legend)
-  names.rep <- c(paste("realization", 1:(n-plot.var), sep=" "),
+  names.rep <- c(paste("realization", 1:(n-plot.variance), sep=" "),
                  "kriging variance")
   names.vdim <- 
     if (!is.null(names(x@data)) && all(nchar(names(x@data))>0)) {
@@ -154,7 +151,7 @@ prepareplotRFsp <- function(x, vdim, select, plot.var,
 
   ## colours, legend
   for (i in c("data", "var")) {
-    if (i=="var" && !plot.var) next
+    if (i=="var" && !plot.variance) next
     if (is.null(colour <- dots[[ image.par[[i]]$dot.name ]]))
       colour <- image.par[[i]]$default.col
     image.par[[i]]$col <- if (is.list(colour)) colour else list(colour)
@@ -223,7 +220,7 @@ prepareplotRFsp <- function(x, vdim, select, plot.var,
   image.par$var$mar.leg <- mar + c(0,0,0,0)
   oma.top <- 2*plot.legend + if (is.null(dots$main)) 0 else 2# + xlab.given
   oma.left <- 2 * (1 + xlab.given)
-  oma.bottom <- oma.left + 0*(plot.legend && plot.var)
+  oma.bottom <- oma.left + 0*(plot.legend && plot.variance)
   oma <- c(oma.bottom, oma.left, oma.top, xlab.given) + 0.2
   #} else {
   #  mar <- c(rep(2 * (1 + xlab.given), 2), 0, 0)
@@ -236,9 +233,9 @@ prepareplotRFsp <- function(x, vdim, select, plot.var,
   if (graphics$split_screen) {  
     SCR <- scr <- split.screen(erase=FALSE, rbind(
         c(0,1, 0,
-          if (plot.var) 1-2*(1-image.par$lower.leg) else image.par$lower.leg),
+          if (plot.variance) 1-2*(1-image.par$lower.leg) else image.par$lower.leg),
         if (plot.legend) c(0, 1, image.par$lower.leg, 1),
-        if (plot.var && plot.legend) c(0,1,1-2*(1-image.par$lower.leg),
+        if (plot.variance && plot.legend) c(0,1,1-2*(1-image.par$lower.leg),
                                        image.par$lower.leg)
         ))
     
@@ -255,7 +252,7 @@ prepareplotRFsp <- function(x, vdim, select, plot.var,
   if (plot.legend) {
     legends <- list(do = if (is.list(select)) sapply(select, length) != 2
                          else rep(TRUE, len.sel),  units=coordunits)
-    for (i in c("data", if (plot.var) "var")) {
+    for (i in c("data", if (plot.variance) "var")) {
       if (graphics$split_screen) {  
         SCR <- SCR[-1]
         screen(SCR[1], new=FALSE)        
@@ -320,8 +317,7 @@ RFplotSimulation <- function(x, y,
                              height.pixel=300, width.pixel=height.pixel,
                              ..., plotmethod="image") {
   ## x: "RFdataFrame", "RFspatialGridDataFrame", "RFspatialPointsDataFrame"
-
-
+  
   if (is(x, "RFdataFrame"))
     return(RFplotSimulation1D(x=x, y=y, nmax=nmax,
                            plot.variance=plot.variance, legend=legend, ...))
@@ -331,7 +327,7 @@ RFplotSimulation <- function(x, y,
 
   ## nmax, n.slices, plot.variance, select.variables, legend
 
-  graphics <- RFoptions()$graphics
+  graphics <- RFoptions(GETOPTIONS="graphics")
   x.grid <- is(x, "RFspatialGridDataFrame")
   do.slices <- !is.null(MARGIN.slices)
   do.movie <- !is.null(MARGIN.movie)
@@ -357,12 +353,12 @@ RFplotSimulation <- function(x, y,
       GridTopology2gridVectors(cbind(conventional$x,conventional$T))
     
     ## array with  dims  (space-time-dims, vdim, n)  AND drop=FALSE!! 
-    timespacedim <-  genuine.timespacedim <- length(x.grid.vectors)
-    if (timespacedim!=length(x@grid@cellsize))
-      stop("sollte nicht auftauchen: programming error in plotRFspatialGridDataFrame, timespacedim wrong ... (AM)")
+    tsdim <-  genuine.tsdim <- length(x.grid.vectors)
+    if (tsdim!=length(x@grid@cellsize))
+      stop("sollte nicht auftauchen: programming error in plotRFspatialGridDataFrame, tsdim wrong ... (AM)")
     
     if (do.slices){
-      if (!(MARGIN.slices <= timespacedim))
+      if (!(MARGIN.slices <= tsdim))
         stop("chosen MARGIN.slices out of bounds")
       if (MARGIN.slices %in% MARGIN)
         stop("MARGIN.slices must be different from MARGIN")
@@ -372,8 +368,8 @@ RFplotSimulation <- function(x, y,
       stop("n.slices must be an integer of length 1 or 3")
 
     data.arr <- RFspDataFrame2dataArray(x)
-    vdim <- dim(data.arr)[timespacedim+1]
-    n.orig <- dim(data.arr)[timespacedim+2] ## including the kriging variance as one repet
+    vdim <- dim(data.arr)[tsdim+1]
+    n.orig <- dim(data.arr)[tsdim+2] ## including the kriging variance as one repet
     n.ohne.var <- n.orig - has.variance
     n <- min(n.ohne.var, nmax) + plot.variance
 
@@ -382,13 +378,13 @@ RFplotSimulation <- function(x, y,
     dim_data <- dim(data.arr)  # new dims
 
 
-    if (timespacedim <= 3){
-      if (timespacedim == 3)
+    if (tsdim <= 3){
+      if (tsdim == 3)
         dim(data.arr) <- c(dim_data[1:3], 1, dim_data[4:5])
-      else if (timespacedim==2)
+      else if (tsdim==2)
         dim(data.arr) <- c(dim_data[1:2], 1, 1, dim_data[3:4])
-      else stop("dimension too small: dim=", timespacedim)
-      timespacedim <- 4
+      else stop("dimension too small: dim=", tsdim)
+      tsdim <- 4
     }
     if (!all(MARGIN %in% 1:(length(dim_data) - 2))) stop("MARGIN out of range.")
     
@@ -469,7 +465,7 @@ RFplotSimulation <- function(x, y,
     }
     data.idx <- 1:(x@.RFparams$n*vdim)
     all.i <- cbind(1:n, 1)
-    genuine.timespacedim <- ncol(x@coords)
+    genuine.tsdim <- ncol(x@coords)
     coords <- x@coords[, MARGIN]
     m.range <- 1
   }
@@ -486,7 +482,7 @@ RFplotSimulation <- function(x, y,
     } else if (is(y, "matrix") || is(y, "data.frame")) {
       dc <- data.columns(data=y, xdim = dimensions(x), force=TRUE)
       y.coords <- y[, dc$is.x, drop=FALSE]
-      y.data <- y[, dc$is.data, drop=FALSE]
+      y.data <- y[, dc$is.var, drop=FALSE]
 #      Print(dc, y, x, dimensions(x), dc, y.coords, y.data)
     } else  {
       y.coords <- y@coords
@@ -799,7 +795,7 @@ trafo_pointsdata <- function(x, dim) {
     x <- grid2pts1D(x) ## x <- as(x, "RFpointsDataFrame") # funktionierte nicht
   } else if ((is(x, "matrix") || is(x, "data.frame")) && !missing(dim)) {
     dc <- data.columns(data=x, xdim = dim, force=TRUE)
-    x <- list(coords=x[, dc$is.x, drop=FALSE], data=x[, dc$is.data, drop=FALSE])
+    x <- list(coords=x[, dc$is.x, drop=FALSE], data=x[, dc$is.var, drop=FALSE])
   } else {
     if (!is(x, "RFpointsDataFrame"))
       stop("method only for objects of class 'RFpointsDataFrame' and 'RFgridDataFrame'")
@@ -832,13 +828,13 @@ RFplotSimulation1D <-  function(x, y, nmax=6,
                              legend=TRUE, ...) {
   ## grid   : sorted = TRUE
   ## points : sorted = FALSE
- 
+
   stopifnot(!missing(x))
   x <- trafo_pointsdata(x)
   nc <- ncol(x$data)
 
   if (!missing(y)) {
-    y <- trafo_pointsdata(y, dimensions(dim))
+    y <- trafo_pointsdata(y) ## 15.12.21:", dimensions(dim))" falsch; dimensions(x) ?!, dimensions(dim))
     y$data <- rep(y$data, length.out=nrow(y$data) * nc)
     dim(y$data) <- c(length(y$coords), nc)
   }
@@ -853,7 +849,7 @@ RFplotSimulation1D <-  function(x, y, nmax=6,
     }
   }
 
-  graphics <- RFoptions()$graphics
+  graphics <- RFoptions(GETOPTIONS="graphics")
   ArrangeDevice(graphics, c(1, n)) ## NIE par vor ArrangeDevice !!!!
  
   dots <- mergeWithGlobal(list(...))

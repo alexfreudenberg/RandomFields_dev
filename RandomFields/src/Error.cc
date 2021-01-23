@@ -26,15 +26,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "def.h"
 #include "operator.h"
 
-
-// todo: Folgendes kann nur mit extremen Aufwand fuer \pkg{parallel}
-// sicher gemacht werden
-#ifdef DO_PARALLEL
-// hier
-#else  // not DO_PARALLEL
-char ERRMSG[LENERRMSG], MSG[LENERRMSG], MSG2[LENERRMSG];
-#endif
-
 #define SCPY(A,B) STRNCPY(A,B,LENERRMSG);
 
 void errorMSG(int err, errorstring_type errorstring, KEY_type *KT,
@@ -137,18 +128,18 @@ void errorMSG(int err, errorstring_type errorstring, KEY_type *KT,
     SCPY(m, "parameter value of unknown SXP type");
     break;
   case XERROROUTOFMETHODLIST:
-    char restrictive[100], info[500];
+    char restrictive[100], string[500];
     SPRINTF(restrictive, "Are the %.50s() too restrictive?", RFOPTIONS);
-    SPRINTF(info, "\n You get (more) internal information if you set %.10s(%.50s=%d) before running your code.",
+    SPRINTF(string, "\n You get (more) internal information if you set %.10s(%.50s=%d) before running your code.",
 	    RFOPTIONS, 
 	    "cPrintlevel",
 	    PL_DETAILSUSER);
     
     SPRINTF(m, 
 	    "Running out of list of methods. %.100s%.50s",
-	    GLOBAL_UTILS->basic.skipchecks
+	    KT->global_utils.basic.skipchecks
 	    ? "Did you try an invalid parameter combination?" : restrictive,
-	    PL <= 2 ? info : "" );
+	    PL <= 2 ? string : "" );
     break;
   case XERRORWRONGISO: 
     SCPY(m, "unexpected appearance of a rather general function. Should the model be isotropic, but isn't?")
@@ -307,7 +298,7 @@ void errorMSG(int err, errorstring_type errorstring, KEY_type *KT,
   }
 
   char m2[LENERRMSG];
-  if (KT != NULL) SPRINTF(m2, "%.100s: %.800s", KT->error_loc, m);
+  if (KT != NULL) SPRINTF(m2, "%.100s: %.800s", KT->error_location, m);
   else SCPY(m2, m);
   
   if (STRLEN(m) > (unsigned int) len && len > 6) {    
@@ -370,4 +361,5 @@ void OnErrorStop(int Err, model *cov) {
 	   cov->base, m, MAXERRORSTRING);
   RFERROR(m);
 }
+
 

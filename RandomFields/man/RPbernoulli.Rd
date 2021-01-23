@@ -70,8 +70,10 @@ model <- RPbernoulli(RMexp(), threshold=0)
 z <- RFsimulate(model, x, x, n=4)
 plot(z)
 
+\dontshow{\dontrun{
 model <- RPbernoulli(RPbrownresnick(RMexp(), xi=1), threshold=1)
 z <- RFsimulate(model, x, x, n=4)
-plot(z)
+plot(z
+}})
 
 \dontshow{FinalizeExample()}}

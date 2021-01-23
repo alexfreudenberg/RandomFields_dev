@@ -39,8 +39,8 @@ void rangempplus(model *cov, range_type *range);
 int struct_mppplus(model *plus, model **newmodel);
 int init_mppplus(model *cov, gen_storage *s);
 void do_mppplus(model *cov, gen_storage *s);
-void mppplus(double *x, model *cov, double *v); 
-//void logmppplus(double *x, model *cov, double *v, double *Sign); 
+void mppplus(double *x, int *, model *cov, double *v); 
+//void logmppplus(double *x, int *, model *cov, double *v, double *Sign); 
 
 
 //-----------------------------------------------------------------
@@ -54,39 +54,39 @@ void mppplus(double *x, model *cov, double *v);
 #define ZHOU_INFTY_SMALL 2
 #define ZHOU_NORMED 3
 #define ZHOU_ISOTROPIC 4
-void mcmc_pgs(double *x, model *cov, double *v); 
-void logmcmc_pgs(double *x, model *cov, double *v, double *Sign); 
+void mcmc_pgs(double *x, int *, model *cov, double *v); 
+void logmcmc_pgs(double *x, int *, model *cov, double *v, double *Sign); 
 int check_mcmc_pgs(model *cov);
 int struct_mcmc_pgs(model *cov, model **newmodel);
 int init_mcmc_pgs(model *cov, gen_storage *S);  
 void do_mcmc_pgs(model *cov, gen_storage *S);
 void range_mcmc_pgs(model *cov, range_type *range);
 
-void Zhou(double *x, model *cov, double *v); 
-void logZhou(double *x, model *cov, double *v, double *Sign); 
+void Zhou(double *x, int *, model *cov, double *v); 
+void logZhou(double *x, int *, model *cov, double *v, double *Sign); 
 int check_Zhou(model *cov);
 int struct_Zhou(model *cov, model **newmodel);
 int init_Zhou(model *cov, gen_storage *S);  
 void do_Zhou(model *cov, gen_storage *S);
 void range_Zhou(model *cov, range_type *range);
 
-void Ballani(double *x, model *cov, double *v); 
-void logBallani(double *x, model *cov, double *v, double *Sign); 
+void Ballani(double *x, int *, model *cov, double *v); 
+void logBallani(double *x, int *, model *cov, double *v, double *Sign); 
 int check_Ballani(model *cov);
 int struct_Ballani(model *cov, model **newmodel);
 int init_Ballani(model *cov, gen_storage *S);  
 void do_Ballani(model *cov, gen_storage *S);
 void range_Ballani(model *cov, range_type *range);
 
-void standard_shape(double *x, model *cov, double *v); 
-void logstandard_shape(double *x, model *cov, double *v, double *Sign); 
+void standard_shape(double *x, int *, model *cov, double *v); 
+void logstandard_shape(double *x, int *, model *cov, double *v, double *Sign); 
 int check_standard_shape(model *cov);
 int struct_standard_shape(model *cov, model **newmodel);
 int init_standard_shape(model *cov, gen_storage *S);  
 void do_standard_shape(model *cov, gen_storage *S);
 
-void stationary_shape(double *x, model *cov, double *v); 
-void logstationary_shape(double *x, model *cov, double *v, double *Sign); 
+void stationary_shape(double *x, int *, model *cov, double *v); 
+void logstationary_shape(double *x, int *, model *cov, double *v, double *Sign); 
 int check_stationary_shape(model *cov);
 int struct_stationary_shape(model *cov, model **newmodel);
 int init_stationary_shape(model *cov, gen_storage *S);  
@@ -95,27 +95,26 @@ void do_stationary_shape(model *cov, gen_storage *S);
 
 //-----------------------------------------------------------------
 // trend.cc
-#define TREND_MEAN 0
-void trend(double *x, model *cov, double *v);
-void trend_nonstat(double *x, double *y, model *cov, double *v);
-bool allowedItrend(model *cov);
-bool settrend(model *cov);
-int checktrend(model *cov);
-void rangetrend(model *cov, range_type* ra);
-int init_trend(model *cov, gen_storage *s);
-void do_trend(model *cov, gen_storage *s);
-void GetInternalMean(model *cov, int vdim, double *mean);
-void kappatrend(int i, model *cov, int *nr, int *nc);
-Types Typetrend(Types required, model *cov, isotropy_type required_iso);
+#define SHAPE_FCT_MEAN 0
+void shapefct(double *x, int *, model *cov, double *v);
+bool allowedIshapefct(model *cov);
+bool setshapefct(model *cov);
+int checkshapefct(model *cov);
+void rangeshapefct(model *cov, range_type* ra);
+int init_shapefct(model *cov, gen_storage *s);
+void do_shapefct(model *cov, gen_storage *s);
+void kappashapefct(int i, model *cov, int *nr, int *nc);
+Types Typeshapefct(Types required, model *cov, isotropy_type required_iso);
 
 
 #define COVARIATE_C 0
 #define COVARIATE_X 1
 #define COVARIATE_RAW 2
-#define COVARIATE_ADDNA 3
-#define COVARIATE_FACTOR 4
-#define COVARIATE_NAME 5
-void covariate(double *x, model *cov, double *v);
+#define COVARIATE_EXTRA_DATA 3
+#define COVARIATE_ADDNA 4
+#define COVARIATE_FACTOR 5
+#define COVARIATE_NAME 6
+void covariate(double *x, int *, model *cov, double *v);
 int checkcovariate(model *cov);
 void rangecovariate(model VARIABLE_IS_NOT_USED *cov, range_type *range);
 void kappa_covariate(int i, model *cov, int *nr, int *nc);
@@ -124,8 +123,9 @@ void kappa_covariate(int i, model *cov, int *nr, int *nc);
 #define FIXCOV_M COVARIATE_C // never change
 #define FIXCOV_X COVARIATE_X  // never change
 #define FIXCOV_RAW COVARIATE_RAW  // never change
-void fixStat(double *x, model *cov, double *v);
-void fix(double *x, double *y, model *cov, double *v);
+#define FIXCOV_GIVEN 3
+void fix(double *x, int *, model *cov, double *v);
+void nonstat_fix(double *x, double *y, int *, model *cov, double *v);
 int checkfix(model *cov);
 void rangefix(model VARIABLE_IS_NOT_USED *cov, range_type *range);
 void kappa_fix(int i, model *cov, int *nr, int *nc);
@@ -135,12 +135,11 @@ bool allowedIfix(model *cov);
 //  bool allowedDfix(model *cov);
 
 
-
 //-----------------------------------------------------------------
 // shapes
 
 #define BALL_RADIUS 1.0 // nicht mehr aendern!!
-void ball(double *x, model *cov, double *v);
+void ball(double *x, int *, model *cov, double *v);
 int init_ball(model *cov, gen_storage *s);
 void do_ball(model *cov, gen_storage *s); 
 int struct_ball(model *cov, model **newmodel);
@@ -148,13 +147,13 @@ void Inverseball(double *x, model *cov, double *v);
 
 
 void kappa_EAxxA(int i, model *cov, int *nr, int *nc);
-void EAxxA(double *x, model *cov, double *v);
+void EAxxA(double *x, int *, model *cov, double *v);
 int checkEAxxA(model *cov);
 void rangeEAxxA(model *cov, range_type* ra);
 void minmaxEigenEAxxA(model *cov, double *mm);
 
 void kappa_EtAxxA(int i, model *cov, int *nr, int *nc);
-void EtAxxA(double *x, model *cov, double *v);
+void EtAxxA(double *x, int *, model *cov, double *v);
 int checkEtAxxA(model *cov);
 void rangeEtAxxA(model *cov, range_type* ra);
 void minmaxEigenEtAxxA(model *cov, double *mm);
@@ -162,33 +161,33 @@ void minmaxEigenEtAxxA(model *cov, double *mm);
 
 #define POLYGON_BETA 0
 #define POLYGON_SAFETY 1
-void Polygon(double *x, model *cov, double *v);
+void Polygon(double *x, int *, model *cov, double *v);
 int check_polygon(model *cov);
 void range_polygon(model *cov, range_type *range);
 int init_polygon(model *cov, gen_storage *s);
 int struct_polygon(model *cov, model **newmodel);
 void Inversepolygon(double *x, model *cov, double *v);
-void InversepolygonNonstat(double *v, model *cov, double *x, double *y);
+void inversenonstat_polygon(double *v, model *cov, double *x, double *y);
 
-void rotat(double *x, model *cov, double *v);
+void rotat(double *x, int *, model *cov, double *v);
 int checkrotat(model *cov);
 void rangerotat(model *cov, range_type* ra);
 void minmaxEigenrotat(model *cov, double *mm);
 
-void Rotat(double *x, model *cov, double *v);
+void Rotat(double *x, int *, model *cov, double *v);
 int checkRotat(model *cov);
 void rangeRotat(model *cov, range_type* ra);
 
 
 void kappa_rational(int i, model *cov, int *nr, int *nc);
 void minmaxEigenrational(model *cov, double *mm);
-void rational(double *x, model *cov, double *v);
+void rational(double *x, int *, model *cov, double *v);
 int checkrational(model *cov);
 void rangerational(model *cov, range_type* ra);
 
 
 #define TRUNC_RADIUS 0
-void truncsupport(double *x, model *cov, double *v);
+void truncsupport(double *x, int *, model *cov, double *v);
 int checktruncsupport(model *cov);
 void truncsupportInverse(double *x, model *cov, double *v);
 void rangetruncsupport(model *cov, range_type *range);

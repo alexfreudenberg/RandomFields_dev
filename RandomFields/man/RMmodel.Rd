@@ -84,7 +84,7 @@ Summary of implemented covariance and variogram models% in \link{RFformula}
 
  \bold{Others}
  \tabular{ll}{
-   \command{\link{RMtrend}} \tab trend \cr
+   \command{\link{RMshape}} \tab trend \cr
    \command{\link{RMangle}} \tab defines a 2x2 anisotropy matrix by
    rotation and stretch arguments.
  }

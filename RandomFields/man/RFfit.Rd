@@ -19,7 +19,7 @@
 RFfit(model, x, y = NULL, z = NULL, T = NULL, grid=NULL, data,
       lower = NULL, upper = NULL, methods,
       sub.methods, optim.control = NULL, users.guess = NULL,
-      distances = NULL, dim, transform = NULL, params=NULL, ...)
+      distances = NULL, dim, params=NULL, ...)
 }
 
 \arguments{
@@ -43,8 +43,7 @@ RFfit(model, x, y = NULL, z = NULL, T = NULL, grid=NULL, data,
  \item{users.guess}{\argUsersguess}
  \item{distances,dim}{\argDistances}
  \item{optim.control}{\argOptimcontrol}
- \item{transform}{\argTransform}
- \item{...}{\argDots}
+  \item{...}{\argDots}
 }
  
 \details{
@@ -89,8 +88,9 @@ RFfit(model, x, y = NULL, z = NULL, T = NULL, grid=NULL, data,
     The function \code{RFfit} always uses the standard specification
     of the covariance model as given in \command{\link{RMmodel}}.
   }
-  }
-
+  \NoteTransform
+}
+  
 \value{
   The result depends on the logical value of
   \code{\link[=RFoptions]{spConform}}.
@@ -141,20 +141,8 @@ d <- RFsimulate(model, x=x, y=y, grid=FALSE, n=100) #1000
 #########################################################
 ## estimation; 'NA' means: "to be estimated"           ##
 estmodel <- RMgencauchy(var=NA, scale=NA, alpha=NA, beta=2) +
-            RMtrend(mean=NA)
+            RMshape(mean=NA)
 RFfit(estmodel, data=d)
-
-
-#########################################################
-## coupling alpha and beta                             ##
-estmodel <- RMgencauchy(var=NA, scale=NA, alpha=NA, beta=NA) + 
-            RMtrend(NA)
-RFfit(estmodel, data=d, transform = NA) ## just for information
-trafo <- function(a) c(a[1], rep(a[2], 2))
-fit <- RFfit(estmodel, data=d,
-             transform = list(c(TRUE, TRUE, FALSE), trafo))
-print(fit)
-print(fit, full=TRUE)
 
 
 \dontshow{\dontrun{
@@ -162,7 +150,7 @@ print(fit, full=TRUE)
 ## Estimation with fixed sill (variance + nugget       ##
 ## equals a given constant)                            ##
 estmodel <- RMgencauchy(var=NA, scale=NA, alpha=NA, beta=NA) +
-            RMnugget(var=NA) + RMtrend(mean=NA)
+            RMnugget(var=NA) + RMshape(mean=NA)
 RFfit(estmodel, data=d, fit.sill=1, fit.optim_var_elimination="try")
 
 
@@ -172,18 +160,8 @@ x <- y <- (1:3)/4
 model <- RMexp(Aniso=matrix(nc=2, c(4,2,-2,1)), var=1.5)
 d <- RFsimulate(model, x=x, y=y, n=n)
 estmodel <- RMexp(Aniso=matrix(nc=2, c(NA,NA,-2,1)), var=NA) +
-            RMtrend(mean=NA)
+            RMshape(mean=NA)
 RFfit(estmodel, data=d, fit.nphi=20)
-
-
-#########################################################
-## AN EXAMPLE HOW TO USE OF PARAMETER 'transform'      ##
-## estimation of coupled parameters (first column of   ##
-##           the matrix 'Aniso' has identical entries) ##
-# source("RandomFields/tests/source.R")
-RFfit(estmodel, data=d, transform=list()) # shows positions of NAs
-f <- function(param) param[c(1,2,2)]
-RFfit(estmodel, data=d, transform=list(c(TRUE, TRUE, FALSE), f))
 
 
 }}

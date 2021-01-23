@@ -41,7 +41,7 @@ See \command{\link{RFplotSimulation}},
  \command{\link{RFplotEmpVariogram}},
 }
 
-\examples{\dontshow{StartExample()}
+\examples{\dontshow{StartExample(FALSE)}
 model <- ~RMexp(s=S)
 RFplot(model, 1:10, params=list(S=5))
 \dontshow{FinalizeExample()}}

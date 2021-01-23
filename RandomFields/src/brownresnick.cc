@@ -32,6 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <zzz_RandomFieldsUtils.h>
 #include "intrinsics.h"
 #include "xport_import.h"
+#include "RF.h"
 //#include "Error.h"
 
 
@@ -50,6 +51,7 @@ SEXP EstimBRsimuKoeff(SEXP M, SEXP Chol, SEXP N) {
 #else
   RFERROR("code only runs under SSE2"); // rest nicht getestet
 #endif
+  KEY_type *KT = KEYT();
 
   
 #define atonce 6
@@ -86,8 +88,8 @@ SEXP EstimBRsimuKoeff(SEXP M, SEXP Chol, SEXP N) {
     *Xneu = xneu;
 #endif
 
-  if (GLOBAL_UTILS->solve.actual_pivot != PIVOT_NONE &&
-     GLOBAL_UTILS->solve.actual_pivot != PIVOT_UNDEFINED)
+  if (KT->global_utils.solve.actual_pivot != PIVOT_NONE &&
+      KT->global_utils.solve.actual_pivot != PIVOT_UNDEFINED)
    RFERROR("pivoting not programmed yet in EstimBRsimuKoeff");
 
   GetRNGstate();
@@ -121,9 +123,9 @@ SEXP EstimBRsimuKoeff(SEXP M, SEXP Chol, SEXP N) {
 #define DefMax(I) Double ALIGNED Max##I = ZERODOUBLE;
       DefMax(0); DefMax(1); DefMax(2); DefMax(3); DefMax(4); DefMax(5);
       for ( ; m < end; m += doubles, v += doubles) {
-	Double mloc = LOADuDOUBLE(m);
+	Double mlocation = LOADuDOUBLE(m);
 #define MaxX(I)\
-	Max##I = MAXDOUBLE(Max##I, MULTDOUBLE(mloc, LOADDOUBLE(v+I*aligned_c)));
+	Max##I = MAXDOUBLE(Max##I, MULTDOUBLE(mlocation, LOADDOUBLE(v+I*aligned_c)));
 	MaxX(0); MaxX(1); MaxX(2); MaxX(3); MaxX(4); MaxX(5);
       }
 #define MaxS(I)						\
@@ -156,11 +158,11 @@ SEXP EstimBRsimuKoeff(SEXP M, SEXP Chol, SEXP N) {
 	SetInv(0); SetInv(1); SetInv(2); SetInv(3); SetInv(4); SetInv(5);
 	end = m + c - doubles;
 	for ( ; m < end; m += doubles, v += doubles, ans += doubles) {
-	  Double mloc = LOADuDOUBLE(m),
+	  Double mlocation = LOADuDOUBLE(m),
 	    a = MULTDOUBLE(Invmax0, LOADDOUBLE(v));
 #define Add(I) a = ADDDOUBLE(a, MULTDOUBLE(Invmax##I, LOADDOUBLE(v+I*aligned_c)))
 	  Add(1); Add(2); Add(3); Add(4); Add(5);
-	  STOREuDOUBLE(ans, ADDDOUBLE(LOADuDOUBLE(ans), MULTDOUBLE(mloc, a) ));
+	  STOREuDOUBLE(ans, ADDDOUBLE(LOADuDOUBLE(ans), MULTDOUBLE(mlocation, a) ));
 	}
 	end += doubles;
 #define Mult(I) v[I * aligned_c] * invmax##I

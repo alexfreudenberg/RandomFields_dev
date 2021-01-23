@@ -42,10 +42,21 @@ errorloc_type ERROR_LOC="";
 errorstring_type ERRORSTRING;
 #endif
 
+
+
+int parentpid=-1;
+bool parallel() {
+  int mypid;
+  pid(&mypid);
+  return mypid != parentpid;
+}
+
 SEXP loadRandomFieldsUtils() {
+  pid(&parentpid);
   attachRFoptions(ownprefixlist, ownprefixN,
 		  ownall, ownallN,
-  		  setparameterUtils, NULL,
+  		  setparameterUtils,
+		  NULL, // final
 		  getparameterUtils,
 		  delparameterUtils,
 		  0, true);

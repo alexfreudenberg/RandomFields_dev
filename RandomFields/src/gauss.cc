@@ -28,21 +28,79 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "variogramAndCo.h"
 #include "shape.h"
 
+
+	
+void GetInternalMeanI(double *x, int *info, model *cov, int vdim, double *v,
+		      double *mean){
+  // in case of nonstationary field the value of the very first location
+  // is taken!!
+ 
+  if (COVNR == PLUS) {
+    int nsub = cov->nsub;
+    for (int i=0; i<nsub; i++)
+      GetInternalMeanI(x, info, cov->sub[i], vdim, v, mean);
+    return;
+  }
+  if (!equalsnowTrend(cov)) return;
+
+  if (COVNR == CONST) { // extra algorithm, as it stays simple whatever
+    //   algorithm/definition of the mean for nonstatary fields is used
+    Zero(info, cov, v);
+    for (int i=0; i<vdim; i++) mean[i] += v[i];
+    return;
+  }
+ 
+  FCTN(x, info, cov, v);
+  for (int i=0; i<vdim; i++) mean[i] += v[i];
+}
+
+void GetInternalMean(model *sub, int vdim, double *mean){
+  model *cov = sub->calling;
+  int tsdim = Loctsdim(cov);
+  DEFAULT_INFO(info);
+  //  PMI0(cov);
+  assert(isGaussMethod(cov) || COVNR == GAUSSPROC || COVNR == BINARYPROC);
+  assert(cov->Sextra != NULL);
+  for (int i=0; i<vdim; mean[i++]=0.0);
+  
+  cov->base->set = 0;
+  //  int tsdim = Loctsdim(cov);
+  TALLOC_X1(v, vdim);
+  TALLOC_X2(x, tsdim);
+  if (Locgrid(cov)) {
+    coord_type gr = Locxgr(cov);
+    for (int d=0; d<tsdim; d++) x[d] = gr[d][XSTART];
+  } else {
+    int spatialdim =  Locspatialdim(cov);
+    MEMCOPY(x, Locx(cov), sizeof(double) * spatialdim);
+    if (LocTime(cov)) x[spatialdim] = LocT(cov)[XSTART];
+  }
+  info[INFO_IDX_X] = 0;
+
+  GetInternalMeanI(x, info, sub, vdim, v, mean);
+
+  END_TALLOC_X1;
+  END_TALLOC_X2;
+  
+}
+
+
 void location_rules(model *cov, pref_type pref) {
+  globalparam *global = &(cov->base->global);
 
   // 1. rules that depend on the the locations and the user's preferences only,
   // but not on the covariance model#
   if (COVNR != GAUSSPROC &&  COVNR != BINARYPROC) BUG;
 
   location_type *loc = Loc(cov);
-  usr_bool exactness = GLOBAL.general.exactness; //
+  usr_bool exactness = global->general.exactness; //
 
   unsigned int maxmem=500000000;
   int i;
 
   Methods Standard[Nothing] = {
      CircEmbed, CircEmbedIntrinsic, CircEmbedCutoff, SpectralTBM, TBM,
-     Direct, Specific, Sequential, Trendproc, Average, Nugget, RandomCoin,
+     Direct, Specific, Sequential, Shapefctproc, Average, Nugget, RandomCoin,
      Hyperplane
   };
   for (i=0; i<Nothing; i++) {
@@ -61,9 +119,9 @@ void location_rules(model *cov, pref_type pref) {
 
   if (loc->timespacedim == 1) pref[TBM] -= 2 * PREF_PENALTY;
 
-  if (loc->distances) {
+  if (LocLocDist(loc)) {
     if (loc->grid) BUG;
-     for (i=CircEmbed; i<Nothing; i++) pref[i] = (i==Direct) * LOC_PREF_NONE;
+    for (i=CircEmbed; i<Nothing; i++) pref[i] = (i==Direct) * LOC_PREF_NONE;
   } else if (loc->grid) {
     if (exactness != True && 
 	loc->totalpoints * (1 << loc->timespacedim) * sizeof(double) > maxmem){
@@ -72,7 +130,7 @@ void location_rules(model *cov, pref_type pref) {
       pref[CircEmbedCutoff] -= PREF_PENALTY;
     }
   } else {
-   if (exactness == True){
+    if (exactness == True){
        pref[CircEmbed] = pref[CircEmbedIntrinsic] = pref[CircEmbedCutoff] = -3;
     } else {
       pref[CircEmbed] -= PREF_PENALTY;
@@ -86,6 +144,8 @@ void location_rules(model *cov, pref_type pref) {
 void mixed_rules(model *cov, pref_type locpref, 
 		 pref_type pref, int *order) {
   
+  globalparam *global = &(cov->base->global);
+  utilsparam *global_utils = &(cov->base->global_utils);
   assert(COVNR == GAUSSPROC);
  
  
@@ -95,8 +155,9 @@ void mixed_rules(model *cov, pref_type locpref,
   int i,
     *covpref = sub->pref,
     totalpref[Nothing],
-    best_dirct=GLOBAL.gauss.direct_bestvariables,
-    max_variab= MAX(GLOBAL.direct.maxvariables, GLOBAL_UTILS->solve.max_chol),
+    best_dirct=global->gauss.direct_bestvariables,
+    max_variab= MAX(global->direct.maxvariables,
+		    global_utils->solve.max_chol),
     vdim = VDIM0;
   
   for (i=0; i<Nothing; i++) {
@@ -116,16 +177,16 @@ void mixed_rules(model *cov, pref_type locpref,
   
   int vdimtot = loc->totalpoints * vdim;
   if (vdimtot > max_variab &&
-      (sub->finiterange == falsch || GLOBAL_UTILS->solve.sparse == False))
-      pref[Direct] = LOC_PREF_NONE - 0;
-
-  //  printf("spam %10g %d %10g %d %d\n", GLOBAL_UTILS->solve.sparse, GLOBAL_UTILS->solve.sparse == false, sub->finiterange,sub->finiterange==false,  pref[Direct]);
+      (sub->finiterange == falsch ||
+       global_utils->solve.sparse == False))
+    pref[Direct] = LOC_PREF_NONE - 0;
 
   if (vdimtot <= best_dirct && totalpref[Direct] == PREF_BEST) {
     pref[Direct] = (PREF_BEST + 1 + (int) (best_dirct>=256 && vdimtot<256)) * 
       PREF_FACTOR;
   }
-  else if (pref[Direct] >= PREF_NONE && GLOBAL_UTILS->solve.sparse != True) {
+  else if (pref[Direct] >= PREF_NONE &&
+	   global_utils->solve.sparse != True) {
     double ratio = -0.1;
     if (max_variab <= DIRECT_ORIG_MAXVAR)
       ratio = (double) (vdimtot - best_dirct) / (double) max_variab;
@@ -156,19 +217,20 @@ bool NAequal(double X, double Y) {
 }
 
 int kappaBoxCoxParam(model *cov, int BC) {
+  globalparam *global = &(cov->base->global);
   int
     vdim = VDIM0,
     vdim_2 = vdim * 2,
     vdimMax = MIN(vdim, MAXBOXCOXVDIM);					
   if (PisNULL(BC)) {						
     PALLOC(BC, 2, vdim);				
-    if (GLOBAL.gauss.loggauss) {					
+    if (global->gauss.loggauss) {					
       for (int i=0; i<vdim_2; i++) P(BC)[i] = 0.0;	
-      GLOBAL.gauss.loggauss = false;					
+      global->gauss.loggauss = false;					
     } else {
       int i=0,
 	vdimMax_2 = 2 * vdimMax;
-      for (; i<vdimMax_2; i++) P(BC)[i] = GLOBAL.gauss.boxcox[i];
+      for (; i<vdimMax_2; i++) P(BC)[i] = global->gauss.boxcox[i];
       for (; i<vdim_2; ) {
 	P(BC)[i++] = RF_INF;
 	P(BC)[i++] = 0;
@@ -181,7 +243,7 @@ int kappaBoxCoxParam(model *cov, int BC) {
       PFREE(BC);						
       PALLOC(BC, 2, 1);					
       P(BC)[0] = _boxcox;					
-      P(BC)[1] =  GLOBAL.gauss.boxcox[1]; // existance guaranteed		
+      P(BC)[1] =  global->gauss.boxcox[1]; // existance guaranteed		
       total = 2;							
     }									
     if (total < vdim_2) SERR("too few parameters for boxcox given");	
@@ -191,7 +253,7 @@ int kappaBoxCoxParam(model *cov, int BC) {
     cov->ncol[BC] = total / 2;				
     cov->nrow[BC] = 2;					
     bool notok = false;						
-    if (GLOBAL.gauss.loggauss) {					
+    if (global->gauss.loggauss) {					
       for (int i=0; i<vdim; i++) {				
 	if ((notok = P(BC)[2*i] != RF_INF &&		
 	     (P(BC)[2*i] != 0.0 || P(BC)[2*i+1] != 0.0)))
@@ -199,10 +261,10 @@ int kappaBoxCoxParam(model *cov, int BC) {
       }									
     } else {								
       for (int i=0; i<vdimMax; i++) {
-	//printf("%d  %10g %10g   %10g %10g\n", i, GLOBAL.gauss.boxcox[2 * i], GLOBAL.gauss.boxcox[2 * i + 1], P(BC)[2 * i], P(BC)[2 * i +1]);:
- 	if ((notok = (GLOBAL.gauss.boxcox[2 * i] != RF_INF &&
-		      !NAequal(P(BC)[2 * i], GLOBAL.gauss.boxcox[2 * i])) ||   
-	     !NAequal(P(BC)[2 * i +1], GLOBAL.gauss.boxcox[2 * i + 1])))
+	//printf("%d  %10g %10g   %10g %10g\n", i, global->gauss.boxcox[2 * i], global->gauss.boxcox[2 * i + 1], P(BC)[2 * i], P(BC)[2 * i +1]);:
+ 	if ((notok = (global->gauss.boxcox[2 * i] != RF_INF &&
+		      !NAequal(P(BC)[2 * i], global->gauss.boxcox[2 * i])) ||   
+	     !NAequal(P(BC)[2 * i +1], global->gauss.boxcox[2 * i + 1])))
 	  break;							
       }									
     }									
@@ -210,8 +272,8 @@ int kappaBoxCoxParam(model *cov, int BC) {
       SERR("Box Cox transformation is given twice, locally and through 'RFoptions'"); 
   }									
   for (int i=0; i<vdimMax; i++) {				
-    GLOBAL.gauss.boxcox[2 * i] = RF_INF;				
-    GLOBAL.gauss.boxcox[2 * i + 1] = 0.0;				
+    global->gauss.boxcox[2 * i] = RF_INF;				
+    global->gauss.boxcox[2 * i + 1] = 0.0;				
   }								
   RETURN_NOERROR;
 }
@@ -224,6 +286,7 @@ void kappaGProc(int i, model *cov, int *nr, int *nc){
 
 int checkgaussprocess(model *cov) {
   //  printf("\nGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG\n");
+  globalparam *global = &(cov->base->global);
   
   ASSERT_ONESYSTEM;
   model 
@@ -233,7 +296,7 @@ int checkgaussprocess(model *cov) {
   int err,
     xdim = OWNXDIM(0), // could differ from logicaldim in case of distances!
     dim = OWNLOGDIM(0);
-  gauss_param *gp  = &(GLOBAL.gauss);  
+  gauss_param *gp  = &(global->gauss);  
 
   assert((Loc(cov)->distances && xdim==1) || xdim == dim);
 
@@ -246,50 +309,70 @@ int checkgaussprocess(model *cov) {
  						      
   kdefault(cov, GAUSSPROC_STATONLY, (int) gp->stationary_only);
 
-  if (MAX(GLOBAL.direct.maxvariables, GLOBAL_UTILS->solve.max_chol) <
-      gp->direct_bestvariables)
+  if (MAX(global->direct.maxvariables, cov->base->global_utils.solve.max_chol)
+      < gp->direct_bestvariables)
     SERR("maximum variables less than bestvariables for direct method");
   if ((err = checkkappas(cov, false)) != NOERROR) RETURN_ERR(err);
 
   set_maxdim(OWN, 0, INFDIM);
 
-   if (key == NULL) {
+  if (key == NULL) {
     if (isGaussMethod(next)) {// waere GaussMethodType 
       // wird verboten
       SERR1("%.50s may not call a method", NICK(cov));
     } else {
+      //    
       Types frame = hasAnyEvaluationFrame(cov) ? cov->frame :
-	EvaluationType; // sehr schwach, sonst kommst aber trend nicht durch
+	EvaluationType, // sehr schwach, sonst kommst aber trend nicht durch
 	//GaussMethodType;
-
-      //      printf("@@@@@@@@@@@@ %d\n", hasEvaluationFrame(cov) ); 
+	weakestType = isAnySpherical(PREVISO(0)) ? PosDefType : NegDefType;
       
-      if ((err = CHECKPOS2VAR(next, SUBMODEL_DEP, frame, KERNEL)) != NOERROR) {
+      domain_type mindom = XONLY,
+	maxdom = KERNEL;
+      isotropy_type iso = PREVISO(0);
+      if (isAnyIsotropic(iso)) maxdom = XONLY;
+      else if (isEarth(iso)) mindom = KERNEL; // and not isotropic!
+
+       
+      for (int t=TcfType; t<=weakestType; t++) {
+	for (int dom = mindom; dom <=maxdom; dom++) {
+	  // for (int i=equal || equalsKernel((domain_type) dom); i<=1; i++) {
+	  //printf("@@@@@@@@@@ %d t=%d dom=%d %d\n", hasEvaluationFrame(cov), t, dom, iso);
+	  
+	  if ((err = CHECKPOSVAR(next, (Types) t, (domain_type) dom, iso,
+				 SUBMODEL_DEP, frame)) == NOERROR)
+	    break;
+	}	
+	if (err == NOERROR) break;
+      }
+
+  
+      if (err != NOERROR) {
 
 	//	printf("***@@@@@@@@@@@@ %d\n", hasEvaluationFrame(cov) ); BUG;
- 
+
 	//	if (NEXTTYPE(0)!=TrendType) {APMI(cov);BUG} else printf("jetzt C HECK_GEN\n");
+	
 	set_type(PREVSYSOF(next), 0, TrendType);
 	set_iso(PREVSYSOF(next), 0, OWNISO(0));
 	set_dom(PREVSYSOF(next), 0, XONLY);
-	
 	if ((err = CHECK_GEN(next,  SUBMODEL_DEP, // err mocht verwemdet
 			     SUBMODEL_DEP, TrendType, false)) != NOERROR) {
 	  RETURN_ERR(err); // previous error
 	}
-	//   	printf("jff etzt C HECK_GEN\n");
+	//	printf("jff etzt C HECK_GEN\n");
       }
 
-    //     printf("!!!!!! @@@@@@@@@@@@ %d\n", hasEvaluationFrame(cov) );
+      // printf("!!!!!! @@@@@@@@@@@@ %d\n", hasEvaluationFrame(cov) );
+      // PMI0(next);
  
-
       /*
-      if ((err = CHECKPD2ND(next, dim, xdim, 
-			    Sy mmetricOf(OWNISO(0)),// Jan 2015 S YMMETRIC,
-			    SUBMODEL_DEP, frame))
-	  != NOERROR) {
+	if ((err = CHECKPD2ND(next, dim, xdim, 
+	Sy mmetricOf(OWNISO(0)),// Jan 2015 S YMMETRIC,
+	SUBMODEL_DEP, frame))
+	!= NOERROR) {
 	if (CHECK(next, dim, dim, TrendType, XONLY, OWNISO(0),  // err mocjt verwemdet
-		  SUBMODEL_DEP, frame)) RETURN_ERR(err); // previous error
+	SUBMODEL_DEP, frame)) RETURN_ERR(err); // previous error
       */
     }
   } else {
@@ -306,6 +389,8 @@ int checkgaussprocess(model *cov) {
   if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) RETURN_ERR(err);
   if ((err = checkkappas(cov, true)) != NOERROR) RETURN_ERR(err);
 
+
+  //PMI(cov);
   RETURN_NOERROR;
 }
 
@@ -327,6 +412,7 @@ void rangegaussprocess(model VARIABLE_IS_NOT_USED *cov, int k, int i, int j,
 
 
 int gauss_init_settings(model *cov) {
+  globalparam *global = &(cov->base->global);
   model 
     *next = cov->sub[cov->sub[0] == NULL],
     *sub = cov->key == NULL ? next : cov->key;
@@ -344,8 +430,9 @@ int gauss_init_settings(model *cov) {
       ) goto ErrorHandling;
 
   //  printf("mean\n");
+  ONCE_EXTRA_STORAGE;
   GetInternalMean(next, vdim, mean);
-  // printf("got mean\n");
+  //  printf("got mean\n");
   if (ISNAN(mean[0])) // GetInternalMean currently only allows ...
     GERR("Mean equals NA. Did you try a multivariate model or an incomplete (mixed) model?");
   
@@ -360,13 +447,13 @@ int gauss_init_settings(model *cov) {
   assert(next->checked);
  
   if (isXonly(PREVSYSOF(next))) {
-    COV(ZERO(next), next, variance);
+    Zero(next, variance);
   } else {
     assert(isKernel(PREVSYSOF(next)));
-    //double *zero = ZERO(next);
-    //  NONSTATCOV(zero, zero, next, variance);
     for (v=0; v<vdimSq; variance[v++] = 0.0); // just a dummy
   }
+
+  //  printf("done\n");
 
   if (cov->q == NULL) QALLOC(vdim);
   if ((err = alloc_mpp_M(cov, 2)) != NOERROR) goto ErrorHandling;
@@ -390,7 +477,7 @@ int gauss_init_settings(model *cov) {
 
     if (v < MAXMPPVDIM)
       cov->mpp.maxheights[v] =  // maxv
-	GLOBAL.extreme.standardmax * sigma + ((mean[v]>0) ? mean[v] : 0);
+	global->extreme.standardmax * sigma + ((mean[v]>0) ? mean[v] : 0);
     //approx!
   
     int idx = v * nmP1;
@@ -406,7 +493,7 @@ int gauss_init_settings(model *cov) {
 
   // printf("init gauss nearly done\n");
   
-   ReturnOtherField(cov, sub);
+  ReturnOtherField(cov, sub);
 
  ErrorHandling:
   FREE(variance);
@@ -419,7 +506,7 @@ int gauss_init_settings(model *cov) {
 int struct_gaussmethod(model *cov, model **newmodel) {
   // uebernimmt struct- und init-Aufgaben !!
   model *next = cov->sub[0]; // nicht cov->sub[cov->sub != NULL]
-  SPRINTF(cov->base->error_loc, "simulation procedure for %.50s", NAME(next));
+  SPRINTF(cov->base->error_location, "simulation procedure for %.50s", NAME(next));
   ASSERT_ONESYSTEM;
   location_type *loc=Loc(cov);
   int
@@ -459,10 +546,10 @@ int struct_gaussmethod(model *cov, model **newmodel) {
 
   if ((err = CHECK_PASSTF(cov->key, // 11.1.19 cov WARUM ??
 			  GaussMethodType, VDIM0, 
-			// frame // 19.5.2013 auskommentiert und ersetzt durch
+			  // frame // 19.5.2013 auskommentiert und ersetzt durch
 			  // WARUM ??
 			  GaussMethodType)) != NOERROR && !isAnyDollar(sub)) {
-     RETURN_ERR(err);
+    RETURN_ERR(err);
   }
   //  if ((err = CHECK( c o v, dim, xdim, GaussMethodType, OWNDOM(0),
   //		   OWNISO(0), cov->vdim, 
@@ -494,7 +581,7 @@ int struct_gaussmethod(model *cov, model **newmodel) {
       nr == AVERAGE_USER || nr == RANDOMCOIN_USER
       ? PoissonGaussType
       : GaussMethodType;
-  /// cov nicht cov->key !!! ???? OK. Da sonst cov u.U. nicht gesetzt
+    /// cov nicht cov->key !!! ???? OK. Da sonst cov u.U. nicht gesetzt
     if ((err = CHECK_PASSTF(cov->key, // 11.1.19 cov WARUM ??
 			    GaussMethodType, //?! 8.12.17
 			    VDIM0, frame)) != NOERROR) {
@@ -513,23 +600,29 @@ int struct_gaussmethod(model *cov, model **newmodel) {
 }
 
 
-  
+int struct_gauss_evaluation(model *cov) {
+  assert(false);
+  RETURN_NOERROR;
+}
+ 
 int struct_gaussprocess(model *cov, model **newmodel) {
   // uebernimmt struct- und init-Aufgaben !!
-  KEY_type *KT = cov->base;  
+  char *error_location = cov->base->error_location;  
   model *next = cov->sub[cov->sub[0] == NULL];
-  SPRINTF(KT->error_loc, "simulation method for %.50s", NAME(next));
+  SPRINTF(error_location, "simulation method for %.50s", NAME(next));
   ASSERT_NEWMODEL_NULL;
   assert(cov!=NULL);
 
-  if (hasAnyEvaluationFrame(cov)) {
+  if (hasLikelihoodFrame(cov)) {  // evaluation or loglikelihood
     return struct_gauss_logli(cov); //loglihood
+  } else if (hasEvaluationFrame(cov)) {  // evaluation or loglikelihood
+    return struct_gauss_evaluation(cov); //loglihood
   } else if (!hasAnyProcessFrame(cov) &&
 	     !(hasInterfaceFrame(cov) && cov->calling != NULL &&
 	       cov->calling->calling == NULL)
 	     ) RETURN_ERR(ERRORFAILED);
 
- cov->fieldreturn = wahr;
+  cov->fieldreturn = wahr;
   location_type *loc = Loc(cov);
   pref_type locpref, pref;
   int order[Nothing], i;
@@ -574,7 +667,7 @@ int struct_gaussprocess(model *cov, model **newmodel) {
   { // only for error reporting !
     model *sub = cov; 
     while(isAnyDollar(sub)) sub = sub->sub[0];
-    SPRINTF(KT->error_loc, "Searching a simulation method for '%.50s'",
+    SPRINTF(error_location, "Searching a simulation method for '%.50s'",
 	    NICK(sub));
   }
 
@@ -634,7 +727,7 @@ int struct_gaussprocess(model *cov, model **newmodel) {
     //assert(meth != CE_INTRINPROC_INTERN);
       
     model *key = cov->key;
-    key->prevloc = PLoc(cov);
+    key->prevloc = LocP(cov);
     Types frame =
       MODELNR(key) == AVERAGE_INTERN ? PoissonGaussType :      
       hasAnyEvaluationFrame(cov) ? cov->frame : GaussMethodType;
@@ -667,20 +760,20 @@ int struct_gaussprocess(model *cov, model **newmodel) {
 	       METHOD_NAMES[unimeth], err, unimeth, METHOD_NAMES[unimeth]);     
 	
 	if (PL > PL_ERRORS) {
-	  char info[LENERRMSG]; errorMSG(err, info);
-	  PRINTF("error in gauss (init): %s\n",info);
+	  char msg[LENERRMSG]; errorMSG(err, msg);
+	  PRINTF("error in gauss (init): %s\n",msg);
 	  // BUG;//
 	}
       } // else if (PL >= PL_BRANCHING) M ERR(err);
     } else {
       if (PL > PL_ERRORS) {
-	char info[LENERRMSG]; errorMSG(err,info);
-	PRINTF("error in check: %s\n", info);
+	char msg[LENERRMSG]; errorMSG(err,msg);
+	PRINTF("error in check: %s\n", msg);
       }
     }
 
-    key = key->sub[0];
-    COV_DELETE_WITHOUTSUB(&(cov->key), cov);  
+    key = key->sub[0]; // key is checked
+    COV_DELETE_WITHOUTSUB(&(cov->key), cov);  // OK
     
     cov->key=key;
     SET_CALLING(key, cov);
@@ -733,9 +826,9 @@ int struct_gaussprocess(model *cov, model **newmodel) {
 
   if (zaehler==1) {
 #ifdef SCHLATHERS_MACHINE    
-    SPRINTF(KT->error_loc, "Only 1 method found for '%.50s', namely '%.50s', which failed (err=%d)", NICK(next), METHOD_NAMES[unimeth], err);
+    SPRINTF(error_location, "Only 1 method found for '%.50s', namely '%.50s', which failed (err=%d)", NICK(next), METHOD_NAMES[unimeth], err);
 #else
-    SPRINTF(KT->error_loc, "Only 1 method found for '%.50s', namely '%.50s', which failed", NICK(next), METHOD_NAMES[unimeth]);   
+    SPRINTF(error_location, "Only 1 method found for '%.50s', namely '%.50s', which failed", NICK(next), METHOD_NAMES[unimeth]);   
 #endif    
     RETURN_ERR(err);
   }
@@ -743,7 +836,7 @@ int struct_gaussprocess(model *cov, model **newmodel) {
   { // only for error reporting !
     model *sub = next; 
     while(isAnyDollar(sub)) sub = sub->sub[0];
-    SPRINTF(KT->error_loc, "searching a simulation method for '%.50s'",
+    SPRINTF(error_location, "searching a simulation method for '%.50s'",
 	    NICK(sub));
   }
 
@@ -783,24 +876,25 @@ int init_gaussprocess(model *cov, gen_storage *s) {
    
 
 void do_gaussprocess(model *cov, gen_storage *s) {
-  assert(s != NULL);
+   globalparam *global = &(cov->base->global);
+ assert(s != NULL);
   // reopened by internal_dogauss
   errorloc_type errorloc_save;
   double *res = cov->rf;
   int i,
-    vdimtot = Gettotalpoints(cov) * VDIM0 ;
+    vdimtot = Loctotalpoints(cov) * VDIM0 ;
   model *key = cov->key ;
-  KEY_type *KT = cov->base;
+  char *error_location = cov->base->error_location;  
   SAVE_GAUSS_TRAFO;
  
-  STRCPY( errorloc_save,  KT->error_loc);
+  STRCPY( errorloc_save,  error_location);
 
   if (cov->simu.pair) {
     for (i=0; i<vdimtot; i++) res[i] = -res[i];
     cov->simu.pair = false;
     return;  
   } else {
-    cov->simu.pair = GLOBAL.gauss.paired;
+    cov->simu.pair = global->gauss.paired;
   }
 
   assert(key != NULL);
@@ -812,7 +906,7 @@ void do_gaussprocess(model *cov, gen_storage *s) {
   // (x^\lambda_1-1)/\lambda_1+\lambda_2
 
   BOXCOX_INVERSE;
-  STRCPY( KT->error_loc, errorloc_save);
+  STRCPY(error_location, errorloc_save);
 }
 
 
@@ -843,11 +937,9 @@ int checkbinaryprocess(model *cov) {
     if ((err = checkgaussprocess(cov)) != NOERROR) {
       RETURN_ERR(err);
     }
-    
-    COV(ZERO(sub), sub, &v);
-    if (v != 1.0) 
-      SERR("binaryian requires a correlation function as submodel.");
-  } else {
+   Zero(sub, &v);
+   if (v != 1.0) SERR("binaryian requires a correlation function as submodel.");
+ } else {
     if ((err = CHECK_PASSTF(sub, ProcessType, SUBMODEL_DEP,
 			    hasAnyEvaluationFrame(cov) ? cov->frame :
 			    NormedProcessType
@@ -859,7 +951,7 @@ int checkbinaryprocess(model *cov) {
     //		     frame)) != NOERROR) RETURN_ERR(err);
     setbackward(cov, sub);
   }
-
+ 
   VDIM0 = sub->vdim[0];
   VDIM1 = sub->vdim[1];
   RETURN_NOERROR;
@@ -920,13 +1012,14 @@ int init_binaryprocess( model *cov, gen_storage *s) {
   cov->origrf = false;
  
   if (isnowVariogram(next) || NEXTNR == GAUSSPROC) {
+    ONCE_EXTRA_STORAGE;
     GetInternalMean(next, vdim, mean);
     if (ISNAN(mean[0])) // GetInternalMean currently only allows ...
       GERR1("'%.50s' currently only allows scalar fields - NA returned",
 	    NICK(cov));
     if (cov->mpp.moments >= 1)  {
       model *sub0 = NEXTNR==GAUSSPROC ? next->sub[0]: next;
-      COV(ZERO(sub0), sub0, variance);
+      Zero(sub0, variance);
     }
     nmP1 = cov->mpp.moments + 1;
     for (pi=v=w=0; w<vdimSq; w+=vdimP1, v++, pi = (pi + 1) % npi ) { 
@@ -1016,6 +1109,7 @@ void rangebinaryprocess(model *cov, int k, int i, int j,
 
 
 int checkchisqprocess(model *cov) {
+  DEFAULT_INFO(info);
   ASSERT_ONESYSTEM;
   model
     *key = cov->key,
@@ -1052,14 +1146,8 @@ int checkchisqprocess(model *cov) {
     model *sub = next;
     while (sub != NULL && isnowProcess(sub)) sub=sub->sub[0];
     if (sub == NULL) BUG;
-    if (isXonly(PREVSYSOF(sub))) {
-      COV(ZERO(next), next, v);
-    } else {
-      assert(isKernel(PREVSYSOF(sub)));
-      double *zero = ZERO(next);
-      NONSTATCOV(zero, zero, next, v);
-    }
-    
+    Zero(next, v); // ok
+
     int w,
       vdimP1 = vdim + 1;
     for (w=0; w<vdimSq; w+=vdimP1) {
@@ -1109,6 +1197,7 @@ int struct_chisqprocess(model *cov,
 }
 
 int init_chisqprocess(model *cov, gen_storage *s) {
+  globalparam *global = &(cov->base->global);
   double // sigma,
     mean, m2, 
     variance;
@@ -1140,7 +1229,7 @@ int init_chisqprocess(model *cov, gen_storage *s) {
       SERR1("'%.50s' currently only allows scalar fields -- NA returned", 
 	    NICK(cov));
     if (v < MAXMPPVDIM) cov->mpp.maxheights[v] =  // maxv
-			  GLOBAL.extreme.standardmax * GLOBAL.extreme.standardmax * m2;
+	       global->extreme.standardmax * global->extreme.standardmax * m2;
 
     if (cov->mpp.moments >= 0) { 
       assert(cov->mpp.mM != NULL);

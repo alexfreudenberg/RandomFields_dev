@@ -166,6 +166,18 @@ typedef enum usr_bool {
 #define ACOS std::acos
 #define ASIN std::asin
 #define ATAN std::atan
+#define ATAN2 std::atan2
+#define COSH std::cosh
+#define SINH std::sinh
+#define TANH std::tanh
+#define FMIN fmin2
+#define FMAX fmax2
+#define ATANH std::atanh
+#define ACOSH std::acosh
+#define ASINH std::asinh
+#define EXPM1 std::expm1
+#define LOG1P std::log1p
+#define FROUND fround
 #define CEIL(X) std::ceil((double) X) // keine Klammern um X!
 #define COS std::cos
 #define EXP std::exp

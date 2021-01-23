@@ -2,25 +2,28 @@
 \alias{RMfixed}
 \title{Fixed Effect Model}
 
+\description{ Modelling not possible, currently
+}
+
 %\usage{
 %}
 
-\description{Expressions of the form \code{X@RMfixed(beta)} can be used
- within a formula of the type
- \deqn{response ~ fixed effects + random effects + error term}
- that specifies the Linear Mixed Model.
-
- Important remark: \code{RMfixed} is NOT a function although
- the parentheses notation is used to specify the vector of coefficients.
-
- The matrix \eqn{X} is the design matrix  and \eqn{\beta} is a vector of coefficients.
-
- Note that a fixed effect of the form \eqn{X} is interpreted as
- \code{X@RMfixed(beta=NA)} by default (and \eqn{\beta} is estimated
- provided that the formula is used in \command{\link{RFfit}}).
- Note that the \code{1} in an expression \code{1@RMfixed(beta)} is
- interpreted as the identity matrix. 
-}
+%\description{Expressions of the form \code{X@RMfixed(beta)} can be used
+% within a formula of the type
+% \deqn{response ~ fixed effects + random effects + error term}
+% that specifies the Linear Mixed Model.
+%
+%%2 Important remark: \code{RMfixed} is NOT a function although
+% the parentheses notation is used to specify the vector of coefficients.
+%
+% The matrix \eqn{X} is the design matrix  and \eqn{\beta} is a vector of coefficients.
+%2
+% Note that a fixed effect of the form \eqn{X} is interpreted as
+% \code{X@RMfixed(beta=NA)} by default (and \eqn{\beta} is estimated
+% provided that the formula is used in \command{\link{RFfit}}).
+% Note that the \code{1} in an expression \code{1@RMfixed(beta)} is
+% interpreted as the identity matrix. 
+%}
 
 %\arguments{
 %}

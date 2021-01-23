@@ -32,7 +32,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define LOC_NOT_INITIALISED SERR("locations aren't initialised.")
 #define LNRC(I, rc) LNRC_(I, rc)
-#define STOPAFTER(COND, DO)
 
 #define PREVSYSOF(cov) (cov)->prev
 #define GATTERSYSOF(cov) (cov)->gatter
@@ -73,7 +72,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 
-#define SET_IDX(Cov, IDX) (GLOBAL.general.set % (Cov)->nrow[IDX])
+#define SET_IDX(Cov, IDX) ((Cov)->base->set % (Cov)->nrow[IDX])
 
 #define CHECK(C,L,X,type,D,I,V,R) check2X(C,L,X,type,D,I,V,R)
 #define CHECK_THROUGHOUT(C,P,type,D,I,V,R) check2Xthroughout(C,P,type,D,I,V,R)

@@ -19,7 +19,7 @@
 
  Thereby, fixed effects and trend surfaces can be adressed via
  the expression \command{\link{RMfixed}} and the function
- \command{\link{RMtrend}}. In simple cases, the trend can also
+ \command{\link{RMshape}}. In simple cases, the trend can also
  be given in a very simple, see the examples below.
  The covariance structures of the zero-mean
  multivariate normally distributed %random effects and
@@ -89,9 +89,9 @@
  \item random effects: not programmed.
 % optional, should be a sum (using \command{\link[=RMplus]{+}})%%check link
 % of components either of the form \code{X@RMfixed(beta)} or
-% \code{\link{RMtrend}(...)} with \eqn{X} being a design matrix 
+% \code{\link{RMshape}(...)} with \eqn{X} being a design matrix 
 % and \eqn{\beta} being a vector of coefficients (see
-% \command{\link{RMfixed}} and \command{\link{RMtrend}}).\cr
+% \command{\link{RMfixed}} and \command{\link{RMshape}}).\cr
 % Note that a fixed effect of the form \eqn{X} is interpreted as
 % \code{X@RMfixed(beta=NA)} by default (and \eqn{\beta} is estimated
 % provided that the formula is used in \command{\link{RFfit}}).
@@ -180,9 +180,9 @@ RFoptions(modus_operandi="sloppy")
 ###############################################################
 
 V <- 10
-S <- 0.3
+s <- 0.3
 M <- 3
-model <- RMexp(var=V, scale=S) + M
+model <- RMexp(var=V, scale=s) + M
 x <- y <- seq(1, 3, 0.1)
 
 simulated <- RFsimulate(model = model, x=x, y=y)
@@ -191,7 +191,7 @@ plot(simulated)
 
 # an alternative code to the above code:
 model <- ~ Mean + RMexp(var=Var, scale=Sc)
-simulated2 <- RFsimulate(model = model,x=x, y=y, Var=V, Sc=S, Mean=M)
+simulated2 <- RFsimulate(model = model,x=x, y=y, Var=V, Sc=s, Mean=M)
 plot(simulated2)
 
 
@@ -199,7 +199,7 @@ plot(simulated2)
 # the initials of the variables do not be captical letters
 model <- ~ M + RMexp(var=var, scale=sc)
 simulated3 <- RFsimulate(model = model,x=x, y=y,
-                         param=list(var=V, sc=S, M=M))
+                         param=list(var=V, sc=s, M=M))
 plot(simulated3)
 
 
@@ -213,36 +213,11 @@ mean(simulated@data[,1])
 fitted
 
 
-\dontshow{\dontrun{
-##############################################################
-#
-# Example 2: Fitting a standard linear mixed model using maximum
-# likelihood to estimate the variance components
-#
-###############################################################
-
-# Y = W*beta + Z*u + e
-# where u ~ N(0, (sigma_u)^2 A) and e ~ N(0, (sigma_e)^2)
-W <- rep(1,times=10)
-Z <- matrix(rnorm(150) ,nrow=10, ncol=15)
-A <- RFcovmatrix(0:14, model=RMexp()) 
-response <- W*5 + Z%*%matrix(1:225, nrow=15)%*%rnorm(15, sd=10) + rnorm(10, sd=3)
-
-# Estimate beta, (sigma_u)^2 and (sigma_e)^2:
-model <- response ~ W@RMfixed(beta=NA) +
- Z@RMfixcov(A, var=NA) +
- RMnugget(var=NA)
-fitted <- RFfit(model=model, data=response, W=W, Z=Z, A=A)
-}}
-
-
-\dontshow{\dontrun{
-#### THIS EXAMPLE IS NOT PROGRAMMED YET
 
 
 ###########################################################
 #
-# Example 3: Simulate and fit a geostatistical model
+# Example 2: Simulate and fit a geostatistical model
 #
 ###########################################################
 
@@ -252,56 +227,28 @@ fitted <- RFfit(model=model, data=response, W=W, Z=Z, A=A)
 # 1.5*exp(-||(2*(s_1-t_1),s_2-t_2)||^2)
 # for s=(s_1,s_2) and t=(t_1,t_2)
 
-model <- ~ RMtrend(mean=2) +
- RMtrend(arbitraryfct=function(x) x, fctcoeff=1.5) +
- RMtrend(arbitraryfct=function(y) y, fctcoeff=-3) + 
- RMplus(RMexp(var=3), RMgauss(var=1.5),
- Aniso=matrix(c(2,0,0,1),nrow=2))
+C <- RMplus(RMexp(var=3), RMgauss(var=1.5), Aniso=matrix(c(2,0,0,1),nrow=2))
+model <- ~ 2 + 1.5 * x - 3 * y + C ## tilde necessary
+simulated <- RFsimulate(model=model, x=seq(0,2,0.1), y=seq(-1,3,0.2))
 
-simulated <- RFsimulate(model=model,x=seq(0,2,0.1),y=seq(-1,3,0.2))
 
-# equivalent model
-model <- RMtrend(polydeg=1, polycoeff=c(2, 1.5, .3)) +
- RMplus(RMexp(var=3), RMgauss(var=1.5),
- Aniso=matrix(c(2,0,0,1), nrow=2))
+## equivalent model
+C <- RMS(RMexp(var=3) + RMgauss(var=1.5), anisoT=matrix(c(2,0,0,1),nrow=2))
+model <- RMshape(RMpolynome(1, value=c(2, 1.5, -3), dim=2)) + C # ~ optional
+simulated2 <- RFsimulate(model=model, x=seq(0,2,0.1), y=seq(-1,3,0.2))
+stopifnot(all.equal(simulated, simulated2))
 
 simulated <- RFsimulate(model=model, x=seq(0,2,0.1), y=seq(-1,3,0.2))
 
+
 # Estimate trend (polynomial of degree 1) and variance components such
 # that var_exp = 2*var_gauss as in the true model used for simulation
-model.na <- ~ RMtrend(polydeg=1) +
- RMplus(RMexp(var=2),RMgauss(var=2),var=NA,
-        Aniso=matrix(c(NA,0,0,NA),nrow=2))
+Cest <- RMS(RMexp(var=2) + RMgauss(var=2),
+               var=NA, anisoT=matrix(c(NA,0,0,NA),nrow=2))
+model.na <- ~  RMpolynome(1, dim=2) + Cest
+
 fit <- RFfit(model=model.na, data=simulated)
-}}
 
-
-
-\dontshow{\dontrun{
-#### THIS EXAMPLE IS NOT PROGRAMMED YET
-
-####################################################################
-#
-# Example 4: Simulate and fit a multivariate geostatistical model
-#
-####################################################################
-
-# Simulate a bivariate Gaussian random field with trend
-# m_1((x,y)) = x + 2*y and m_2((x,y)) = 3*x + 4*y
-# where m_1 is a hyperplane describing the trend for the first response
-# variable and m_2 is the trend for the second one;
-# the covariance function is a multivariate nugget effect
-x <- y <- 0:10
-model <- ~ RMtrend(plane=matrix(c(1,2,3,4), ncol=2)) +
-           RMnugget(var=0.5, vdim=2)
-multi.simulated <- RFsimulate(model=model, x=x, y=y)
-
-# Fit the Gaussian random field with unknown trend for the second
-# response variable and unknown variances
-model.na <- ~ RMtrend(plane=matrix(c(NA,NA,NA,NA), ncol=2)) + 
-              RMnugget(var=NA, vdim=2)
-fit <- RFfit(model=model.na, data=multi.simulated)
-}}
 
 \dontshow{RFoptions(modus_operandi="normal")}
 

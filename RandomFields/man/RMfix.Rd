@@ -2,19 +2,22 @@
 \alias{RMfixcov}
 \title{Fixed Covariance Matrix}
 \description{
-  \command{\link{RMfixcov}} is a user-defined covariance according to
-  the given covariance matrix.
-
+  \command{\link{RMfixcov}} is a user-defined (spatially constant or
+   locally constant) covariance according to
+   the given (globally or locally given) covariance matrix.
+   
   It extends to the space through a Voronoi tessellation.
 }
 \usage{
-RMfixcov(M, x, y=NULL, z=NULL, T=NULL, grid, var, proj, raw, norm)
+RMfixcov(M, x, y=NULL, z=NULL, T=NULL, grid, var, proj, raw, givenM)%, norm)
 }
 \arguments{
- \item{M}{a numerical matrix defining the user-defined covariance for a
-   random field; the matrix should be positive definite, symmetric and
-   its dimension should be equal to the length of observation or
-   simulation vector.}
+ \item{M}{a numerical matrix defining the user-defined  covariance for a
+   random field; the \eqn{k \times k}
+   matrix should be positive definite, symmetric.
+   For a \eqn{m-}variate random field
+   its dimension \eqn{k} should equal
+   (number of observations or simulation locations) times \eqn{m}.}
  \item{x,y,z,T,grid}{optional.
    The usual arguments as in \command{\link{RFsimulate}} to define the
    locations where the covariates are given.
@@ -24,7 +27,16 @@ RMfixcov(M, x, y=NULL, z=NULL, T=NULL, grid, var, proj, raw, norm)
    covariance function remains unmodified.}
  
  \item{raw}{\argRaw}
-  \item{norm}{\argNorm}
+ 
+ \item{givenM}{numerical matrix.
+   In case of kriging or conditional simulation, either
+   \code{raw = FALSE} or the second matrix for the conditioning
+   locations is passed here (and \code{raw=TRUE}).
+   Implicitely, it is assumed that the
+   corrleations defined by \command{RMfixcov} are zero between the given
+   locations and the locations defined by \code{x}. 
+ }
+% \item{norm}{\argNorm}
 
  % \item{vdim}{an integer value; defining the response dimension.}
 }
@@ -39,7 +51,10 @@ RMfixcov(M, x, y=NULL, z=NULL, T=NULL, grid, var, proj, raw, norm)
   Within any Voronoi cell (around a given location) the correlation is
   assumed to be one.
 
- In particular, it is used in \command{\link{RFfit}} to define neighbour or network structure in the data.
+ In particular, it is used in \command{\link{RFfit}} to define neighbour
+ or network structure in the data.
+
+%  \NormDetails
 }
 \value{
  \command{\link{RMfixcov}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
