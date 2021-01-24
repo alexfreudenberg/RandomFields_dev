@@ -1050,19 +1050,30 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
                     control <- control[-idx];
                   print("LBFGS")
                   # env <- new.env(); 
-                  
                   # cl <- parallel::makeCluster(2, #type="FORK", 
                   # useXDR=FALSE,
                   # outfile="outfile.out")
-                  sapply(ls(),function(x)assign(x,x,envir=env));
-                  parallel::clusterExport(cl=cl,varlist=ls(envir= env),envir=env);ls(envir=env)
-                  
+                  # sapply(ls(),function(x)assign(x,x,envir=env));
+                  # parallel::clusterExport(cl=cl,varlist=ls(envir= env),envir=env);ls(envir=env)
                   #parallel::setDefaultCluster(cl=cl) # set 'cl' as default cluster
-                  print(ls())
                   #parallel::clusterExport(cl=cl, varlist=ls())
-                  print(result <- optimParallel::optimParallel(par=par, fn=fn, lower=lower, upper=upper,
+                  # h <- 1e-3
+                  # sapply(ls(),function(x)assign(x,x,))
+                  grad_approx <- function(x,fn__=fn,h=1e-3){
+                   # clusterExport(cl=cl,varlist=list("fn"),envir = environment())
+                    res <- mclapply(mc.cores=8, X=1:length(x), FUN = function(i,x_=x,h_=h,n=length(x),fn_=fn__) {
+                      return((fn_(x_+h_ * ((1:n)==i) )-fn_(x_- h_ * ((1:n)==i) ))/(2*h_)  )
+                    })
+                    print(str(res))
+                    wait()
+                    RFoptions(storing=FALSE)
+                    return(unlist(res))
+                  }
+                  
+                  print(result <- optimx::optimx(par=par, gr=function(x)grad_approx(x), fn=fn, lower=lower, upper=upper,
+                                                 control = list(trace=6)))
                               #control=control,
-                              parallel=list(cl=cl, forward=FALSE, loginfo=TRUE)))
+                              #parallel=list(cl=cl, forward=FALSE, loginfo=TRUE)))
                  # parallel::setDefaultCluster(cl=NULL); parallel::stopCluster(cl)
                   
                     result
