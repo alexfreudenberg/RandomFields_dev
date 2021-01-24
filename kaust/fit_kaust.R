@@ -1,10 +1,10 @@
 library(RandomFields)
-RFoptions(pivot=PIVOT_NONE, critical=-1, reoptimise=F, optimiser="optimParallel", cores = 12,printlevel = 7)
+RFoptions(pivot=PIVOT_NONE, critical=-1, reoptimise=F, optimiser="optimParallel", cores = 12,printlevel = 1)
 model <- RMmatern(nu=1,var=1,scale=1)
 RFoptions(cores=12, useGPU=T,pivot=PIVOT_NONE)
 set.seed(0)
 repet <- 1
-pts <- 4e3
+pts <- 1e3
 x <- runif(n=pts, min=-1, max=1)
 y <- runif(n=pts, min=-1, max=1)
 dta <- RFsimulate(model, x=x, y=y, n=repet, spC = FALSE)
@@ -12,8 +12,10 @@ dta <- RFsimulate(model, x=x, y=y, n=repet, spC = FALSE)
 library(inline)
 includes <- '#include <sys/wait.h>'
 code <- 'int wstat; while (waitpid(-1, &wstat, WNOHANG) > 0) {};'
-wait <- cfunction(body=code, includes=includes, convention='.C')
+wait <- inline::cfunction(body=code, includes=includes, convention='.C')
 
+#future::plan(future::multicore)
+sink("log.log")
 system.time(fit <- RFfit(RMmatern(nu=NA,var=NA,scale=NA)+RMnugget(var=NA),x=x,y=y,data=dta))
 
 
