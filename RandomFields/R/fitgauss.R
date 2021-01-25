@@ -1517,7 +1517,7 @@ grad <- function(func, x, method="Richardson", side=NULL,
     .C(C_PutValuesAtNA, COVreg, param)
     model.values <- .Call(C_MomentsIntern, COVreg, emp_alpha)
     
-    Print(model.values, binned.variogram)
+    # Print(model.values, binned.variogram)
     stopifnot(length(model.values) == length(binned.variogram))
 
     ##    Print(model.values,(!all(is.finite(model.values))))
@@ -1754,7 +1754,7 @@ grad <- function(func, x, method="Richardson", side=NULL,
 ##### user cannot know what the internal represenatation is
 
 ###
-  Print(Z)
+  #Print(Z)
 
   if (printlevel>=PL_STRUCTURE) cat("\nfirst analysis of model  ...\n")
 
