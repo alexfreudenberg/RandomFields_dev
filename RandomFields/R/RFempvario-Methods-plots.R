@@ -105,10 +105,10 @@ setAs(CLASS_FITLIST, CLASS_EMPIR, def=function(from) from@ev)
 
 
 ## derzeit nicht genutzt:
-plotRFempVariogUnbinned <- function(x, coordunits, varunits, varnames,
+plotRFempVariogUnbinnedXX <- function(x, coordunits, varunits, varnames,
                                     legend, ..., plotmethod="plot") {
   stop("currently not used ") # !!
-  graphics <- RFoptions(GETOPTIONS="graphics")
+  graphics <- internalRFoptions(getoptions_="graphics")
   dots = mergeWithGlobal(list(...))
   dotnames <- names(dots)
   coords <- GridTopology2gridVectors(cbind(x@centers$x, x@centers$T))  
@@ -198,7 +198,6 @@ plotRFempVariogUnbinned <- function(x, coordunits, varunits, varnames,
   return(invisible(scr))
 }
 
-RFplotEmpVariogramX <- function (x, y=y,...) stop("hier")
 
 RFplotEmpVariogram <- function(x, model = NULL, nmax.phi = NA, nmax.theta = NA,
 			       nmax.T = NA,
@@ -207,6 +206,8 @@ RFplotEmpVariogram <- function(x, model = NULL, nmax.phi = NA, nmax.theta = NA,
 			       boundaries = TRUE,
  #                              cloud = FALSE,
 			       ..., all=FALSE) {
+
+##  Print("plotting emp vario")
 
   n.points <- 150 ## number of locations, the theoretical curve is evaluated
   mar.phi <- c(1,0.5,1,0.5)
@@ -217,7 +218,7 @@ RFplotEmpVariogram <- function(x, model = NULL, nmax.phi = NA, nmax.theta = NA,
   ##  print(model)
 
   dotnames <- names(dots)
-  graphics <- RFoptions(GETOPTIONS="graphics")
+  graphics <- internalRFoptions(COPY=TRUE, getoptions_="graphics")
   OP <- c("$", "@")[1 + isS4(x)]
   newx <- list()
   fitmethod.names <- character(0)
@@ -485,10 +486,11 @@ RFplotEmpVariogram <- function(x, model = NULL, nmax.phi = NA, nmax.theta = NA,
             
               for(i in 1:n.methods) {
                 if (v1 == 1 && v2 == 1) {
+                 # Print(alpha, newx[[fitmethod.names[i]]])
                   values <- covETC(model = newx[[fitmethod.names[i]]],
                                    x = x.spt, grid = FALSE, params=params,
                                    internal.examples_reduced=FALSE,
-                                   alpha=alpha)
+                                   alpha=alpha, COPY=FALSE)
                   if(length(values) == 0 || all(is.na(values)))
                     stop("internal calcualation error in RFplotEmpVario")
 

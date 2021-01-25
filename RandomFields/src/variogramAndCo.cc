@@ -38,11 +38,12 @@ model* wheregenuineStatOwn(model *cov) {
   };
 
   if (cov->pref[Nothing] == PREF_NONE ||
-      (!isnowPosDef(sub) && (!isnowVariogram(sub) || !isXonly(SYSOF(sub))))) {
+      !(isnowPosDef(sub) || isXonly(SYSOF(sub)))) {
     // Variogramme sind hier definitiv erlaubt, da durch Addition einer 
     // Konstanten, das Zeug zu einer Kovarianzmatrix gemacht werden kann
     // siehe direct.cc    
     //assert(({PMI(cov, "cov matrix"); true;})); //
+    //PMI(cov);
     ERR("covariance matrix: given model is not a covariance function");
   }
    
@@ -55,8 +56,8 @@ model* wheregenuineStatOwn(model *cov) {
   assert(cov != NULL); 				\
   if (equalsnowGaussMethod(cov) || COVNR==GAUSSPROC) cov = cov->sub[0];	\
   model *calling = cov;				\
-  if (calling->Sfctn == NULL) {  /*//PMI0(calling); printf("NULL !!\n");*/ \
-    assert(isnowVariogram(calling)); 		\
+  if (calling->Sfctn == NULL) {   \
+     assert(isnowVariogram(calling)); 		\
     calling = cov->calling; /* either interface or process	*/	\
     if (calling != NULL && calling->Sfctn == NULL) {			\
       assert(isnowProcess(calling));					\
@@ -109,12 +110,11 @@ void CovVario(model *Cov, bool is_cov, bool pseudo, int select, bool ignore_y,
   // if x and y are given, length of x is taken und y is recycled
  
   STANDARDSTART(ignore_y, ignore_y, 0, 1, // 12.1.21 select!=NA_INTEGER,
-		 select==NA_INTEGER ? 0 : select);
+		select==NA_INTEGER ? 0 : select);
   info[INFO_EXTRA_DATA_X] = ignore_y;
   info[INFO_EXTRA_DATA_Y] = !ignore_y;
      
-  bool stat;
-  double 
+   double 
     *zero = ZERO(cov),
    *C0x = fctn->C0x,
     *C0y = fctn->C0y;
@@ -130,30 +130,30 @@ void CovVario(model *Cov, bool is_cov, bool pseudo, int select, bool ignore_y,
   assert(Loc(cov) != NULL);
   if (LocDist(cov)) BUG;
 
-  bool kernel = equalsKernel(DOM(PREVSYSOF(genuine), 0));   
+  bool kernel = equalsKernel(DOM(PREVSYSOF(genuine), 0));
+
   if (kernel && !ygiven && PL > 0 &&
       cov->base->global.messages.warn_singlevariab){
     WARN1("'%.50s' is called with a single variable only, although it is used as a kernel. So, the second variable is set to zero, here.\n", NICK(cov));
   }
  
-  bool isvario = isnowVariogram(genuine);
-  stat = !kernel && isvario;
 
   if (is_cov) {
     assert(({/*P M I(cov, "Cov/vario"); */ cov->pref[Nothing] != PREF_NONE &&
 	    isnowShape(genuine);})); //
   } else {
-    //printf("hier !!\n");
+    bool isvario =  isnowVariogram(genuine);
+   //printf("hier !!\n");
     if (cov->pref[Nothing] == PREF_NONE || !isvario) {
       assert(({PMI(cov); true;})); //
       ERR("given model is not a variogram");
     }
-    if (stat && isCartesian(PREV)) {   
+    if (!kernel && isCartesian(PREV)) {   
       if (!isCartesian(OWN)) BUG;
       COV(zero, info, genuine, C0y);
       //printf("C0y=%f\n", *C0y);
     } else {
-      if (vdim0 > 1 && !stat) 
+      if (vdim0 > 1 && kernel) 
 	ERR("multivariate variogram only calculable for stationary models");
       NONSTATCOV(zero, zero, info, genuine, C0y);
     }
@@ -259,13 +259,16 @@ void CovVario(model *Cov, bool is_cov, bool pseudo, int select, bool ignore_y,
 
   //  printf("covvario ygien %d %d tot=%ld %ld\n", ygiven, kernel, totX, totY);
   
-  if (is_cov) {  
-    PERFORM(UNIVAR, MULT, UNIVAR_Y, MULT_Y);
+  //   printf("grid = %d %d %d\n", grid, ygiven, kernel);
+  //    PMI0(cov);
+  //if (ygiven && !kernel) crash();
 
+    if (is_cov) {  
+    PERFORM(UNIVAR, MULT, UNIVAR_Y, MULT_Y);
   } else if (pseudo) {    
     PERFORM(VARIO_UNIVAR, PSEUDO_MULT, VARIO_UNIVAR_Y, PSEUDO_MULT_Y);
   } else {
-    PERFORM(VARIO_UNIVAR, VARIO_MULT, VARIO_UNIVAR_Y, VARIO_MULT_Y);
+     PERFORM(VARIO_UNIVAR, VARIO_MULT, VARIO_UNIVAR_Y, VARIO_MULT_Y);
   }
   STANDARD_ENDE;
 } 
@@ -388,7 +391,7 @@ void CovarianceMatrix(model *Cov, bool ignore_y, double *v) {
     if (trafo) {
       localdim = TransformLoc(cov, NULL, ygiven ? NULL : &xx,
 			      ygiven ? &xx : NULL,
-			      false);
+			      False);
       assert(localdim == tsxdim);
       x0 = xx;
     } else x0 = LocY(cov, ignore_y);
@@ -487,7 +490,7 @@ void CovarianceMatrix(model *Cov, bool ignore_y, int *idx, int Nidx,
   } else { // not a grid
     if (trafo) {
       localdim = TransformLoc(cov, NULL, ygiven ? NULL : &xx,
-			      ygiven ? &xx : NULL, false);
+			      ygiven ? &xx : NULL, False);
       assert(localdim == tsxdim);
       x0 = xx;
     } else x0 = LocY(cov, ignore_y);
@@ -584,7 +587,7 @@ void CovarianceMatrixCols(model *Cov, bool ignore_y, int row, double *v) {
   } else { 
     if (trafo) {
       localdim = TransformLoc(cov, NULL, ygiven ? NULL : &xx,
-			      ygiven ? &xx : NULL, false);    
+			      ygiven ? &xx : NULL, False);    
       assert(localdim == tsxdim);
       x = xx;
     } else x = LocY(cov, ignore_y);
@@ -638,7 +641,7 @@ void CovarianceMatrixCols(model *Cov, bool ignore_y, int row, double *v) {
 
 void InverseCovMatrix(model *cov, double *v, double *det) {// currently unused
   // needed when Markov models are implemented
-  Long vdimtot = Loctotalpoints(cov) * VDIM0;
+  Long vdimtot = (Long) Loctotalpoints(cov) * VDIM0;
   assert(VDIM0 == VDIM1);
   Covariance(cov, v);
   if (cov->Ssolve == NULL) SOLVE_STORAGE;
@@ -679,39 +682,6 @@ void InverseCovMatrix(model *cov, double *v, double *det) {// currently unused
 //  if (cov->pref[Nothing] == PREF_NONE) { PMI(cov); XERR(ERRORINVALIDMODEL) }
 
 
-void ResetLoc(model *cov, location_type **old, location_type **neu, int alle){
-  //  printf("%s %d %d %d\n", NAME(cov), old, neu, cov->prevloc);
-  assert(sizeof(model_storage) == 120 && MAXSUB==10 && MAXPARAM == 20);
-  assert(cov->ownloc != old); // bei geg. ownloc auch nicht stoppen,
-  //                             da trafo drueber gelaufen sein koennte
-  if (cov->prevloc == old) {
-    cov->prevloc = neu;
-    // if (alle > 1) {   PMI0(cov);     APMI(cov->calling);    }
-    assert(alle <= 1); 
-  } else if (!alle) return;// Annahme, dass nachfolgend auch immer prevloc!=neu
-  else alle++; // ==2 falls cov->prevloc != neu ist. Falls nachfolgend
-  // doch noch ein cov->prevloc == neu, so wird assert() oben false
-
-  if (cov->Smodel != NULL) {
-    GETSTOMODEL;
-    if (STOMODEL->cov != NULL) ResetLoc(STOMODEL->cov, old, neu, alle);
-    if (STOMODEL->vario != NULL) ResetLoc(STOMODEL->vario, old, neu, alle);
-    if (STOMODEL->orig != NULL) ResetLoc(STOMODEL->orig, old, neu, alle);
-    if (STOMODEL->get_cov != NULL) ResetLoc(STOMODEL->get_cov, old, neu, alle);
-    if (STOMODEL->remote != NULL) ResetLoc(STOMODEL->remote, old, neu, alle);
-    for (int i=0; i<MAXSUB; i++)
-      if (STOMODEL->keys[i]!=NULL) ResetLoc(STOMODEL->keys[i], old, neu, alle);
-  }
-
-  int endfor = DefList[COVNR].kappas;
-  for (int i=0; i<endfor; i++)
-    if (cov->kappasub[i] != NULL) ResetLoc(cov->kappasub[i], old, neu, alle);
-  endfor = DefList[COVNR].maxsub;
-  for (int i=0; i<endfor; i++)
-    if (cov->sub[i] != NULL) ResetLoc(cov->sub[i], old, neu, alle);
-  if (cov->key != NULL) ResetLoc(cov->key, old, neu, alle);
-}
- 
 SEXP CovLocNonGrid(SEXP reg, SEXP x, SEXP Y, SEXP result) { 
    STANDARDINTERN_SEXP;
   double *y = TYPEOF(Y)==NILSXP ? NULL : REAL(Y);
@@ -732,7 +702,7 @@ SEXP CovLocNonGrid(SEXP reg, SEXP x, SEXP Y, SEXP result) {
   if ((err = partial_loc_set(Loc(cov), REAL(x), y, lxy, y == NULL ? 0 : lxy,
 			     false, dim, NULL, NULL, false, false, false))
       != NOERROR) XERR(err);   
-  ResetLoc(cov, old, cov->prevloc,
+  SetLoc2NewLoc(cov, old, cov->prevloc,
 #ifdef SCHLATHERS_MACHINE
 	   true
 #else
@@ -764,7 +734,7 @@ SEXP LocNonGrid(SEXP reg, SEXP x) {
 
   location_type **old = cov->prevloc,
     **neu = loc_set(x);
-  ResetLoc(cov, old, neu,
+  SetLoc2NewLoc(cov, old, neu,
 #ifdef SCHLATHERS_MACHINE
 	   true
 #else

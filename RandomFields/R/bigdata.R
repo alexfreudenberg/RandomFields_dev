@@ -36,7 +36,7 @@ GetNeighbourhoods <- function(model, Z, X,
 
   model.nr <- MODEL_AUX
   rfInit(model= list("RFfctn", model), x = Z$coords, reg=model.nr,
-         RFopt=getRFoptions(SAVEOPTIONS=NULL))  
+         RFopt=getRFoptions(saveoptions_=NULL))  
   lc <- length(Z$coords)
   locfactor <- as.integer(splitfactor * 2 + 1) ## total number of
   ##    neighbouring boxes in each direction, including the current box itself

@@ -97,7 +97,7 @@ prepareplotRFsp <- function(x, vdim, select, plot.variance,
   coordunits=x@.RFparams$coordunits
   varunits=x@.RFparams$varunits;
 
-  graphics <- RFoptions(GETOPTIONS="graphics")
+  graphics <- getRFoptions(getoptions_="graphics")
  
   image.par <- default.image.par(data.range, var.range, legend=plot.legend)
   names.rep <- c(paste("realization", 1:(n-plot.variance), sep=" "),
@@ -327,7 +327,7 @@ RFplotSimulation <- function(x, y,
 
   ## nmax, n.slices, plot.variance, select.variables, legend
 
-  graphics <- RFoptions(GETOPTIONS="graphics")
+  graphics <- internalRFoptions(getoptions_="graphics")
   x.grid <- is(x, "RFspatialGridDataFrame")
   do.slices <- !is.null(MARGIN.slices)
   do.movie <- !is.null(MARGIN.movie)
@@ -849,7 +849,7 @@ RFplotSimulation1D <-  function(x, y, nmax=6,
     }
   }
 
-  graphics <- RFoptions(GETOPTIONS="graphics")
+  graphics <- internalRFoptions(getoptions_="graphics")
   ArrangeDevice(graphics, c(1, n)) ## NIE par vor ArrangeDevice !!!!
  
   dots <- mergeWithGlobal(list(...))

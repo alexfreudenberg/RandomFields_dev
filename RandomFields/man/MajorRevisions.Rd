@@ -6,7 +6,9 @@
   This man page documents some major changings in RandomFields.
 }
 
-
+\section{Changes done in 4.0.0 (January 2021)}{
+  documentation of the changes will be inserted later.
+}
 
 \section{Changes done in 3.1.0 (Summer 2015)}{
   \itemize{

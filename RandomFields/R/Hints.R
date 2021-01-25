@@ -4,7 +4,7 @@
 
 Help <- function(which, ...) {
   w <- paste0("help_", which)
-  RFopt <- getRFoptions(GETOPTIONS=c("basic", "messages"))
+  RFopt <- getRFoptions(getoptions_=c("basic", "messages"))
   if (RFopt$basic$printlevel == 0) return()
   opt <- RFopt$messages[[w]]
 #  Print(RFopt, opt, w)
@@ -34,7 +34,7 @@ Help <- function(which, ...) {
 
 Note <- function(which, ...) {
   w <- paste0("note_", which)
-  RFopt <- getRFoptions(GETOPTIONS=c("basic", "messages"))
+  RFopt <- getRFoptions(getoptions_=c("basic", "messages"))
   if (RFopt$basic$printlevel == 0) return()
   opt <- RFopt$messages[[w]]
 #  Print(RFopt, opt, w)
@@ -87,7 +87,7 @@ Note <- function(which, ...) {
 
 Warning <- function(which, ...) {
   w <- paste0("warn_", which)
-  RFopt <- getRFoptions(GETOPTIONS=c("messages"))
+  RFopt <- getRFoptions(getoptions_=c("messages"))
   opt <- RFopt[[w]]
  # Print(RFopt, opt, w)
   if (opt) {
@@ -128,7 +128,7 @@ warn.seed.not.na <- function(RFoptOld, oldstyle=FALSE) {
       warn_seed <- RFopt$messages$warn_seed
       if (warn_seed > 0) {
         if (warn_seed > 1) {
-          RFoptions(messages.warn_seed = warn_seed - 1)
+          setRFoptions(messages.warn_seed = warn_seed - 1)
           txt <- "\nSet 'RFoptions(seed=NA)' to make the seed arbitrary."
         } else txt <- ""
         message("NOTE: simulation is performed with fixed random seed ",

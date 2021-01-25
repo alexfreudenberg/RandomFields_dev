@@ -75,7 +75,7 @@ KEY_type *K T  = co v->b ase;
     err = NOERROR;
   double *res;
   locati on_type *l oc = LocPrev(cov);
-  Long vdimtot; vdimtot = loc->totalpoints * VDIM0;
+  Long vdimtot = (Long) loc->totalpoints * VDIM0;
   assert(VDIM0 == VDIM1);
 
   if (v==NULL) return; // EvaluateModel needs information about size
@@ -153,7 +153,7 @@ int check_density(model *cov) {
     }
     if (cov->frame = = Any Type) frame = Any Type;
 
-    err = ERRORTYPECONSISTENCY;
+    err = ERR ORTY PECONSISTENCY;
 
     for (j=0; j<=2; j++) {
       if ((Type Consistency(type, sub) && 
@@ -369,7 +369,7 @@ void simulate(double VARIABLE_IS_NOT_USED *X, int *N, model *cov, double *v){
     realeach=0.0;
   simu_storage *simu = NULL;  
   finaldofct finalDo = DefList[SUBNR].FinalDo;
-  Long vdimtot = Loctotalpoints(cov) * VDIM0;
+  Long vdimtot = (Long) Loctotalpoints(cov) * VDIM0;
   assert(VDIM0 == VDIM1);
   char *error_location = cov->base->error_location;  
  
@@ -543,7 +543,7 @@ int check_simulate(model *cov) {
     if (hasAnyEvaluationFrame(cov)) BUG;
     // if (cov->frame = = Any Type) frame = Any Type;
 
-    int errold = ERRORTYPECONSISTENCY;
+    int errold = CERRORTYPECONSISTENCY;
     for (j=0; j<=2; j++) {
        //      PMI0(cov);
       // printf("\nj=%d ownxdim = %d %s\n", j, OWNXDIM(0), TYPE_NAMES[type]);
@@ -805,7 +805,7 @@ void likelihood(double VARIABLE_IS_NOT_USED *x, int *info,
   assert(cov->prevloc != NULL);
   bool distances = LocDist(cov); // ehem Prev
   model *sub = cov->key == NULL ? cov->sub[0] : cov->key;
-  int err = ERRORTYPECONSISTENCY,
+  int err = CERRORTYPECONSISTENCY,
     logdim = Loctsdim(cov),
     dim = distances ? LocxdimOZ(cov) : logdim;
   domain_type dom = distances == 1 && dim == 1 ? XONLY : KERNEL;
@@ -1258,7 +1258,8 @@ int check_dummy(model *cov) {
 	BUG;
     }
 
-    if (equalsKernel(nextdom)) {
+    if (equalsKernel(nextdom) ||
+	(isNegDef(nexttype) && isAnySpherical(iso))) {
       if (start==1) start = 2;
       else BUG;
     } else if (equalsXonly(nextdom)) {
@@ -1268,8 +1269,9 @@ int check_dummy(model *cov) {
     ASSERT_LOC_GIVEN;
     for (int t=start-1; t<end; t++) {
       // printf("f=%d (%s, %s, %s)\n", t,	     TYPE_NAMES[frames[t]], TYPE_NAMES[types[t]],	     DOMAIN_NAMES[dom[t]]);
-      if ((err = CHECK(next, dim, dim, types[t], dom[t], iso,
-		       SUBMODEL_DEP, frames[t])) == NOERROR) break;
+      if ((err = CHECK(next, dim, dim, types[t], dom[t], iso, SUBMODEL_DEP,
+		       frames[t]))
+	  == NOERROR) break;
       //      PMI1(cov);
       // printf("end = %d\n", end);
     }
@@ -1345,8 +1347,8 @@ int SearchParam(model *cov, get_storage *s, model_storage *STOMODEL) {
   while (true) {
     while (DefList[MODELNR(orig)].maxsub > 0 && orig != NULL &&
 	   orig->user_given == ug_internal) 
-      orig = (MODELNR(orig) == PLUS || MODELNR(orig) == MULT || MODELNR(orig)==MPPPLUS) 
-	&& orig->Splus != NULL && orig->Splus->keys_given
+      orig =  COVMODELKEYS_GIVEN(orig) &&
+	(MODELNR(orig) == PLUS || MODELNR(orig)==MULT || MODELNR(orig)==MPPPLUS)
 	? orig->Smodel->keys[0]
 	: orig->key != NULL ? orig->key
 	: orig->sub[0];
@@ -1609,6 +1611,7 @@ int check_fctn_intern(model *cov, Types type, bool close,
   for (int j=0; j<=1; j++) {
     if (equalsIsoMismatch(iso)) BUG;
     for (int k=firstdomain; k<=lastdomain; k++) {
+      //printf("j=%d k=%d %d %d\n",j, k, firstdomain, lastdomain);
       // for (int f=0; f<=end_frame; f++) {
       if ((err = CHECK(sub, dim, OWNXDIM(0),
 		       type, 
@@ -1619,7 +1622,7 @@ int check_fctn_intern(model *cov, Types type, bool close,
     }
     iso = CoordinateSystemOf(OWNISO(0));
   }
-  
+
   if (err != NOERROR) RETURN_ERR(err);
   setbackward(cov, sub); 
 
@@ -1632,37 +1635,37 @@ int check_fctn_intern(model *cov, Types type, bool close,
   if (rows > 0) VDIM0 = rows;
   if (cols > 0) VDIM1 = cols;
 
-  if (sub->pref[Nothing] == PREF_NONE) SERR("given model cannot be evaluated")
+  if (sub->pref[Nothing] == PREF_NONE) SERR("given model cannot be evaluated");
   
-					 if (cov->q == NULL) {
-					   int d,
-					     len=1; // # of "simulations" (repetitions!)
-					   bool grid = Locgrid(cov);
-					   coord_type xgr = Locxgr(cov);
-					   if (grid) len += dim; else len ++;      
-					   for (int i=0; i<2; i++) len += (int) (cov->vdim[i] > 1);
-					   QALLOC(len);
-
-#define VDIMS								\
-					   for (int i=0; i<2; i++) if (cov->vdim[i] > 1) cov->q[d++] = cov->vdim[i]
-#define LOCS if (grid) {						\
-					     for (int i=0; i<dim; i++) cov->q[d++] = xgr[i][XLENGTH]; \
-					   } else {			\
-					     cov->q[d++] = Loctotalpoints(cov);	\
-					   }      
+  if (cov->q == NULL) {
+    int d,
+      len=1; // # of "simulations" (repetitions!)
+    bool grid = Locgrid(cov);
+    coord_type xgr = Locxgr(cov);
+    if (grid) len += dim; else len ++;      
+    for (int i=0; i<2; i++) len += (int) (cov->vdim[i] > 1);
+    QALLOC(len);
     
-					   d = 0;
-					   if (close) {
-					     VDIMS;
-					     LOCS;	
-					   } else {
-					     LOCS;
-					     VDIMS;
-					   }
-					   cov->q[d] = 1;
-					   assert(d == len-1);
-					 }
-
+#define VDIMS								\
+    for (int i=0; i<2; i++) if (cov->vdim[i] > 1) cov->q[d++] = cov->vdim[i]
+#define LOCS if (grid) {						\
+      for (int i=0; i<dim; i++) cov->q[d++] = xgr[i][XLENGTH];		\
+    } else {								\
+      cov->q[d++] = Loctotalpoints(cov);				\
+    }      
+    
+    d = 0;
+    if (close) {
+      VDIMS;
+      LOCS;	
+    } else {
+      LOCS;
+      VDIMS;
+    }
+    cov->q[d] = 1;
+    assert(d == len-1);
+  }
+  
   RETURN_NOERROR;
 }
 
@@ -1754,11 +1757,10 @@ int init_cov(model *cov, gen_storage *s) {
 void CovMatrix(double VARIABLE_IS_NOT_USED *x, INFO, model *cov, double *v){
   if (v==NULL) return; // EvaluateModel needs information about size
   //                      of result array
-  model *sub = cov->key == NULL ? cov->sub[0] : cov->key;  
-  DefList[SUBNR].covmatrix(sub, true, v);
+  model *sub = cov->key == NULL ? cov->sub[0] : cov->key;
+  if (DefList[SUBNR].is_covmatrix(sub)) DefList[SUBNR].covmatrix(sub, true, v);
+  else StandardCovMatrix(sub, true, v);
 }
-
-
 
 int check_covmatrix(model *cov) {
   model *sub = cov->key == NULL ? cov->sub[0] : cov->key;
@@ -1824,7 +1826,11 @@ void Pseudomadogram(double VARIABLE_IS_NOT_USED *x, INFO, model *cov,
 int check_pseudomado(model *cov) {
   globalparam *global = &(cov->base->global);
   kdefault(cov, PSEUDO_ALPHA, 2.0);
-  return check_cov_intern(cov, NegDefType,
+  double alpha = P0(PSEUDO_ALPHA);
+  return check_cov_intern(cov,
+			  alpha == VARIOGRAM ? VariogramType :
+			  alpha == COVARIANCE ? PosDefType :
+			  VariogramType, // NegDefType ??? 22.1.21
 			  global->general.vdim_close_together,
 			  LocHasY(cov) ? forceKernel : noKernel);
 }
@@ -1867,9 +1873,12 @@ void Variogram(double VARIABLE_IS_NOT_USED *x, INFO, model *cov, double *v){
 
 int check_vario(model *cov) {
   globalparam *global = &(cov->base->global);
+//  printf("lochasy = %d\n",  LocHasY(cov) );
   return check_cov_intern(cov, VariogramType,
 			  global->general.vdim_close_together,
 			  LocHasY(cov) ? forceKernel : noKernel);
+//  if (err == NOERROR) PMI(cov) else M ERR(err);
+//    return er r;
 }
 
 
@@ -1883,14 +1892,12 @@ int struct_variogram(model *cov, model VARIABLE_IS_NOT_USED **newmodel){
     if ((err = covcpy(&(cov->key), sub)) != NOERROR) RETURN_ERR(err);       
     sub = cov->key;
     SET_CALLING(sub, cov);
-  }
- 
-  if ((err = CHECK(sub, Loctsdim(cov), OWNXDIM(0), VariogramType,
-		   XONLY,
-		   NEXTISO(0),
-		   cov->vdim,
-		   EvaluationType)) != NOERROR) {
-    RETURN_ERR(err);
+
+    if ((err = CHECK(sub, Loctsdim(cov), OWNXDIM(0), VariogramType,
+		     NEXTDOM(0), NEXTISO(0), cov->vdim,
+		     EvaluationType)) != NOERROR) {
+      RETURN_ERR(err);
+    }
   }
   
   if (!isnowVariogram(sub))
@@ -1899,7 +1906,7 @@ int struct_variogram(model *cov, model VARIABLE_IS_NOT_USED **newmodel){
   
   RETURN_NOERROR;
 } 
-  
+
    
 // bool close = gl obal->general.vdim_close_together;
 

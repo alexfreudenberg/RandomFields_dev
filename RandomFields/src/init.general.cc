@@ -129,7 +129,7 @@ char STANDARDPARAM[MAXPARAM][MAXCHAR],
   STANDARDSUB[MAXSUB][MAXCHAR];
 
 
-int parentpid=-1;
+int parentpid=0;
 bool parallel() {
   int mypid;
   Ext_pid(&mypid);
@@ -158,7 +158,7 @@ KEY_type *KEYT() {
     neu->ok = true;
     if (PIDKEY[mypid % PIDMODULUS] != neu) BUG;
     KEY_type_NULL(neu);    
-    if (GLOBAL.messages.warn_parallel && mypid == parentpid) {
+    if (GLOBAL_UTILS->basic.warn_parallel && mypid == parentpid) {
       PRINTF("Do not forget to run 'RFoptions(storing=FALSE)' after each call of a parallel command (e.g. from packages 'parallel') that calls a function in 'RandomFields'. (OMP within RandomFields is not affected.) This message can be suppressed by 'RFoptions(warn_parallel=FALSE)'."); // ok
     }
    return neu;
@@ -380,6 +380,10 @@ bool CheckListmodel(){
   printf("steht was wichtiges in famillies.cc.spaeter?\n"); // OK
   printf("eps<1.0 in huetchen.cc!"); // OK
   printf("rpbernoulli auch fuer prozesse"); // OK
+  printf("brownresnick ueberarbeiten. insb. warum dort TransformLoc aufgerufen wrid"); // OK
+  printf("trafo in variogram.cc nach vorne ziehn, so dass Gitter bleiben wenn nur gestreckt, also statt grid_expand=True ein AVOID"); // OK
+  printf("case !grid, proj<0, separable to be programmed"); // OK
+  printf(""); // OK
   //  printf("done\n");
   return true;
 

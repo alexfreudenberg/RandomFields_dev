@@ -79,7 +79,7 @@ model *WhichSub(model *cov, int which){
     userfst = which == WHICH_USER || which == WHICH_INTERNAL_BUT_ONCE || 
     which==WHICH_INTERNAL_BUT_ONCE_JUMP;
   if (userfst || internfst){
-    if (cov->Splus != NULL && cov->Splus->keys_given)
+    if (MODELKEYS_GIVEN)
       warning("for '+', it is unclear which path to take");
     ans = internfst && ans->key != NULL ? ans->key : ans->sub[0];
     if (ans == NULL) BUG;
@@ -422,7 +422,7 @@ SEXP IGetModelInfo(model *cov, int prlevel, bool both, int spConform,
   bool return_param,
     param_ok[MAXPARAM + 1],
     C_conform = spConform < 0,
-    given_key = cov->Splus != NULL && cov->Splus->keys_given,
+    given_key = MODELKEYS_GIVEN,
     return_key = given_key && whichSub != WHICH_USER,
     return_sub = cov->nsub > 0 && (whichSub != WHICH_INTERNAL || !given_key),
     show_param = prL >= 1;
@@ -839,11 +839,8 @@ void Path(model *cov, model *sub) {
       return;
     }
   }
-
-  //assert(cov->Splus == NULL || cov->Splus->keys_given);
-	 
   
-  if (cov->Splus != NULL) { //&& cov->Splus->keys_given) {
+  if (cov->Smodel != NULL) { //&& cov->Smodel->keys_given) {
     GETSTOMODEL;
     for (i=0; i<C->maxsub; i++) {
       if (STOMODEL->keys[i] == sub) {
@@ -887,11 +884,11 @@ void PrintPoints(location_type *loc, char *name,
 	     xgr[i][XLENGTH]);
     }
   } else {
-    PRINTF("loc:%s [%d] ", name, totalpoints);
+    PRINTF("loc:%s [%d,%d] ", name, loc->spatialdim, totalpoints );
     if (totalpoints <= 0) {
       PRINTF("not given! (%d)", addressbits(x));
     } else {
-      Long total = loc->distances ? totalpoints * (totalpoints-1) / 2 : totalpoints * loc->xdimOZ,
+      Long total =  (Long) loc->distances ? totalpoints * (totalpoints-1) / 2 : totalpoints * loc->xdimOZ,
 	endfor = total;
        if (endfor > maxpts) endfor = maxpts;
       for (i=0; i<endfor; i++) {
@@ -1259,7 +1256,7 @@ getStorage(S0 ,     localCE);
     leer(level); PRINTF("%-10s ","S");
 #define S(X) if (cov->S##X == NULL) {} else{ PRINTF("%s, ", #X); }
     S(ce); S(localCE); S(approxCE); S(direct); S(hyper); S(nugget);
-    S(plus); S(sequ); S(tbm); S(trend); S(br); S(get); S(pgs); S(fctn); S(set);
+    S(model); S(sequ); S(tbm); S(trend); S(br); S(get); S(pgs); S(fctn); S(set);
     S(polygon); S(rect); S(dollar); S(earth); S(extra); S(solve);
     S(biwm); S(bistable); S(scatter); S(mcmc); S(gen); S(likelihood);
     S(covariate); S(mle);     
@@ -1557,8 +1554,8 @@ getStorage(r ,       rect);
 			   stor_level, storage);
   }
 
-  bool Splus_given = cov->Splus != NULL && cov->Splus->keys_given;
-  if (Splus_given) {
+  bool Smodel_given = MODELKEYS_GIVEN;
+  if (Smodel_given) {
     givenkey = true;
     GETSTOMODEL;
     if (all_subs >= 0) {
@@ -1566,9 +1563,9 @@ getStorage(r ,       rect);
 	model *key = STOMODEL->keys[i];
 	leer(level);      
 	if (key != NULL) {
-	    PRINTF("%-10s ++ %d ++:", "plus.keys", i); 
+	    PRINTF("%-10s ++ %d ++:", "model.keys", i); 
 	    pmi(key, all_subs, level + 1, maxlevel, stor_level, storage);
-	}  else PRINTF("%-10s ++ %d ++: %s\n","plus.key", i, "empty");	
+	}  else PRINTF("%-10s ++ %d ++: %s\n","model.key", i, "empty");	
       }
     }
   }
@@ -1823,6 +1820,14 @@ SEXP GetModel(SEXP keynr, SEXP Modus, SEXP SpConform, SEXP whichSub,
   set_NAOK_RANGE(true);
   global_utils->basic.skipchecks = true;
   SET_CALLING_NULL(dummy, cov);
+  
+  if (equalsTcf(SYSTYPE(PREVSYSOF(dummy), 0)))
+    // happens for whittle(nu = NA), returning being tcf,
+    // but estimation on Gaussian is for posdef, allowing different
+    // range of parameters
+    set_type(PREVSYSOF(dummy), 0, PosDefType);
+  
+  PMI0(cov);
   err = CHECK_ONLY(dummy);
   global_utils->basic.skipchecks = skipchecks;
   // TREE(dummy);
@@ -1955,7 +1960,7 @@ bool tree(model *cov, int current, char all_subs, int level,    // TREE
   defn *C = DefList + COVNR, // nicht gatternr
     *CC = C;
   bool found,
-    Splus_given = cov->Splus != NULL; // && cov->Splus->keys_given;
+    Smodel_given = cov->Smodel != NULL; // && cov->Smodel->keys_given;
   while(STRCMP(CC->name, InternalName) ==0) CC--;
   PRINTF("%s (V%d of %d) [%d", CC->name, //COVNR, 
 	 cov->variant, CC->variants, cov->zaehler);
@@ -1979,7 +1984,7 @@ bool tree(model *cov, int current, char all_subs, int level,    // TREE
     if (!further)
       for (int i=0; i<C->kappas; i++)
 	if ((further = cov->kappasub[i] != NULL)) break;
-    if (!further && Splus_given) {
+    if (!further && Smodel_given) {
       GETSTOMODEL;
       for (int i=0; i < MAXSUB; i++)
   	if ((further = STOMODEL->keys[i] != NULL)) break;
@@ -2006,9 +2011,9 @@ bool tree(model *cov, int current, char all_subs, int level,    // TREE
     found |= tree(cov->key, current, all_subs, level+1, storage, n, alle);//TREE
   }
 
-  //  printf("%s %d %d %d\n", NAME(cov), Splus_given, all_subs, cov->Smodel != NULL);
+  //  printf("%s %d %d %d\n", NAME(cov), Smodel_given, all_subs, cov->Smodel != NULL);
   
-  if (Splus_given && all_subs >= 0) {
+  if (Smodel_given && all_subs >= 0) {
     GETSTOMODEL;
     for (int i=0; i < cov->nsub; i++) {
       model *key = STOMODEL->keys[i];
@@ -2038,15 +2043,13 @@ bool tree(model *cov, int current, char all_subs, int level,    // TREE
 }
 
 void tree(model *cov, bool alle) {// TREE
-  int current = cov->zaehler,
-    all_subs = 0;
+  int current = cov->zaehler;
   // all_subs = 1; printf("all_subs=%d\n", all_subs);
   model *storage[TREE_MAXSTORAGE];
   int n = getroot(cov, storage);
-  if (!tree(storage[0], current, all_subs, 0, storage, n, alle) || // TREE
-      all_subs < 0) {
-    //    printf("%s found = %d all_subs=%d\n", NAME(cov),
-    //	   tree(storage[0], current, all_subs, 0, storage, n, alle), all_subs);
+  if (!tree(storage[0], current, 0, 0, storage, n, alle)) { //
+    //printf("%s %d found = %d \n", NAME(cov), alle,
+    //	   tree(storage[0], current, 0, 0, storage, n, alle));
     //    PMI(cov->calling);
     //crash();
     BUG;

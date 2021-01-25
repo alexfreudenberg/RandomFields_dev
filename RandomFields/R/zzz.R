@@ -33,7 +33,7 @@
 
 .onAttach <- function (lib, pkg) {
   #print("dooppelte anfuehrungszeichen kroore")
- # packageStartupMessage("This is RandomFields Version: 4.0.0.4") # ")
+ # packageStartupMessage("This is RandomFields Version: 4.0.0.6") # ")
   packageStartupMessage("Note that a new package 'RandomFieldsLight' is upcoming,\nwhich offers a simplified access to modelling random fields.")
   packageStartupMessage(.Call("attachRandomFields"))
 }

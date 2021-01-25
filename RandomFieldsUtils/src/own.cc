@@ -44,7 +44,7 @@ errorstring_type ERRORSTRING;
 
 
 
-int parentpid=-1;
+int parentpid=0;
 bool parallel() {
   int mypid;
   pid(&mypid);

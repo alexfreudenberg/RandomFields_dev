@@ -757,7 +757,7 @@ void inversenonstatS(double *x, model *cov, double *left, double*right,
 	ncnr = ncol * nrow,
 	size = ncol * sizeof(double);
       bool redo;
-      Long bytes = ncnr * sizeof(double);
+      Long bytes = (Long) ncnr * sizeof(double);
       if (ncol != nrow) BUG;
       redo = S->save_aniso == NULL;
       ALLC_NEW(Sdollar, save_aniso, ncnr, save_aniso);
@@ -1146,7 +1146,7 @@ int checkS(model *cov) {
     if (cov->key==NULL) {
       ASSERT_QUASIONESYSTEM;
       if ((err = CHECK(sub, OWNLOGDIM(0), OWNXDIM(0),
-		       SYSTYPE(OWN, 0), OWNDOM(0), 
+		       OWNTYPE(0), OWNDOM(0), 
 		       owniso, SUBMODEL_DEP, cov->frame)) != NOERROR) {
 	RETURN_ERR(err);
       }
@@ -1209,7 +1209,7 @@ int checkS(model *cov) {
 	
 	if (!isMiso(mtype)) cov->pref[SpectralTBM] = cov->pref[TBM] = PREF_NONE;
 	ASSERT_ONESYSTEM;
-	err = CHECK(sub, ncol, ncol, SYSTYPE(OWN, 0), OWNDOM(0), 
+	err = CHECK(sub, ncol, ncol, OWNTYPE(0), OWNDOM(0), 
 		    ncol==1 && !isnowProcess(cov)
 		    ? IsotropicOf(owniso) : owniso, 
 		    SUBMODEL_DEP, cov->frame);
@@ -1282,13 +1282,16 @@ int checkS(model *cov) {
       int nproj = cov->nrow[DPROJ]; // #define Nproj
       if (nproj != 1)
 	SERR1("values 'space' and 'time' in argument '%.50s' do not allow additional values", KNAME(DPROJ));
-      if (!(Loc(cov)->Time && xdim >= 2 &&
+      if (!(LocPrev(cov)->Time && xdim >= 2 &&
 	  (isCartesian(OWNISO(last))
 #if MAXSYSTEMS == 1
 	   || (isAnySpherical(PREVISO(0)) && PREVXDIM(0) > 2)
 #endif							      
-	   )))
-	SERR1("unallowed use of '%.50s' or model too complicated.", KNAME(DPROJ));
+	   ))) {
+	//PMIR(cov);
+	SERR1("unallowed use of '%.50s' or model too complicated.",
+	      KNAME(DPROJ));
+      }
 
       bool Space = p == PROJ_SPACE;
       assert(Space || p  == PROJ_TIME);
@@ -1617,7 +1620,7 @@ bool allowedIS(model *cov) {
     I[SPHERICAL_SYMMETRIC] |= I[SPHERICAL_ISOTROPIC];		       
     I[SPHERICAL_ISOTROPIC] = false;
 
-    if (LocTime(cov)) {      
+    if (LocPrevTime(cov)) {      
       I[DOUBLEISOTROPIC] = (!PisNULL(DANISO) && cov->nrow[DANISO] == 2) ||
 	(!PisNULL(DAUSER) && cov->ncol[DAUSER] == 2) ||
 	nproj > 0; // nicht sehr praezise...
@@ -2288,8 +2291,9 @@ int structSproc(model *cov, model **newmodel) {
       if (cov->ownloc != NULL) BUG;
        double *xx=NULL;
       Long total = Loctotalpoints(cov);
-      int xdim = TransformLoc(cov, Loc(cov), &xx, NULL, true);
-     
+      int xdim = TransformLoc(cov, Loc(cov), &xx, NULL, True);
+      //printf("back hier\n");
+    
       newdim = Aniso->vdim[0];
       assert(LocSets(cov) == 1);
       if (empty_loc_set(cov, newdim, total, 0)){
@@ -2315,10 +2319,25 @@ int structSproc(model *cov, model **newmodel) {
       SERR("no specific simulation technique available for arbitrary scale");
     } else {      
       double scale = PisNULL(DSCALE) ? 1.0 : P0(DSCALE);
-      cov->Sdollar->separable = !PisNULL(DPROJ) &&
-	(grid || (Time && PINT(DPROJ)[0] < 0)) &&// #define PPROJ
-	isXonly(NEXT); // cov model may not depend on the location!
-	
+      cov->Sdollar->separable = // nur fuer projectionen und wenn
+	// dies sicher ist. TO DO: Koennte man etwas weniger restrictiv machen.
+	!PisNULL(DPROJ) &&
+	Loc(cov)->caniso == NULL &&
+	grid && // TO DO 27.1.21: delete this line, when case "!grid, proj<0"
+	// is programmed
+	(grid || (Time && PINT(DPROJ)[0] < 0)); // "#define PPROJ"
+
+
+      
+      // && isXonly(NEXT); 21.1.21: diese Bedingungen entfernt,
+      //                            entsprechend gewuenscht eingeschraenkt
+      //                            sein soll Siehe Bsp RMfix.Rd
+      // cov model may (!!) depend on the location!
+      //                insb. wenn i_row/i_col verwendet wurde, muss
+      //                kernel irgendwo dazwischen auftauchen
+
+      //printf("sep %d %d %d %d %d (!#define PPROJ)\n",  cov->Sdollar->separable,  !PisNULL(DPROJ),   Loc(cov)->caniso == NULL ,     (grid || (Time && PINT(DPROJ)[0] < 0)));
+       	
       if (cov->Sdollar->separable) {
 	int *proj = PPROJ,
 	  nproj = Nproj;
@@ -2331,7 +2350,7 @@ int structSproc(model *cov, model **newmodel) {
 	    xx[i * 3 + 1] /= scale;
 	  }
 	  loc_set(xx, NULL, NULL, NULL,
-		  nproj, nproj, 3, 0,
+		  nproj, nproj, UNKNOWN_NUMBER_GRIDPTS, 0,
 		  false, true, true,
 		  false, cov);
 	  FREE(xx);
@@ -2344,7 +2363,7 @@ int structSproc(model *cov, model **newmodel) {
 		    false, grid, false,
 		    false, cov);
 	  else {
-	    Long bytes = sizeof(double) * nproj * spatialpoints;
+	    Long bytes = (Long) sizeof(double) * nproj * spatialpoints;
 	    double *x0 = (double*) MALLOC(bytes),
 	      *xx = x0,
 	      *L = Locx(cov);
@@ -2369,12 +2388,16 @@ int structSproc(model *cov, model **newmodel) {
 	// LocReduce: ausschiesslich Projektionen werden reduziert
 	//	TransformLocReduce(cov, true /* timesep*/, gridexpand, 
 	//		   true /* involveddollar */);
+	// PMI0(cov);
 	TransformLoc(cov, true /* timesep*/, gridexpand,  // OK
-			   true /* involveddollar */);
+			   True /* involveddollar */);
+
+	//	PMI0(cov);printf("back %d %d\n", gridexpand, GRIDEXPAND_AVOID);
+	//	assert(false);
+	
 	newdim = Loctsdim(cov);
    	assert(newdim > 0 );
       }
-      
     }
  
     if ((err = covcpy(&(cov->key), next)) != NOERROR) RETURN_ERR(err);
@@ -2390,8 +2413,11 @@ int structSproc(model *cov, model **newmodel) {
     if ((err = CHECK_NO_TRAFO(key, newdim, newdim, ProcessType, XONLY, 
 			      CoordinateSystemOf(cov->Sdollar->orig_owniso),
 			      VDIM0, GaussMethodType)) != NOERROR) {
+      //APMI(cov);
       RETURN_ERR(err);
     }
+
+    //PMI(cov);
     
     err = STRUCT(key, NULL);
 
@@ -2419,7 +2445,6 @@ int initSproc(model *cov, gen_storage *s){
     prevdim = prevloc->timespacedim,
     prevtotalpts = prevloc->totalpoints,
     owntotalpts =  Loctotalpoints(cov);
-  coord_type prev_gr = prevloc->xgr;
 
   int err = NOERROR;
 
@@ -2450,6 +2475,8 @@ int initSproc(model *cov, gen_storage *s){
     ALLC_NEWINT(Sdollar, len, prevdim + 1, len);
     
     if (cov->Sdollar->separable) {
+      coord_type prev_gr = prevloc->xgr;
+      //      PMI(cov);
       for (int d=0; d<prevdim; d++) {
 	cumsum[d] = 0;
 	len[d] = prev_gr[d][XLENGTH];
@@ -2532,6 +2559,7 @@ int initSproc(model *cov, gen_storage *s){
 
 //int zz = 0;
 void doSproc(model *cov, gen_storage *s){
+  PMI(cov);
   int 
     vdim = VDIM0;
 

@@ -12,7 +12,7 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
                           path=package, package="RandomFields",
                           read.rd.files=TRUE, local = FALSE,
                           libpath = NULL, single.runs = FALSE,
-                          reset) {
+                          reset, catcherror=TRUE) {
   .exclude <- exclude
   .ask <- ask
   .echo <- echo
@@ -127,11 +127,10 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
     if (.idx %in% .exclude) next
     cat("\n\n\n\n\n", .idx, " ", .package, ":", .fct.list[.idx],
         " (total=", length(.fct.list), ") \n", sep="")
-    RFoptions(LIST=.RFopt)
+    RFoptions(list_=.RFopt)
     if (!missing(reset)) do.call(reset)
     if (.echo) cat(.idx, "")
     .tryok <- TRUE
-    require(sp)
     if (single.runs) {
       txt <- paste("library(", package,", ", libpath, "); example(",
 		   .fct.list[.idx],
@@ -142,10 +141,16 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
       command <- paste("R < ", file.in, ">>", file.out)
     } else {
       ##s topifnot(RFoptions()$basic$print <=2)
+      if (catcherror)
         .time <- system.time(.res <- Try(do.call(utils::example, 
                                                  list(.fct.list[.idx], ask=.ask,
                                                       package=package,
                                                     echo=.echo, local=.local))))
+      else
+        .time <- system.time(.res <- do.call(utils::example, 
+                                                 list(.fct.list[.idx], ask=.ask,
+                                                      package=package,
+                                                    echo=.echo, local=.local)))
       w <- warnings()
       .allwarnings <- c(.allwarnings, list(c("Help page ", .idx)), w)
       print(w) ## ok

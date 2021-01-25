@@ -474,7 +474,9 @@ getStorage(s ,   tbm);
  
   assert(cov->ownloc == NULL);
   if ((LocTime(cov) && !ce_dim2)) {
-    TransformLoc(cov, ce_dim2, False, false); 
+    // Hier keine Expansion, da caniso auf die zufaellige
+    // Richtung der Hyperebene draufmultipliziert wird !
+    TransformLoc(cov, ce_dim2, False, DOLLAR_IMPOSSIBLE); 
   }
   // ACHTUNG TransformLoc aendert loc
   bool Time = LocTime(cov),
@@ -649,7 +651,7 @@ getStorage(s ,   tbm);
 
   //printf("xline %10g %10g %10g\n", xline[XSTART], xline[XSTEP], xline[XLENGTH]);
   
-  err = loc_set(xline, timecomp, 1, 1, 3, ce_dim2 /* time */, 
+  err = loc_set(xline, timecomp, 1, 1, xline[XLENGTH], ce_dim2 /* time */, 
 	  true /* grid */, false, cov->key);
   model *key = cov->key;
   if (err != NOERROR) goto ErrorHandling;
@@ -927,7 +929,7 @@ getStorage(s ,   tbm);
 	      double xoffset = inittoffset + s->xline_length * v +
 		inct * nt + incz * nz + incy * ny,
 		endxoffset = xoffset + (gridlenx - 1) * incx;
-	      Long zaehler = gridlenx *
+	      Long zaehler = (Long) gridlenx *
 		(ny + gridleny * (nz + gridlenz * (nt + v * gridlent)));
 	      if (xoffset >= ntot+1 || xoffset < 0 ||
 		  endxoffset >= ntot+1 || endxoffset < 0 )  BUG;
@@ -966,7 +968,7 @@ getStorage(s ,   tbm);
    	for (v=0; v<vdim; v++) {					\
 	  for (nt=0; nt<gridlent; nt++) {				\
 	    double offset = offsetinit + s->xline_length * v + inct * nt; \
-	    Long zaehler = spatialdim * (nt + gridlent * v);		\
+	    Long zaehler = (Long) spatialdim * (nt + gridlent * v);	\
 	    for (int xi = 0; xi < end; xi+=spatialdim) {
 
 #define TBMFOREND }}  

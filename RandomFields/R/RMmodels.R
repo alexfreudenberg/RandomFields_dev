@@ -3261,7 +3261,7 @@ RMshape <- function(mean) {
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('mean') && !is.null(subst <- substitute(mean))) 
-	par.model[['mean']] <- CheckArg(mean, subst, FALSE)
+	par.model[['mean']] <- CheckArg(mean, subst, TRUE)
   
   model <- methods::new(CLASS_CLIST, name = 'RMshape', 
   		submodels = submodels, 
@@ -3271,8 +3271,8 @@ RMshape <- function(mean) {
 
 RMshape <- new(CLASS_RM, 
 	.Data = RMshape,
-	type = c('trend'),
-	isotropy = c('parameter dependent'),
+	type = c('shape function', 'trend'),
+	isotropy = c('parameter dependent', 'non-dimension-reducing'),
 	domain = c('single variable'),
 	operator = FALSE,
 	monotone = 'not monotone',
@@ -4249,23 +4249,23 @@ iRFvariogram <- new(CLASS_RM,
 
 
 
-RPtrend <- function(phi, mean) {
+RPshape <- function(phi, mean) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
   if (hasArg('mean') && !is.null(subst <- substitute(mean))) 
 	par.model[['mean']] <- CheckArg(mean, subst, FALSE)
   
-  model <- methods::new(CLASS_CLIST, name = 'RPtrend', 
+  model <- methods::new(CLASS_CLIST, name = 'RPshape', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
 }
 
-RPtrend <- new(CLASS_RM, 
-	.Data = RPtrend,
+RPshape <- new(CLASS_RM, 
+	.Data = RPshape,
 	type = c('process', 'method for Gauss process'),
-	isotropy = c('parameter dependent', 'non-dimension-reducing'),
+	isotropy = c('non-dimension-reducing', 'non-dimension-reducing'),
 	domain = c('single variable'),
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',

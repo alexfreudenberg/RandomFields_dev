@@ -25,7 +25,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "Processes.h"
 #include "startGetNset.h"
 
-//#define xdebug 1
+//
+#define xdebug 1
 //#define ydebug 1
 
 //  printf("L=%d E=%d cov:err=%d err_lev=%d %s\n", L, X, cov->err,  cov->err_level, NAME(cov));
@@ -497,7 +498,7 @@ int check2Xintern(model *cov, int vdim0, int vdim1, Types frame,
 #ifdef ydebug
 	printf("err: type inconsistency\n");//
 #endif     
-	Err = ERRORTYPECONSISTENCY;
+	Err = CERRORTYPECONSISTENCY;
 	continue;
       }
       if (!left[cov->variant]) continue; // never happens when ct=false
@@ -721,7 +722,9 @@ int check2Xintern(model *cov, int vdim0, int vdim1, Types frame,
   } // for ct
 
   //  if (Err != 0) { printI(cov); printD(cov); printf("Err=%d %d in %s\n", Err, cov->err_level, NAME(cov));PMI(cov);}
-  
+
+  PMI0(cov);
+  //  if (Err != 0) crash();
  
   RETURN(14, Err);
 } // checkXintern
@@ -877,7 +880,7 @@ int set_own_domain_and_check(model *cov, int vdim0, int vdim1,
   
   //  printf("B here %s;  %d %s --> %d %s\n", NAME(cov), previso,ISO_NAMES[previso],  iso, ISO_NAMES[iso]); 
   if (C->TypeFct == NULL) {
-    if (isBad(TypeConsistency(prevtype, cov, previso))) {
+    if (isBad(TypeConsistency(prevtype, cov, previso))) {      
       RETURN(31, ERRORTYPECONSISTENCY);
     }
   } else {
@@ -1776,7 +1779,7 @@ int check_within_range_multivariate(model *cov, bool NAOK,
 
   if (!maxdim_ok(cov)) {
     int s = -maxdim_ok(cov);
-    RERR3("Max. dimension in '%.50s' is %d. Got %d",
+    RERR3("max. dimension in '%.50s' is %d; got %d",
 	  NAME(cov), OWNMAXDIM(s), OWNLOGDIM(s));
   }
 

@@ -462,7 +462,7 @@ SEXP get_logli_wholetrend(SEXP model_reg) {
     ncol = NCOL_OUT_OF(datasets),					\
     repet = ncol / vdim,						\
     pred_tot = Loctotalpoints(cov);					\
-  Long pred_totvdim = pred_tot * vdim
+  Long pred_totvdim = (Long) pred_tot * vdim
 
 
 void get_fx(model *cov, double *v, int set) {
@@ -630,7 +630,7 @@ void gauss_trend(model *cov, double *v, int set, bool ignore_y) {
   if (L->betas_separate) repet = 1;
  
   
-  Long pred_totvdimrepet = pred_tot * ncol;
+  Long pred_totvdimrepet = (Long) pred_tot * ncol;
   
   for (Long k=0; k<pred_totvdimrepet; v[k++] = 0.0);
 
@@ -749,8 +749,16 @@ void gauss_predict(model *cov, double *v) {
 
   //PMI0(cov);  printf("totYvdimrepet=%d %d %d, vdim=%d set=%d\n", totYvdimrepet, repet, ncol, vdim,cov->base->set);
   TALLOC_X1(residuals, totYvdimrepet); // X1 egal, da eh zu wenig
+
+  //printf("RESIFUALS %d\n", totYvdimrepet);
+
+  
   get_logli_residuals(conditioning, NULL, residuals, LOGLI_RESIDUALS);
 
+
+  TALLOC_XXX1(cross, totptsYvdimSq);
+  //  printf("CROSS tot = %d\n", totptsYvdimSq);
+  TALLOC_XXX2(dummy, has_nas ? totptsYvdimSq : 1);
 
   double *ResiWithoutNA, *Ccur, *ptcross;
   int atonce, endfor,
@@ -758,18 +766,18 @@ void gauss_predict(model *cov, double *v) {
   if (has_nas) {
     atonce = 1;
     Ccur = L->Cwork;
+    ptcross = dummy;
     ResiWithoutNA = L->Xwork;
-  } else {
+   } else {
     notnas = totptsYvdim;
     atonce = repet;
     Ccur = L->C;
-    // ResiWithoutNA = residuals;
+    ptcross = cross;
   }
   endfor = repet / atonce;
  
-  TALLOC_XXX1(cross, totptsYvdimSq);
-  TALLOC_XXX2(dummy, has_nas ? totptsYvdimSq : 1);
-  for (int r=0; r<endfor; r++) {
+
+  for (int r=0; r<endfor; r++) { // over alle repetitions (in case of splitting)
     double *resi = residuals + r * totptsYvdim * atonce,
       *pv0 = v + r * atonce * pred_totvdim;
     if (has_nas) {
@@ -783,6 +791,8 @@ void gauss_predict(model *cov, double *v) {
       SqMatrixcopyNA(Ccur, L->C, resi, totptsYvdim);
     } else ResiWithoutNA = resi;
 
+    
+    //printf("hasnas = %d %d %d %ld\n", has_nas, notnas, totptsYvdim, ResiWithoutNA);
 
     //   printf("%d\n", resi - residuals);
     //   for (int i=0; i<notnas; i++) printf("%d>%5.4f ", i, residuals[i]);
@@ -813,9 +823,9 @@ void gauss_predict(model *cov, double *v) {
 
     //   for (int i=0; i< notnas; i++) printf("%i:%5.2f ", i, ResiWithoutNA[i]); printf("\n");
 
-    
-    for (int i_row=0; i_row<pred_tot; i_row++, pv0++) {
-      //for ease: simple kriging considered:
+      
+    for (int i_row=0; i_row<pred_tot; i_row++, pv0++) { // over all locations
+     //for ease: simple kriging considered:
       // calculated above: Z = (\Sigma_{y_jy_j})J^{1} %*% residuals
       // to be calulated S_i:=((\Sigma_{x_i, y_j}))_j,
       // which is a lying vector.
@@ -824,25 +834,28 @@ void gauss_predict(model *cov, double *v) {
       // So, CovarianceT also swaps role of x and y
       
       CovarianceT(predict, i_row, cross);
-      if (has_nas) {
-	matrixcopyNA(dummy, cross, resi, totptsYvdim, vdim, 0);
-	ptcross = dummy;
-      } else ptcross = cross;
+      if (has_nas) matrixcopyNA(dummy, cross, resi, totptsYvdim, vdim, 0);
+
+      //printf("ptcross = %ld %ld\n", ptcross, cross);
 
       // printf("\ni=%d\n", i_row); for (int i=0; i< notnas; i++) printf("%d/%e ", i, cross[i]); printf("\n");
 
       double *pv = pv0;
-      for (int s=0; s<atonce; s++) {
+      double *rWNA = ResiWithoutNA;
+      for (int s=0; s<atonce; s++, rWNA += notnas) { // over indep. realisations
+	double *ptc = ptcross;
 	//warum nicht ResiWithoutNA statt residuak? -> geaendert 30.12.20
 	//double factor = residuals[totptsYvdim * s + totptsY * j+i_row];
 
-	for (int j=0; j<vdim; j++, ptcross += notnas, pv += pred_tot) {
+	for (int j=0; j<vdim; j++, ptc += notnas, pv += pred_tot) {//multivar.
 	  // influence of the different variates of position i
 
 	  // printf("\nbeor vdm=%d, p_tot=%d nas=%d notnas=%d=%d  i=%d j=%d s=%d r=%d %e\n", vdim, pred_tot, L->nas_fixed[cov->base->set], notnas, totptsYvdim- L->nas_fixed[cov->base->set], i_row, j, s,r, *pv);
 	  //double sum = 0.0; for (int i=0; i<notnas; i++) sum += ptcross[i] * ResiWithoutNA[i];
 
-	  (*pv) += SCALAR_P(ptcross, ResiWithoutNA, notnas);
+	  //	  printf("r=%d i=%d , s=%d, j=%d, ptcros %ld , resi %ld, notnas %d\n", r, i_row, s, j, ptc, rWNA, notnas);
+
+	  (*pv) += SCALAR_P(ptc, rWNA, notnas);
 
 	  // printf("i=%d j=%d s=%d %d %e %e\n", i_row, j, s, r, *pv, sum);
 	}// j, vdim
@@ -1433,14 +1446,18 @@ int countbetas(model *cov, double ***where) {
 
 
 void AbbrBeta(char *Old, char *abbr) {
-  char *old = Old;
+  int len = 6;// global->fit.lengthshortname / 3,
+  if (Old == NULL) {
+    STRNCPY(abbr, "unk.", len);
+    return;
+  }
+
+    char *old = Old;
   if (old[0] == '.') old++;
 
   // printf("%d\n", global->fit.lengthshortname ); BUG;
   
-  int 
-    len = 6, // global->fit.lengthshortname / 3,
-    nold = STRLEN(old),
+  int nold = STRLEN(old),
     nabbr = len - 1;
 
   if (nold <= len) {
@@ -1536,8 +1553,12 @@ void GetBeta(model *cov, likelihood_storage *L, int *neffect)  {
       if (isDollar(comp)) comp = comp->sub[0]; // jump just for a nice name
       char abbr[LENMSG];
       int bytes = (1 + global->fit.lengthshortname) * sizeof(char);
-      //      printf("%d %.50s %.50s\n", *neffect, NAME(component), NAME(comp));
-      if (nr == COVARIATE) AbbrBeta(PARAM0CHAR(comp, COVARIATE_NAME), abbr);
+      //      PMI0(comp);
+      //printf("%d %.50s %.50s %d\n", *neffect, NAME(component), NAME(comp),2);
+      //      printf("%d\n",  PARAMisNULL(comp, COVARIATE_NAME));
+      if (nr == COVARIATE)
+	AbbrBeta(PARAMisNULL(comp, COVARIATE_NAME) ? NULL
+		 : PARAM0CHAR(comp, COVARIATE_NAME), abbr);
 
       else if (nr == CONST) SPRINTF(abbr, "const");
 
@@ -1548,7 +1569,8 @@ void GetBeta(model *cov, likelihood_storage *L, int *neffect)  {
 	if (MODELNR(comp) == PROJ_MODEL) {
 	  if (PARAMisNULL(comp, PROJ_NAME))
 	    SPRINTF(abbr, "proj%d", PARAM0INT(comp, PROJ_PROJ));
-	  else AbbrBeta(PARAM0CHAR(comp, PROJ_NAME), abbr);
+	  else AbbrBeta(PARAMisNULL(comp, PROJ_NAME) ? NULL
+			: PARAM0CHAR(comp, PROJ_NAME), abbr);
 	}
 	else if (MODELNR(comp) == SHAPE_FCT &&
 		 comp->kappasub[SHAPE_FCT_MEAN] != NULL)
@@ -1792,7 +1814,7 @@ getStorage(L ,   likelihood);
     if (L->fixedtrends) {
       for (int set = 0; set < sets; set++){
 	cov->base->set = set;
-	Long tot = betatot * LoctotalpointsY(cov) * vdim;
+	Long tot = (Long) betatot * LoctotalpointsY(cov) * vdim;
 	L->X[set] = (double*) CALLOC(tot, sizeof(double)); 
       }  
     }
@@ -1860,17 +1882,19 @@ getStorage(L ,   likelihood);
     }
  
     // provide necessary space and account for known information
-    max_total_data_Sq = L->max_total_data * L->max_total_data;
-    Long totdata_bytes = max_total_data_Sq * sizeof(double);
+    max_total_data_Sq = (Long) L->max_total_data * L->max_total_data;
+    Long totdata_bytes = (Long) max_total_data_Sq * sizeof(double);
 
     //    PMI(cov);
-    //    printf("totdata_bytes = %d %d\n", L->max_total_data, L->max_total_data);
+    //    printf("totdata_bytes = %ld %ld %ld\n", totdata_bytes, L->max_total_data, L->max_total_data);
     
-    L->C = (double *) MALLOC(totdata_bytes);    
+    L->C = (double *) MALLOC(totdata_bytes);
+    //    printf("L->C %d\n", totdata_bytes);
     if (L->data_has_nas) {
       L->Cwork = (double *) MALLOC(totdata_bytes);
-      Long tot = L->max_total_data + betatot * LoctotalpointsY(cov);
+      Long tot = (Long) L->max_total_data + betatot * LoctotalpointsY(cov);
       L->Xwork = (double*) MALLOC(tot * sizeof(double));
+      //printf("XWORK tot = %d\n", tot);
     }
     if (L->fixedtrends) {
       L->XitXi =  (double*) MALLOC(sizeof(double) * betatot * 

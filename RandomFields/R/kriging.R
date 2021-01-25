@@ -329,7 +329,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
                           ignore.trend=FALSE, ...) {
   
   RFopt <- internalRFoptions(...,
-                             kriging_variance = FALSE) ## currently!! TO DO !!
+                             return_variance = FALSE) ## currently!! TO DO !!
   if (!hasArg("COPY")) on.exit(optionsDelete(RFopt))
   
   if (length(err.model) > 1 && is.list(err.model) &&
@@ -403,7 +403,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
     stop("'vdim_close_together' must be FALSE")
 
   
-  return.variance <- RFopt$krige$return_variance
+  return_variance <- RFopt$krige$return_variance
 
   reg <- RFopt$registers$predict_register
   all <- rfPrepareData(model=model, x=x, y=y, z=z, T=T,
@@ -461,8 +461,8 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
                       if (length(all$X$T) > 0) all$X$T[3]) else nx # to do:grid
   newdim <- c(dimension, if (vdim>1) vdim, if (repet>1) repet)
 
-  if (imputing && return.variance) {
-    return.variance <- FALSE
+  if (imputing && return_variance) {
+    return_variance <- FALSE
     warning("with imputing, currently the variance cannot be returned")
   }
     
@@ -566,7 +566,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
   X <- all$X
 
   if (FALSE) {## jonas
-    if (return.variance && length(newdim <-
+    if (return_variance && length(newdim <-
                                     c(dimension, if (vdim>1) vdim)) > 1)
       base::dim(sigma2) <- newdim
   }
@@ -582,7 +582,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
     Res <- FinishImputing(data=data, simu=Res, Z=Z,
                           spConform=spConform,
                           fillall = RFopt$krige$fillall) ## to do : grid
-    if (return.variance){
+    if (return_variance){
       var <- FinishImputing(data=data, simu=sigma2, Z=Z,
                             spConform=spConform,
                             fillall = RFopt$krige$fillall)# to do : grid
@@ -599,10 +599,10 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
         Resperm <- c(length(dimension)+1, 1:length(dimension),
                      if(repet>1) length(dimension)+2)
         Res <- aperm(Res, perm=Resperm)
-        if (return.variance)
+        if (return_variance)
           sigma2 <- aperm(sigma2, perm=Resperm[1:(length(dimension)+1)])
       }
-      return(if (return.variance) list(estim = Res, var = sigma2) else Res)
+      return(if (return_variance) list(estim = Res, var = sigma2) else Res)
     }
     
     Res <- conventional2RFspDataFrame(Res, coords=coords$x,
@@ -611,7 +611,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
                                       vdim_close_together =
                                         RFopt$general$vdim_close_together)
     
-    if (return.variance){
+    if (return_variance){
       var <- conventional2RFspDataFrame(sigma2, coords=coords$x,
                                         gridTopology=gridTopology,
                                         n=1, vdim=vdim, T = coords$T,

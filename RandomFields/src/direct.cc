@@ -94,8 +94,8 @@ int init_directGauss(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
   location_type *loc = Loc(cov);
   Long 
     vdim = VDIM0,
-    locpts = loc->totalpoints,
-    vdimtot = vdim * locpts,
+    totpts = loc->totalpoints,
+    vdimtot = vdim * totpts,
     vdimSqtotSq = vdimtot * vdimtot,
     bytes = sizeof(double) * vdimSqtotSq;
   solve_param sp = cov->base->global_utils.solve;
@@ -117,7 +117,7 @@ int init_directGauss(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
 	  direct[DIRECT_MAXVAR_PARAM]);
   }
   
-  //  printf("direct vdim = %ld %ld %ld %ld\n", vdim, locpts, vdimtot, vdimSqtotSq); 
+  //  printf("direct vdim = %ld %ld %ld %ld\n", vdim, totpts, vdimtot, vdimSqtotSq); 
   //  PMI(cov->calling);
 
   if ((Cov =(double *) MALLOC(bytes))==NULL) {
@@ -137,45 +137,43 @@ int init_directGauss(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
   CHECKED;
 
   //  PMI0(next);
-  CovarianceMatrix(next, true, Cov); 
-  assert(R_FINITE(Cov[0]));
-
-   
+  CovarianceMatrix(next, true, Cov);
+  
+ 
   //PMI(cov->calling->calling->calling->calling);   
   if (false) {
     Long i,j;
-    PRINTF("\n");
-    for (i=0; i<locpts * vdim; i++) {
-       for (j=0; j<locpts * vdim; j++) {
-	 PRINTF("%2.3f ", Cov[i  + locpts * vdim * j]);
-	 assert(R_FINITE( Cov[i  + locpts * vdim * j]));
+    PRINTF("%d %d\n", totpts, vdim);
+    for (i=0; i<totpts * vdim; i++) {
+       for (j=0; j<totpts * vdim; j++) {
+	 PRINTF("%2.3f ", Cov[i  + totpts * vdim * j]);
+	 assert(R_FINITE( Cov[i  + totpts * vdim * j]));
        }
        PRINTF("\n");
     }
     //    assert(false); //
   }
 
+  assert(R_FINITE(Cov[0]));
   if (isnowPosDef(next)) {
     if (sp.pivot_check == Nan) sp.pivot_check = False;
     assert(cov->Ssolve != NULL);
     err = Ext_sqrtPosDefFree(Cov, vdimtot, cov->Ssolve, &sp);
-    
-    
+       
 
     if (false) {
       Long i,j;
       PRINTF("\n");
-      for (i=0; i<locpts * vdim; i++) {
-	for (j=0; j<locpts * vdim; j++) {
-	  PRINTF("%2.3f ", cov->Ssolve->result[i  + locpts * vdim * j]);
-	  assert(R_FINITE( cov->Ssolve->result[i  + locpts * vdim * j]));
+      for (i=0; i<totpts * vdim; i++) {
+	for (j=0; j<totpts * vdim; j++) {
+	  PRINTF("%2.3f ", cov->Ssolve->result[i  + totpts * vdim * j]);
+	  assert(R_FINITE( cov->Ssolve->result[i  + totpts * vdim * j]));
 	}
 	PRINTF("\n");
       }
       //    assert(false); //
     }
    
-    
 
   } else if (isnowVariogram(next)) {
     int r;
@@ -200,14 +198,14 @@ int init_directGauss(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
 
      if (false) {
 	Long i,j,
-	  endfor = locpts * vdim
+	  endfor = totpts * vdim
 	  // endfor = 40
 	  ;
 	PRINTF("\n"); 
 	for (i=0; i<endfor; i++) {
 	  for (j=0; j<endfor; j++) {
-	    if (ISNAN(C[i  + locpts * vdim * j])) BUG;
-	    PRINTF("%+2.2f ", C[i  + locpts * vdim * j]);
+	    if (ISNAN(C[i  + totpts * vdim * j])) BUG;
+	    PRINTF("%+2.2f ", C[i  + totpts * vdim * j]);
 	  }
 	  PRINTF("\n");
 	}
@@ -216,22 +214,22 @@ int init_directGauss(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
     
       
      double *D = C;
-      for (int v=0; v<vdim; v++, D += locpts) { 
-	for (int i=0; i<locpts; i++, D+=vdimtot) {
-	  for (int j=0; j<locpts; D[j++] -= min_2r);
+      for (int v=0; v<vdim; v++, D += totpts) { 
+	for (int i=0; i<totpts; i++, D+=vdimtot) {
+	  for (int j=0; j<totpts; D[j++] -= min_2r);
 	}
       }
       
       if (false) {
 	Long i,j,
-	  endfor = locpts * vdim
+	  endfor = totpts * vdim
 	  // endfor = 40
 	  ;
 	PRINTF("\n"); 
 	for (i=0; i<endfor; i++) {
 	  for (j=0; j<endfor; j++) {
-	    if (ISNAN(C[i  + locpts * vdim * j])) BUG;
-	    PRINTF("%+2.2f ", C[i  + locpts * vdim * j]);
+	    if (ISNAN(C[i  + totpts * vdim * j])) BUG;
+	    PRINTF("%+2.2f ", C[i  + totpts * vdim * j]);
 	  }
 	  PRINTF("\n");
 	}
@@ -275,9 +273,9 @@ void do_directGauss(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
   location_type *loc = Loc(cov);
 getStorage(s ,   direct); 
   Long 
-    locpts = loc->totalpoints,
+    totpts = loc->totalpoints,
     vdim = VDIM0,
-    vdimtot = locpts * vdim;
+    vdimtot = totpts * vdim;
   double 
     *G = NULL,
     //*U = NULL,
@@ -300,7 +298,7 @@ getStorage(s ,   direct);
   //  printf("done vdimtot = %d\n", vdimtot);
   
 
-  //for (int i=0; i<locpts; i++) res[i] = i; print("nonsense");
+  //for (int i=0; i<totpts; i++) res[i] = i; print("nonsense");
 
   BOXCOX_INVERSE;
 }

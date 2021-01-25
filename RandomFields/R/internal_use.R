@@ -90,7 +90,7 @@ jpegORpdf <- function(graphics=NULL) {
     isjpg <- is.function(GD) && is.logical(all.equal(args(jpeg), args(GD)))
   } 
   
-  if (is.null(graphics)) graphics <- getRFoptions(GETOPTIONS="graphics")        
+  if (is.null(graphics)) graphics <- getRFoptions(getoptions_="graphics")        
   file <- graphics$file
   if (file != "") {
     f <- strsplit(file, "\\.")[[1]]
@@ -223,7 +223,7 @@ ArrangeDevice <- function(graphics, figs, dh=2.8, h.outer=1.2,
 
 StartExample <- function(reduced = TRUE, save.seed=TRUE) {
   if (save.seed) {
-    RFopt <- RFoptions()    
+    RFopt <- internalRFoptions()    
 #    L <- list(se ed=RFopt$ba sic$s eed)
  #   if (length(RFopt$coords) != 0) L$coord_system= RFopt$coords$coord_system
  #   assign("RandomFields_options", envir=.RandomFields.env, L)
@@ -234,7 +234,7 @@ StartExample <- function(reduced = TRUE, save.seed=TRUE) {
     ## do not touch next lines
     ## REDUCED <- reduced, reduced
     REDUCED <- reduced
-    RFoptions(examples_reduced = REDUCED)
+    setRFoptions(examples_reduced = REDUCED, RETURN=FALSE)
   }
 }
 
@@ -254,8 +254,9 @@ FinalizeExample <- function() {
   options <- get("RandomFields_options", envir=.RandomFields.env)
                                         #
 #  Print(options)
-  options$examples_reduced <- FALSE
-  RFoptions(LIST = options)
+  options$examples_reduced <- FALSE 
+  RFoptions(list_ = options) ## internalRFoptions geht nicht, da
+  ##                            printlevel, seed auch gesetzt werden muss
   #do.call("RFoptions", options)
   #print("done finalize")
 }

@@ -87,7 +87,7 @@ RFpseudomadogram(model, x, y=NULL, z=NULL, T=NULL, grid, params,
       That is, also some coordinates must be given and
       the given model, see \command{\link{RFformula}} for defining it,
       is fitted to the data. See also
-      \code{\link[RFoptionsFit]{emp_alpha}}
+      \code{\link[=RFoptionsFit]{emp_alpha}}
     }
     \item{\code{data} are given, but not a model}{
       Then also coordinates must be given and
@@ -168,7 +168,7 @@ RFpseudomadogram(model, x, y=NULL, z=NULL, T=NULL, grid, params,
       }
     }
     \item{\code{data} are given, but not a model}{
-      Then the argument \code{\link[RFoptionsFit]{bins}}
+      Then the argument \code{\link[=RFoptionsFit]{bins}}
       might be important.
     }
     \item{no \code{data} are given, but a model and coordinates are
@@ -179,7 +179,8 @@ RFpseudomadogram(model, x, y=NULL, z=NULL, T=NULL, grid, params,
     \item{only the model, but no \code{data} and no coordinates are
       given}{
       In case of preparing a plot,
-      \code{\ldots} only a allow for graphical parameters, see
+      \code{\ldots} only a allow
+      parameters for \command{\link[graphics]{par}}, see
       \command{\link{RFpar}}
     }
   }

@@ -224,9 +224,9 @@ typedef int64_t Long;
 #define print NEVER_USE_print_or_PRINTF_WITHIN_PARALLEL /* // */
 
 
-#define HELPINFO(M) if (GLOBAL.basic.helpinfo) { PRINTF("%s\n(Note that you can unable this information by 'RFoptions(helpinfo=FALSE)'.)\n", M); } //
+#define HELPINFO(M) if (GLOBAL.basic.helpinfo) { PRINTF("%s\n(Note that you can unable this information by 'RFoptions(helpinfo=FALSE)'.)\n", M); } // OK
 
-#define UTILSINFO(M) if (GLOBAL_UTILS->basic.helpinfo) { PRINTF("%s\n(Note that you can unable this information by 'RFoptions(helpinfo=FALSE)'.)\n", M); } //
+#define UTILSINFO(M) if (GLOBAL_UTILS->basic.helpinfo) { PRINTF("%s\n(Note that you can unable this information by 'RFoptions(helpinfo=FALSE)'.)\n", M); } // OK
 
 
 #endif

@@ -277,6 +277,7 @@ void set_xdim_intern(system_type *sys, int i, int value);
 // durch static inline + assert ersetzen
 #define Locgrid(cov) (LocP(cov) != NULL ? Loc(cov)->grid : false)
 #define LocTime(cov) (LocP(cov) != NULL ? Loc(cov)->Time : false)
+#define LocPrevTime(cov) (LocPrev(cov)->Time)
 #define Loctsdim(cov) (LocP(cov) != NULL ? Loc(cov)->timespacedim : 0)
 #define LocxdimOZ(cov) (LocP(cov) != NULL ? Loc(cov)->xdimOZ : 0)
 #define Locspatialdim(cov) (LocP(cov) != NULL ? Loc(cov)->spatialdim : 0)

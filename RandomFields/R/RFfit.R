@@ -247,7 +247,8 @@ print.summary.RMmodelFit <- function(x, ...) {
     cat("\n")
   }
 
-  if (RFoptions(GETOPTIONS="general")$detailed_output) str(x$model, no.list=TRUE) #
+  if (internalRFoptions(getoptions_="general")$detailed_output)
+    str(x$model, no.list=TRUE) #
   cat("\n")
   np <- AIC <- ll <- nm <- NA
   cparam <- NULL
@@ -562,7 +563,7 @@ RFfit <- function(model, x, y=NULL, z=NULL, T=NULL,  grid=NULL, data,
         RFopt$basic$printlevel > 0)
       message("Value of option 'estimate_variance_globally' is ignored.")
     RFopt$fit$estimate_variance_globally <- FALSE
-    RFoptions(fit.estimate_variance_globally = FALSE)
+    setRFoptions(fit.estimate_variance_globally = FALSE)
   }
   fit <- RFopt$fit
 

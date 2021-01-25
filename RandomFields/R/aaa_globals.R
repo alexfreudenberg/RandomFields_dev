@@ -24,6 +24,7 @@ SYMBOL_R_PAR <- ")"
 SYMBOL_PLUS <- '+'
 SYMBOL_MULT <- '*'
 DOLLAR <- c("$", "RMS")
+SYMBOLS <- c(SYMBOL_PLUS, SYMBOL_MULT , DOLLAR[1])
 
 RM_PLUS <- c("RMplus", SYMBOL_PLUS)
 RM_MULT <- c("RMmult", SYMBOL_MULT)

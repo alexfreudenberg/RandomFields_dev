@@ -25,7 +25,7 @@ without the user's notice.
   \describe{
     \item{\code{help_addNA}}{Logical.
       If \code{TRUE} help is shown for
-      \code{\link[fit]{RFoptions(addNAlintrend=)}}. 
+      \code{\link[=fit]{RFoptions(addNAlintrend=)}}. 
       
 	Default: \code{TRUE}.
       }
@@ -201,15 +201,6 @@ without the user's notice.
     Default: \code{TRUE}.
   }
   
-  \item{\code{warn_parallel}}{Logical.
-    The package \pkg{RandomFields} should not be called from within
-    functions of the packages \pkg{parallel} and alike.
-    If \code{TRUE} and \pkg{RandomFields} parallel calls a warning is
-    given.     
-    
-    Default: \code{TRUE}.
-  }
-
   
   \item{\code{warn_scale}}{Logical.
     If \code{warn_scale=TRUE} then a scale less than 10 [km] is reported
@@ -253,6 +244,17 @@ without the user's notice.
       
       Default: \code{3}.
     }
+
+    \item{\code{warn_parallel}}{Logical.
+      As a few parts cannot be in parallel technically
+      or from a logical point of view, a hint or a
+      warning is given, if such a point is not accessed adequately.
+      These messages can be turned off by \code{warn_parallel = FALSE}. 
+      
+      Default: \code{TRUE}.
+    }
+
+    
   }
 }
 

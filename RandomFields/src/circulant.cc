@@ -947,7 +947,7 @@ int check_ce(model *cov) {
       //    assert(false);
       RETURN_ERR(ERRORPREFNONE);
     }
-    if (!isPosDef(SYSTYPE(NEXT, 0))) SERR("only covariance functions allowed.");
+    if (!isPosDef(NEXTTYPE(0))) SERR("only covariance functions allowed.");
   }
   setbackward(cov, next);
   if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) RETURN_ERR(err);
@@ -1900,7 +1900,7 @@ int struct_ce_approx(model *cov, model **newmodel) {
   
     if (cov->key!=NULL) COV_DELETE(&(cov->key), cov);
     err = covcpyX(&(cov->key), cov, x, loc->T, spatialdim, spatialdim,
-		  3, loc->Time, true, false);
+		  UNKNOWN_NUMBER_GRIDPTS, loc->Time, true, false);
     if (err != NOERROR) RETURN_ERR(err);
     SET_CALLING(cov->key, cov);
 

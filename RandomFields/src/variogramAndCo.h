@@ -73,7 +73,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
     *startny =fctn->startny,						\
     *ny = fctn->ny;		 					\
 		 							\
-  Long vdim0totX = vdim0 * totX,					\
+  Long vdim0totX = (Long) vdim0 * totX,					\
     vdim1totX = vdim1 * totX,						\
     VARIABLE_IS_NOT_USED VDIM_0, VARIABLE_IS_NOT_USED NEND,		\
     VARIABLE_IS_NOT_USED  NINCR, VARIABLE_IS_NOT_USED  MINCR,		\
@@ -233,13 +233,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define PERFORM_PREPARE						\
   if (trafo) { /* implies no grid */					\
     localdim = TransformLoc(cov, NULL, xswapped ? NULL : &xx,		\
-			    xswapped ? &xx : NULL,  false);	\
+			    xswapped ? &xx : NULL,  False);	\
     x = xx;								\
   }									\
   if (ygiven && !gridY) {						\
     if (trafoY) { /* falls xswapped && ygiven, so auch yswapped	*/	\
       localdim = TransformLoc(cov, NULL, xswapped ? &yy : NULL,\
-			      xswapped ? NULL : &yy, false);		\
+			      xswapped ? NULL : &yy, False);		\
       y = yy;								\
     } else y=LocY(cov, xswapped);					\
   } else if (gridY) {							\

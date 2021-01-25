@@ -441,7 +441,7 @@
   
   \item{\code{storing}}{Logical.
     If \code{FALSE} then the intermediate results are
-    destroyed after the call of a function \code{\link[RF]{RFfoo}}.
+    destroyed after the call of a function \code{\link[=RF]{RFfoo}}.
     
     If \code{storing=TRUE}, in particular
     additional simulations can be performed by calling
@@ -856,6 +856,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \bold{10. \code{graphics}: Options for graphical output}
 These parameters should be set always globally by \command{RFoptions}.
+Options for \command{\link[graphics]{par}} are passed through
+\command{\link{RFpar}}. 
 \describe{
   \item{\code{always_close_device}}{logical.
     If \code{FALSE} the current device is kept as it is;
@@ -1639,7 +1641,7 @@ The user can use the registers 0..9.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
- \bold{24. Internal options}
+ \bold{24.A Internal options with prefix}
   Internal options should not be changed by the user.
   \describe{    
     \item{\code{do_tests}}{
@@ -1654,9 +1656,38 @@ The user can use the registers 0..9.
       This option is necessary to run the examples of \pkg{RandomFields}
       under the time constraint of CRAN.
     }
-  }
 
- 
+    \item{\code{warn_unknown_option}}{integer. See
+      \code{?RandomFieldsUtils::RFoptions} for details.
+      
+      Default for \pkg{RandomFields}: \code{1}
+    }
+  }
+    
+\bold{24.B Internal options without prefix}
+  \describe{    
+    \item{\code{getoptions_}}{(from \pkg{RandomFieldsUtils})
+      string vector of prefixes that indicate
+      classes of options. In this package it
+      can be \code{"general"} and \code{"fit"}, for instance.
+      See \code{str(RFoptions(), max=1, give.attr=FALSE)} to get the
+      whole list of options.
+      The given classes of options are then
+      returned by \code{RFoptions()}. Note that the values are the
+      previous values.
+      
+      \code{getoptions_} must always be the first argument.
+    }
+    \item{\code{local_}}{logical.
+      In parallel computing, each instance of R (identified by its pid),
+      gets its own copy of the set of of options.
+      If \code{TRUE}, \code{RFoptions} will refer to the local set.
+      Note that \code{local_} must be set as the very first argument,
+      even before \code{getoptions_}.
+      
+      Default: \code{FALSE}.
+    }
+  }
 %\bold{General comments}\cr
 %Most of the above arguments determine the basic settings of a
 %simulation, e.g. \code{matrix_method} (which chooses the method to

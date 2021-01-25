@@ -976,34 +976,43 @@ void M(model *cov, double *M1, double *Z,  double *M2, double *V) {
     ncol = cov->ncol[M_M],
     nrow = cov->nrow[M_M];
  
-//  printf("nrow=%d ncol=%d\n", nrow, ncol);
-//      SUBROUTINE DGEMM(TRANSA,TRANSB,M,N,K, ALPHA,A,LDA,B,LDB, BETA,C,LDC)
-// C := alpha*op( A )*op( B ) + beta*C,
-// M : rows of op(A)
-// N : cols of op(B)
-// K : cols of op(A)= rows of op(B)
-// LD-X : first dimension of X   \command{\link{RMflat}} \tab constant in space \cr
+  //  printf("nrow=%d ncol=%d\n", nrow, ncol);
+  //      SUBROUTINE DGEMM(TRANSA,TRANSB,M,N,K, ALPHA,A,LDA,B,LDB, BETA,C,LDC)
+  // C := alpha*op( A )*op( B ) + beta*C,
+  // M : rows of op(A)
+  // N : cols of op(B)
+  // K : cols of op(A)= rows of op(B)
+  // LD-X : first dimension of X   \command{\link{RMflat}} \tab constant in space \cr
       
-  if (next->vdim[0] == 1) {
-    if (cov->kappasub[M_M] == NULL && nsub == 1) {
-      // V = Z * M1 %*% t(M2)
+  if (next->vdim[0] == 1) { // M(x) C M^top(y) where C is a diagonal matrix
+    if (cov->kappasub[M_M] == NULL && nsub == 1) { // C=Z[0] * \1_{v x v}
+      // M is a const, and M M^\top is stored in cov->q
+      
       //      printf("M:%10g %10g   %10g %10g (%d)\n", M1[0], M1[1], M2[0], M2[1], cov->zaehler);
       double z = *Z;
       int nrow2 = nrow * nrow;   
       for (int i=0; i<nrow2; i++) V[i] = cov->q[i] * z;
       //printf("\n"); for (int i=0; i<nrow2; i++) printf("V(%d)=%10g ", i, V[i]);
     } else {
+      // V = Z * M1 %*% t(M2)
       TALLOC_X1(Mz, nrow * ncol);  // !! ja nicht X1, da kollision mit 'Matrix'
+      double *pMz = Mz;
       for (int i=0; i<ncol; i++) {
 	double zi = Z[i % nsub];
-	for (int j=0; j<nrow; j++) *(Mz++) = *(M1++) * zi;
+	for (int j=0; j<nrow; j++) {
+	  //printf("%d %f %f %d\n", j, *M1, zi, i % nsub);
+	  *(pMz++) = *(M1++) * zi;
+	}
       }
+      //      printf("Mz = %f %f %f %f\n", Mz[0], Mz[1], Mz[2], Mz[3]);
       matmult_2ndtransp(Mz, M2, V, nrow, ncol, nrow);
+      //      printf("V = %f %f %f %f\n", V[0], V[1], V[2], V[3]);
       END_TALLOC_X1;
     }
-  } else {
+  } else { // general case:  M(x) C M^top(y), C is any full matrix
     TALLOC_X1(Mz, nrow * ncol);// !! ja nicht X1, da kollision mit 'Matrix'
-    matmult(M1, Z, Mz, nrow, ncol, ncol);   
+    matmult(M1, Z, Mz, nrow, ncol, ncol);
+    //    printf("mz=%f %f %d %d\n", Mz[0], Mz[1], nrow, ncol);
     matmult_2ndtransp(Mz, M2, V, nrow, ncol, nrow);
     END_TALLOC_X1;
     //printf("mz = %f %f; V=%f\n", Mz[0], Mz[1], *V);
@@ -1075,7 +1084,6 @@ void Matrix(double *x, int *info, model *cov, double *v) { // RMmatrix
   for (int i=0; i<nsub; i++) COV(x, info, cov->sub[i], z + i); // nsub=1 & multivar
   //                                             oder nsub > 1 & univar !!
 
-  //  printf("M nsub=%d %f %f %f %f %d\n", nsub, z[0], z[1], z[2], z[3], PisNULL(M_M));
   if (isnowNegDef(cov)) {
     if (PisNULL(M_M)) NoM(z, ncol, nsub, v);
     else M(cov, P(M_M), z, P(M_M), v);
@@ -1083,7 +1091,9 @@ void Matrix(double *x, int *info, model *cov, double *v) { // RMmatrix
     if (PisNULL(M_M)) NoMshape(z, cov->nrow[M_M], nsub, v);
     else Mshape(cov, P(M_M), z, v);
   }
-  //  printf("%f %f %f \n", P(M_M)[0], P(M_M)[1], v[0]);
+  //printf("%f %f %f \n", P(M_M)[0], P(M_M)[1], v[0]);
+  //  printf("M nsub=%d %f -> %f %f -> %f %f %f %f %d (%f %f %f %f)\n", nsub, x[0], z[0], z[1], v[0], v[1], v[2], v[3], PisNULL(M_M), P(M_M)[0], P(M_M)[1], P(M_M)[2], P(M_M)[3]);
+
   END_TALLOC_X2;
 }
 
@@ -1123,10 +1133,9 @@ int initM(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
 }
 
 int checkM(model *cov) {  
-  assert(COVNR == M_PROC || cov->Splus == NULL || !cov->Splus->keys_given);
+  assert(COVNR == M_PROC || !MODELKEYS_GIVEN);
   int err, 
     dim = OWNTOTALXDIM;
-  bool is_negdef = isnowNegDef(cov) || COVNR == M_PROC;
 
   ASSERT_ONESYSTEM;
  
@@ -1150,6 +1159,7 @@ int checkM(model *cov) {
     COV_DELETE_WITHOUT_LOC(&sub, cov);
     cov->nsub = j;
   }
+  sub = cov->sub[0]; // not necessarily the same as before !!! - NEVER DELETE
 
   int vdim,
     ncol = 0,
@@ -1192,18 +1202,21 @@ int checkM(model *cov) {
 
   //  printf("requ=%d %d\n", required_vdim, is_negdef);
   
-  sub = cov->sub[0]; // not necessarily the same as before !!! - NEVER DELETE
+  domain_type dom = OWNDOM(0);
+  isotropy_type iso = OWNISO(0);
+  bool posdef = isnowPosDef(cov) || COVNR == M_PROC;  
+  bool is_negdef = isnowNegDef(cov) || COVNR == M_PROC;
   if (is_negdef) {
-    domain_type dom = OWNDOM(0);
-    isotropy_type iso = OWNISO(0);
     if ((err = CHECKPOSVAR(sub, PosDefType, dom, iso, required_vdim,
 			   EvaluationType)) != NOERROR) {
-      if ((err = CHECKPOSVAR(sub, VariogramType, dom, iso, required_vdim,
-			    EvaluationType)) != NOERROR) {
+      if (posdef ||
+	  (err = CHECKPOSVAR(sub, VariogramType, dom, iso, required_vdim,
+			     EvaluationType)) != NOERROR) {
 	if (cov->nsub != 1 || required_vdim == 1) RETURN_ERR(err);
 	if ((err = CHECKPOSVAR(sub, PosDefType, dom, iso, 1,
 			       EvaluationType)) != NOERROR) {
-	  if ((err = CHECKPOSVAR(sub, VariogramType, dom, iso, 1,
+	  if (posdef ||
+	      (err = CHECKPOSVAR(sub, VariogramType, dom, iso, 1,
 				 EvaluationType)) != NOERROR)
 	    RETURN_ERR(err);
 	}
@@ -1225,6 +1238,7 @@ int checkM(model *cov) {
 	!=NOERROR) RETURN_ERR(err);
     if (sub->vdim[1] != 1) SERR1("'%.20s' doesn't define a vector.",NICK(sub));
   }
+  Types type = SUBTYPE(0);
   
   int vdimback = cov->sub[0]->vdim[0];
   if (subvdim == 0) {
@@ -1236,30 +1250,30 @@ int checkM(model *cov) {
   }
 
   //  printf("A\n");
-
-  bool variogram =  equalsnowVariogram(cov->sub[0]);
-  if (isnowPosDef(cov) && variogram) SERR("not a positive definite function");
+  //PMI0(cov);
   setbackward(cov, sub);
   VDIM0 = vdim;
   VDIM1 = is_negdef ? vdim : cov->sub[0]->vdim[1];
-  //  printf("negdef %d; ", is_negdef);
+  //  printf("negdef %d; vdim %d %d %d %d req=%d\n ", is_negdef, subvdim, vdim, vdimback, cov->nsub, required_vdim);
+  
   
   for (int i=1; i<cov->nsub; i++) {
     sub = cov->sub[i];
    if (is_negdef) {
-     err = CHECK_PASSTF(sub, variogram ? VariogramType : PosDefType,
-		       1, EvaluationType);
+     err =CHECKPOSVAR(sub, type, dom, iso, 1, EvaluationType);
    } else {
-     err = CHECK_VDIM(sub, dim, dim, ShapeType, XONLY,
+     err = CHECK_VDIM(sub, dim, dim, type, XONLY,
 		      OWNISO(0), required_vdim, 1, EvaluationType);
      if (sub->vdim[0] != VDIM1)
        SERR1("'%.20s' doesn't define a vector.",NICK(sub));
-   }
-    if (err != NOERROR) SERR("submodels are not of the same type");
-    if (sub->vdim[0] != vdim)
+   } 
+   if (err != NOERROR) SERR("submodels are not of the same type");
+   if (sub->vdim[0] != required_vdim) {
+     //APMI(cov);
       SERR1("submodel '%.20s' does not have correct subdimensionality",
-	    NICK(sub));    
-    setbackward(cov, sub);
+	    NICK(sub));
+   }
+   setbackward(cov, sub);
   }
 
   if ((err = checkkappas(cov, false)) != NOERROR) RETURN_ERR(err);
@@ -1390,7 +1404,7 @@ int structMproc(model *cov, model **newmodel) {
   for (int i=0; i<cov->nsub; i++) {
     if ((err = covcpy(STOMODEL->keys + i, cov->sub[i])) != NOERROR) RETURN_ERR(err);
     assert(!isGaussMethod(STOMODEL->keys[i]));
-    addModelX(STOMODEL->keys + i, GAUSSPROC);
+    addModelX(STOMODEL->keys + i, GAUSSPROC);    
     model *key = STOMODEL->keys[i]; // hier und nicht frueher!
     assert(key->calling == cov);    
     
@@ -1406,7 +1420,7 @@ int structMproc(model *cov, model **newmodel) {
     if ((err = STRUCT(key, NULL)) != NOERROR) RETURN_ERR(err);
     //printf("structM B\n");
   }
-  cov->Splus->keys_given = true;
+  STOMODEL->keys_given = true;
   if ((err = ReturnOwnField(cov)) != NOERROR) RETURN_ERR(err);
   cov->simu.active = true;
   //printf("structM C\n");
@@ -1428,7 +1442,7 @@ int initMproc(model *cov, gen_storage *S){
     STOMODEL->keys[i]->simu.active = true;
   }
 
-  EXTRA_STORAGE;
+  assert(cov->Sextra != NULL);
 
   RETURN_NOERROR;
 }
@@ -1463,7 +1477,7 @@ void doMproc(model *cov, gen_storage *S){
   if (!anyM) {
     int tot = Loctotalpoints(cov);
     if (!close) {
-      Long bytes = tot * sizeof(double);
+      Long bytes = (Long) tot * sizeof(double);
       for (int j=0; j<vdim; j++, rf+=tot) MEMCOPY(rf, subrf[j], bytes);
     } else {
       for (int i=0; i<tot; i++) for (int j=0; j<vdim; *(rf++) = subrf[j++][i]);
@@ -2174,11 +2188,11 @@ int checkExp(model *cov) {
     cov->pref[Sequential] = C->pref[Sequential];    
     if (!isnowVariogram(cov))
       SERR1("negative definite function expected -- got '%.50s'",
-	    TYPE_NAMES[SYSTYPE(OWN, 0)]);
+	    TYPE_NAMES[OWNTYPE(0)]);
   } else {
     if (!isnowPosDef(cov)) 
       SERR1("positive definite function expected -- got '%.50s'",
-	    TYPE_NAMES[SYSTYPE(OWN, 0)]); 
+	    TYPE_NAMES[OWNTYPE(0)]); 
   }
 
   double height= isnowVariogram(next) && !isnowPosDef(next) ? 1.0 : RF_NA;
@@ -2847,7 +2861,7 @@ int checksetparam(model *cov) {
  
   kdefault(cov, SET_PERFORMDO, true);
   ASSERT_ONESYSTEM;
-  if (equalsRandom(type) || equalsRandom(SYSTYPE(NEXT, 0))) {
+  if (equalsRandom(type) || equalsRandom(NEXTTYPE(0))) {
     BUG;
   }
    if ((err = CHECK_PASSTYPE(next, OWNTYPE(0))) != NOERROR) RETURN_ERR(err);
@@ -2938,11 +2952,13 @@ void logtrafo(double *x, int *info, model *cov, double *v,
   assert(next != NULL);
   LOGCOV(x, info, next, v, Sign);
   assert(P0INT(TRAFO_ISO) == NEXTISO(0)); 
+  // printf("tlografo %e %e -> %e %e\n", x[0], x[1], v[0], v[1]);
 }
 void nonstattrafo(double *x, double *y, int *info,model *cov, double *v){  
   model *next = cov->sub[0];
   assert(next != NULL);
   NONSTATCOV(x, y, info, next, v);
+  // printf("instat trafo %e %e -> %e %e\n", x[0], x[1], v[0], v[1]);
 }
 void nonstat_logtrafo(double *x, double *y, int *info, model *cov, double *v, 
 		      double *Sign){  
@@ -2950,6 +2966,7 @@ void nonstat_logtrafo(double *x, double *y, int *info, model *cov, double *v,
   assert(P0INT(TRAFO_ISO) == ISO(PREVSYSOF(next), 0)); 
   assert(next != NULL);
   LOGNONSTATCOV(x, y, info, next, v, Sign);
+  // printf("ilofnstat trafo %e %e -> %e %e\n", x[0], x[1], v[0], v[1]);
 }
 
 
@@ -3154,9 +3171,11 @@ int structtrafoproc(model *cov, model VARIABLE_IS_NOT_USED **newmodel){
   // Somit muss ownloc gesichert werden. Wird eingehaengt, so dass bei Fehlern
   // ownloc dennoch zum Schluss geloescht wird.
 
-  TransformLoc(cov, true, True, false); // OK
+  TransformLoc(cov, true, True, DOLLAR_IMPOSSIBLE); // OK
   // SetLoc2NewLoc(sub, LocP(cov));  ist hier zu frueh, da Bindung
   // durch loc_set unten zerstoert wird
+  PMI0(cov);
+
   
   assert(!Locgrid(cov));
   
@@ -3180,7 +3199,12 @@ int structtrafoproc(model *cov, model VARIABLE_IS_NOT_USED **newmodel){
     pol = 3949.93;
   }
 
-  Earth2Cart(cov, aequ, pol, y);       
+  Earth2Cart(cov, aequ, pol, y);
+
+  
+  PMI0(cov);
+
+  
   loc_set(y, NULL, T, NULL, newdim, newdim, spatialpts, 0,
 	  Time, false, false, false, cov);
   SetLoc2NewLoc(sub, LocP(cov));  
@@ -3224,7 +3248,10 @@ int inittrafoproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){// auch fuer 
 
 void dotrafoproc(model *cov, gen_storage *s){
   model *key = cov->key;
-  DO(key, s);   
+  key->rf[0] = 5;
+  PMI(key);
+  DO(key, s);
+  printf("key-rf %f\n", key->rf[0]);
 }
 
 
@@ -3522,7 +3549,7 @@ getStorage(s ,     covariate);
 	SERR1("number of columns of '%.50s' do not equal the dimension",
 	      KNAME(VAR2COV_X));
       }
-      TransformLoc(cov, loc, &(s->x), NULL, true);
+      TransformLoc(cov, loc, &(s->x), NULL, DOLLAR_IMPOSSIBLE);
       s->pts = loc->totalpoints;
     }
   } // Scovariate == NULL

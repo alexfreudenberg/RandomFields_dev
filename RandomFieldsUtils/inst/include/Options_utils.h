@@ -45,7 +45,7 @@ extern int PL, CORES;
 
 #define LEN_OPTIONNAME 201
 
-#define basicN 11
+#define basicN 12
 // IMPORTANT: all names of basic must be have least 3 letters !!!
 extern const char *basic[basicN];
 #define BASIC_WARN_OPTION 9
@@ -57,11 +57,11 @@ struct basic_param {
     Cprintlevel,
     seed, cores, warn_unknown_option;
   bool skipchecks, asList /* hidden:verbose */, kahanCorrection, helpinfo,
-    useGPU;
+    useGPU, warn_parallel;
 } basic_param;
 #define basic_START \
   { R_PRINTLEVEL, C_PRINTLEVEL, NA_INTEGER, INITCORES,  \
-      WARN_UNKNOWN_OPTION_DEFAULT,			 \
+      WARN_UNKNOWN_OPTION_ALL,				\
       false, true, false, true,  GPUavailable	 \
       }
 

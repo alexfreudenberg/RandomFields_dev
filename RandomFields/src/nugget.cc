@@ -109,7 +109,7 @@ bool SpatialNugget(model *cov) {
      of the nugget effect 
   */
   if (global->general.duplicated_loc != DUPLICATEDLOC_REPEATED ||
-    // note: in convert.R it is guaranteed that distances are > 0!
+      // note: in convert.R it is guaranteed that distances are > 0!
     // so it is a spatial nugget although
     // glob al->general.duplicated_loc = true
       (isProcess(cov) && LocDist(cov) && isAnyIsotropic(OWNISO(0))))
@@ -187,13 +187,14 @@ void covmatrix_nugget(model *cov, bool ignore_y, double *v) {
     n = LoctotalpointsY(cov, ignore_y) * vdim,
     nP1 = n + 1,
     n2 = n * n;
-  
-  if (cov->Snugget->spatialnugget) BUG;
+
+  if (cov->Snugget->spatialnugget) crash(); //  BUG;
   for (i=0; i<n2; v[i++] = 0.0);
   for (i=0; i<n2; i += nP1) v[i]=1.0;
 }
 
 char iscovmatrix_nugget(model VARIABLE_IS_NOT_USED *cov) {
+  //  printf("iscovmatrix = %d\n", cov->Snugget->spatialnugget);
   return !cov->Snugget->spatialnugget;
 }
 
@@ -538,7 +539,7 @@ int init_nugget(model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
 	err=ERRORMEMORYALLOCATION; goto ErrorHandling;
       }
 
-      TransformLoc(cov, false, True, true);
+      TransformLoc(cov, false, True, DOLLAR_IMPOSSIBLE);
 
       loc = Loc(cov);
       assert(!loc->grid && !loc->Time);

@@ -121,7 +121,7 @@ ExtractNames <- function(Names, data, dont.add.data, model, RFopt, dots, Env) {
             setRFoptions(coords.dataframe_initial = string)
             while (any(string == substr(Names, 1, length(string))))
               string <- paste0(string, char)
-            warning("column names of the data should not be the same as the default names for coordinates. Bettesr change the default names by RFoptions((coord.initial='", string, "')")
+            warning("column names of the data should not be the same as the default names for coordinates. Better change the default names by RFoptions((coord.initial='", string, "')")
         }
         }
         if (any(data.names %in% link.data)) {
@@ -510,7 +510,7 @@ Check.CtoR <- function(indices, MODEL_AUX, values) {
     }
 
     v <- values[indices[duplicated(indices)]]
-    link <- GetParam(RFgetModelInfo(MODEL_AUX), NULL)
+    link <- GetParam(internRFgetModelInfo(MODEL_AUX), NULL)
     if (length(link) < 2) stop("Severe error.", CONTACT)
     stop("There is a forbidden link between ",            
          paste("'", sapply(link[1:2], function(x) paste(x,collapse="..")),
@@ -531,7 +531,8 @@ PrepareModel2 <- function(model, ...,
                           x=NULL, # list used within buildFactorList to
                           ## formulate RM_COVARIATE model and to prepare the
                           ## transform; if not given, RMcovariate will fail,
-                          ## in general (for call from RFgetModelInfo_model, OK)
+                          ## in general (for call from
+                          ## internRFgetModelInfo_model, OK)
                           trend=NULL, ## a model indicating a trend -- a further
                           ## option to define a trend; other possiblities are
                           ## trend=TRUE in '+' or to hope for automatic
@@ -550,7 +551,6 @@ PrepareModel2 <- function(model, ...,
                           dont.add.data = TRUE ## false needed only in of covariates in kriging
                           ) {
 
-
   ##  Print("enering prep", model, missing( params), data, missing(x), if (!missing(x)) x)
   
  # stopifnot(Zaehler <- Zaehler + 1 < 2)
@@ -559,7 +559,7 @@ PrepareModel2 <- function(model, ...,
   ## (3)
   ## (4)
   
-  RFopt <- getRFoptions(GETOPTIONS=c("basic", "general", "messages", "coords"))
+  RFopt <- getRFoptions(getoptions_=c("basic", "general", "messages", "coords"))
   coord.opt <- RFopt$coords
   default.max.number.data <- RFopt$coords$max_columns
   default.max.number.coord <- RFopt$coords$max_coord
@@ -592,13 +592,13 @@ PrepareModel2 <- function(model, ...,
     if (isFormula  <- is(trend, "formula")) {
       Trend <- as.character(trend)
       Tv <-if (length(Trend) == 3) Trend[2]
-      trend <- paste("RMshapeplus(add.na=", add.na, ", ~",
-                     Trend[length(Trend)], ")")
+      trend <- paste("RMtrendplus(add.na=", add.na, ", ~",
+                     RMshape(Trend[length(Trend)]), ")")
     }
 
     if (missing(model)) {
       model <- if (isFormula) eval(parse(text=paste(Tv, "~", trend)))
-               else RMshapeplus(trend, add.na=add.na)
+               else RMtrendplus(RMshape(trend), add.na=add.na)
     } else {
       if (is(model, "formula")) {
         m <- as.character(model)
@@ -613,9 +613,9 @@ PrepareModel2 <- function(model, ...,
                  paste(Tv, collapse=", "), ".")
           model <- eval(parse(text=paste(model, trend, ")")))
         } else {
-          assign("..trend..", trend, envir=Env)
-          assign("..trend..", trend, envir=EnvDummies)
-          model <- eval(parse(text=paste(model,"RMshapeplus(add.na=",
+          assign("..trend..", RMshape(trend), envir=Env)
+          assign("..trend..", RMshape(trend), envir=EnvDummies)
+          model <- eval(parse(text=paste(model,"RMtrendplus(add.na=",
                                          add.na, ", ..trend..))")))
         }
       }
@@ -625,11 +625,9 @@ PrepareModel2 <- function(model, ...,
         assign("..model..", model, envir=EnvDummies)  
         model  <- eval(parse(text=paste(Tv, "~RMplus(..model.., ", trend, ")")))
         model  <- eval(parse(text=paste(Tv, "~RMplus(", trend, ",..model..)")))
-        
       }
       
-      else model <- RMplus(model, 
-                           RMshapeplus(trend, add.na=add.na),
+      else model <- RMplus(RMtrendplus(RMshape(trend), add.na=add.na),
                            RMmodelplus(trend = FALSE, model))
     }
     
@@ -831,8 +829,11 @@ PrepareModel2 <- function(model, ...,
 ##        Print(ls(envir=Env), value, link.coord, k, link.coord[k])
         if (!is.character(value) || length(value) != 1)
           stop("value of '", link.coord[k],
-               "' is neither a column name nor an abstract reference to a column: ",
-               paste0("'", RFoptions()$coords$cord_initial, 1:2, "'",
+               "' is neither a column name nor an abstract reference",
+               "to a column: ",
+               paste0("'",
+                      internalRFoptions(getoptions_="coords")$cord_initial,
+                      1:2, "'",
                       collapse=", "), "...")
         idx <- which(data.names == value)
         if (DataNames$factor[idx])
@@ -883,11 +884,13 @@ PrepareModel2 <- function(model, ...,
     simple <-  length(dn) == length(unidn)
     CopyDotsTo(dots, Env, first = TRUE)
     
-    covariates <- data1[, is.unclear, drop=FALSE]    
+    covariates <- data1[, is.unclear, drop=FALSE]
     for (i in unidn) {## covariate
-      d <- as.matrix(data1[ , if (simple) i else which(i == dn), drop=FALSE])
+      d <- data1[ , if (simple) i else which(i == dn), drop=FALSE]
+      d <- if (is.factor(d[[1]])) d[[1]] else as.matrix(d)
 
       if (dont.add.data) assign(i, envir=Env, d)
+
       else if (exists(i, envir=Env, inherits=FALSE)) { ## koennte sein,
         ##                                  Nutzer hat mehr
         is.covariate <- c(is.covariate, i) ## string zeilen eingegeben
@@ -896,7 +899,12 @@ PrepareModel2 <- function(model, ...,
         ## covariates, even in the covariance model (non-stat variance!)
         ## so the data must be jointly passed to RMcovariate
         ## RMcovariate must be able to distinguish.
-        if (is.numeric(dot.covariate)) {
+
+        if (is.factor(d) && !is.character(dot.covariate)) {
+          if (!is.factor(dot.covariate))
+            stop("a component cannot be a factor in one part and not a factor in the other")
+          assign(paste0(i, "..factor.."), d, envir=Env)
+        } else if (is.numeric(dot.covariate)) {
           dot.covariate <- as.matrix(dot.covariate)
           
           L <- nrow(dot.covariate) - nrow(d)
@@ -974,7 +982,7 @@ PrepareModel2 <- function(model, ...,
 
 
 #  Print(xdim)
-#  Print(M)
+  ##  Print(M);
   
   if (xdim != 0 && length(M$is.x) != 0 && length(M$is.x) != xdim) {
     stop("dimension mismatch", CONTACT)
@@ -1118,11 +1126,25 @@ parseModel <- function(model, Env, EnvDummies, add.na=NULL,
     S <- summands[[k]]
     ##    Print(k, S, ls(envir=Env), Env, .GlobalEnv)
     C <- eval(parse(text=S), envir=Env) ## could be a function of the data col
+
+    ## Print(S, C, is.factor(C))
     
     if (is.factor(C)) {
-      lev <- levels(C)
+      lev <- levels(C)     
       if (length(lev) > MAXSUB^2 + 1)
         stop("max number of factors limited to ", MAXSUB^2)
+      if (length(lev) == 1)
+        stop("number of factors is >=2 -- a constant is modelled through '~1'")
+      S2 <- paste0(S, "..factor..")
+      if (extra <- exists(S2, envir=Env, inherits=FALSE)) {#factor may not
+        ##                                         be part of a formula!
+        C2 <- eval(parse(text=S2), envir=Env)
+        lev2 <- levels(C2)
+        if (length(lev2) != length(lev))
+          ## it is assumed that the factors match. No control!!
+          stop("a factor must have the same number of levels in both, the conditioning data set and the one for prediction")
+      }      
+
       L <- list(RM_PLUS[1])
       i <- 2
       while (i <= length(lev)) {
@@ -1131,7 +1153,15 @@ parseModel <- function(model, Env, EnvDummies, add.na=NULL,
         while (i <= last) {
           model <- list(RM_COVARIATE)
           model[[COVARIATE_NAME_NAME]] <- paste0(S, i)
-          model[[COVARIATE_C_NAME]] <- as.numeric(C == lev[i]) ## 'data'
+          model[[COVARIATE_EXTRA_DATA_NAME]] <- extra
+          L1 <- as.numeric(C == lev[i]) ## 'data'
+          if (extra) {
+            dummy.matrix.fill <- Inf
+            L2 <- as.numeric(C2 == lev2[i]) ## 'data'
+            delta <- length(L1 - L2)
+            L1 <- cbind(c(L1, rep(max(0, -delta))), c(L2, rep(max(0, delta))))
+          }
+          model[[COVARIATE_C_NAME]] <- L1  ## 'data'
           model[[COVARIATE_ADDNA_NAME]] <- add.na[k] > 1
           model[[COVARIATE_RAW_NAME]] <- TRUE 
           plusList[[length(plusList) + 1]] <- model
@@ -1241,7 +1271,7 @@ buildCovList <- function(model, Env, EnvDummies, add.na, unclear, EnvTest) {
   P <- model@par.model
   if (length(P[[ADD_NA]]) > 0) {
     add.na <- P[[ADD_NA]]
-    P[[ADD_NA]] <- NSULL
+    P[[ADD_NA]] <- NULL
   }
 
   name <- model@name

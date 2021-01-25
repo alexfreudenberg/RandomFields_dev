@@ -76,7 +76,8 @@ n <- 10
 \dontshow{if(RFoptions()$internal$examples_reduced){warning("reduced 'n'"); n<-1}} 
 for (i in 1:n) {  
   readline(paste("Simulation no.", i, ": press return", sep=""))
-  plot(RFsimulate(model, x=x, seed=i))
+  RFoptions(seed = i)
+  plot(RFsimulate(model, x=x))
 }
 
 ## another possibility to define exactly the same model above is
@@ -93,7 +94,8 @@ for (i in 1:n) {
 model <- RMmatern(nu=unif(min=0.1, max=2)) # random
 for (i in 1:n) {
   readline(paste("Simulation no.", i, ": press return", sep=""))
-  plot(RFsimulate(model, x=x, seed=i))
+  RFoptions(seed = i)
+  plot(RFsimulate(model, x=x))
 }
 
 ## snd, part 1

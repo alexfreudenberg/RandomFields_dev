@@ -99,8 +99,11 @@ void includeCovModels() {
   AddVariant(TcfType, ISOTROPIC);
   AddVariant(PosDefType, SPHERICAL_ISOTROPIC);
 
-  IncludeScalar("locstatfbm", PosDefType, 0, 0, 2, XONLY, ISOTROPIC, 
-	       checklsfbm, rangelsfbm, PREF_ALL, INFDIM, (ext_bool) false,
+  
+  pref_type plsfbm = {  0, 0, 0, 5, 0, 5, 5, 0, 0, 0, 0, 0, 0, 5};
+  //                   CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
+   IncludeScalar("locstatfbm", PosDefType, 0, 0, 2, XONLY, ISOTROPIC, 
+	       checklsfbm, rangelsfbm, plsfbm, INFDIM, (ext_bool) false,
 	       MONOTONE); 
   nickname("lsfbm");
   kappanames("alpha", REALSXP, "const", REALSXP);

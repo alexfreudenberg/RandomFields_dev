@@ -221,8 +221,8 @@ RFplotSimulation1D(x, y, nmax=6,
     \code{speed}. As temporary files \code{file__###.png}  
     of size \code{width.pixel} x \code{height.pixel} are created.
   }
-  \item{...}{arguments to be passed to methods; only graphical
-    arguments and further models in case of class \code{CLASS_CLIST},
+  \item{...}{arguments to be passed to methods; only 
+    arguments for \command{\link[utils]{}} and further models in case of class \code{CLASS_CLIST},
     see Details. \command{\link{RFoptions}} cannot be passed.
   }
 %  \item{f i tmethod}{character; only for \code{class(x)=="RFfit"}; a
@@ -237,10 +237,10 @@ RFplotSimulation1D(x, y, nmax=6,
 %  \item{n.points}{integer; only for \code{class(x)==CLASS_CLIST}; the
  %   number of points at which the model 
  %   evaluated (in each dimension); defaults to 200} 
-%  \item{fct.type}{character; only for \code{class(x)==CLASS_CLIST}; must
+%  \item{fctn.type}{character; only for \code{class(x)==CLASS_CLIST}; must
 %    equal \code{NULL}, \code{"Cov"} or \code{"Variogram"}; controls
-%    whether the covariance (\code{fct.type="Cov"}) or the
-%    variogram (\code{fct.type="Variogram"}) is plotted; \code{NULL}
+%    whether the covariance (\code{fctn.type="Cov"}) or the
+%    variogram (\code{fctn.type="Variogram"}) is plotted; \code{NULL}
 %  implies automatic choice, where \code{"Cov"} is chosen whenever the model is
 %    stationary} 
 %  \item{model}{object of class
@@ -326,10 +326,10 @@ model <- RMshape(mean=0.5) + # mean
 
 plot(model)
 plot(model, xlim=c(0, 30))
-plot(model, xlim=c(0, 30), fct.type="Variogram")
-plot(model, xlim=c(-10, 20), fct.type="Variogram", dim=2)
-image(model, xlim=c(-10, 20), fct.type="Variogram")
-persp(model, xlim=c(-10, 20), fct.type="Variogram")
+plot(model, xlim=c(0, 30), fctn.type="Variogram")
+plot(model, xlim=c(-10, 20), fctn.type="Variogram", dim=2)
+image(model, xlim=c(-10, 20), fctn.type="Variogram")
+persp(model, xlim=c(-10, 20), fctn.type="Variogram")
 
 #############################################################
 ## Plot of simulation results

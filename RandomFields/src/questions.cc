@@ -635,9 +635,9 @@ bool isMdiag(matrix_type type) {
   return type <= TypeMdiag;
 }
 
-bool isMtimesep(matrix_type type) { 
+bool isMtimesep(matrix_type type, int nrow, int ncol) { 
   assert(TypeMtimesep == 3);
-  return type <= TypeMtimesep;
+  return type <= TypeMtimesep && (nrow == ncol || type >= TypeMtimesepproj);
 }
 
 
@@ -1026,7 +1026,7 @@ bool isCallingSet(model *cov) { // is calling model correctly set in
   }
   
   if (cov->key != NULL && !isCallingSet(cov->key)) return false;
-  if (cov->Splus != NULL && cov->Splus->keys_given) {
+  if (MODELKEYS_GIVEN) {
     GETSTOMODEL;
     for (int i=0; i<nsub; i++) {
       model *sub = STOMODEL->keys[i];

@@ -42,13 +42,12 @@ RMscale(phi, scaling, penalty, var, scale, Aniso, proj)
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
-x <- seq(0,1, 0.01)
+x <- seq(0, 1, if (interactive()) 0.01 else 0.3) ##
 scale <- RMcovariate(x=c(0,1), y=c(1,0),#2 areas separated by the 1st bisector
                      grid=FALSE, data=c(1, 3))
 
 model <- RMscale(RMexp(), scaling = scale, penalty=RMidcoord() / 2)
-plot(z <- RFsimulate(model, x, x))
-
+plot(z <- RFsimulate(model, x, x)) ## takes times
 
 \dontshow{FinalizeExample()}}
 

@@ -2,8 +2,10 @@
 \alias{RFpar}
 \title{Graphical parameters for plots}
 \description{
-  This function sets globally graphical parameters for plots
-  of \code{RMmodels}, simulations and estimations.
+  This function sets graphical parameters
+ for plots
+ of \code{RMmodels}, simulations and estimations, which
+ would be usually set by \command{\link[graphics]{par}}.
 }
 \usage{
 RFpar(...)

@@ -71,7 +71,8 @@ int newmodel_covcpy(model **localcov, int modelnr, model *cov, //err
   assert(!((y==NULL) xor (totalpointsy == 0)));
   assert(y == NULL); // y!=NULL sollte eigentlich nie auftauchen
  
-  loc_set(x, y, T, TY, spatialdim, xdimOZ, totalpoints, totalpointsy, Time, grid, gridY,
+  loc_set(x, y, T, TY, spatialdim, xdimOZ, totalpoints, totalpointsy,
+	  Time, grid, gridY,
 	  distances, neu);
   if ((err = covcpy(neu->sub + 0, cov)) != NOERROR) RETURN_ERR(err);
 
@@ -104,8 +105,8 @@ int newmodel_covcpy(model **localcov, int modelnr, model *cov) {//err
 			loc->grid ? loc->xgr[0] + 3 * loc->spatialdim : loc->T, 
 			loc->gridY ? loc->grY[0]+3*loc->spatialdim : loc->TY, 
 			loc->spatialdim, loc->xdimOZ, 
-			loc->grid ? 0 : loc->totalpoints, 
-		        loc->gridY ? 0 : loc->totalpointsY,
+			loc->totalpoints, 
+		        loc->totalpointsY,
 			loc->Time, loc->grid, loc->gridY, loc->distances);
   RETURN_ERR(err);
 }
@@ -409,7 +410,7 @@ void do_BRshifted(model *cov, gen_storage *s) {
     }
  
     partial_loc_set(Loc(STOMODEL->vario), shiftedlocation, NULL, 
-		    keygrid ? 3: keytotal, 0,
+		    keytotal, 0,
 		    keyloc->distances, dim,
 		    NULL, NULL,
 		    keygrid, false, true);
@@ -1005,7 +1006,7 @@ int structBRuser(model *cov, model **newmodel) {
   assert(isBrMethod(cov));  
   
   if (loc->Time || (Locgrid(cov) && loc->caniso != NULL)) {
-    TransformLoc(cov, false, GRIDEXPAND_AVOID, false); // changes loc !
+    TransformLoc(cov, false, GRIDEXPAND_AVOID, DOLLAR_IMPOSSIBLE); // changes loc !
     SetLoc2NewLoc(sub, LocP(cov));
   }
   
@@ -1257,9 +1258,8 @@ int structBRintern(model *cov, model **newmodel) {
  
 
   if (newx == NULL) {
-    if ((err = loc_set(grid ? * loc->xgr : loc->x, NULL, 
-		       dim, dim,
-		       grid ? 3 : Loctotalpoints(cov), false, grid,
+    if ((err = loc_set(grid ? * loc->xgr : loc->x, NULL, dim, dim,
+		       Loctotalpoints(cov), false, grid,
 		       loc->distances, cov->key)) != NOERROR)
       goto ErrorHandling;
   } else {
@@ -1309,7 +1309,7 @@ int structBrownResnick(model *cov, model **newmodel) {
   location_type *loc = Loc(cov);
 
   if (loc->Time || (Locgrid(cov) && loc->caniso != NULL)) {
-    TransformLoc(cov, false, GRIDEXPAND_AVOID, false);
+    TransformLoc(cov, false, GRIDEXPAND_AVOID, DOLLAR_IMPOSSIBLE);
     SetLoc2NewLoc(next, LocP(cov));
   }
   loc = Loc(cov);
@@ -1585,7 +1585,7 @@ int struct_brnormed(model *cov, model **newmodel) {
 				     NAME(cov), DefList[SCHLATHERPROC].name);
 
   if (LocTime(cov) || (Locgrid(cov) && Loccaniso(cov) != NULL)) {
-    TransformLoc(cov, false, GRIDEXPAND_AVOID, false); // changes loc !
+    TransformLoc(cov, false, GRIDEXPAND_AVOID, DOLLAR_IMPOSSIBLE); // changes loc !
     SetLoc2NewLoc(next, LocP(cov));
   }
 
@@ -1631,7 +1631,8 @@ int struct_brnormed(model *cov, model **newmodel) {
 
   
   if ((err=covcpy(&(cov->key), next)) > NOERROR) goto ErrorHandling;
-  if ((err = newmodel_covcpy(&(STOMODEL->vario), VARIOGRAM_CALL, cov->key))!=NOERROR)
+  if ((err = newmodel_covcpy(&(STOMODEL->vario), VARIOGRAM_CALL, cov->key)
+       ) != NOERROR)
     goto ErrorHandling;
   if ((err = alloc_pgs(STOMODEL->vario)) != NOERROR) goto ErrorHandling;
   if (isnowVariogram(next)) addModel(&(cov->key), GAUSSPROC, cov);

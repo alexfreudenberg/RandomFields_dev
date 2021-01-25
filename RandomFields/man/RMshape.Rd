@@ -81,13 +81,14 @@ print(RFfit(model2, data=dta))
 ## IMPORTANT:  subtraction is not a way to combine definite models
 ##             with trends
 trend <- -1
-(model0 <- RMexp(var=0.4) + trend) ## exponential covariance with mean -1
-(model1 <- RMexp(var=0.4) + -1)    ## same as model0
-(model2 <- RMexp(var=0.4) + RMshape(-1)) ## same as model0
-(model3 <- RMexp(var=0.4) - 1) ## this is a purely deterministic model
-                               ## with exponential trend
-plot(RFsimulate(model=model0, x=x, y=x)) ## exponential covariance
-                               ##           and mean -1
+model <- RMexp(var=0.4)
+(model0 <- model + trend) ## exponential covariance with mean -1
+(model1 <- model + -1)    ## same as model0
+(model2 <- model + RMshape(-1)) ## same as model0
+(model3 <- model - 1) ## !! this is a purely deterministic model
+                      ## that decays exponentially towards -1
+
+plot(RFsimulate(model=model0, x=x, y=x)) # expon. covariance and mean -1
 plot(RFsimulate(model=model, trend=trend, x=x, y=x)) ## dito
 plot(RFsimulate(model=model1, x=x, y=x)) ## dito
 plot(RFsimulate(model=model2, x=x, y=x)) ## dito

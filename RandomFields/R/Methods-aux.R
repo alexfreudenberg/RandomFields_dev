@@ -32,7 +32,7 @@ reflection <- function(data, orth, drop=FALSE)
 
 AddUnits <- function(params) {
   ## see also empvario.R and fitgauss.R, if changed
-  coords <- getRFoptions(GETOPTIONS="coords")
+  coords <- getRFoptions(getoptions_="coords")
   return(c(params, list(coordunits=coords$coordunits,
                         varunits=coords$varunits)))
 }

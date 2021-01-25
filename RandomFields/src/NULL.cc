@@ -446,6 +446,7 @@ void COV_NULL(model *cov, KEY_type *base) {
   SYSTEM_NULL(GATTER, MAXSYSTEMS);
   SYSTEM_NULL(OWN, MAXSYSTEMS);
   VDIM0 = VDIM1 = UNSET;
+  
 
   cov->ownkappanames = NULL;
   cov->logspeed = RF_NA;

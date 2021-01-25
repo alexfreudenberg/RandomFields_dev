@@ -36,7 +36,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 const char *basic[basicN] =
   { "printlevel","cPrintlevel", "seed", "cores", "skipchecks",
     "asList", "verbose", "kahanCorrection", "helpinfo", "warn_unknown_option",
-    "useGPU"};
+    "useGPU", "warn_parallel"};
 
 const char * solve[solveN] = 
   { "use_spam", "spam_tol", "spam_min_p", "svdtol", "eigen2zero",
@@ -57,7 +57,7 @@ int ownallN[ownprefixN] = {basicN, solveN};
 int PL = C_PRINTLEVEL,
   CORES = 1;
 
-utilsparam GLOBAL = {
+utilsparam GLOBAL = { // OK
   basic_START,
   solve_START
 };
@@ -114,14 +114,7 @@ void setparameterUtils(int i, int j, SEXP el, char name[LEN_OPTIONNAME],
       break;
     case 7: gp->kahanCorrection = LOGI; break;
     case 8: gp->helpinfo = LOGI; break;
-    case BASIC_WARN_OPTION:{
-	int v = INT;
-	if (v > -3) gp->warn_unknown_option = MIN(v, 3);
-	else if (gp->warn_unknown_option == WARN_UNKNOWN_OPTION_DEFAULT) {
-	  v += WARN_UNKNOWN_OPTION;
-	  gp->warn_unknown_option = MIN(v, 3);
-	} // else idle (respect the changing of the user)
-      }
+    case BASIC_WARN_OPTION: gp->warn_unknown_option = INT;
 	break;
     case 10:
 #ifdef USEGPU
@@ -131,6 +124,9 @@ void setparameterUtils(int i, int j, SEXP el, char name[LEN_OPTIONNAME],
 		     basic[BASIC_USEGPU]);
 #endif
       break;
+     
+    case 11 : gp->warn_parallel = LOGI;       break;
+
     default: BUG;
     }}
     break;
@@ -233,7 +229,9 @@ void getparameterUtils(SEXP sublist, int i,
     ADD(ScalarLogical(p->kahanCorrection));   
     ADD(ScalarLogical(p->helpinfo));    
     ADD(ScalarInteger(p->warn_unknown_option));    
-    ADD(ScalarLogical(p->useGPU));    
+    ADD(ScalarLogical(p->useGPU));
+    ADD(ScalarLogical(p->warn_parallel));
+
   }
     break;
   

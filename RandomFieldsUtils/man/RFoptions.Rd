@@ -166,8 +166,51 @@
       \code{printlevel = 1} else to \code{printlevel = 2}.
     }
 
-    \item{\code{warn_unknown_option}}{integer. Internal.
-      Default: \code{3}
+
+    \item{\code{warn_parallel}}{Logical.
+      \pkg{RandomFieldsUtils} and
+      packages using it, such as \pkg{RandomFields} and \pkg{miraculix},
+      should now be prepared for parallelization using package
+      \code{parallel}, for instance. Internal OMP parallelization
+      of \pkg{RandomFieldsUtils} is done, but only at a view points
+      of the subsequent packages.
+
+      As a few parts cannot be in parallel technically
+      or from a logical point of view, a hint or a
+      warning is given, if such a point is not accessed adequately.
+      These messages can be turned off by \code{warn_parallel = FALSE}.      
+      
+      Default: \code{TRUE}.
+    }
+
+  \item{\code{warn_unknown_option}}{integer.       
+      \describe{
+	\item{\code{0},\code{1},\code{-1}}{
+	  Unknown options are all ignored. If the value is positive,
+	  a hint is delivered whenever an unknown option is ignored.
+	}
+	\item{\code{-2},\code{2}}{
+	  Unknown options that start with a capital letter are ignored.
+	  All others lead to an error. (Note that all \code{RFoptions}
+	  start with a minor letter.)
+	  If the value is positive,
+	  a hint is delivered whenever an unknown option is ignored.
+	}
+	\item{\code{3},\code{-3}}{
+	  Unknown options that consists of a single capital letter are ignored.
+	  All others lead to an error. (Note that all \code{RFoptions}
+	  start with a minor letter.)
+	  If the value is positive,
+	  a hint is delivered whenever an unknown option is ignored.	  
+	}
+	\item{\code{4}}{(and other values) Any unknown option leads to
+	  an error.}
+      }
+
+      Default for \pkg{RandomFieldsUtils}: \code{3}
+
+      Default for \pkg{RandomFields}: \code{1}
+      
     }
   }
 
@@ -360,14 +403,14 @@
 
   \bold{3. Reserved Words}
   \describe{
-    \item{\code{LIST}}{
-      \code{LIST} usually equals the output of \code{RFoptions()}.
+    \item{\code{list_}}{
+      \code{list_} usually equals the output of \code{RFoptions()}.
       This argument is used to reset the RFoptions.
       Some of the options behave differently if passed through
-      \code{LIST}. E.g. a warning counter is not reset.
-      The argument \code{LIST} cannot be combined with any other arguments.
+      \code{list_}. E.g. a warning counter is not reset.
+      The argument \code{list_} cannot be combined with any other arguments.
     }
-    \item{\code{GETOPTIONS}}{string vector of prefixes that indicate
+    \item{\code{getoptions_}}{string vector of prefixes that indicate
       classes of options. In this package they
       can be \code{"basic"} and \code{"solve"}. (E.g. package
       \pkg{RandomFields} has many more classes of options.)
@@ -375,18 +418,27 @@
       returned by \code{RFoptions()}. Note that the values are the
       previous values.
       
-      \code{GETOPTIONS} must always be the very first argument.
+      \code{getoptions_} must always be the very first argument.
     }
-    \item{\code{SAVEOPTIONS}}{string vector of prefixes. Same as for
-      \code{GETOPTIONS}, except that important classes are always
-      returned and thus  should not be given. Hence \code{SAVEOPTIONS}
-      is often a convenient short cut for \code{GETOPTIONS}.
+    \item{\code{saveoptions_}}{string vector of prefixes. Same as for
+      \code{getoptions_}, except that important classes are always
+      returned and thus  should not be given. Hence \code{saveoptions_}
+      is often a convenient short cut for \code{getoptions_}.
       The class always included in this package is \code{"basic"}, in
       package \pkg{RandomFields} these are the two classes
       \code{"basic"} and \code{"general"}.
    
-      \code{SAVEOPTIONS} must always be the very first argument. In
-      particular, it may not given at the same time with \code{GETOPTIONS}.
+      \code{saveoptions_} must always be the very first argument. In
+      particular, it may not given at the same time with \code{getoptions_}.
+    }
+    \item{\code{local_}}{logical. This options is allowed only when
+      advanced packages are used, see \pkg{RandomFields}.
+    }
+    \item{\code{warnUnknown_}}{integer. Same as option
+      \code{warn_unknown_option}, except that its value overwrites
+      the value of \code{warn_unknown_option} in the current command
+      \code{RFoptions}. This options must be placed between \code{CODE}
+      and \code{getoptions_}, if the latter are used.
     }
   }
 }

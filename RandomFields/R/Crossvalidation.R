@@ -93,7 +93,7 @@ RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL, data,
   RFopt <- internalRFoptions(...)
   if (!hasArg("COPY")) on.exit(optionsDelete(RFopt))
   refit <- RFopt$fit$cross_refit
-  return.variance <- RFopt$krige$return.variance
+  #return_variance <- RFopt$krige$return_variance
   general <- RFopt$general
   basic <- RFopt$basic
   printlevel <- basic$printlevel

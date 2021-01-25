@@ -110,6 +110,7 @@ z <- RFsimulate(RMwhittle(s=500, nu=0.5), coord, grid=TRUE,
 plot(z)
 
 
+\dontshow{\dontrun{
 ## space-time modelling on the sphere
 sigma <- 5 * sqrt((R.lat()-30)^2 + (R.lon()-20)^2)
 model <- RMprod(sigma) * RMtrafo(RMexp(s=500, proj="space"), "cartesian") *
@@ -117,6 +118,9 @@ model <- RMprod(sigma) * RMtrafo(RMexp(s=500, proj="space"), "cartesian") *
 z <- RFsimulate(model, 0:10, 10:20, T=seq(0, 1, 0.1),
                 coord_system="earth", new_coordunits="km")
 plot(z, MARGIN.slices=3)
-
+}}
 
 \dontshow{FinalizeExample(); }}
+
+
+

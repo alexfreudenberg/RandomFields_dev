@@ -51,6 +51,8 @@ RMsinepower(alpha, var, scale, Aniso, proj)
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
+% Achtung! in Kombination mit anderen vorangehenden Seiten tritt ein
+% Fehler auf.
 RFoptions(coord_system="sphere")
 model <- RMsinepower(alpha=1.7)
 plot(model, dim=2)

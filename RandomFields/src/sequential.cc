@@ -195,7 +195,7 @@ int init_sequential(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
  
   if (loc->grid) loc->xgr[spatialdim][XLENGTH] = back; 
   else loc->T[XLENGTH] = back;
-  TransformLoc(cov, &xx, false);
+  TransformLoc(cov, &xx, DOLLAR_IMPOSSIBLE);
   loc = Loc(cov);
   assert(loc->caniso == NULL);
   if (loc->grid) loc->xgr[spatialdim][XLENGTH]=timelength; 

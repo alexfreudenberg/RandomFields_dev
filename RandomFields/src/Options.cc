@@ -55,7 +55,7 @@ void ResetWarnings(int * allwarnings, int *local) {
     w->warn_on_grid = w->note_no_fit = w->note_aspect_ratio = 
     w->warn_coord_change = w->help_color_palette = w->warn_zenit =
     w->warn_constant = w->warn_negvar = w->help_onlyvar = w->note_no_fit =
-    w->warn_parallel = w->help_mle = 
+    = w->help_mle = 
     w->warn_raw_covariates = w->help_addNA = w->help_help =
     w->warn_ambiguous = true;
   w->warn_mathdef = Nan;
@@ -465,7 +465,6 @@ const char * messages[messagesN] =  {
    "warn_constant", "warn_negvar", "help_onlyvar",
   "warn_mathdef", // internal --- not documented in RFoptions!
   
-  "warn_parallel", 
   "warn_seed", "warn_modus_operandi", // 17.11.20 to be deleted in near future
   "warn_singlevariab", "help_mle", "note_detection",
   "warn_raw_covariates", "help_addNA", "help_help", "warn_ambiguous"};
@@ -515,7 +514,8 @@ void setparameter(int i, int j, SEXP el, char name[200], bool isList,
 		  bool local) {  
   //  printf("setparameter %s %d %d local=%d\n", name, i, j, local);
    
-  if (parallel()) ERR("'RFoptions' may not be set from a parallel process.")
+  if (!local && parallel())
+    ERR("'RFoptions' may not be set from a parallel process.")
 
   globalparam *options = WhichOptionList(local);
   //bool isList = options == &GLOBAL;
@@ -571,7 +571,8 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
 	}
       }
       gp->storing = storing;
-   }
+      //printf("storing: get=%d set=%d\n", storing, gp->storing);
+    }
       break;
    case 2: gp->every = POS0INT;      break;
     case 3: gp->gridtolerance = NUM; break;
@@ -1184,16 +1185,15 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
       case 15: wp->warn_negvar = LOGI;       break;
       case 16: wp->help_onlyvar = LOGI;       break;
       case 17: wp->warn_mathdef = USRLOG; break;
-      case MESSAGES_PARALLEL : wp->warn_parallel = LOGI;       break;
-      case 19: wp->warn_seed = POS0INT; break;
-      case 20: wp->warn_modus_operandi = LOGI; break;
-      case 21: wp->warn_singlevariab = LOGI; break;
-      case 22: wp->help_mle = LOGI; break;
-      case 23: wp->note_detection = POS0INT; break;
+      case 18: wp->warn_seed = POS0INT; break;
+      case 19: wp->warn_modus_operandi = LOGI; break;
+      case 20: wp->warn_singlevariab = LOGI; break;
+      case 21: wp->help_mle = LOGI; break;
+      case 22: wp->note_detection = POS0INT; break;
       case MESSAGES_RAW: wp->warn_raw_covariates = LOGI; break;
-      case 25: wp->help_addNA = LOGI; break;
-      case 26: wp->help_help = LOGI; break;
-      case 27: wp->warn_ambiguous = LOGI;       break;
+      case 24: wp->help_addNA = LOGI; break;
+      case 25: wp->help_help = LOGI; break;
+      case 26: wp->warn_ambiguous = LOGI;       break;
     default: BUG; 
       }
     } else {
@@ -1201,7 +1201,6 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
       case MESSAGES_ONGRID :  wp->warn_on_grid = LOGI; break;
       case MESSAGES_COORD_CHANGE: wp->warn_coord_change = LOGI;       break;
       case MESSAGES_ZENIT: wp->warn_zenit = LOGI;       break;
-      case MESSAGES_PARALLEL : wp->warn_parallel = LOGI;       break;
       case MESSAGES_RAW: wp->warn_raw_covariates = LOGI; break; 	
       default : {} // none
       }
@@ -1689,7 +1688,6 @@ void getRFoptions(SEXP sublist, int i, bool local) {
     ADD(ScalarLogical(p->help_onlyvar));
     ADD(ExtendedBooleanUsr(p->warn_mathdef));
     
-    ADD(ScalarLogical(p->warn_parallel));
     ADD(ScalarInteger(p->warn_seed));    
     ADD(ScalarLogical(p->warn_modus_operandi));
     
@@ -1801,6 +1799,7 @@ void loadRandomFields() { // no print commands!!!
   global_utils->solve.max_svd = 6555;
   global_utils->solve.pivot = PIVOT_AUTO;
   global_utils->solve.pivot_check = Nan;
+  global_utils->basic.warn_unknown_option = WARN_UNKNOWN_OPTION_NONE1;
   Ext_attachRFoptions(prefixlist, prefixN, all, allN,
   		      setparameter, finalparameter, getRFoptions, NULL,
   		      PLoffset, true);

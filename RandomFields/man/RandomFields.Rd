@@ -80,7 +80,7 @@
       \item Fitting a covariance function manually
       \command{\link{RFgui}}
       \item the generic function \command{\link[graphics]{plot}}
-      \item global graphical parameters with \command{\link{RFpar}}
+      \item graphical options in \command{\link[graphics]{par}} with \command{\link{RFpar}}
     }
 
     \item \bold{Inference (for Gaussian random fields)} 

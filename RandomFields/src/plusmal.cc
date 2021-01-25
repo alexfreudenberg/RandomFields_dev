@@ -54,6 +54,7 @@ bool CanHaveBothTrendAndCov(model *cov) {
 
 
 int checkplusmal(model *cov) {
+  ONCE_NEWSTOMODEL;
   model *sub;
   int  err, 
     vdim[2] = {1, 1},
@@ -428,7 +429,6 @@ int checkplus(model *cov) {
   int err, 
     nsub = cov->nsub;
   ONCE_NEW_STORAGE(plus);
-  ONCE_NEWSTOMODEL;
   bool *conform = cov->Splus->conform;
   model *sub = cov->sub[0];
 
@@ -452,12 +452,13 @@ int checkplus(model *cov) {
     COV_DELETE_WITHOUTSUB(&sub, cov); // OK, da sub->ownloc == NULL
   }
 
- 
-  if (!PisNULL(PLUS_TREND) && (P0INT(PLUS_TREND) xor isnowTrend(cov)))  {
+  if (!equalsShape(PREVTYPE(0)) // was danach kommt is alles ok.
+      && !PisNULL(PLUS_TREND) && (P0INT(PLUS_TREND) xor isnowTrend(cov)))  {
     //    printf("%d %d %d\n", P0INT(PLUS_TREND), isnowTrend(cov),
-    //	   (P0INT(PLUS_TREND) xor isnowTrend(cov)));
-    //PMI(cov);
-    RETURN_ERR(ERRORTYPECONSISTENCY);
+    //    (P0INT(PLUS_TREND) xor isnowTrend(cov)));
+    //    PMI(cov);  
+    SERR1("Summands are forced to be trends, but calling model '%.20s' does not require a shape function", cov->calling == NULL ? "<none>" : NICK(cov->calling));
+
   }
   if (OWNDOM(0) == DOMAIN_MISMATCH) RETURN_ERR(ERRORNOVARIOGRAM);
   if (nsub == 0) cov->pref[SpectralTBM] = PREF_NONE;
@@ -506,7 +507,7 @@ void rangeplus(model VARIABLE_IS_NOT_USED *cov, range_type *range){
 bool allowedDplus(model *cov) {
   //assert(COVNR == MULT);
   model **sub = cov->sub;
-  if (cov->Splus != NULL && cov->Splus->keys_given) {
+  if (MODELKEYS_GIVEN) {
     GETSTOMODEL;
     sub = STOMODEL->keys;
   }
@@ -572,7 +573,7 @@ bool allowedIplus(model *cov) {
   int nsub = cov->nsub,
    z = 0;
   model **Sub=cov->sub;
-  if (cov->Splus != NULL && cov->Splus->keys_given) {
+  if (MODELKEYS_GIVEN) {
     GETSTOMODEL;
     Sub = STOMODEL->keys;
   }
@@ -659,7 +660,7 @@ int structplus(model *cov, model VARIABLE_IS_NOT_USED **newmodel){
       BUG;
       //return structplusproc(cov, newmodel); // kein S-TRUCT !!
     }
-    if (cov->Splus != NULL && cov->Splus->keys_given) BUG;
+    if (MODELKEYS_GIVEN) BUG;
     int nsub = cov->nsub;
     for (int m=0; m<nsub; m++) {
       model *sub = cov->sub[m];
@@ -693,7 +694,7 @@ int initplus(model *cov, gen_storage *s){
     if (VDIM0 == 1) {
       int nsub = cov->nsub;
       for (int i=0; i<nsub; i++) {
-	model *sub = cov->Splus == NULL || !cov->Splus->keys_given
+	model *sub = !MODELKEYS_GIVEN
 	  ? cov->sub[i] : STOMODEL->keys[i];
 	
 	assert(sub != NULL);
@@ -711,7 +712,7 @@ int initplus(model *cov, gen_storage *s){
       }
     } 
  
-    cov->fieldreturn = (ext_bool) (cov->Splus!=NULL && cov->Splus->keys_given);
+    cov->fieldreturn = (ext_bool) (MODELKEYS_GIVEN);
     cov->origrf = false;
     if (cov->fieldreturn) cov->rf = STOMODEL->keys[0]->rf;
      
@@ -722,7 +723,7 @@ int initplus(model *cov, gen_storage *s){
     int nsub = cov->nsub;
     for (int i=0; i<nsub; i++) {
       // e.g. truncsupport( .. + ...) with parts being random
-      model *sub = cov->Splus == NULL || !cov->Splus->keys_given
+      model *sub = !MODELKEYS_GIVEN
 	? cov->sub[i] : STOMODEL->keys[i];
       assert(sub != NULL);
       // printf("%s randomkappa=%d moment=%d\n", NAME(sub), sub->randomkappa,cov->mpp.moments);
@@ -748,7 +749,7 @@ void doplus(model *cov, gen_storage *s) {
   }
   
   for (int i=0; i<nsub; i++) {
-    model *sub = cov->Splus!=NULL && cov->Splus->keys_given
+    model *sub = MODELKEYS_GIVEN
       ? STOMODEL->keys[i] : cov->sub[i];
     if (sub->randomkappa || isnowRandom(sub)) { // 15.3.19 
       DO(sub, s);
@@ -930,6 +931,7 @@ void Dmal(double *x, int* info, model *cov, double *v){
 
 
 int checkmal(model *cov) {
+  //  PMI0(cov);  printf("check mal");
   model *next1 = cov->sub[0];
   model *next2 = cov->sub[1];
   int err,
@@ -1037,10 +1039,13 @@ int structmal(model *cov, model VARIABLE_IS_NOT_USED **newmodel){
 
 
 int initmal(model *cov, gen_storage *s){
+  // PMI0(cov);  printf("init mal");
   int err,
     nsub = cov->nsub,
     vdim = VDIM0;
   if (VDIM0 != VDIM1) BUG; // ??
+
+  //  if (cov->Smodel == NULL) crash();
   GETSTOMODEL;
  
   int maxv = MIN(vdim, MAXMPPVDIM);
@@ -1051,7 +1056,7 @@ int initmal(model *cov, gen_storage *s){
  
     if (VDIM0 == 1) {
       for (int i=0; i<nsub; i++) {
-	model *sub = cov->Splus == NULL || !cov->Splus->keys_given
+	model *sub = !MODELKEYS_GIVEN
 	  ? cov->sub[i] : STOMODEL->keys[i];
 	assert(sub != NULL);
 	if ((err = INIT(sub, cov->mpp.moments, s)) != NOERROR) {
@@ -1070,7 +1075,7 @@ int initmal(model *cov, gen_storage *s){
   else if (hasAnyEvaluationFrame(cov)) {
     for (int i=0; i<nsub; i++) {
       // e.g. truncsupport( .. + ...) with parts being random
-      model *sub = cov->Splus == NULL || !cov->Splus->keys_given
+      model *sub = !MODELKEYS_GIVEN
 	? cov->sub[i] : STOMODEL->keys[i];
       assert(sub != NULL);
       // printf("%s randomkappa=%d moment=%d\n", NAME(sub), sub->randomkappa,cov->mpp.moments);
@@ -1093,7 +1098,7 @@ void domal(model VARIABLE_IS_NOT_USED *cov,
   GETSTOMODEL;
    int nsub = cov->nsub;
   for (int i=0; i<nsub; i++) {
-    model *sub = cov->Splus!=NULL && cov->Splus->keys_given
+    model *sub = MODELKEYS_GIVEN
       ? STOMODEL->keys[i] : cov->sub[i];
     if (sub->randomkappa || isnowRandom(sub)) { // 15.3.19 
       DO(sub, s);
@@ -1353,8 +1358,7 @@ int checkplusmalproc(model *cov) {
     nsub = cov->nsub;
   GETSTOMODEL;
   
-  assert(cov->Splus != NULL);
-  assert(cov->Splus->keys_given);
+  assert(MODELKEYS_GIVEN);
   
   for (int i=0; i<nsub; i++) {
 
@@ -1384,7 +1388,7 @@ int checkplusmalproc(model *cov) {
     }
    
     if (!isnowProcess(sub) && !equalsnowTrend(sub))
-      RETURN_ERR(ERRORTYPECONSISTENCY);
+      SERR2("neither negative definite, nor process nor trend nor the calling type %.20s from %.20s", TYPE_NAMES[type], NICK(cov));
     if (i==0) {
       VDIM0=sub->vdim[0];  // to do: inkonsistent mit vorigen Zeilen !!
       VDIM1=sub->vdim[1];  // to do: inkonsistent mit vorigen Zeilen !!
@@ -1421,7 +1425,7 @@ int structplusmalproc(model *cov, model VARIABLE_IS_NOT_USED**newmodel){
     ONCE_NEWSTOMODEL;
     getStorage(s ,     plus);
     GETSTOMODEL;
-    s->keys_given = true;
+    STOMODEL->keys_given = true;
     int nsub = cov->nsub;
     for (int m=0; m<nsub; m++) {
       model *sub = cov->sub[m];
@@ -1513,12 +1517,12 @@ int initplusmalproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
 
   int maxv = MIN(vdim, MAXMPPVDIM);
   for (int i=0; i<maxv; i++) cov->mpp.maxheights[i] = RF_NA;
-  if (cov->Splus == NULL || !cov->Splus->keys_given) BUG;
+  if (!MODELKEYS_GIVEN) BUG;
 
   if (hasGaussMethodFrame(cov)) {
  
     for (int i=0; i<nsub; i++) {
-      model *sub = cov->Splus != NULL && cov->Splus->keys_given
+      model *sub = MODELKEYS_GIVEN
 	? STOMODEL->keys[i] : cov->sub[i];
       if (!plus && 
 	  (SUBNR == CONST 
@@ -1551,7 +1555,7 @@ int initplusproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
  if ((err = initplusmalproc(cov, s)) != NOERROR) RETURN_ERR(err);
 
   if (hasGaussMethodFrame(cov)) {
-    cov->fieldreturn = (ext_bool) (cov->Splus!=NULL && cov->Splus->keys_given);
+    cov->fieldreturn = (ext_bool) (MODELKEYS_GIVEN);
     cov->origrf = false;
     assert(cov->fieldreturn);
     if (cov->fieldreturn) cov->rf = STOMODEL->keys[0]->rf;
@@ -1579,7 +1583,7 @@ void doplusproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
   if (hasGaussMethodFrame(cov) && cov->method==SpectralTBM) {
     ERR("error in doplus with spectral");
   }
-  assert(cov->Splus != NULL && cov->Splus->keys_given);
+  assert(MODELKEYS_GIVEN);
 
   for (int m=0; m<nsub; m++) {
     model *key = STOMODEL->keys[m],
@@ -1660,7 +1664,7 @@ void domultproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
     }
   }
 
-  assert(cov->Splus != NULL && cov->Splus->keys_given);
+  assert(MODELKEYS_GIVEN);
   TALLOC_X1(z, totalvdim); // da eh hoffnungslos
 
   SAVE_GAUSS_TRAFO;

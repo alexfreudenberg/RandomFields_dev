@@ -8,11 +8,11 @@
 checkExamples(exclude = NULL, include=1:length(.fct.list),
                ask=FALSE, echo=TRUE, halt=FALSE, ignore.all = FALSE,
                path=package, package = "RandomFields", 
-               read.rd.files=TRUE, local = TRUE, libpath = NULL,
-               single.runs = FALSE, reset)}
+               read.rd.files=TRUE, local = FALSE, libpath = NULL,
+               single.runs = FALSE, reset, catcherror=TRUE)}
 \arguments{
   \item{exclude, include, ask, echo, halt, ignore.all, path, package,
-    read.rd.files,  local, libpath, single.runs, reset
+    read.rd.files,  local, libpath, single.runs, reset, catcherror
   }{internal; 
     ignore.all refers to the \sQuote{all} export statement in the
     namespace -- whether this should be ignored.

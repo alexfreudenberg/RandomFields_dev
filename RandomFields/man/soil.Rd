@@ -84,13 +84,22 @@ gui.model <- RFgui(dta)
 \dontshow{if (!interactive()) gui.model <- RMexp()} %ok
 
 ## fit by ML
-model <- moisture ~ 1 + RMwhittle(scale=NA, var=NA, nu=NA) + RMnugget(var=NA)
+if (interactive()) {
+  model <- moisture ~ 1 + RMwhittle(scale=NA, var=NA, nu=NA) +
+                      RMnugget(var=NA)
+  gridpts <- 121
+  repet <- 50
+} else  {
+  model <- moisture ~ 1 + RMnugget(var=NA)
+  gridpts <- 10
+  repet <- 2
+}
 (fit <- RFfit(model, data=dta))
 plot(fit, method=c("ml", "plain", "sqrt.nr", "sd.inv"),
      model = gui.model, col=1:8)
 
 ## Kriging ...
-x <- seq(min(dta@coords[, 1]), max(dta@coords[, 1]), l=121)
+x <- seq(min(dta@coords[, 1]), max(dta@coords[, 1]), l=gridpts)
 k <- RFinterpolate(fit, x=x, y=x, data=dta)
 plot(x=k, col=colour)
 plot(x=k, y=dta, col=colour)
@@ -98,7 +107,7 @@ plot(x=k, y=dta, col=colour)
 ## what is the probability that at no point of the
 ## grid given by x and y the moisture is greater than 24 percent?
 % works well since fit$ml:nugget==0!!!!
-cs <- RFsimulate(model=fit@ml, x=x, y=x, data=dta, n=50)
+cs <- RFsimulate(model=fit@ml, x=x, y=x, data=dta, n=repet)
 plot(cs, col=colour)
 plot(cs, y=dta, col=colour)
 Print(mean(apply(as.array(cs) <= 24, 3, all))) ## about 40 percent ...

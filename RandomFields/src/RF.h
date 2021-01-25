@@ -39,7 +39,8 @@ typedef int64_t  Long;
 
 
 //
-////  1
+//
+//  1
 //
 //
 // 1
@@ -684,10 +685,8 @@ struct hyper_storage{
 
 
 struct plus_storage{
-  bool keys_given, conform[MAXSUB];
+  bool conform[MAXSUB];
 };
-
-
 
 
 struct union_m3 {
@@ -799,6 +798,7 @@ struct model_storage { // OK
     *get_cov,
     *remote,
     *keys[MAXSUB];
+  bool keys_given;
 };
 
 #define MAX_LIN_COMP (MAXSUB * MAXSUB)
@@ -1072,15 +1072,20 @@ void InitModelList();
 
 
 #define GRIDEXPAND_AVOID Nan // cf TransformLoc
+// to do variogram.cc:  statt True nur noch Avoid
+
+#define DOLLAR_IMPOSSIBLE Nan
+
 // Brown.cc, extremes.cc, nugget.cc, operator.cc, RMS.cc, tbm.cc, 
 void TransformLoc(model *cov, bool timesep, usr_bool gridexpand,
-		    bool involvedollar);
+		    usr_bool involvedollar);
 // sequential.cc, variogram.cc
-int TransformLoc(model *cov, double **xx, bool involvedollar);
-// variogram.h:
-int TransformLoc(model *cov, location_type *loc, double **xx, double **yy, bool involvedollar);
+int TransformLoc(model *cov, double **xx, usr_bool involvedollar);
+// variogram.h, operateor.cc 
+int TransformLoc(model *cov, location_type *loc, double **xx, double **yy, usr_bool involvedollar);
+// extremes
 void TransformLocXY(model *cov, bool timesep, usr_bool gridexpand, 
-		    bool involvedollar);
+		    usr_bool involvedollar);
 
 
 listoftype *LIST_CREATE(int len, int type);
@@ -1095,7 +1100,7 @@ int covcpy(model **localcov, bool sub, model *cov, // err
 	   location_type **prevloc, location_type **ownloc,
 	   bool copy_lists,  bool copy_randomparam, bool allowCopyingInterface);
 int covcpyX(model **localcov, model *cov, // rename to covcpy!!
-	   double *x, double *T, int spatialdim, int xdim, Long totalpoints, bool Time, 
+	   double *x, double *T, int spatialdim, int xdim, Long spatialpoints, bool Time, 
 	   bool grid, bool distances);
 int covcpyWithoutRandomParam(model **localcov, model *cov);
 void Ssetcpy(model *localcov, model *remotecov, model *cov,
@@ -1111,14 +1116,14 @@ int getmodelnr(char *name);
 
 int setgrid(coord_type xgr, double *x, int spatialdim);
 int partial_loc_set(location_type *loc, double *x, double *y,
-		    Long totalpoints, Long totalpointsY, bool dist, int xdimOZ,
+		    Long spatialpoints, Long spatialpointsY, bool dist, int xdimOZ,
 		    double *T, double *Ty,
 		    bool grid, bool gridy, bool cpy);
 
 // main fctn: used by userinferfaces.cc
 int loc_set(double *x, double *y, double *T, double *Ty,
 	    int spatialdim, // spatial dim only ! 
-	    int xdimOZ,  Long totalpoints, Long totalpointsY,
+	    int xdimOZ,  Long spatialpoints, Long spatialpointsY,
 	    bool Time, bool grid, bool gridY,
 	    bool distances,
 	    location_type **Loc);
@@ -1126,7 +1131,7 @@ int loc_set(double *x, double *y, double *T, double *Ty,
 // used by RMS
 int loc_set(double *x, double *y, double *T, double *Ty,
 	    int spatialdim, // spatial dim only ! 
-	    int xdimOZ, Long totalpoints, Long totalpointsY,
+	    int xdimOZ, Long spatialpoints, Long spatialpointsY,
 	    bool Time, bool grid, bool gridY,
 	    bool distances,
 	    model *cov);
@@ -1136,7 +1141,7 @@ int loc_set(double *x, double *y, double *T, double *Ty,
 int loc_set(double *x, double *T, 
 	    int spatialdim, // spatial dim only !
 	    int xdimOZ, // original ! 
-	    Long totalpoints, bool Time, bool grid,
+	    Long spatialpoints, bool Time, bool grid,
 	    bool distances,
 	    model *cov);
 
@@ -1153,7 +1158,7 @@ int empty_loc_set(model *cov, int dim, Long totalpoints, Long totalpointsY);
 int loc_set(double *x, double *T, 
 	    int spatialdim, // spatial dim only !
 	    int xdimOZ, // original ! 
-	    Long totalpoints, bool Time, bool grid,
+	    Long spatialpoints, bool Time, bool grid,
 	    bool distances, int n,
 	    location_type ***Loc);
 */
@@ -1161,7 +1166,7 @@ int loc_set(double *x, double *T,
 
 void CheckModel(SEXP Model, double *x, double *y, double *T,  double *Ty,
 		int spatialdim, /* spatial dim only ! */
-		int xdim, int totalpoints,  int totalpointsY,
+		int xdim, int spatialpoints,  int spatialpointsY,
 		bool grid, bool gridy,
 		bool distances, bool Time, 
 		SEXP xlist,
@@ -1279,6 +1284,8 @@ double *getAnisoMatrix(model *cov, bool null_if_id, int *nrow, int *ncol);
 
 
 void SetLoc2NewLoc(model *cov, location_type **Loc);
+void SetLoc2NewLoc(model *cov, location_type **old, location_type **neu,
+		   int alle);
 
 int ReturnOwnField(model *cov);
 int ReturnOtherField(model *cov, model *which);
@@ -1385,7 +1392,7 @@ struct model {
   
   bool
     randomkappa, // 
-    matrix_indep_of_x,  
+    matrix_indep_of_x,
     hess,  /* can a hessian matrix be provided? */
     initialised, // is the simulation initialised? 
     origrf,      // does *rf point to allocated memory?
@@ -2176,11 +2183,17 @@ bool parallel();
 #define DELSTOMODEL model_DELETE(&(cov->Smodel), cov);    
 #define NEWSTOMODEL NEW_COV_STORAGE_SAVE(cov, model)
 #define ONCE_NEWSTOMODEL ONCE_NEW_STORAGE(model)
+#define COVMODELKEYS_GIVEN(cov) \
+  ((cov)->Smodel != NULL && (cov)->Smodel->keys_given)
+#define MODELKEYS_GIVEN COVMODELKEYS_GIVEN(cov) 
+ 
 
 // if (L == NULL) ERR("register not initialised as likelihood method");
 
 void Zero(model *cov, double *v);
 void Zero(int *info, model *cov, double *v);
+
+#define UNKNOWN_NUMBER_GRIDPTS -1
 
 #endif
 

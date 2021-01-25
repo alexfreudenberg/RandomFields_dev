@@ -856,8 +856,8 @@ void lsfbm(double *x, INFO, model *cov, double *v) {
   *v = QVALUE - POW(*x, alpha);
 }
 /* lsfbm: first derivative at t=1 */
-void Dlsfbm(double *x, INFO, model *cov, double *v) 
-{// FALSE VALUE FOR *x==0 and  alpha < 1
+void Dlsfbm(double *x, INFO, model *cov, double *v) {
+  // FALSE VALUE FOR *x==0 and  alpha < 1
   if (*x > 1.0)
     ERR1("the coordinate distance in '%.50s' must be at most 1.", NICK(cov));
   double alpha = P0(LOCALLY_BROWN_ALPHA);

@@ -359,7 +359,7 @@ model *CMbuild(SEXP Model, KEY_type *KT, int cR);
 void CheckModel(SEXP Model, double *x, double *Y, double *T, double *Ty,
 		int Spatialdim, /* spatial dim only ! */
 		int XdimOZ,
-		int Totpts, int Totptsy,
+		int Spatialtotpts, int Spatialtotptsy,
 		bool Grid, bool GridY,
 		bool Distances,
 		bool Time, 
@@ -376,9 +376,9 @@ void CheckModel(SEXP Model, double *x, double *Y, double *T, double *Ty,
      no_xlist = length(xlist) == 0; 
  
   int err,
-    totpts = Totpts,
+    spatialtotpts = Spatialtotpts,
     zaehler = 0,
-    totptsy = Totptsy;
+    spatialtotptsy = Spatialtotptsy;
   double *y = Y;
   model *cov = NULL;
   char EM2[LENERRMSG] = "";
@@ -411,22 +411,22 @@ void CheckModel(SEXP Model, double *x, double *Y, double *T, double *Ty,
 
     //    printf("noxlist =%d %d\n", no_xlist, distances);
     if (no_xlist) {
-      //      printf("totpts = %d %d\n", totpts, totptsy);
-      assert(totptsy >= 0);
-      if (totpts == 0) ERR("no coordinates recognized -- oversimplified model?");
+      //      printf("spatialtotpts = %d %d\n", spatialtotpts, spatialtotptsy);
+      assert(spatialtotptsy >= 0);
+      if (spatialtotpts == 0) ERR("no coordinates recognized -- oversimplified model?");
 
       cov->prevloc = LOCLIST_CREATE(1, XdimOZ + (int) Time);
       assert(cov->prevloc != NULL && cov->prevloc[0] != NULL);
       if ((err = loc_set(x, y, T, Ty,
-			 Spatialdim, XdimOZ, totpts, totptsy,
+			 Spatialdim, XdimOZ, spatialtotpts, spatialtotptsy,
 			 Time, Grid, GridY,
 			 distances, cov->prevloc + 0)
 	   ) != NOERROR) goto ErrorHandling;
       //printf("loc cov-errmd '%s'\n", cov->err_msg);
 
     } else { // genuine xlist
-      assert(x == NULL && Y==NULL && T==NULL && Ty == NULL && totpts == 0 &&
-	     totptsy == 0);
+      assert(x == NULL && Y==NULL && T==NULL && Ty == NULL && spatialtotpts == 0 &&
+	     spatialtotptsy == 0);
       cov->prevloc = loc_set(xlist);
       assert(cov->prevloc != NULL);
     }
@@ -439,7 +439,7 @@ void CheckModel(SEXP Model, double *x, double *Y, double *T, double *Ty,
     xdimOZ = LocxdimOZ(cov);
     spatialdim= Locspatialdim(cov);
     Time = LocTime(cov); // in case of only 1dim Time -> FALSE
-    //  PREVDOM(0) = totptsy == 0 ? XONLY : KERNEL;
+    //  PREVDOM(0) = spatialtotptsy == 0 ? XONLY : KERNEL;
     
     if (spatialdim != xdimOZ) {
       if (xdimOZ != 1 || !LocDist(cov)) {
@@ -570,8 +570,6 @@ void CheckModel(SEXP Model, double *x, double *Y, double *T, double *Ty,
       goto ErrorHandling;
     }
 
-    
-
     if (PL >= PL_DETAILS) {
       PMI(cov); // OK
     }
@@ -630,9 +628,9 @@ void CheckModel(SEXP Model, double *x, double *Y, double *T, double *Ty,
 	     KT, EM);
     SPRINTF(EM2, "%.50s %.500s", PREF_FAILURE, EM);
     //   printf("location:%.50s  %.50s  %.50rs\n", KT->error_location,  cov->err_msg, EM);
-    if (totpts == 0 || distances) break;
+    if (spatialtotpts == 0 || distances) break;
     y = x;
-    totptsy = totpts;
+    spatialtotptsy = spatialtotpts;
     zaehler++;
 
   }// Ende while
@@ -653,7 +651,7 @@ void CheckModel(SEXP Model, double *x, double *Y, double *T, double *Ty,
   // muss ganz zum Schluss stehen, da Fehler zu einer unvollstaendigen
   // Struktur fuehren koennen
   assert(isCallingSet(cov));
-  
+
 #ifdef debug
   printf("cbuild: done\n");//
 #endif
@@ -720,8 +718,8 @@ SEXP EvaluateModel(SEXP X, SEXP I, SEXP Covnr){
   int d, mem, len;
   model *cov = KEY()[INTEGER(Covnr)[0]];
   KEY_type *KT = cov->base;
-  KT->set = 0; 
- 
+  KT->set = 0;
+
   STRCPY(KT->error_location, "");
   if (cov == NULL) RFERROR("register not initialised");
   if ( (len = cov->qlen) == 0) {
@@ -750,7 +748,7 @@ SEXP EvaluateModel(SEXP X, SEXP I, SEXP Covnr){
     for (d=0; d<len; d++) INTEGER(dummy)[d] = (int) cov->q[d];
     PROTECT(result=allocArray(REALSXP, dummy));
   }
-  GetRNGstate();
+  GetRNGstate();  
   DefList[COVNR].cov(REAL(X),
 		     INTEGER(I),// for simulations: gives the number of repetitions
 		     // predict: selection indices

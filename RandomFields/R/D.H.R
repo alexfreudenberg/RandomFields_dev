@@ -112,12 +112,12 @@ RFhurst <- function(x, y = NULL, z = NULL, data, sort=TRUE,
                    mode = if (interactive()) c("plot", "interactive")
                    else "nographics",
                    pch=16, cex=0.2, cex.main=0.85,
-                   printlevel=RFoptions()$basic$printlevel,
+                   printlevel=RFopt$basic$printlevel,
                    height=3.5,
                    ... ) {
   ## Fctn darf intern nicht aufgerufen werden!
-  internalRFoptions(COPY=TRUE)
-   default.screen <- RFoptions()$graphics$grDefault
+  RFopt <- internalRFoptions(getoptions_=c("basic", "graphics"))
+  default.screen <- RFopt$graphics$grDefault
   l.method <- eval(formals()$method)
   pch <- rep(pch, len=length(l.method))
   cex <- rep(cex, len=length(l.method))
@@ -309,12 +309,12 @@ RFfractaldim <- function(x, y = NULL, z = NULL, data, grid,
            method=c("variogram", "fft"),#"box","range", not correctly implement.
            mode = if (interactive()) c("plot", "interactive") else "nographics",
            pch=16, cex=0.2, cex.main=0.85,
-           printlevel = RFoptions()$basic$printlevel,
+           printlevel = RFopt$basic$printlevel,
            height=3.5,
            ...) {
   ## Fctn darf intern nicht aufgerufen werden!
-  internalRFoptions(COPY=TRUE)
-  default.screen <- RFoptions()$graphics$grDefault
+  RFopt <- internalRFoptions(getoptions_=c("basic", "graphics"))
+  default.screen <- RFopt$graphics$grDefault
   l.method <- eval(formals()$method)
   pch <- rep(pch, len=length(l.method))
   cex <- rep(cex, len=length(l.method))
@@ -384,6 +384,9 @@ RFfractaldim <- function(x, y = NULL, z = NULL, data, grid,
         }
       }
       bins <- seq(step / 2, end, step)
+      if (length(bins) >= MAXBINS) {
+        bins <- bins[1:(MAXBINS-1)]
+      }
     }
 
  #   Print(bins, step, end, edge.lengths)
@@ -589,8 +592,6 @@ RFfractaldim <- function(x, y = NULL, z = NULL, data, grid,
               )
          )
 }
-
-
 
 
 

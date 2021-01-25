@@ -36,7 +36,7 @@ CheckProj <- function(arg, subst) {
     ## anyway most of the following part is written as if p was vector
     p <- -pmatch(arg, PROJECTION_NAMES)
     if (any(is.na(p))) {
-      p <- pmatch(arg, getRFoptions(GETOPTIONS="coord")$coordnames)
+      p <- pmatch(arg, getRFoptions(getoptions_="coord")$coordnames)
       if (length(p) != length(arg))
 	stop("projection definition '", arg,  "' is odd")
       if (any(is.na(p))) { 

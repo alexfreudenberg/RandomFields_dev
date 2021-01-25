@@ -894,7 +894,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
                         ...) {
 
   ##  print(Z$model)
-  ## Print(Z)
+  ##  Print(Z); kkk
 
   ##  Print(lower, recall, upper, users.guess, Z, list(...))
   ##  Print("start", recall)
@@ -1517,6 +1517,7 @@ grad <- function(func, x, method="Richardson", side=NULL,
     .C(C_PutValuesAtNA, COVreg, param)
     model.values <- .Call(C_MomentsIntern, COVreg, emp_alpha)
     
+    Print(model.values, binned.variogram)
     stopifnot(length(model.values) == length(binned.variogram))
 
     ##    Print(model.values,(!all(is.finite(model.values))))
@@ -1635,7 +1636,6 @@ grad <- function(func, x, method="Richardson", side=NULL,
     if (printlevel > PL_FCTN_SUBDETAILS) {
       cat("\n\nAufruf von MLtarget\n===================\n")
       Print(variab, param, MLELB, MLEUB) ##
-                                        #Print(RFgetModelInfo(register=LiliReg, level=4, which.submodels="call+user"))#
     }
 
     ans <- TRY(.Call(C_EvaluateModel, double(0), integer(0), LiliReg))
@@ -1753,7 +1753,8 @@ grad <- function(func, x, method="Richardson", side=NULL,
 ##### variables needed for analysis of trend, upper and lower input --
 ##### user cannot know what the internal represenatation is
 
-
+###
+  Print(Z)
 
   if (printlevel>=PL_STRUCTURE) cat("\nfirst analysis of model  ...\n")
 
@@ -2757,8 +2758,6 @@ grad <- function(func, x, method="Richardson", side=NULL,
   #  Print(Z, C_coords, C_UnifyXT(x = bin.centers, T = ev$T))
     .Call(C_LocNonGrid, COVreg, C_UnifyXT(x = bin.centers, T = ev$T))
  
-    #Print(RFgetModelInfo(COVreg))
-    
     firstoptim <- TRUE
     LSMIN <- Inf
     if (length(lsqMethods) > 0 &&
@@ -3455,7 +3454,7 @@ grad <- function(func, x, method="Richardson", side=NULL,
   Hessians <- invH <- list()
 
   for (i in OneTo(length(allmethods))) {
-    ## Print(i)
+    ##    Print(i)
     Meth_i <- allmethods[i]
     if (!(Meth_i %in% allMethods)) next
     
@@ -3481,11 +3480,11 @@ grad <- function(func, x, method="Richardson", side=NULL,
       }
 
       if (Meth_i== M) {
-        H <- NA#INVDIAGHESS(param.table[[M]][IDX("variab")], MLELB=MLELB,
-             #         MLEUB=MLEUB, control=mle.optim.control)
-        param.table[[M]][IDX("sdvariab")] <- NA#H$sd
-        Hessians[[Meth_i]] <- NA#H$hessian
-        invH[[Meth_i]] <- NA#invH
+        H <- INVDIAGHESS(param.table[[M]][IDX("variab")], MLELB=MLELB,
+                      MLEUB=MLEUB, control=mle.optim.control)
+        param.table[[M]][IDX("sdvariab")] <- H$sd
+        Hessians[[Meth_i]] <- H$hessian
+        invH[[Meth_i]] <- invH
       }
     }
 
@@ -3524,9 +3523,6 @@ grad <- function(func, x, method="Richardson", side=NULL,
 
     .C(C_PutValuesAtNA, LiliReg, as.double(param.table[[Meth_i]][idxpar] ))
 
-
-##    Print(RFgetModelInfo(LiliReg))
-    
 
     if (globalvariance) .C(C_PutGlblVar, as.integer(LiliReg),
                            as.double(param.table[[Meth_i]][glblvar.idx]))

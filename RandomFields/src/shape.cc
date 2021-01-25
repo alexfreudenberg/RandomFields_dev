@@ -79,7 +79,6 @@ int cutidx(double Idx, int len) {
 
 #define GET_LOC_COVARIATE \
   assert(cov->Scovariate != NULL);					\
-   assert(!P0INT(COVARIATE_RAW));					\
   location_type **Loc = P0INT(COVARIATE_RAW) || PisNULL(COVARIATE_X)	\
     ? LocP(cov) : cov->Scovariate->loc;					\
   assert(Loc != NULL);						\
@@ -94,12 +93,7 @@ int get_index(double *x, bool ignore_y, model *cov) {
   //        Am besten hierarchisch, damit nicht ewig ein Kaestchen gesucht
   //        werden muss, das nicht leer ist.
   globalparam *global = &(cov->base->global);
-  //  GET_LOC_COVARIATE;
   assert(cov->Scovariate != NULL);
-
-
-  //  PMI(cov);
-
   assert(!P0INT(COVARIATE_RAW));					
   location_type **Loc = P0INT(COVARIATE_RAW) || PisNULL(COVARIATE_X)	
     ? LocP(cov) : cov->Scovariate->loc;					
@@ -351,7 +345,9 @@ void covariate(double *x, int *info, model *cov, double *v){
  
   assert(isnowTrend(cov));
   globalparam *global = &(cov->base->global);
-getStorage(S ,   covariate); 
+getStorage(S ,   covariate);
+ kdefault(cov, COVARIATE_EXTRA_DATA, false);
+ if (PisNULL(COVARIATE_C)) ERR1("argument '%.20s' not given.", KNAME(FIXCOV_M));
    bool
     extradata = P0INT(COVARIATE_EXTRA_DATA),
     extra = info[INFO_EXTRA_DATA_X] && !S->onlyOne;
@@ -577,7 +573,7 @@ int checkcovariate(model *cov){
     GERR1("'%.50s' used in a wrong context", NICK(cov));
 
   if ((err = checkkappas(cov, false)) != NOERROR) goto ErrorHandling;
-    
+     
   cov->mpp.maxheights[0] = RF_NA;
 
   if (cov->ptwise_definite == pt_paramdep) {
@@ -611,6 +607,7 @@ int checkcovariate(model *cov){
 void rangecovariate(model *cov, range_type *range){
   rangefix(cov, range);
 
+  booleanRange(COVARIATE_EXTRA_DATA);
   booleanRange(COVARIATE_ADDNA);
 
   range->min[COVARIATE_FACTOR] = RF_NEGINF;
@@ -620,7 +617,6 @@ void rangecovariate(model *cov, range_type *range){
   range->openmin[COVARIATE_FACTOR] = true;
   range->openmax[COVARIATE_FACTOR] = true;
 
-  booleanRange(COVARIATE_EXTRA_DATA);
 }
 
 
@@ -804,9 +800,9 @@ int checkfix(model *cov){
   //  printf("%d %d\n", rawConcerns, PisNULL(FIXCOV_X));
   //  PMI(cov)
  
-  if (rawConcerns != ignoreValues && PisNULL(FIXCOV_X))
-    SERR2("In the current situation, '%.20s' must be given in '%.20s'",
-	  COVARIATE_X_NAME, NICK(cov));
+  // if (rawConcerns != ignoreValues && PisNULL(FIXCOV_X))
+  //    SERR2("In the current situation, '%.20s' must be given in '%.20s'",
+  //  COVARIATE_X_NAME, NICK(cov));
 
   if (!P0INT(FIXCOV_RAW) && !PisNULL(FIXCOV_GIVEN))
     ERR("In case 'givenM' is given 'raw=TRUE' is obligatory");  
@@ -833,10 +829,13 @@ int checkfix(model *cov){
     S->onlyOne = true;
   }
 
+  
 
    if (cov->qlen == 0) {
     for (int set=0; set<sets; set++) {
       cov->base->set = set;
+      if (PisNULL(FIXCOV_M))
+	ERR1("argument '%.20s' not given.", KNAME(FIXCOV_M));
       int
 	nrow = LNROW(FIXCOV_M),
 	ncol = LNCOL(FIXCOV_M),
@@ -872,8 +871,8 @@ int checkfix(model *cov){
     cov->q[0] = VDIM0 = VDIM1 = vdim;
   } else VDIM0 = VDIM1 = (int) cov->q[0];
 
-  if ((err = checkkappas(cov)) != NOERROR) goto ErrorHandling;
-     
+    if ((err = checkkappas(cov, false)) != NOERROR) goto ErrorHandling;
+   
   if (vdim == 1 && sets == 1) { 
     cov->base->set = 0;
     double *c = LP(FIXCOV_M);   
@@ -901,7 +900,7 @@ int checkfix(model *cov){
 	    }
 	}
       }
-      if (m == 0) {
+      if (m == 0 && endfor > 0) {
 	q = p;
 	if (q == pt_indef) break;
 	c = LP(FIXCOV_GIVEN);
@@ -917,7 +916,7 @@ int checkfix(model *cov){
      
   if (S->matrix_err == MATRIX_NOT_CHECK_YET) {
     S->matrix_err = NOERROR;
-    int endfor = LP(FIXCOV_GIVEN) != NULL;
+    int endfor = !PisNULL(FIXCOV_GIVEN);
     for (int set=0; set<sets; set++){
       cov->base->set = set;
       for (int m=0; m<=endfor; m++) {
@@ -982,12 +981,12 @@ void rangefix(model VARIABLE_IS_NOT_USED *cov, range_type *range){
 
   booleanRange(FIXCOV_RAW);
 
-  range->min[FIXCOV_M] = RF_NEGINF;
-  range->max[FIXCOV_M] = RF_INF;
-  range->pmin[FIXCOV_M] = - 1e10;
-  range->pmax[FIXCOV_M] = 1e10;
-  range->openmin[FIXCOV_M] = true;
-  range->openmax[FIXCOV_M] = true;
+  range->min[FIXCOV_GIVEN] = RF_NEGINF;
+  range->max[FIXCOV_GIVEN] = RF_INF;
+  range->pmin[FIXCOV_GIVEN] = - 1e10;
+  range->pmax[FIXCOV_GIVEN] = 1e10;
+  range->openmin[FIXCOV_GIVEN] = true;
+  range->openmax[FIXCOV_GIVEN] = true;
 
 }
 

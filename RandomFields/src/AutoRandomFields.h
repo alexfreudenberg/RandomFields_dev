@@ -27,6 +27,10 @@
 #define MAXMPPVDIM 9 // just to distinguish, 9 has no meaning
 
 #define MAXCOORDNAMES 4
+
+#define MAXBINS 50
+
+
 typedef enum units_enum {
   units_none, units_km, units_miles, units_time, units_user} units_enum;
 #define nr_units (units_user + 1)

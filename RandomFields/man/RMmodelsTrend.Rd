@@ -34,7 +34,7 @@ M <- RMexp(var=NA, scale=NA) + RMnugget(var=NA)
 ## short definition of a trend using the fact that ca20.df is a
 ## data.frame
 ca20.RFmod02 <- ~ 1 + altitude + M
-(ca20.fit02.RF <- RFfit(ca20.RFmod02, data=ca20.df, M=M))
+(ca20.fit02.RF <- RFfit(ca20.RFmod02, data=ca20.df))
 
 ## long definition which also allows for more general constructions
 ca20.RFmod02 <- NA + NA*RMcovariate(ca20.df$altitude) + M 
@@ -47,14 +47,13 @@ ca20.RFmod02 <- M + NA + ca20.df$altitude
 print(ca20.fit02.RF <- RFfit(ca20.RFmod02, data=ca20.df))
 
 ### The following does NOT work, as R assumes (NA + ca20.df$altitude) + M
-### In particular, the model definition gives a warning, and the
-### RFfit call gives an error: 
-(ca20.RFmod02 <- NA + ca20.df$altitude + M) 
-try(ca20.fit02.RF <- RFfit(ca20.RFmod02, data=ca20.df)) ### error ...
+### In particular, the model definition gives a warning, and an error: 
+try(ca20.RFmod02 <- NA + ca20.df$altitude + M) ### error ...
+%try(ca20.fit02.RF <- RFfit(ca20.RFmod02, data=ca20.df)) ### error ...
 
 ## factors:
 ca20.RFmod03 <- ~ 1 + area + M ### 
-(ca20.fit03.RF <- RFfit(ca20.RFmod03, data=ca20.df, M=M))
+(ca20.fit03.RF <- RFfit(ca20.RFmod03, data=ca20.df))
 
 \dontshow{FinalizeExample(); RFoptions(coordnames=NULL, varnames=NULL)}
 }

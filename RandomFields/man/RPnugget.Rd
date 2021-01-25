@@ -147,7 +147,7 @@ stopifnot(all.equal(z, as.vector(RFsimulate(model, x=x, y=x, tol=1e-10))))
 ## zonal nugget effect
 model <- RMnugget(proj =1)  
 RFcovmatrix(model, x=xy)
-(z <- as.matrix(RFsimulate(RPnugget(model), x=xy)))
+(z <- as.vector(RFsimulate(RPnugget(model), x=xy)))
 stopifnot(all.equal(z, as.vector(RFsimulate(model, x=xy))))
 
 ## zonal nugget effect, but not along the axes

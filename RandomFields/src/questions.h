@@ -125,7 +125,7 @@ bool anyVariant(typefct tf, defn *C);
 
 
 bool isDummyInit(initfct Init);
-bool isMtimesep(matrix_type type);
+bool isMtimesep(matrix_type type, int nrow, int ncol);
 bool isMproj(matrix_type type);
 bool isMdiag(matrix_type type);
 bool isMiso(matrix_type type);

@@ -926,11 +926,11 @@ int struct_poisson(model *cov, model **newmodel){
 		     SUBMODEL_DEP, PoissonType)) != NOERROR)
       RETURN_ERR(err);
 
-  if (loc->Time || (loc->grid && loc->caniso != NULL)) {
-    TransformLoc(cov, false, GRIDEXPAND_AVOID, false);
+  if (loc->Time || loc->caniso != NULL) {
+    TransformLoc(cov, false, GRIDEXPAND_AVOID, False);
     SetLoc2NewLoc(shape, LocP(cov)); // passt das?
     loc = Loc(cov);
-   }
+  }
 
   if (!equalsnowPointShape(shape)) {
     if (cov->key == NULL &&
@@ -1552,8 +1552,8 @@ int struct_smith(model *cov,  model **newmodel){
     xdim = XDIM(PREVSYSOF(sub), 0);
 
   assert(hasSmithFrame(sub));
-  if (loc->Time || (loc->grid && loc->caniso != NULL)) {
-    TransformLoc(cov, false, GRIDEXPAND_AVOID, false);
+  if (loc->Time || loc->caniso != NULL) {
+    TransformLoc(cov, false, GRIDEXPAND_AVOID, DOLLAR_IMPOSSIBLE);
     SetLoc2NewLoc(sub, LocP(cov));
     loc = Loc(cov);
   }
@@ -1629,7 +1629,7 @@ void loglikelihoodMaxstable(double *data,
   if (cov->q == NULL) {
     QALLOC(len);
     if (LocgridY(cov) // 2.1.21 -- info really not to be used??
-	|| LocTime(cov)) TransformLocXY(sub, false, True, false);
+	|| LocTime(cov)) TransformLocXY(sub, false, True, DOLLAR_IMPOSSIBLE);
   }
 
   ASSERT_ONESYSTEM;
@@ -1827,7 +1827,7 @@ int struct_randomcoin(model *cov, model **newmodel){
     dim = OWNXDIM(0); // taken[MAX DIM],
 
   if (loc->Time || (loc->grid && loc->caniso != NULL)) {
-    TransformLoc(cov, true, GRIDEXPAND_AVOID, false);
+    TransformLoc(cov, true, GRIDEXPAND_AVOID, DOLLAR_IMPOSSIBLE);
     SetLoc2NewLoc(pdf == NULL ? shape : pdf, LocP(cov));
     loc = Loc(cov);
   }

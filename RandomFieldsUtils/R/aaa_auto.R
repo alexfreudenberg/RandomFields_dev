@@ -8,13 +8,13 @@
  RFOPTIONS 	<- "RFoptions"
  isGLOBAL 	<- as.integer(NA)
 
- WARN_UNKNOWN_OPTION_ALL 	<- as.integer(3)
- WARN_UNKNOWN_OPTION_SINGLE 	<- as.integer(2)
- WARN_UNKNOWN_OPTION_CAPITAL 	<- as.integer(1)
- WARN_UNKNOWN_OPTION_NONE 	<- as.integer(0)
- WARN_UNKNOWN_OPTION 	<- as.integer(10000)
- WARN_UNKNOWN_OPTION_CONDSINGLE 	<- as.integer((WARN_UNKNOWN_OPTION_SINGLE-WARN_UNKNOWN_OPTION))
- WARN_UNKNOWN_OPTION_DEFAULT 	<- as.integer(WARN_UNKNOWN_OPTION_ALL)
+ warnUnknown__OPTION_ALL 	<- as.integer(3)
+ warnUnknown__OPTION_SINGLE 	<- as.integer(2)
+ warnUnknown__OPTION_CAPITAL 	<- as.integer(1)
+ warnUnknown__OPTION_NONE 	<- as.integer(0)
+ warnUnknown__OPTION 	<- as.integer(10000)
+ warnUnknown__OPTION_CONDSINGLE 	<- as.integer((warnUnknown__OPTION_SINGLE-warnUnknown__OPTION))
+ warnUnknown__OPTION_DEFAULT 	<- as.integer(warnUnknown__OPTION_ALL)
 
 
 

@@ -64,11 +64,13 @@ deleteparameterfct delparam[MAXNLIST] = { NULL, NULL, NULL, NULL, NULL };
 
 
 void hintVariable(char *name, int warn_unknown_option) {
-  if (warn_unknown_option > 0) {
+  static bool printing = true; 
+  if (warn_unknown_option > 0 && GLOBAL.basic.Rprintlevel > 0) {
     PRINTF("'%s' is considered as a variable (not as an option).\n", name);
-    if (GLOBAL.basic.helpinfo) {
-      PRINTF("[This hint can be turned off by 'RFoptions(%s=-%d)'.]\n",
-	     basic[BASIC_WARN_OPTION], warn_unknown_option);
+    if (printing && GLOBAL.basic.helpinfo && !parallel()) {
+      PRINTF("[These hints can be turned off by 'RFoptions(%s=-%d)'.]\n",
+	     basic[BASIC_WARN_OPTION], MAX(1, warn_unknown_option));
+      printing = false;
     }
   }
 }
@@ -119,19 +121,22 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList,
     }
     if (j==NOMATCHING) {
       switch(warn_unknown_option) {
-      case WARN_UNKNOWN_OPTION_NONE : return;
+      case WARN_UNKNOWN_OPTION_NONE1 :
+	 hintVariable(name, warn_unknown_option);
+      case WARN_UNKNOWN_OPTION_NONE : case -WARN_UNKNOWN_OPTION_NONE1 :
+	return;
       case WARN_UNKNOWN_OPTION_CAPITAL : case -WARN_UNKNOWN_OPTION_CAPITAL :
 	if (name[0] >= 'A' && name[1] <= 'Z') {
 	  hintVariable(name, warn_unknown_option);
 	  return;
 	}
-	break;
+	ERR1("Unknown option '%.50s'.", name); 
       case WARN_UNKNOWN_OPTION_SINGLE : case -WARN_UNKNOWN_OPTION_SINGLE :
 	if (STRLEN(name) == 1 && name[0] >= 'A' && name[1] <= 'Z') {
 	  hintVariable(name, warn_unknown_option);
 	  return;
 	}
-	break;
+	ERR1("Unknown option '%.50s'.", name); 
       case WARN_UNKNOWN_OPTION_ALL :
       default :
 	ERR1("Unknown option '%.50s'.", name);
@@ -240,7 +245,7 @@ void getListNr(bool save, int t, int actual_nbasic, SEXP which,
       if (STRCMP(Allprefix[ListNr][i], z) == 0) break;
     if (i < prefixN) break;
   }
-  if (ListNr >= NList) ERR("unknown value for 'GETOPTIONS'");
+  if (ListNr >= NList) ERR("unknown value for 'getoptions_'");
   if (getlist != NULL) {
     getlist[t].ListNr = ListNr;
     getlist[t].i = i;
@@ -323,7 +328,7 @@ SEXP RFoptions(SEXP options) {
   name = (char*) "";
   if (options != R_NilValue) {
     if (!isNull(TAG(options))) name = (char*) CHAR(PRINTNAME(TAG(options)));
-    if (STRCMP(name, "LOCAL")==0) {
+    if (STRCMP(name, "local_")==0) {
       el = CAR(options);
       local = (bool) INT;
       options = CDR(options); /* skip 'name' */
@@ -334,22 +339,23 @@ SEXP RFoptions(SEXP options) {
     return getRFoptions(local);
  
   if (!isNull(TAG(options))) name = (char*) CHAR(PRINTNAME(TAG(options)));
-  if (STRCMP(name, "WARN_UNKNOWN")==0) {
+  if (STRCMP(name, "warnUnknown_")==0) {
     el = CAR(options);
     warn_unknown_option = INT;
     options = CDR(options); /* skip 'name' */
    }
 
   if (!isNull(TAG(options))) name = (char*) CHAR(PRINTNAME(TAG(options)));
-  if ((isList = STRCMP(name, "LIST")==0)) {   
+  if ((isList = STRCMP(name, "list_")==0)) {
+    if (local) ERR("'list_' can be used only globally.");
     list = CAR(options);
     if (TYPEOF(list) != VECSXP)
-      ERR1("'LIST' needs as argument the output of '%.50s'", RFOPTIONS);
+      ERR1("'list_' needs as argument the output of '%.50s'", RFOPTIONS);
     PROTECT(names = getAttrib(list, R_NamesSymbol));
     lenlist = length(list);
 
     if (lenlist > 0 && !local && parallel())
-      ERR("'RFoptions' may be used only outside any parallel code.");
+      ERR("Global 'RFoptions' such as 'cores', 'seed' and 'printlevel', may be set only outside any parallel code. See '?RandomFieldsUtils::RFoptions' for the complete list of global 'RFoptions'");
 
    for (i=0; i<lenlist; i++) {
       int len;
@@ -378,8 +384,8 @@ SEXP RFoptions(SEXP options) {
   } else {    
     getlist_type *getlist = NULL;
     bool save;
-    if ((save = STRCMP(name, "SAVEOPTIONS")==0 ) ||
-	STRCMP(name, "GETOPTIONS")==0) {
+    if ((save = STRCMP(name, "saveoptions_")==0 ) ||
+	STRCMP(name, "getoptions_")==0) {
       SEXP getoptions = CAR(options);
       options = CDR(options);
       if (options != R_NilValue) {
@@ -410,13 +416,12 @@ SEXP RFoptions(SEXP options) {
 
 
   for (i=0; i<NList; i++)
-    if (finalparam[i] != NULL) {
-      finalparam[i]();
+    if (finalparam[i] != NULL) {      finalparam[i]();
     }
 
   if (n_protect > 0) UNPROTECT(n_protect);
-  
-  GLOBAL.basic.asList = true;
+
+  if (!local) GLOBAL.basic.asList = true; // OK
  
   return(ans);
 } 

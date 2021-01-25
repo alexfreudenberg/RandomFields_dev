@@ -307,7 +307,7 @@ RMcovariate <- function(formula=NULL, data, x, y=NULL, z=NULL, T=NULL, grid,
     if (is.null(formula)) 
       formula <- eval(parse(text=paste("~", paste(names(data), collapse="+"))))
     data <- model.matrix(object=formula, data=data)
-    if (RFoptions(GETOPTIONS="basic")$printlevel > 0)
+    if (getRFoptions(getoptions_="basic")$printlevel > 0)
       message("Intercept added to a model component that is a ", N, ".")
   }
   
@@ -317,7 +317,7 @@ RMcovariate <- function(formula=NULL, data, x, y=NULL, z=NULL, T=NULL, grid,
       stop("y, z, T, grid may only be given if 'x' is given")
     ans <- Call(data=data, raw=raw, addNA=addNA)
   } else {
-    PL <- getRFoptions(GETOPTIONS="basic")$printlevel
+    PL <- getRFoptions(getoptions_="basic")$printlevel
     .Call(C_setlocalRFutils, NULL, 0)
     new <- C_UnifyXT(x=x, y=y, z=z, T=T, grid=grid)
     .Call(C_setlocalRFutils, NULL, PL)
@@ -336,7 +336,7 @@ RMfixcov <- function(M, x, y=NULL, z=NULL, T=NULL, grid, var, proj, raw#, norm
     Call(#norm=norm,
          M=M, raw=raw, var=var, proj=proj)
   } else {
-    PL <- getRFoptions(GETOPTIONS="basic")$printlevel
+    PL <- getRFoptions(getoptions_="basic")$printlevel
     .Call(C_setlocalRFutils, NULL, 0)
     new <- C_UnifyXT(x, y, z, T, grid)
     .Call(C_setlocalRFutils, NULL, PL)
@@ -361,7 +361,7 @@ RMcov <- function(gamma, x, y=NULL, z=NULL, T=NULL, grid, a,
     if (is.na(x)) stop("unknown choice of 'x'")
     x <- list(as.double(x))
   } else {
-    PL <- getRFoptions(GETOPTIONS="basic")$printlevel
+    PL <- getRFoptions(getoptions_="basic")$printlevel
     .Call(C_setlocalRFutils, NULL, 0)
     x <- C_UnifyXT(x, y, z, T, grid)
     .Call(C_setlocalRFutils, NULL, PL)
@@ -467,7 +467,7 @@ xRMranef <- function(formula=NULL, data, x, y=NULL, z=NULL, T=NULL, grid,
        stop("If 'formula' is an 'RMmodel' then only 'var', 'scale', 'Aniso', and 'proj' might be given") 
   }
   if (missing(var)) {
-    if (RFoptions(GETOPTIONS="basic")$printlevel > 0)
+    if (getRFoptions(getoptions_="basic")$printlevel > 0)
       message("Note that if 'var' is not given in 'RMranef', 'var' is set to 'NA' i.e., the variance is estimated'.")
     var <- NA
   }
@@ -479,7 +479,7 @@ XXXRMprod <- function(phi, var, scale, Aniso, proj) {
   #RMraneffct(phi, var, scale, Aniso, proj)
 }
 
-RMshapeplus <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9,
+RMtrendplus <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9,
                         add.na=FALSE, var, scale, Aniso, proj) {
   submodels <- par.general <- par.model <- list() 
   
@@ -523,8 +523,8 @@ RMshapeplus <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9,
 }
 
 
-RMshapeplus <- new(CLASS_RM, 
-	.Data = RMshapeplus,
+RMtrendplus <- new(CLASS_RM, 
+	.Data = RMtrendplus,
 	type = c('trend'),
 	isotropy = c('submodel dependent'),
 	domain = c('submodel dependent'),

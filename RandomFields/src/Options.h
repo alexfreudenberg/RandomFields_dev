@@ -379,7 +379,6 @@ struct fit_param{
     fit_ratiotest_approx[NM], true, fit_cross_refit[NM], false, true,	\
     12 // fit
 
-#define MAXBINS 50
 #define empvarioN 9
 extern const char * empvario[empvarioN];
 struct empvario_param{
@@ -447,14 +446,13 @@ struct internal_param{
 #define NOTE_WITHOUT_HINT 2
 #define NOTE_WITH_HINT 3
 
-#define messagesN 28
+#define messagesN 27
 extern const char * messages[messagesN];
 #define MESSAGES_NEWANISO 2
 #define MESSAGES_ONGRID 8
 #define MESSAGES_COORD_CHANGE 11
 #define MESSAGES_ZENIT 13
-#define MESSAGES_PARALLEL 18
-#define MESSAGES_RAW 24
+#define MESSAGES_RAW 23
 struct messages_param{ 
   // if changed, CHANGE ALSO RestWarnings in 'userinterfaces.cc';
   bool
@@ -462,7 +460,7 @@ struct messages_param{
     warn_mode, warn_scale, warn_on_grid, warn_ambiguous, 
     note_no_fit, note_aspect_ratio, warn_coord_change, help_color_palette,
     warn_zenit, // not used anymore
-    warn_constant, warn_negvar,  help_onlyvar, warn_parallel,
+    warn_constant, warn_negvar,  help_onlyvar, 
     warn_modus_operandi, warn_singlevariab, help_mle,
     warn_raw_covariates, help_addNA, help_help;
   usr_bool warn_mathdef  // obsolete?!
@@ -473,7 +471,7 @@ struct messages_param{
   {true, true, true, false, true,		\
       true, true, true, true,		\
       true, true, true, true, true,		\
-      true, true, true, true,		\
+      true, true, true, 		\
       true, true, true, \
       true, true, true,				\
       Nan,					\

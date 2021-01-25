@@ -56,7 +56,7 @@ RFgui <- function(data, x, y,
       RandomFieldsUtils::sleep.micro(wait)
     res <- get("RFgui.model", envir=Env)
     if (is.null(res)) return(res) 
-    if (RFoptions()$general$spConform) {
+    if (internalRFoptions(getoptions_="general")$spConform) {
       RFvariogram(COPY=FALSE, model=res, 0, get(".RFgui.y", envir=Env)) # OK
       res <- list2RMmodel(GetModel(RFvariogram))
     } else {

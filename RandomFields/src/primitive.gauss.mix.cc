@@ -321,7 +321,7 @@ void rangeconstant(model *cov, int VARIABLE_IS_NOT_USED k, int i, int j,
 /* exponential model */
 void exponential(double *x, INFO, model VARIABLE_IS_NOT_USED *cov, double *v){
    *v = EXP(- *x);
-   //   printf(": %10g %10g\n", *x, *v);
+   //  printf(": %10g %10g\n", *x, *v);
 }
 void logexponential(double *x, INFO, model VARIABLE_IS_NOT_USED *cov, double *v, double *Sign){
   *v = - *x;

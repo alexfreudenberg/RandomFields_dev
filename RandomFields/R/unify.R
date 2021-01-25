@@ -120,12 +120,12 @@ seq2grid <- function(x, name, grid, warn_ambiguous, gridtolerance) {
 RFearth2cartesian <- function(coords, units=NULL, system = "cartesian",
                               grid=FALSE) {
   ## may not be called internally !!
-  internalRFoptions(COPY=TRUE)
+  RFopt <- internalRFoptions(getoptions_="coords")
   if (is.character(system)) system <- pmatch(system, ISO_NAMES) - 1
   stopifnot(system %in%
             c(CARTESIAN_COORD, GNOMONIC_PROJ, ORTHOGRAPHIC_PROJ))
   if (missing(units) || is.null(units)) {
-    global.units <- getRFoptions(GETOPTIONS="coords")$new_coordunits[1]
+    global.units <- RFopt$new_coordunits[1]
     units <-if (global.units[1] == "") "km" else global.units
   }
   if (!is.matrix(coords)) coords <- t(coords)
@@ -141,12 +141,12 @@ RFearth2cartesian <- function(coords, units=NULL, system = "cartesian",
 RFearth2dist <- function(coords, units=NULL, system="cartesian",
                          grid=FALSE, ...) {
   ## may not be called internally !!
-  internalRFoptions(COPY=TRUE)
+  RFopt <- internalRFoptions(getoptions_="coords")
  if (is.character(system)) system <- pmatch(system, ISO_NAMES) - 1
   stopifnot(system %in%
             c(CARTESIAN_COORD, GNOMONIC_PROJ, ORTHOGRAPHIC_PROJ))
   if (missing(units) || is.null(units)) {
-    global.units <- getRFoptions(GETOPTIONS="coords")$new_coordunits[1]
+    global.units <- RFopt$new_coordunits[1]
     units <- if (global.units[1] == "") "km" else global.units 
   }
   if (!is.matrix(coords)) coords <- t(coords)
@@ -584,7 +584,7 @@ UnifyXT <- function(x=NULL, y=NULL, z=NULL, T=NULL, grid,
   
   if (coord_system == "earth") {
                                         # if (ncol(x) > 4) stop("earth coordinates have maximal 3 components")
-    opt <- getRFoptions(GETOPTIONS="coords") ## muss nochmals neu sein
+    opt <- getRFoptions(getoptions_="coords") ## muss nochmals neu sein
     global.units <- opt$new_coordunits[1]
     if (global.units[1] == "") global.units <- "km"
     

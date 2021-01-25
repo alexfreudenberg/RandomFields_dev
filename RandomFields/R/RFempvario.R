@@ -45,7 +45,7 @@ rfempirical <- function(x, y = NULL, z = NULL, T = NULL, data, grid,
   byT <- 2
   toT <- 1
  
-  RFopt <- internalRFoptions(...)
+  RFopt <- internalRFoptions(COPY=FALSE, ...)
   ## kein  if (!hasArg("COPY")) on.exit(optionsDelete(RFopt)) da nichts zu loeschen
   
   
@@ -643,7 +643,7 @@ crossvario <- function(f, pseudo = FALSE, dummy = FALSE) {
 prepareBins <- function(bins) {
   if(missing(bins)) return(NULL)
   if (bins[1] > 0) {
-    if (getRFoptions(GETOPTIONS="basic")$printlevel>1)
+    if (getRFoptions(getoptions_="basic")$printlevel>1)
       message("empirical variogram: left bins border 0 added\n")
     bins <- c(0, bins)
   }

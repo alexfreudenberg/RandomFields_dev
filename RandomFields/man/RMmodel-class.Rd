@@ -53,7 +53,7 @@
 \usage{
 RFplotModel(x, y, dim=1,
            n.points=if (dim==1 || is.contour) 200 else 100,
-           fct.type=NULL, MARGIN, fixed.MARGIN, maxchar=15, ...,
+           fctn.type=NULL, MARGIN, fixed.MARGIN, maxchar=15, ...,
            plotmethod=if (dim==1) "matplot" else "contour")
 
 \S4method{plot}{RMmodel,missing}(x, y, ...)
@@ -87,9 +87,10 @@ RFplotModel(x, y, dim=1,
   \item{maxchar}{integer. Maximum number of characters to print the
     model in the legend.
   }
-  \item{...}{arguments to be passed to methods; mainly graphical
-    arguments, or further models in case of class \code{CLASS_CLIST},
-    see Details.
+  \item{...}{arguments to be passed to methods; either graphical
+    arguments for \command{\link[graphics]{par}}, or
+    further models in case of class \code{CLASS_CLIST},
+    see Details. No \code{RFoptions} can be passed.
   }
   \item{dim}{must equal 1 or 2; only for \code{class(x)==CLASS_CLIST}; the
     covariance function and the variogram are plotted as a function of
@@ -97,10 +98,10 @@ RFplotModel(x, y, dim=1,
   \item{n.points}{integer; only for \code{class(x)==CLASS_CLIST}; the
     number of points at which the model is 
     evaluated (in each dimension); defaults to 200.} 
-  \item{fct.type}{character; only for \code{class(x)==CLASS_CLIST}; must
+  \item{fctn.type}{character; only for \code{class(x)==CLASS_CLIST}; must
     equal \code{NULL}, \code{"Cov"} or \code{"Variogram"}; controls
-    whether the covariance (\code{fct.type="Cov"}) or the
-    variogram (\code{fct.type="Variogram"}) is plotted; \code{NULL}
+    whether the covariance (\code{fctn.type="Cov"}) or the
+    variogram (\code{fctn.type="Variogram"}) is plotted; \code{NULL}
     implies automatic choice, where \code{"Cov"} is chosen whenever the model is
     stationary.}
   \item{plotmethod}{string or function. Internal.

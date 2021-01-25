@@ -64,13 +64,13 @@ RFinterpolate(model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
   in the global variance. Then, different linear parts are fitted to the
   different data sets (but the same to repeated data).
 %  NOT TRUE ANYMORE:
-%  The \command{\link[RFoptions]{option}} \code{apart_linear_fit}
+%  The \command{\link[=RFoptions]{option}} \code{apart_linear_fit}
  % forces repeated data to be treated as different data sets.
   Handling of different data sets instead of repeated data costs
   always (considerably) more time.
 
 %  NOT TRUE ANYMORE:
-%  In case of missing values and \command{\link[RFoptions]{option}}
+%  In case of missing values and \command{\link[=RFoptions]{option}}
  % \code{na_rm_lines = FALSE} (which is the default value) or imputing,
 %  repeated measurements are always treated as if they were from
 %  different data sets. 

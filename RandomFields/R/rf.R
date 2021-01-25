@@ -54,7 +54,7 @@ prepare4RFspDataFrame <- function(x=NULL, RFopt, coordnames=NULL) {
 
 RFboxcox <- function(data, boxcox, vdim=1, inverse=FALSE, ignore.na=FALSE) {
   ## Fctn darf intern nicht aufgerufen werden!
-  internalRFoptions(COPY=TRUE)
+  internalRFoptions(COPY=TRUE, RETURN=FALSE)
   boxcoxIntern(data = data, boxcox=boxcox, vdim=vdim, inverse=inverse,
                  ignore.na=ignore.na)
 }
@@ -414,7 +414,7 @@ rfeval <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
   ## here, in contrast to Covariance, nonstatCovMatrix needs only x
 
   RFopt <-internalRFoptions(...)
-  if (!hasArg("COPY")) on.exit(optionsDelete(RFopt))
+   if (!hasArg("COPY")) on.exit(optionsDelete(RFopt))
 
   if (is.character(fctncall)) fctncall <- match.arg(fctncall)
   if (fctncall != "CovMatrix" && !missing(distances) && !is.null(distances)) {
@@ -492,11 +492,12 @@ covETC <- function(model, x, y = NULL, z = NULL, T=NULL, grid,
         messages.warn_no_fit = FALSE,
         ...)
     } else {
-      internalRFoptions(COPY=TRUE)
+      internalRFoptions(COPY=TRUE, RETURN=FALSE)
       rfempirical(x=x, y=y, z=z, T=T, data=data, grid=grid, vdim=vdim,
                   alpha=alpha, ...)
     }
   } else if (hasArg("x") || hasArg("distances")) { ## no data
+    ## Print("covETC", alpha)
     if (alpha == COVARIANCE) {
       fctn <- "Covariance"
       reg <- MODEL_COV
@@ -508,7 +509,7 @@ covETC <- function(model, x, y = NULL, z = NULL, T=NULL, grid,
               else list("Madogram", alpha = -alpha)
       reg <- MODEL_PSEUDO
     }
-##    Print(fctn, alpha)
+    ##    Print(fctn, alpha, (alpha-2) * 10^9)
     rfeval(model=model, x=x, y=y, z=z, T=T, grid=grid, params=params,
            distances=distances, dim=dim, ..., fctncall=fctn, reg= reg,
            y.ok=TRUE)
@@ -524,7 +525,7 @@ covETC <- function(model, x, y = NULL, z = NULL, T=NULL, grid,
     L$plotmethod <- L$fixed.MARGIN <- L$MARGIN <- NULL
     ##Print(alpha)
     do.call(calculateRFplot, c(L,
-                               list(x=model,
+                               list(model_=model,
                                     dim=dim,
                                   fctn.type=alpha,
                                   MARGIN = MARGIN,
@@ -602,7 +603,7 @@ rfDoSimulate <- function(n = 1, reg, spConform) {
   if (RFopt$gauss$paired && (n %% 2 != 0))
     stop("if paired, then n must be an even number")
 
-  info <- RFgetModelInfo_register(reg, level=3)
+  info <- internRFgetModelInfo_register(reg, level=3)
 
   vdim <- info$vdim
   totpts <- info$loc$totpts
@@ -741,7 +742,7 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
   if (((!missing(x) && length(x) != 0)) ## not imputing
       && RFopt$general$spConform) {
 
-    info <- RFgetModelInfo_register(reg, level=3)
+    info <- internRFgetModelInfo_register(reg, level=3)
     
     if (length(res) > 1e7) {
       message("Too big data set (more than 1e7 entries) to allow for 'spConform=TRUE'. So the data are returned as if 'spConform=FALSE'")

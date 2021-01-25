@@ -359,7 +359,8 @@ void do_spectral(model *cov, gen_storage *S) {  // in two dimensions only!
           for (segz = VV, nz = 0; nz < gridlenz; nz++) {	
 	    for (segy = segz, ny = 0; ny < gridleny; ny++) {	
 	      for (segx = segy, nx = 0; nx < gridlenx; nx++) {
-		// print("zaehler=%d %10g res=%10g %10g\n", zaehler, segx, res[zaehler], COS(segx) );
+		//
+		printf("zaehler=%d %10g res=%10g %10g\n", zaehler, segx, res[zaehler], COS(segx) );
 		  res[zaehler++] += (double) COS(segx);	  
 		segx += incx;
 	      }

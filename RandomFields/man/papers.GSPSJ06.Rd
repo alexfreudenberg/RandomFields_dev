@@ -35,7 +35,7 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 stabletest <- function(alpha, theta, size=512) {
   RFoptions(trials=1, tolIm = 1e-8, tolRe=0, force = FALSE,
             useprimes=TRUE, strategy=0, skipchecks=!FALSE,
-             storing=TRUE)
+             storing=TRUE, warn_parallel=FALSE)
   model <- RMcutoff(diameter=theta, a=1, RMstable(alpha=alpha))
   RFcov(dist=0, model=model, dim=2)
   r <- RFgetModelInfo(modelname="RMcutoff", level=3)$storage$R_theor

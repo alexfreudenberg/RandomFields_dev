@@ -92,7 +92,7 @@ resolve <- function(e1, e2, sign) {
   return(model)
 }
 
-warn.resolve.txt <- "A large vector consists fully of NAs -- the model is probably not correct.\nNote that it is always better to define the covariance model in the first\nsummands and then the trend. Also better use explicitely 'R.c', 'RMcovariate'\nand 'R.const' if the model is more complicated"
+warn.resolve.txt <- "A large vector is full of NAs -- the model is probably not correct. Note that:\n* the '~' notation is preferrably used, see ?RFformula\n* without '~', it is safer to define the covariance model as first summand\n* for complicated models, better use explicitely 'R.c', 'RMcovariate', 'R.const'"
 
 resolveRight<- function(e1, e2, sign) {
   ## left constant
@@ -493,8 +493,11 @@ setMethod("show", signature=CLASS_RM,
 
 
 ConvertRMlist2string <- function(model) {
-  subi <- sapply(model, function(x)
-    is.list(x) && (x[[1]] %in% DOLLAR || x[[1]] %in% list2RMmodel_Names))
+#  Print(model, list2RMmodel_Names)
+  subi <- sapply(model, function(x)  {
+ #   Print(x)
+    is.list(x) && (x[[1]] %in% SYMBOLS || x[[1]] %in% list2RMmodel_Names)
+  })
   pari <- !subi & !sapply(model, function(x) is.language(x) || is.environment(x)
                           || is.list(x))
   pari <- which(pari)[-1] ## not the name
@@ -516,7 +519,8 @@ ConvertRMlist2string <- function(model) {
            )
   } else if (model[[1]] %in% RM_PLUS && !any(pari))
     return(paste(sub, collapse=" + "))
-  else if (model[[1]] %in% RM_MULT && !any(pari)) {
+  else if (model[[1]] %in% RM_MULT && !any(pari) && any(subi)) {
+ #   Print(x, model, model[subi])
     idx <- 1 + sapply(model[subi], function(x) x[[1]] %in% RM_PLUS)
     left <- c("", "(")
     right <- c("", ")")
@@ -580,6 +584,9 @@ singleplot <- function(cov, dim, distance=NULL, distanceY=NULL,
       if (plotmethod=="plot.xy") list(xy = xy.coords(x=D, y=cov)) ## auch D ?
       else list(x=D, y=cov)
 
+
+    Print(dots, liXY)# maxchar darf nicht uebergeben werden
+    
     do.call(plotmethod, args=c(dots, liXY))   
     if (plotpoint) {
       for (i in 1:ncol(cov))
@@ -614,12 +621,13 @@ singleplot <- function(cov, dim, distance=NULL, distanceY=NULL,
 ## empvario is(x, CLASS_FITLIST) || is(x, CLASS_EMPIR)
 ## model: keine Daten
 
-calculateRFplot <- function(x, y, dim=1,
-                            fctn.type=NULL,
+calculateRFplot <- function(model_,
+                            ## y, unused
+                            dim=1, fctn.type=NULL,
                             MARGIN, fixed.MARGIN, ...,
                             params=NULL, RFopt=RFopt, plotmethod) {
 
-  RFopt <- RFoptions(GETOPTIONS=c("internal", "graphics", "basic"))
+  RFopt <- internalRFoptions(getoptions_=c("internal", "graphics", "basic"))
   graphics <- RFopt$graphics  ##
   plotMethods <- c("plot.xy", "image", "matplot", "contour", "persp", "none")
   if (is.contour <- is.character(plotmethod)) { # else a function
@@ -657,7 +665,7 @@ calculateRFplot <- function(x, y, dim=1,
   models <- substr(dotnames, 1, 5) == "model"
 
                                        
-  x <- c(list(x), dots[models])
+  model <- c(list(model_), dots[models])
 
   dotnames <- names(dots) ## alles namen werden gebraucht
   dots <- mergeWithGlobal(dots[!models])
@@ -684,16 +692,16 @@ calculateRFplot <- function(x, y, dim=1,
     }
   }
 
-  fctncall <- vector("list", length(x))
-  all.vdim <- numeric(length(x))
+  fctncall <- vector("list", length(model))
+  all.vdim <- numeric(length(model))
   mnames <- c("", substring(dotnames[models], 6))
   idx <- substr(mnames, 1, 1) == "."
   mnames[idx] <- substring(mnames[idx], 2)
   no.dot <- which(!idx)
 
-  for (i in 1:length(x)) {
+  for (i in 1:length(model)) {
     fctn.type <- fctnTypes
-    m0 <- x[[i]]
+    m0 <- model[[i]]
     if (is(m0, CLASS_SINGLEFIT)) m0 <- if (isS4(m0)) m0@model else m0$model
     m <- list("", PrepareModel2(m0, xdim=dim, params=params)$model)
     ##    Print(m, i, no.dot)
@@ -753,38 +761,53 @@ calculateRFplot <- function(x, y, dim=1,
   if (prod(xlim) <= 0)
     distance <- sort(c(if (!any(distance==0)) 0, 1e-5, distance))
   value <- list()
+  
   if (dim==1) {
     distanceY <- NULL
-    coords <- distance
-    for (i in 1:length(x)) 
-      value[[i]] <- rfeval(x=coords, model=x[[i]], params=params,
-                           fctncall=fctncall[[i]])
-    ## strokorb monotone ist z.B. nicht ueberall finite:
-    if (is.null(ylim)) ylim <- range(0, value, finite=TRUE)
-  } else {  
+    coords <- as.matrix(distance) 
+  } else {
     if (is.null(ylim)) ylim <- xlim
     distanceY <- seq(ylim[1], ylim[2], length=n.points)
     if (prod(ylim) < 0 & !(any(distanceY==0)))
       distanceY <- sort(c(0, distanceY))
     if (dim==2) {
       coords <- as.matrix(expand.grid(distance, distanceY))
-      for (i in 1:length(x)) 
-        value[[i]] <- rfeval(x=coords, model=x[[i]],  params=params,
-                             fctncall=fctncall[[i]])  
     } else { # (dim >= 3) 
       m1 <- expand.grid(distance, distanceY)
       coords <- matrix(NA, ncol=dim, nrow=nrow(m1))
       coords[,MARGIN] <- as.matrix(m1)
       coords[,-MARGIN] <- rep(fixed.MARGIN, each=nrow(m1))      
-      for (i in 1:length(x))
-        value[[i]] <- rfeval(x=coords, model=x[[i]],  params=params,
-                             fctncall=fctncall[[i]])
     } 
   }
+  
+  for (i in 1:length(model)) {
+##    Print(model[[i]], is(model[[i]], CLASS_CLIST))
+    y.ok <- TRUE
+    if (is(model[[i]], CLASS_CLIST)) {
+      info <- Try(if (isS4(model[[i]])) get(model[[i]]@name)
+                  else get(model[[i]][[1]]))
+      y.ok <- is(info, "try-error") || info@domain != "single variable" ||
+        !(info@isotropy %in% c( "isotropic","space-isotropic",
+                               "vector-isotropic", "symmetric",
+                               "cartesian system"))
+  ##    Print(info, y.ok)
+    }
+      
+    value[[i]] <- rfeval(x=coords,
+                         y=if (y.ok) coords * 0 else NULL,
+                         model=model[[i]],  params=params,
+                         fctncall=fctncall[[i]],
+                         y.ok = y.ok, COPY=FALSE)
+  }
+  
+  ## strokorb monotone ist z.B. nicht ueberall finite:  
+  if (dim==1 && is.null(ylim)) ylim <- range(0, value, finite=TRUE)
 
-  dimvalue <- c( if (is.vector(value[[1]])) length(value[[1]])
-                               else dim(value[[1]]), length(value))
+  dimvalue <- c( if (is.array(value[[1]])) dim(value[[1]])
+                 else length(value[[1]]), length(value))
+  
   value <- unlist(value)
+##  Print(dimvalue, value)
   dim(value) <- dimvalue
   dimnames(value) <- c(rep(list(NULL), length(dimvalue) - 1), list(mnames))
 
@@ -812,7 +835,8 @@ RFplotModel <- function(x, y, dim=1,
                         plotmethod=if (dim==1) "matplot" else "contour") {
 
   L <- if (is(x,  CLASS_PLOT)) x
-       else calculateRFplot(x=x, y=y, dim=dim, fctn.type=fctn.type,
+       else calculateRFplot(model_=x,  ## y=y, y is ignored!
+                            dim=dim, fctn.type=fctn.type,
                             MARGIN = MARGIN, fixed.MARGIN = fixed.MARGIN,
                             ..., params=params, plotmethod=plotmethod)
   

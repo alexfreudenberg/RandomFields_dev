@@ -176,12 +176,13 @@ plot(simuB)
 
 ## third example: bivariate non-stationary field with exponential correlation
 ## function. The variance of the two components is given by the
-## variogram of fractional Brownian motions.
-## Note that the two components have correlation 1.
+## square of fractional Brownian motions.
+## Note that the two components do NOT have correlation 1, although
+## the two components are based on the same univariate field given by RMexp()
 x <- seq(0, 10, 0.1)
 modelC <- RMmatrix(RMexp(), M=c(RMfbm(alpha=0.5), RMfbm(alpha=1.5))) 
 print(modelC)
-simuC <- RFsimulate(modelC, x, x, print=1)
+simuC <- RFsimulate(modelC, x, x)
 #print(as.vector(simuC))
 plot(simuC)
 
