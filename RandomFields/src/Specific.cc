@@ -189,7 +189,6 @@ int init_specificGauss(model *cov, gen_storage *S) {
 
 
 void do_specificGauss(model *cov, gen_storage *S) {
-  PMI(cov);
   model *key = cov->key;
   double *res = cov->rf;
   SAVE_GAUSS_TRAFO;

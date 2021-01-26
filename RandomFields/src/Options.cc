@@ -34,8 +34,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //#include "kleinkram.h"
 // #include "Operator.h"
 #include "RF.h"
-#include "xport_import.h"
-#include "init.h"
 
 #define ADD(ELT) SET_VECTOR_ELT(sublist, k++, ELT)
 #define ADDCHAR(ELT) x[0] = ELT; ADD(ScalarString(mkChar(x)))
@@ -118,9 +116,6 @@ double
 const char *f_opt[nr_modes] = {"optim", "optim", "optim", "optim", "optim", "optim", "optim"}; // to do optimx
 
 
-int 
-PL = 1,
-  CORES = INITCORES; //  return;  TO DO: replace by KEYT->global_utils
 globalparam GLOBAL = {
   general_START,
   gauss_START,
@@ -150,7 +145,6 @@ globalparam GLOBAL = {
   special_START
 
 };   
-utilsparam *GLOBAL_UTILS;
   
 
 void SetDefaultOutputModeValues(output_modes mode, bool local){
@@ -501,16 +495,8 @@ int allN[prefixN] = {generalN, gaussN, krigeN, CEN, directN,
 		     messagesN, coordsN, specialN, obsoleteN, ignoreN};
 
 
-globalparam *WhichOptionList(bool local) {  
-  if (local) {
-    KEY_type *KT = KEYT();
-    if (KT == NULL) BUG;
-    return &(KT->global);
-  }
-  return &GLOBAL;
-}
 
-void setparameter(int i, int j, SEXP el, char name[200], bool isList,
+void setoptions(int i, int j, SEXP el, char name[200], bool isList,
 		  bool local) {  
   //  printf("setparameter %s %d %d local=%d\n", name, i, j, local);
    
@@ -558,17 +544,7 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
 	    model **key = KEY() + nr;
 	    if (*key != NULL) COV_DELETE(key, NULL);
 	  }
-	} else {
-	  for (int kn=0; kn<PIDMODULUS; kn++) {
-	    KEY_type *KT = PIDKEY[kn];
-	    while (KT != NULL) {
-	      KEY_type *q = KT;
-		KT = KT->next;
-		KEY_type_DELETE(&q);
-	    }
-	    PIDKEY[kn] = NULL;
-	  }
-	}
+	} else PIDKEY_DELETE();
       }
       gp->storing = storing;
       //printf("storing: get=%d set=%d\n", storing, gp->storing);
@@ -1356,7 +1332,7 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
 #define AddScalarLogInt(X)						\
   if ((X)==0 || (X)==1) {ADD(ScalarLogical(X));} else {ADD(ScalarInteger(X));}
 
-void getRFoptions(SEXP sublist, int i, bool local) {
+void getoptions(SEXP sublist, int i, bool local) {
   //  printf("get %d local=%d\n", i, local);
     int k=0;
   char x[2]=" ";
@@ -1763,67 +1739,4 @@ void getRFoptions(SEXP sublist, int i, bool local) {
 
 }
 
-
-SEXP setlocalRFutils(SEXP seed, SEXP printlevel) {
-  KEY_type *KT = KEYT();
-  assert(KT != NULL);
-  utilsparam *global_utils = &(KT->global_utils);
-  assert(global_utils != NULL);
-  if (length(seed) > 0)
-    global_utils->basic.seed = Integer(seed, (char *) "seed", 0);
-  if (length(printlevel) > 0) {
-    PL = global_utils->basic.Rprintlevel =
-      Integer(printlevel, (char *) "printlevel", 0);
-    global_utils->basic.Cprintlevel = global_utils->basic.Rprintlevel +PLoffset;
-  }
-  return R_NilValue;
-}
-
-void finalparameter() {
-  utilsparam *global_utils = GLOBAL_UTILS;
-  PL = global_utils->basic.Cprintlevel - PLoffset;
-  CORES = global_utils->basic.cores;
-}
-
-
    
-
-
-void loadRandomFields() { // no print commands!!!
-   //  printf("loading\n");
-  includeXport();
-  Ext_pid(&parentpid);
-  Ext_getUtilsParam(&GLOBAL_UTILS);
-  utilsparam *global_utils = GLOBAL_UTILS;
-  global_utils->solve.max_chol = DIRECT_ORIG_MAXVAR;
-  global_utils->solve.max_svd = 6555;
-  global_utils->solve.pivot = PIVOT_AUTO;
-  global_utils->solve.pivot_check = Nan;
-  global_utils->basic.warn_unknown_option = WARN_UNKNOWN_OPTION_NONE1;
-  Ext_attachRFoptions(prefixlist, prefixN, all, allN,
-  		      setparameter, finalparameter, getRFoptions, NULL,
-  		      PLoffset, true);
-  //  printf("before final\n");
-  finalparameter();
-  //  printf("before init\n");
-  InitModelList();
-}
-
-SEXP attachRandomFields() { // no print commands!!!
-#define NEED_AVX2 false
-#define NEED_AVX true
-#define NEED_SSSE3 false
-#define NEED_SSE2 true
-#define NEED_SSE false
-#ifdef ReturnAttachMessage
-  ReturnAttachMessage(RandomFields, true);
-#else
-  return R_NilValue;
-#endif
-}
-
-void detachRandomFields() {
-  Ext_detachRFoptions(prefixlist, prefixN);
-}
-
-

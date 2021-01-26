@@ -760,7 +760,8 @@ void gauss_predict(model *cov, double *v) {
   //  printf("CROSS tot = %d\n", totptsYvdimSq);
   TALLOC_XXX2(dummy, has_nas ? totptsYvdimSq : 1);
 
-  double *ResiWithoutNA, *Ccur, *ptcross;
+  double *ResiWithoutNA = NULL,
+    *Ccur, *ptcross;
   int atonce, endfor,
     notnas = NA_INTEGER;
   if (has_nas) {
@@ -781,6 +782,7 @@ void gauss_predict(model *cov, double *v) {
     double *resi = residuals + r * totptsYvdim * atonce,
       *pv0 = v + r * atonce * pred_totvdim;
     if (has_nas) {
+      assert(ResiWithoutNA != NULL);
       notnas = matrixcopyNA(ResiWithoutNA, resi, resi, totptsYvdim, 1, 0);
 
       //  for (int i=0; i<totptsYvdim*totptsYvdim ; i++) {
@@ -1779,8 +1781,9 @@ getStorage(L ,   likelihood);
     if (totptsvdim > L->max_total_data) 
       L->max_total_data = totptsvdim;
   }
-  L->X = (double **) CALLOC(sets, sizeof(double *));
-  L->YhatWithoutNA = (double **) CALLOC(sets, sizeof(double *));
+  int Sets; Sets = sets; // 25.1.21 to fool the compiler
+  L->X = (double **) CALLOC(Sets, sizeof(double *));
+  L->YhatWithoutNA = (double **) CALLOC(Sets, sizeof(double *));
   for (i=0; i<sets; i++) L->X[i] = L->YhatWithoutNA[i] = NULL;
   L->sumY = (double *) MALLOC(L->max_total_data * sizeof(double)); 
   L->sets = sets;

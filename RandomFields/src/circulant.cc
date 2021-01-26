@@ -29,21 +29,27 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
   
 
 #include <Rmath.h>  
-#include <stdio.h>  
+#include <stdio.h>
+
+#include <R_ext/Linpack.h>
+#include <R_ext/Utils.h>     
+#include <R_ext/Lapack.h> // MULT 
+
 //#include <stdlib.h>
+#include "def.h"
 #include "questions.h"
 #include "operator.h"
 #include "Processes.h"
-#include "Coordinate_systems.h"
+
+#undef DO_PARALLEL
+
 
 #ifdef DO_PARALLEL
 #include <omp.h>
 #endif
 
-  
-#include <R_ext/Linpack.h>
-#include <R_ext/Utils.h>     
-#include <R_ext/Lapack.h> // MULT 
+
+
 
 
 
@@ -396,7 +402,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 #ifdef DO_PARALLEL 
 	  err_occurred++; break;
 #else	     
-	  GERR1("covariance models returns NAs.", CONTACT);
+	  GERR1("covariance models returns NAs. %.200s", CONTACT);
 #endif
 	}
 	//	  print("%d %d %10g\n", i, mtot,  c[l][dummy]);
@@ -429,6 +435,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 #ifdef DO_PARALLEL
 #define S_FFT(l) s->FFT + l
 #define END vdim
+    dddd
 #else
 #define S_FFT(l) &(s->FFT)
 #define END 1    

@@ -36,7 +36,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
   CALL(solvePosDefSp);				\
   CALL(sqrtPosDefFree);				\
   CALL(sqrtRHS);				\
-  CALL(setErrorLoc);				\
   CALL(I0mL0);					\
   CALL(invertMatrix);				\
   CALL(getUtilsParam);				\
@@ -65,4 +64,18 @@ UTILSCALLS;
 
 void includeXport();
 extern utilsparam* GLOBAL_UTILS;
+extern int CORES;
+extern int PL;
+
+void PIDKEY_DELETE();
+typedef
+struct globalparam globalparam;
+globalparam *WhichOptionList(bool local);
+bool parallel();
+
+//void globalparam_NULL(KEY_type *KT, bool copy_messages);
+//void globalparam_NULL(KEY_type *KT);
+//void globalparam_DELETE(KEY_type *S);
+
+
 #endif

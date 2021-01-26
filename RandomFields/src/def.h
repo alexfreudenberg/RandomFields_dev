@@ -28,16 +28,26 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef RFdef_H
 #define RFdef_H 1
 
-#define DO_PARALLEL_ALREADY_CONSIDERED 1
 
+//
+//
+//  1
+//
+//
+// 1
+
+
+
+#define DO_PARALLEL_ALREADY_CONSIDERED 1 // verhindert dass in  Basic_utils.h
+//                                          entsprechend gesetzt wird
 #ifdef _OPENMP
-#ifndef DO_PARALLEL
-//#define DO_PARALLEL 1
-#endif
+  #ifndef SCHLATHERS_MACHINE
+    #define DO_PARALLEL 1
+  #endif
 #else
-#ifdef DO_PARALLEL
-#undef DO_PARALLEL
-#endif
+   #ifdef DO_PARALLEL
+     #undef DO_PARALLEL
+   #endif
 #endif
 
 #ifdef DO_PARALLEL

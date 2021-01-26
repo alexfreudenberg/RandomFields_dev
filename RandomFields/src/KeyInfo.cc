@@ -24,10 +24,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //#include <Rmath.h>  
 #include <stdio.h>  
 #include <string.h>
-#include "questions.h"
 #include <Rdefines.h>
 #include <stdint.h>
 
+#include "def.h"
+#include "questions.h"
 #include "Coordinate_systems.h"
 #include "operator.h"
 #include "Processes.h"
@@ -1473,9 +1474,14 @@ getStorage(pgs ,       pgs);
 	}
 	if (cov->Smodel != NULL) {
 	  GETSTOMODEL;
-	  leer(level); 
-	  PRINTF("%-10s %s [%d]\n","pgs:cov", Nick(STOMODEL->cov),
-		 STOMODEL->cov->zaehler);
+#define STO_PRINT(cov)							\
+	  if (STOMODEL->cov != NULL) {					\
+	    leer(level);						\
+	    PRINTF("%-10s %s [%d]\n","pgs:"#cov, Nick(STOMODEL->cov),	\
+		   STOMODEL->cov->zaehler);				\
+	  }
+	  STO_PRINT(cov);
+	  STO_PRINT(orig);	  
 	}
       } else { // gauss oder poisson
 	leer(level); P10("pgs:intens", pgs->intensity);
@@ -1827,7 +1833,7 @@ SEXP GetModel(SEXP keynr, SEXP Modus, SEXP SpConform, SEXP whichSub,
     // range of parameters
     set_type(PREVSYSOF(dummy), 0, PosDefType);
   
-  PMI0(cov);
+  //PMI0(cov);
   err = CHECK_ONLY(dummy);
   global_utils->basic.skipchecks = skipchecks;
   // TREE(dummy);

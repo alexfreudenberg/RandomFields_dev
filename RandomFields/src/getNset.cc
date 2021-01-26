@@ -37,7 +37,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "families.h"
 
 
-
 void listpt(listoftype **To, listoftype *p, int len, SEXPTYPE Rtype,
 	    bool force_allocating) {
   if (*To == NULL || force_allocating) {
@@ -605,7 +604,7 @@ int empty_loc_set(model *cov, int dim, Long totalpoints, Long totalpointsy) {
   if (loc->len > 1) BUG;
   loc->Time = loc->grid = loc->gridY = loc->distances = false;
   loc->spatialdim = loc->timespacedim = loc->xdimOZ = dim;
-  loc->delete_x = loc->delete_x = true;
+  loc->delete_x = loc->delete_y = true;
   loc->totalpoints = loc->spatialtotalpoints = totalpoints;
   loc->totalpointsY = loc->spatialtotalpointsY = totalpointsy;
  
@@ -1836,14 +1835,14 @@ void x2x(double *x, int nx, double **newx,
     MEMCOPY(z, x, sizeof(double) * nx * ncol);
   } else {
 #ifdef DO_PARALLEL
-#pragma omp parallel for num_threads(CORES)
+#pragma omp parallel for //num_threads(CORES)
 #endif
     for (int ii=0; ii<nx; ii++) {
       int i = ii * nrow,
 	k = ii * ncol,
 	endfor = i + nrow;
       for (int d=0; d<ncol; d++) {
-	int n = physical_nrow * d;
+	int n = physical_nrow * d; 
         double dummy = 0.0;
 	for(int w=i; w<endfor; w++) {
 	  dummy += aniso[n++] * y[w];

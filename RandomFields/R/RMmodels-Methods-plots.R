@@ -435,7 +435,7 @@ summary.RMmodel <- function(object, max.level=5, ...) {
     model <- try(PrepareModel2(object, ..., xdim=1)$model, silent=TRUE) # OK
 ##    print("ende")
 ##    Print(model)
-    if (is(model, "try-error")) {
+    if (is(model, CLASS_TRYERROR)) {
       warning("The model might be incomplete or too complicated to be dealt with in a simple summary.")
       return(as.list.RMmodel(object))
     } else {
@@ -786,7 +786,7 @@ calculateRFplot <- function(model_,
     if (is(model[[i]], CLASS_CLIST)) {
       info <- Try(if (isS4(model[[i]])) get(model[[i]]@name)
                   else get(model[[i]][[1]]))
-      y.ok <- is(info, "try-error") || info@domain != "single variable" ||
+      y.ok <- is(info, CLASS_TRYERROR) || info@domain != "single variable" ||
         !(info@isotropy %in% c( "isotropic","space-isotropic",
                                "vector-isotropic", "symmetric",
                                "cartesian system"))

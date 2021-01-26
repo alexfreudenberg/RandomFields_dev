@@ -1,6 +1,6 @@
 
-#ifndef miraculix_initrinsics_H
-#define miraculix_initrinsics_H 1
+#ifndef rfutils_initrinsics_H
+#define rfutils_initrinsics_H 1
 
 #include <inttypes.h> // uint ptr_t
 

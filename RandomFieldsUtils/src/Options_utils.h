@@ -53,16 +53,13 @@ extern const char *basic[basicN];
 typedef // benoetigt
 struct basic_param {
   int  
-  Rprintlevel,
-    Cprintlevel,
-    seed, cores, warn_unknown_option;
+  Rprintlevel, Cprintlevel, seed, cores, warn_unknown_option;
   bool skipchecks, asList /* hidden:verbose */, kahanCorrection, helpinfo,
     useGPU, warn_parallel;
 } basic_param;
 #define basic_START \
-  { R_PRINTLEVEL, C_PRINTLEVEL, NA_INTEGER, INITCORES,  \
-      WARN_UNKNOWN_OPTION_ALL,				\
-      false, true, false, true,  GPUavailable	 \
+  { R_PRINTLEVEL, C_PRINTLEVEL, NA_INTEGER, INITCORES, WARN_UNKNOWN_OPTION_ALL,\
+      false, true, false, true,  GPUavailable, true			\
       }
 
 
@@ -107,10 +104,10 @@ struct utilsparam{
 
 
 
-typedef void (*setparameterfct) (int, int, SEXP, char[200], bool, bool);
-typedef void (*getparameterfct) (SEXP, int, bool);
-typedef void (*finalsetparameterfct) ();
-typedef void (*deleteparameterfct) (bool);
+typedef void (*setoptions_fctn) (int, int, SEXP, char[200], bool, bool);
+typedef void (*getoptions_fctn) (SEXP, int, bool);
+typedef void (*finalsetoptions_fctn) ();
+typedef void (*deleteoptions_fctn) (bool);
 #define ADD(ELT) SET_VECTOR_ELT(sublist, k++, ELT)
 #define ADDCHAR(ELT) x[0] = ELT; ADD(ScalarString(mkChar(x)))
 

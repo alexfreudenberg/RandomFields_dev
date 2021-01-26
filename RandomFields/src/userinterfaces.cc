@@ -704,11 +704,6 @@ SEXP Init(SEXP model_reg, SEXP Model, SEXP x, SEXP NA_OK) {
   return ans;
 }
 
-SEXP copyoptions() {
-  KEY_type *KT = KEYT();
-  globalparam_NULL(KT, false);
-  return R_NilValue;
-}
 
 SEXP EvaluateModel(SEXP X, SEXP I, SEXP Covnr){
   //  printf("evaluation start\n");

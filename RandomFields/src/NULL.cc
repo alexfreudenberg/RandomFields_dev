@@ -27,6 +27,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  #include <string.h>
 #include <R_ext/Linpack.h>
 
+#include "def.h"
 #include "questions.h"
 #include "primitive.h"
 #include "Coordinate_systems.h"
@@ -37,6 +38,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "families.h"
 
 
+#undef DO_PARALLEL
 
 
 
@@ -496,6 +498,7 @@ void ce_DELETE(ce_storage **S) {
 #ifdef DO_PARALLEL
     for (int i=0; i<vdimSQ; i++) FFT_destruct(x->FFT + i);
     FREE(x->FFT);
+    dddd
 #else
     FFT_destruct(&(x->FFT));
 #endif
@@ -1111,51 +1114,3 @@ void model_DELETE(model_storage **S, model *save) {
   }
 }
 
-
-
-void KEY_type_NULL(KEY_type *KT) {
-  KT->currentRegister = KT->set = 0;
-  KT->naok_range = KT->stored_init = false;
-  KT->rawConcerns = unsetConcerns;
-  MEMSET(KT->PREF_FAILURE, 0, 90 * Nothing);
-  KT->next = NULL;
-  KT->error_causing_cov = NULL; // only a pointer, never free it.
-  KT->zerox = NULL;
-  STRCPY(KT->error_location, "<unkown location>");
-  globalparam_NULL(KT);
-}
-void KEY_type_DELETE(KEY_type **S) {
-  KEY_type *KT = *S;
-  model **key = KT->KEY;
-  globalparam_DELETE(KT);
-  FREE(KT->zerox);
-  for (int nr=0; nr<=MODEL_MAX; nr++)
-    if (key[nr]!=NULL) COV_DELETE(key + nr, NULL);
-  UNCONDFREE(*S);
-}
-
-
-void globalparam_NULL(KEY_type *KT, bool copy_messages) {
-  assert(generalN==20 && gaussN == 6 && krigeN == 5 && extremeN == 12
-	 && fitN == 42 && messagesN == 28 && coordsN == 20 && prefixN == 25);
-  messages_param m;
-  if (!copy_messages)
-    MEMCOPY(&m, &(KT->global.messages), sizeof(messages_param));
-
-  MEMCOPY(&(KT->global), &GLOBAL, sizeof(globalparam));
-  // pointer auf NULL setzten
-  if (!copy_messages)
-    MEMCOPY(&(KT->global.messages), &m, sizeof(messages_param));
-    
-  Ext_utilsparam_NULL(&(KT->global_utils));
-}
-
-void globalparam_NULL(KEY_type *KT) {
-  globalparam_NULL(KT, true);
-}
-
-void globalparam_DELETE(KEY_type *KT) {
-   // pointer loeschen
-  
-  Ext_utilsparam_DELETE(&(KT->global_utils));
-}

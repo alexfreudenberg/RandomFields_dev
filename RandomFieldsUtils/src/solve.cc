@@ -464,9 +464,9 @@ int doPosDef(double *M0, int size, bool posdef,
   assert(NA_LOGICAL == INT_MIN && NA_LOGICAL == NA_INTEGER); // nur zur sicherheit, wegen usr_bool
   //          eigentlich sollte usr_bool unabhaengig davon funktionieren
   assert(calculate != DETERMINANT ||
-	 (logdet != NULL && result == NULL && rhs == NULL));
-  assert(calculate != MATRIXSQRT || (rhs == NULL && posdef));
-  assert((rhs_cols != 0) xor (rhs == NULL));
+	 (logdet != NULL && result == NULL && rhs0 == NULL));
+  assert(calculate != MATRIXSQRT || (rhs0 == NULL && posdef));
+  assert((rhs_cols != 0) xor (rhs0 == NULL));
 
   double *RESULT = result != NULL ? result : rhs_cols > 0 ? rhs0 : M0;
   
@@ -1119,12 +1119,12 @@ int doPosDef(double *M0, int size, bool posdef,
 		}
 	      }
 	      
-	      
+
 	      //////////////////////////////////////////////////
 	      //////////////////////////////////////////////////
 	      
 	    } else { // rhs_cols > 0
-	      assert(rhs != RESULT); 
+	      assert(rhs0 != RESULT); 
 	      double eps = D[0] * sp->pivot_relerror;
 			      
 #ifdef DO_PARALLEL

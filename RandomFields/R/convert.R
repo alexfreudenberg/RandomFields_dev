@@ -242,7 +242,7 @@ AddTransform <- function(M, model, params, orig.params, Names, nNA,
   ## rf_interface.cc, includeparam, these values cannot appear
   ## as parameter values
  
-  model.vdim <- integer(1)
+  model.vdim <- 0L
   NAs.in.model <- ## user might have given NA directly in the model
     .Call(C_GetNAPositions, MODEL_AUX, list("Dummy", M300), M$C_coords,
           as.double(NA),
@@ -382,6 +382,7 @@ AddTransform <- function(M, model, params, orig.params, Names, nNA,
   } # at least 1 variable to be filled on C level
   
   M$transform <- list(isNA=isNA, fctn=fctn, params.fctn=params.fctn)
+  M$vdim <- model.vdim
   return(M)
 }
 
@@ -980,9 +981,6 @@ PrepareModel2 <- function(model, ...,
   M$vdim <- DataNames$vdim
   M$repet <- DataNames$repet
 
-
-#  Print(xdim)
-  ##  Print(M);
   
   if (xdim != 0 && length(M$is.x) != 0 && length(M$is.x) != xdim) {
     stop("dimension mismatch", CONTACT)
@@ -999,9 +997,7 @@ PrepareModel2 <- function(model, ...,
                   C_UnifyXT(xx, grid=TRUE)
                 } else stop("'x' not given (nor 'dim')")
 
-  ##  Print(x, M$C_coords)
-
-                                        #
+                                         #
   if (return_transform && sum(genuine.formulae) > 0) {
     stopifnot(missing(further.model) || is.null(further.model))
     M <- AddTransform(M=M, model=model, 
@@ -1032,6 +1028,8 @@ PrepareModel2 <- function(model, ...,
   }
 
   if (any(M$add.na)) Help("addNA")
+
+##  Print(M, data,DataNames, return_transform && sum(genuine.formulae) )
   
   M
 }

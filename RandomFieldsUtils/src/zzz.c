@@ -128,8 +128,6 @@ void R_init_RandomFieldsUtils(DllInfo  *dll) {
   CALLABLE(D4Gauss);
   CALLABLE(logGauss);
   
-  CALLABLE(getErrorString);
-  CALLABLE(setErrorLoc);
   CALLABLE(getUtilsParam);
   CALLABLE(attachRFoptions);
   CALLABLE(detachRFoptions);

@@ -98,7 +98,8 @@ void setparameterUtils(int i, int j, SEXP el, char name[LEN_OPTIONNAME],
 	WARN1("number of 'cores' is set to %d", numCPU);
 	gp->cores = numCPU;
       }
-#ifndef DO_PARALLEL      
+#ifdef DO_PARALLEL
+#else
       if (gp->cores != 1) {
 	gp->cores = 1;
 	PRINTF("The system does not allow for OpenMP: the value 1 is kept for 'cores'.");
@@ -285,27 +286,10 @@ void utilsparam_DELETE(utilsparam *S) {
 
 
 
-void delparameterUtils(bool local) {
+void delparameterUtils(bool VARIABLE_IS_NOT_USED local) {
 #ifdef DO_PARALLEL
   if (local) RFERROR("'pivot_idx' cannot be freed on a local level");
 #endif  
   utilsparam *options = &GLOBAL;
   FREE(options->solve.pivot_idx);
 }
-
-void getErrorString(errorstring_type errorstring){
-#ifdef DO_PARALLEL
-  STRCPY(errorstring, "error occurred in package RandomFieldsUtils");
-#else
-  strcopyN(errorstring, ERRORSTRING, MAXERRORSTRING);
-#endif  
-}
-
-void setErrorLoc(errorloc_type VARIABLE_IS_NOT_USED errorloc){
-#ifndef DO_PARALLEL
-  strcopyN(ERROR_LOC, errorloc, nErrorLoc);
-#endif  
-}
-
-
-

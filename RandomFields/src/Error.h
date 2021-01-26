@@ -24,8 +24,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 
-#ifndef RFerror_H
-#define RFerror_H 1
+#ifndef RandomFields_error_H
+#define RandomFields_error_H 1
 
 #include "RF.h"
 

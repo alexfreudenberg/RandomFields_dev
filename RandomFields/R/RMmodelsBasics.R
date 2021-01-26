@@ -52,7 +52,7 @@ CheckProj <- function(arg, subst) {
 	  options(warn = 0)            
 	  p <- try(as.vector(p), silent=TRUE) ## to fool findall: tkEntry(
 	  options(warn=warn)
-	  if (is(p, "try-error"))
+	  if (is(p, CLASS_TRYERROR))
 	    stop("'\"", arg,
 		 "\"' is interpretated as a projection defintion but the character string is not recognized")
 	}

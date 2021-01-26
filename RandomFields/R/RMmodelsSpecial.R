@@ -62,7 +62,7 @@ RRdistr <- function(name, nrow, ncol,  ## ddistr, pdistr, qdistr, rdistr,
     if (length(par.names) == 0 || any(par.names == ""))
       stop("In distribution families\n  (i) all parameters must be named;\n (ii) in more complicated models all distributions taken from R must be\n      encapsulated by 'RRdistr';\n(iii) use 'RRloc' to modifiy scale and location.\nIf the call of a distribution family was not the intension, the error could be\n  (i) missing ~")
     num <- sapply(ll, function(x) 
-      is.numeric(x) || is.symbol(x) || !(is(Try(eval(x)), "try-error"))
+      is.numeric(x) || is.symbol(x) || !(is(Try(eval(x)), CLASS_TRYERROR))
       )
     if (!all(num)) {
       subs <- ll[!num]

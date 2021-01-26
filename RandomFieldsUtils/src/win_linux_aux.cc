@@ -71,6 +71,8 @@ void pid(int *i)  {
 #endif
 }
 
+
+
 void hostname(char **h, int *i){
 #ifdef WIN32
   *h[0]=0;

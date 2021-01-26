@@ -230,11 +230,26 @@ print.summary.RMmodelFit <- function(x, ...) {
   }
 
   printParam <- function(param, coordsystem) {
-    cat("User's variables")
+    cat("Model variables")
     if (length(coordsystem) == 1) cat(" (", coordsystem, ")", sep="")
     else if (length(coordsystem) > 1) cat(" (various coordinate systems used - see 'Internal variables')")
     cat(":\n")
     print(param, ..., na.print="-")#
+    return(ncol(param))
+  }
+
+  printUsers <- function(param) {
+    cat("\nUser's variables:\n")
+    idx <- sapply(param, length) == 1
+    print(unlist(param[idx]), ..., na.print="-")#
+    if (!all(idx)) {
+      p <- param[idx]
+      n <- names(p)
+      for (i in 1:length(p)){
+        cat("user variable '", n[i], "':\n", sep="")
+        print(p[[i]], ..., na.print="-")#
+      }
+    }
     return(ncol(param))
   }
   
@@ -265,7 +280,7 @@ print.summary.RMmodelFit <- function(x, ...) {
         if (n != cur_name) {
           if (i > 1) {         
             if (!is.null(sm$param)) printParam(cparam, x$coordsystem)
-            printRest(np, ll, AIC) #
+             printRest(np, ll, AIC) #
             if (!is.null(sm$boundary)) cat(sm$boundary, "\n\n")
           }
           
@@ -319,9 +334,12 @@ print.summary.RMmodelFit <- function(x, ...) {
       cat("\nuser's model\n", paste(rep("=", 12), collapse=""), "\n", sep="")
     }
 
+    
     np <- NA
     np <- printVariab(x, x$coordsystem)
     if (length(x$param) > 0) np <- printParam(x$param, x$coordsystem)
+    if (length(x$params.list) > 0) printUsers(x$params.list)
+    
     printRest(np, x[c("loglikelihood", "AIC")])#
     if (!is.null(x$boundary)) cat(x$boundary, "\n\n")
     class(x) <- NULL

@@ -151,7 +151,7 @@ brack <- function(x, i=NULL, j=NULL, ..., drop=FALSE) {
   dots = list(...)
   if (length(dots)>0) warning("dots are ignored")
   has.variance <- !is.null(x@.RFparams$has.variance) && x@.RFparams$has.variance
-  j.absent <- is(try(j, silent=TRUE), "try-error") ## hasArg("j") , missing do not work! ## to fool .bash_alias: tkEntry(
+  j.absent <- is(try(j, silent=TRUE), CLASS_TRYERROR) ## hasArg("j") , missing do not work! ## to fool .bash_alias: tkEntry(
   if (j.absent) {
      if (missing(i)) return(x)
     x@data <- x@data[i]#, drop=drop]

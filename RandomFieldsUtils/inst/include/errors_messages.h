@@ -46,39 +46,19 @@ typedef char errorstring_type[MAXERRORSTRING];
 typedef char errorloc_type[nErrorLoc];
 
 
-#ifdef DO_PARALLEL
-  #define LOCAL_ERRMSG2 char MSG2[LENERRMSG]
-  #ifndef LOCAL_ERRLOC_MSG
-    #define LOCAL_ERRLOC_MSG errorloc_type ERROR_LOC=""; char ERRMSG[LENERRMSG];
-  #endif
-  #ifndef LOCAL_ERRORSTRING
-     #define LOCAL_ERRORSTRING errorstring_type ERRORSTRING
-  #endif
-
-#else  // not DO_PARALLEL
-  #define LOCAL_ERRMSG2
-  #ifndef LOCAL_ERRLOC_MSG
-    #define LOCAL_ERRLOC_MSG
-  #endif
-  #ifndef LOCAL_ERRORSTRING
-    #define LOCAL_ERRORSTRING
-  #endif
-  extern char ERRMSG[LENERRMSG], // used by Error_utils.h. Never use elsewhere
-    MSG2[LENERRMSG];// used at the same time with MSG and ERR()
-  extern errorstring_type ERRORSTRING; // used by ERRORM in RandomFields
-
-  #ifndef ERROR_LOC
-    extern errorloc_type ERROR_LOC;
-  #endif
-//  extern char   MSG[LENERRMSG]; // used by RandomFields in intermediate steps
+#define LOCAL_ERRMSG2 char MSG2[LENERRMSG]
+#ifndef LOCAL_ERRLOC_MSG
+  #define LOCAL_ERRLOC_MSG errorloc_type ERROR_LOC=""; char ERRMSG[LENERRMSG];
 #endif
-
+#ifndef LOCAL_ERRORSTRING
+  #define LOCAL_ERRORSTRING errorstring_type ERRORSTRING
+#endif
 #ifndef WHICH_ERRORSTRING 
-#define WHICH_ERRORSTRING ERRORSTRING
+  #define WHICH_ERRORSTRING ERRORSTRING
 #endif
 
 #ifndef LOCAL_ERROR
-#define LOCAL_ERROR(N) {}
+  #define LOCAL_ERROR(N) {}
 #endif
 
 #ifdef SCHLATHERS_MACHINE

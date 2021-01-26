@@ -33,7 +33,7 @@
 
 .onAttach <- function (lib, pkg) {
   #print("dooppelte anfuehrungszeichen kroore")
- # packageStartupMessage("This is RandomFields Version: 4.0.0.6") # ")
+ # packageStartupMessage("This is RandomFields Version: 4.0.0.7") # ")
   packageStartupMessage("Note that a new package 'RandomFieldsLight' is upcoming,\nwhich offers a simplified access to modelling random fields.")
   packageStartupMessage(.Call("attachRandomFields"))
 }
@@ -45,8 +45,7 @@
 }
 
 .onUnload <- function(lib, pkg){
-  RFoptions(storing=TRUE, storing=FALSE) ## deletes everything
-  .C("detachRandomFields")
+   .C("detachRandomFields")
 }
 
 #Implementierung von Cox & Isham's non-separable model

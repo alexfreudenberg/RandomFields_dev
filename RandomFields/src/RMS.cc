@@ -2559,7 +2559,6 @@ int initSproc(model *cov, gen_storage *s){
 
 //int zz = 0;
 void doSproc(model *cov, gen_storage *s){
-  PMI(cov);
   int 
     vdim = VDIM0;
 

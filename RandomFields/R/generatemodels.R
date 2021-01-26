@@ -423,7 +423,7 @@ CC <- function(x, envir) {
     options(warn = -1)
     y <- Try(as.numeric(eval(parse(text=x), envir=envir)))
     options(warn = warn)
-    if (Real <- !is(y, "try-error") && !is.na(y)) {
+    if (Real <- !is(y, CLASS_TRYERROR) && !is.na(y)) {
       Integer <- nchar(strsplit(x, "\\.")[[1]][1]) == nchar(x) &&
                  abs(y) <= .Machine$integer.max
 ##      cat(Integer, "", y,"", .Machine$integer.max, "",abs(y) <= .Machine$integer.max)
@@ -584,7 +584,7 @@ rfGenerateConstantsC <- function(RFpath, RCauto.file, c.source, package="none") 
   if (package == "RandomFields") {
 
     define_char <- function(name, value) {
-      if (is(value, "try-error")) value <- NULL
+      if (is(value, CLASS_TRYERROR)) value <- NULL
       write(file = RCauto.file, append = TRUE,
 	    paste("\n", name, " <- c('", sep="",
 		  paste(value, collapse="', '"),
@@ -592,7 +592,7 @@ rfGenerateConstantsC <- function(RFpath, RCauto.file, c.source, package="none") 
 	    )
     }
     define_num <- function(name, value) {
-      if (is(value, "try-error")) value <- NULL
+      if (is(value, CLASS_TRYERROR)) value <- NULL
       write(file = RCauto.file, append = TRUE,
 	    paste("\n", name, " <- c(", sep="",
 		  paste(value, collapse=", "),

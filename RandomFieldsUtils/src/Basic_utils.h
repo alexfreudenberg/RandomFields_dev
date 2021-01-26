@@ -34,15 +34,21 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 #ifndef DO_PARALLEL_ALREADY_CONSIDERED
+  // 1
+  #ifdef _OPENMP
+    #ifndef SCHLATHERS_MACHINE
+      #define DO_PARALLEL 1
+    #endif
+  #else
+    #ifdef DO_PARALLEL
+      #undef DO_PARALLEL
+    #endif
+  #endif
+#endif // DO_PARALLEL_ALREADY_CONSIDERED
 
-#ifdef _OPENMP
-#define DO_PARALLEL 1
-#else
 #ifdef DO_PARALLEL
-#undef DO_PARALLEL
+#warning "do parallel"
 #endif
-#endif
-
 
 #ifdef USEGPU
 #define GPUavailable true
@@ -56,8 +62,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #endif
 
 
-#endif // DO_PARALLEL_ALREADY_CONSIDERED
-
 
 //#ifdef WIN32
 //#ifdef DO_PARALLEL
@@ -66,7 +70,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //#endif
 
 
-#define MULTIMINSIZE(S) ((S) > 20)
+#define MULTIMINSIZE(S) ((S) > 20) // in omp parallel in DO_PARALLEL
 // #define MULTIMINSIZE(S) false
 // #define MULTIMINSIZE(S) true
 
@@ -132,6 +136,7 @@ typedef enum usr_bool {
 #define MAXUNSIGNED (MAXINT * 2) + 1
 #define INFDIM MAXINT
 #define INFTY INFDIM
+#define PIDMODULUS 1000
 
 #define LENGTH length // to avoid the unvoluntiered use of LENGTH defined by R
 #define complex Rcomplex
@@ -213,11 +218,11 @@ typedef int64_t Long;
 
 #define PRINTF Rprintf //
 #ifdef SCHLATHERS_MACHINE
-#ifdef DO_PARALLEL
-#include <omp.h>
-#undef PRINTF
-#define PRINTF if (omp_get_num_threads() > 1) { error("\n\nnever use Rprintf/PRINTF within parallel constructions!!\n\n"); } else Rprintf // OK
-#endif
+  #ifdef DO_PARALLEL
+    #include <omp.h>
+    #undef PRINTF
+    #define PRINTF if (omp_get_num_threads() > 1) { error("\n\nnever use Rprintf/PRINTF within parallel constructions!!\n\n"); } else Rprintf // OK
+  #endif
 #endif
 
 #define DOPRINTF if (!DOPRINT) {} else PRINTF

@@ -25,8 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "Processes.h"
 #include "startGetNset.h"
 
-//
-#define xdebug 1
+//#define xdebug 1
 //#define ydebug 1
 
 //  printf("L=%d E=%d cov:err=%d err_lev=%d %s\n", L, X, cov->err,  cov->err_level, NAME(cov));
@@ -723,7 +722,7 @@ int check2Xintern(model *cov, int vdim0, int vdim1, Types frame,
 
   //  if (Err != 0) { printI(cov); printD(cov); printf("Err=%d %d in %s\n", Err, cov->err_level, NAME(cov));PMI(cov);}
 
-  PMI0(cov);
+  //  PMI0(cov);
   //  if (Err != 0) crash();
  
   RETURN(14, Err);

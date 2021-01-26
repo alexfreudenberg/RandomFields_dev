@@ -334,7 +334,7 @@ UnifyXT <- function(x=NULL, y=NULL, z=NULL, T=NULL, grid,
     new <-  Try(UnifyXT(x=x, y=y, z=z, T=T, grid=TRUE,
                         distances=FALSE, dim=if (!missing(dim)) dim,
                         length.data = length.data, y.ok = y.ok))
-    if (grid <- !is(new, "try-error")) {
+    if (grid <- !is(new, CLASS_TRYERROR)) {
       ratio <- length.data / new$totpts
 
       if (grid <- ratio == as.integer(ratio)) {

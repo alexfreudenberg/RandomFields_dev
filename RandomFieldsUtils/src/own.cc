@@ -33,17 +33,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "zzz_RandomFieldsUtils.h" // always last
 
 
-
-// local
-#ifdef DO_PARALLEL
-#else
-char ERRMSG[LENERRMSG], MSG[LENERRMSG], MSG2[LENERRMSG];
-errorloc_type ERROR_LOC="";
-errorstring_type ERRORSTRING;
-#endif
-
-
-
 int parentpid=0;
 bool parallel() {
   int mypid;

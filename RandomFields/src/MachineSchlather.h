@@ -26,6 +26,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef RF_MACHINE_SCHLATHERS
 #define RF_MACHINE_SCHLATHERS 1
 
+
 #ifdef DO_PARALLEL
 #include <omp.h>
 #undef PRINTF

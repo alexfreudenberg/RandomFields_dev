@@ -2375,7 +2375,8 @@ done
 
 AUTOCPPFLAGS="$FX"
 
-## AUTOCPPFLAGS="" ## to be deleted if the above does not cause any problems
+##
+AUTOCPPFLAGS="" ## to be deleted if the above does not cause any problems
 if test "$AUTOCPPFLAGS" != "" ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: $AUTOCPPFLAGS" >&5
 $as_echo "$AUTOCPPFLAGS" >&6; }

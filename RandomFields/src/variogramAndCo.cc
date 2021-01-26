@@ -406,9 +406,6 @@ void CovarianceMatrix(model *Cov, bool ignore_y, double *v) {
     // ausreicht, um loc->i* auszuschliessen. Oder aber ein Flag
     // setzen in model, das anzeigt, ob loc->i in einem untermodel
     // vorliegt Auch nugget (messfehler) ist eigentlich nicht-stationaer!
-    //#ifdef DO_PARALLEL
-    //#pragma omp parallel for num_threads(CORES) if (tot > 20) schedule(dynamic, 10)
-    //#endif
     if (dist) {
       double zero = 0.0;      
       for (i_row=0; i_row<totX; i_row++) {
@@ -645,7 +642,6 @@ void InverseCovMatrix(model *cov, double *v, double *det) {// currently unused
   assert(VDIM0 == VDIM1);
   Covariance(cov, v);
   if (cov->Ssolve == NULL) SOLVE_STORAGE;
-  Ext_setErrorLoc(cov->base->error_location);
   int Exterr = Ext_solvePosDef(v, vdimtot, true, NULL, 0, det, cov->Ssolve);
   if (Exterr != NOERROR){
     STRCPY(cov->err_msg, cov->Ssolve->err_msg);

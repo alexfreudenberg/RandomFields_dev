@@ -152,7 +152,7 @@ rfgui.intern <- function(data, x, y,
                         FALSE, FALSE, FALSE, dim,
                         as.integer(10), ## ehemals RFoptions(short=10)
                         TRUE, TRUE)$minmax)
-    if (is(minmax, "try-error")) return(0)
+    if (is(minmax, CLASS_TRYERROR)) return(0)
     selModelCountPar <- nrow(minmax)
     
     assign("selModelNum",selModelNum, envir=ENVIR)
@@ -455,7 +455,7 @@ rfgui.intern <- function(data, x, y,
                           register=guiReg, spConform=TRUE,
                           practicalrange =tkValue(cbPracRangeVal) != "0"))
  
-     if (is(z, "try-error")) {
+     if (is(z, CLASS_TRYERROR)) {
          plot(Inf, Inf, xlim=c(0,1), ylim=c(0,1), axes=!FALSE, xlab="",
                ylab="",
              cex.main=1.5, col.main="brown",

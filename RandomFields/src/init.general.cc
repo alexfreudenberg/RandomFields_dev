@@ -53,8 +53,6 @@ int
   EARTHKM2ORTHOGRAPHIC, EARTHMILES2ORTHOGRAPHIC,  
   FIRST_TRAFO, LAST_TRAFO, MATHDIV;
 
-KEY_type *PIDKEY[PIDMODULUS];
-
 defn *DefList=NULL;
 int currentNrCov=UNSET,
   gaussmethod[Forbidden+1];
@@ -128,73 +126,7 @@ const char *CAT_TYPE_NAMES[OtherType + 1] = {
 char STANDARDPARAM[MAXPARAM][MAXCHAR],
   STANDARDSUB[MAXSUB][MAXCHAR];
 
-
-int parentpid=0;
-bool parallel() {
-  int mypid;
-  Ext_pid(&mypid);
-  // printf("pid = %d %d\n", mypid, parentpid);
-  return mypid != parentpid;
-}
-
 model **KEY() { return KEYT()->KEY; }
-KEY_type *KEYT() {  
-  int mypid;
-  Ext_pid(&mypid);
-  KEY_type *p = PIDKEY[mypid % PIDMODULUS];
-  if (p == NULL) {
-    KEY_type *neu = (KEY_type *) XCALLOC(1, sizeof(KEY_type));
-    assert(neu != NULL);
-    assert(neu->zerox == NULL);
-    PIDKEY[mypid % PIDMODULUS] = neu;
-    neu->visitingpid = mypid;    
-    if (PIDKEY[mypid % PIDMODULUS] != neu) { // another process had the
-      //                                        same idea
-      FREE(neu);
-      return KEYT(); // ... and try again
-    }
-    neu->pid = mypid;
-    neu->visitingpid = 0;
-    neu->ok = true;
-    if (PIDKEY[mypid % PIDMODULUS] != neu) BUG;
-    KEY_type_NULL(neu);    
-    if (GLOBAL_UTILS->basic.warn_parallel && mypid == parentpid) {
-      PRINTF("Do not forget to run 'RFoptions(storing=FALSE)' after each call of a parallel command (e.g. from packages 'parallel') that calls a function in 'RandomFields'. (OMP within RandomFields is not affected.) This message can be suppressed by 'RFoptions(warn_parallel=FALSE)'."); // ok
-    }
-   return neu;
-  }
-  while (p->pid != mypid && p->next != NULL) p = p->next;
-  if (p->pid != mypid) {
-    if (!p->ok || p->visitingpid != 0) {
-      if (PL >= PL_ERRORS) {
-	PRINTF("pid collision %d %d\n",  p->ok, p->visitingpid);
-      }
-      //    BUG;
-     return KEYT();
-    }
-    p->visitingpid = mypid;
-    p->ok = false;
-    if (p->visitingpid != mypid || p->ok) return KEYT();
-    KEY_type *neu = (KEY_type *) XCALLOC(1, sizeof(KEY_type));
-    neu->currentRegister = UNSET;
-    neu->pid = mypid;
-    if (!p->ok && p->visitingpid == mypid) {
-      p->next = neu;
-      p->visitingpid = 0;
-      p->ok = true;
-      
-      return neu;
-    }
-    FREE(neu);
-    p->visitingpid = 0;
-    p->ok = true;
-    KEY_type_NULL(neu);
-    return KEYT();
-  }
-  p->error_causing_cov = NULL;
-  return p;
-
-}
 
 int currentRegister() {
   KEY_type *p = KEYT();
@@ -383,7 +315,7 @@ bool CheckListmodel(){
   printf("brownresnick ueberarbeiten. insb. warum dort TransformLoc aufgerufen wrid"); // OK
   printf("trafo in variogram.cc nach vorne ziehn, so dass Gitter bleiben wenn nur gestreckt, also statt grid_expand=True ein AVOID"); // OK
   printf("case !grid, proj<0, separable to be programmed"); // OK
-  printf(""); // OK
+  printf(" "); // OK
   //  printf("done\n");
   return true;
 
@@ -414,8 +346,6 @@ void InitModelList() {
 
 
    // init models
-  
-  for (int i=0; i<PIDMODULUS; i++) PIDKEY[i] = NULL; 
 
   if (DefList!=NULL) {
     PRINTF("List of covariance functions looks already initiated.\n"); 

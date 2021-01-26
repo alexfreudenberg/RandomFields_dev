@@ -78,7 +78,7 @@ get.lscpu <- function(pattern) {
   w <- options()$warn
   options(warn=-1)
   x <- Try(as.integer(sapply(strsplit(x, ":"), function(x) x[2])))
-  if (is(x, "try-error")) return(NA)
+  if (is(x, CLASS_TRYERROR)) return(NA)
   x <- x[is.finite(x)]
   options(warn = w)
   return(if (length(x) > 0) x[1] else NA)
@@ -112,7 +112,7 @@ WaitOthers <- function(file, i, cores=NULL,
     write(file=file0, i)
     for (f in 1:processes) {
       j <- Try(as.integer(read.table(files[f])))
-      Is[f] <- if (is(j, "try-error") || length(j) != 1) maxint else j
+      Is[f] <- if (is(j, CLASS_TRYERROR) || length(j) != 1) maxint else j
     }
     Is <- Is[is.finite(Is)]
     if (sum(Is < maxint) <= max.processes &&

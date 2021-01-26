@@ -3174,9 +3174,7 @@ int structtrafoproc(model *cov, model VARIABLE_IS_NOT_USED **newmodel){
   TransformLoc(cov, true, True, DOLLAR_IMPOSSIBLE); // OK
   // SetLoc2NewLoc(sub, LocP(cov));  ist hier zu frueh, da Bindung
   // durch loc_set unten zerstoert wird
-  PMI0(cov);
-
-  
+    
   assert(!Locgrid(cov));
   
   if (LocSets(cov) != 1)
@@ -3201,10 +3199,6 @@ int structtrafoproc(model *cov, model VARIABLE_IS_NOT_USED **newmodel){
 
   Earth2Cart(cov, aequ, pol, y);
 
-  
-  PMI0(cov);
-
-  
   loc_set(y, NULL, T, NULL, newdim, newdim, spatialpts, 0,
 	  Time, false, false, false, cov);
   SetLoc2NewLoc(sub, LocP(cov));  
@@ -3248,10 +3242,7 @@ int inittrafoproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){// auch fuer 
 
 void dotrafoproc(model *cov, gen_storage *s){
   model *key = cov->key;
-  key->rf[0] = 5;
-  PMI(key);
   DO(key, s);
-  printf("key-rf %f\n", key->rf[0]);
 }
 
 

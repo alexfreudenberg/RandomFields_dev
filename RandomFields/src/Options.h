@@ -537,6 +537,7 @@ extern const char * obsolete[obsoleteN];
 #define ignoreN 1
 // trend
 
+#define prefixN 25
 struct globalparam{
   general_param general;
   gauss_param gauss;
@@ -566,15 +567,10 @@ struct globalparam{
   coords_param coords;
   special_param special;
 };
-extern globalparam GLOBAL;
 
-#define prefixN 25
 extern const char * prefixlist[prefixN], **all[prefixN];
 extern int allN[prefixN];
-void setparameter(int i, int j, SEXP el, char name[200], bool isList,
-		  int local);
-void getRFoptions(SEXP *sublist);
-void finalparameter(int local);
 
-extern int CORES;
+extern globalparam GLOBAL;
+
 #endif

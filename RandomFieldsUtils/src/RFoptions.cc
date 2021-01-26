@@ -55,12 +55,12 @@ int nbasic_options = 0,
 const char  *basic_options[MAXNLIST] = {ownprefixlist[1], NULL, NULL, NULL},
   **Allprefix[MAXNLIST] = {ownprefixlist, NULL, NULL, NULL, NULL},
   ***Allall[MAXNLIST] = { ownall, NULL, NULL, NULL, NULL};
-setparameterfct setparam[MAXNLIST] = 
+setoptions_fctn setparam[MAXNLIST] = 
   {setparameterUtils, setpDef, setpDef, setpDef, setpDef};
-getparameterfct getparam[MAXNLIST] = 
+getoptions_fctn getparam[MAXNLIST] = 
   {getparameterUtils, getpDef, getpDef, getpDef, getpDef};
-finalsetparameterfct finalparam[MAXNLIST] = { NULL, NULL, NULL, NULL, NULL };
-deleteparameterfct delparam[MAXNLIST] = { NULL, NULL, NULL, NULL, NULL };
+finalsetoptions_fctn finalparam[MAXNLIST] = { NULL, NULL, NULL, NULL, NULL };
+deleteoptions_fctn delparam[MAXNLIST] = { NULL, NULL, NULL, NULL, NULL };
 
 
 void hintVariable(char *name, int warn_unknown_option) {
@@ -430,9 +430,9 @@ SEXP RFoptions(SEXP options) {
 int PLoffset = 0;
 void attachRFoptions(const char **prefixlist, int N, 
 		     const char ***all, int *allN,
-		     setparameterfct set, finalsetparameterfct final,
-		     getparameterfct get,
-		     deleteparameterfct del,
+		     setoptions_fctn set, finalsetoptions_fctn final,
+		     getoptions_fctn get,
+		     deleteoptions_fctn del,
 		     int pl_offset, bool basicopt) {
   for (int ListNr=0; ListNr<NList; ListNr++) {    
     if (AllprefixN[ListNr] == N && 

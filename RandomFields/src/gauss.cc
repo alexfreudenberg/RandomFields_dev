@@ -72,7 +72,8 @@ void GetInternalMean(model *sub, int vdim, double *mean){
     for (int d=0; d<tsdim; d++) x[d] = gr[d][XSTART];
   } else {
     int spatialdim =  Locspatialdim(cov);
-    MEMCOPY(x, Locx(cov), sizeof(double) * spatialdim);
+    MEMCOPY(x, v, //Locx(cov),
+	    sizeof(double) * spatialdim);
     if (LocTime(cov)) x[spatialdim] = LocT(cov)[XSTART];
   }
   info[INFO_IDX_X] = 0;

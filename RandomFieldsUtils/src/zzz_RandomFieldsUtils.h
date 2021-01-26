@@ -89,13 +89,11 @@ extern "C" {
   DECLARE1(double, D4Gauss, double, x)
   DECLARE1(double, logGauss, double, x)
   
-  DECLARE1(void, getErrorString, errorstring_type, errorstring)
-  DECLARE1(void, setErrorLoc, errorloc_type, errorloc)
   DECLARE1(void, getUtilsParam, utilsparam **, up)
   DECLARE10(void, attachRFoptions, const char **, prefixlist, int, N, 
-	   const char ***, all, int *, allN, setparameterfct, set, 
-	   finalsetparameterfct, final, getparameterfct, get,
-	    deleteparameterfct, del,
+	   const char ***, all, int *, allN, setoptions_fctn, set, 
+	   finalsetoptions_fctn, final, getoptions_fctn, get,
+	    deleteoptions_fctn, del,
 	   int, PLoffset,
 	   bool, basicopt)
   DECLARE2(void, detachRFoptions, const char **, prefixlist, int, N)

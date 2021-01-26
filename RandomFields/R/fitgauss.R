@@ -155,7 +155,7 @@ list2RMmodelFit <- function(x, RFsp.info=NULL, T) {
         }      
     })
     
-   if(is(err, "try-error"))
+   if(is(err, CLASS_TRYERROR))
       warning(paste("residuals could not be coerced to class 'RFsp';",
                     err))
   } # !is.null(RFsp.info)
@@ -894,7 +894,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
                         ...) {
 
   ##  print(Z$model)
-  ##  Print(Z); kkk
+  ##  Print(Z); print(Z$transform$fctn);  print(Z$transform$params.fctn); 
 
   ##  Print(lower, recall, upper, users.guess, Z, list(...))
   ##  Print("start", recall)
@@ -1322,6 +1322,7 @@ grad <- function(func, x, method="Richardson", side=NULL,
 
 
   SetUsers <- function(users, own=NULL, type) {
+  #  Print(users, own, type)
     default <- switch (type,
                        "lower" = -Inf,
                        "upper" = Inf,
@@ -1517,7 +1518,7 @@ grad <- function(func, x, method="Richardson", side=NULL,
     .C(C_PutValuesAtNA, COVreg, param)
     model.values <- .Call(C_MomentsIntern, COVreg, emp_alpha)
     
-    # Print(model.values, binned.variogram)
+    ##    Print(model.values, binned.variogram)
     stopifnot(length(model.values) == length(binned.variogram))
 
     ##    Print(model.values,(!all(is.finite(model.values))))
@@ -1642,7 +1643,7 @@ grad <- function(func, x, method="Richardson", side=NULL,
     
     ## e.g. in case of illegal parameter values
     
-    if (is(ans, "try-error") || is.na(ans[1])) {
+    if (is(ans, CLASS_TRYERROR) || is.na(ans[1])) {
 
       if (printlevel > PL_DETAILS) Print(ans) ##
       
@@ -1754,7 +1755,7 @@ grad <- function(func, x, method="Richardson", side=NULL,
 ##### user cannot know what the internal represenatation is
 
 ###
-  #Print(Z)
+##  Print(Z)
 
   if (printlevel>=PL_STRUCTURE) cat("\nfirst analysis of model  ...\n")
 
@@ -1932,7 +1933,7 @@ grad <- function(func, x, method="Richardson", side=NULL,
     ##    print(trafo); Print(lu, get(lu), z, minmax)
     if (!is.numeric(z) || !all(is.finite(z)) || !is.vector(z)) {
       stop("A '", lu, "' bound is either not explicitely set or is not sound",
-           if (is(z, "try-error")) paste(":", z$message) else ".")
+           if (is(z, CLASS_TRYERROR)) paste(":", z$message) else ".")
     }
                                         # Or the dummy variables have not been defined by '", RM_DECLARE, "'.")
     if (length(z) != n.param)
@@ -2149,7 +2150,7 @@ grad <- function(func, x, method="Richardson", side=NULL,
                new_coordunits = C_coords[[1]]$new_coordunits))
 
     
-    if (!is(split <- TRY(xx), "try-error")) {
+    if (!is(split <- TRY(xx), CLASS_TRYERROR)) {
       ## error appears e.g. when RMfixcov is used with raw=TRUE.
       
       stopifnot(ncol(Z$rangex) == ts.xdim)
@@ -2170,7 +2171,7 @@ grad <- function(func, x, method="Richardson", side=NULL,
  
     
       
-    if (is(split, "try-error")) {
+    if (is(split, CLASS_TRYERROR)) {
       message("Splitting failed (", split[[1]], "). \nSo, standard optimization is tried")
     } else {
       if (printlevel>=PL_STRUCTURE) cat("\nsplitted (", length(split), ") ...")
@@ -3555,7 +3556,7 @@ grad <- function(func, x, method="Richardson", side=NULL,
     if ("ml" %in% mleMethods) {
       likelihood <- param.table[[Meth_i]][tblidx[["ml"]][1]]
       lilihood <- TRY(.Call(C_EvaluateModel, double(0), integer(0), LiliReg))
-      if (!is(lilihood, "try-error")) {
+      if (!is(lilihood, CLASS_TRYERROR)) {
         residu <- get.residuals(LiliReg)       
         large.diff <- abs(lilihood[1] - likelihood) > 1e-7 * (abs(likelihood)+1)
         if (is.na(large.diff))

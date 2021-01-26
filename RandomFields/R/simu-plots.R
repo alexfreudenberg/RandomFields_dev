@@ -26,9 +26,9 @@
 
 default.image.par <- function(data.range, var.range, legend=TRUE) {
   var.col <- Try(colorspace::rainbow_hcl(12, c = 50, l = 70))
-  if (is(var.col, "try-error")) {
+  if (is(var.col, CLASS_TRYERROR)) {
     var.col <- Try(RColorBrewer::brewer.pal(9, "Blues"))
-    if (is(var.col, "try-error")) {
+    if (is(var.col, CLASS_TRYERROR)) {
       Help("colour_palette")
       data.colour <- heat.colors(36)
       var.col <- cm.colors(36)       

@@ -42,7 +42,7 @@ TwoTo <- function(n) return(if (length(n) > 1) stop("invalid end of for loop") e
 Try <- function(expr) {
   z <- tryCatch(expr, error = function(e) e)
   if (is.list(z) && !is.null(z$message) && !is.null(z$call))
-    class(z) <- "try-error"
+    class(z) <- CLASS_TRYERROR
   z
 }
 
@@ -136,8 +136,9 @@ extractFromNames <- function(what="var", RFopt, cn, ncol=length(cn)) {
           stop("detected repetitions are not equal for all components")
         m <- matrix(unlist(l), ncol=vdim)
         if (any(rowSums(m) > 1))
-          stop("names of multivariate components not unique")
-        ans <- t(apply(m, 2, which))
+          stop("names of multivariate components not unique")        
+        ans <- apply(m, 2, which)
+        ans <- if (is.vector(ans)) as.matrix(ans) else t(ans)
         rownames(ans) <- varnames
       }
     }
@@ -235,6 +236,7 @@ data.columns <- function(data, model=NULL, xdim=0, x=NULL,
       if (vdim > 0 && vdim != M$vdim)
         stop("the given value for 'vdim=", vdim,
              "' does not match the detected value: vdim=", M$vdim)
+      vdim <- M$vdim
     }
 
     for (i in components) {
@@ -399,11 +401,7 @@ data.columns <- function(data, model=NULL, xdim=0, x=NULL,
     if (length(is.x) > 0) names(is.x) <- cn[is.x]
   }
 
-                                        #  Print("basic.fctn.R", M)
-
-#  Print(is.var=is.var, is.x=is.x, is.factor=is.factor,
- #             vdim=vdim, repet = repet,
-  #            data.info=data.info, model=M)
+  #  Print(is.var=is.var, is.x=is.x, is.factor=is.factor,vdim=vdim, repet = repet, data.info=data.info, model=M)
 
   return(list(is.var=is.var, is.x=is.x, is.factor=is.factor,
               vdim=vdim, repet = repet,

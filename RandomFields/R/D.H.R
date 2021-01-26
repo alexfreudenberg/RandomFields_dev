@@ -68,7 +68,7 @@ regression <- function(x, y, main, scr,
     if (mode=="interactive") {
       repeat {
         loc <- Try(locator(2))
-        if (is(loc, "try-error")) loc <- NULL
+        if (is(loc, CLASS_TRYERROR)) loc <- NULL
         if (length(loc)==0) break;
         r <- range(loc$x)
         x.u <- x[idx <- x >= r[1] & x <= r[2]]

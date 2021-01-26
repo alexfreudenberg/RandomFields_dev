@@ -47,6 +47,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "variogramAndCo.h"
 #include "Processes.h"
 #include "rf_interfaces.h"
+
 #ifdef DO_PARALLEL
 #include <omp.h>
 #endif

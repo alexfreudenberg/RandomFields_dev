@@ -3,7 +3,7 @@
 Try <- function(expr) {
   z <- tryCatch(expr, error = function(e) e)
   if (is.list(z) && !is.null(z$message) && !is.null(z$call))
-    class(z) <- "try-error"
+    class(z) <- CLASS_TRYERROR
   z
 }
 
@@ -120,6 +120,7 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
   }
 
   .allwarnings <- list()
+  .tryerror <- paste0("\"try-", "error\"");
   for (.idx in .include) {
     if (is.character(.include.name) && !(.fct.list[.idx] %in% .include.name))
       next
@@ -142,7 +143,7 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
     } else {
       ##s topifnot(RFoptions()$basic$print <=2)
       if (catcherror)
-        .time <- system.time(.res <- Try(do.call(utils::example, 
+        .time <- system.time(.res <- try(do.call(utils::example, 
                                                  list(.fct.list[.idx], ask=.ask,
                                                       package=package,
                                                     echo=.echo, local=.local))))
@@ -153,8 +154,9 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
                                                     echo=.echo, local=.local)))
       w <- warnings()
       .allwarnings <- c(.allwarnings, list(c("Help page ", .idx)), w)
-      print(w) ## ok
-      if (is(.res, "try-error")) {
+      if (length(w) > 0) print(w) ## ok
+      if (is(.res, CLASS_TRYERROR) || is(.res, .tryerror) ||
+          is(.res, "SimpleError") || is(.res, "error")) {
         cat("ERROR:\n")
         str(.res, give.head=FALSE) #  OK
 	if (.halt) {

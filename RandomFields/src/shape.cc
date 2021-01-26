@@ -877,7 +877,8 @@ int checkfix(model *cov){
     cov->base->set = 0;
     double *c = LP(FIXCOV_M);   
     int ntot = LocLoc(Loc, cov)->totalpoints;
-    ptwise_type p,q;
+    ptwise_type p=pt_undefined,
+      q=pt_undefined;
     int endfor = extradata;
     for (int m=0; m<=endfor; m++) {
       int i;

@@ -507,9 +507,10 @@ void OptimArea(model *cov) {
   // side effect auf P(BR_OPTIMAREA) !!
     
 getStorage(sBR ,   br); 
-getStorage(pgs ,   pgs); 
+getStorage(pgs ,   pgs);
+ GETSTOMODEL;
   assert(pgs != NULL);
-  model *key = sBR->m3.sub[0];
+  model *key = STOMODEL->orig;
   location_type *keyloc = Loc(key);
   double **xgr = keyloc->xgr,
     *optimarea, dummy, Error, lambda,
@@ -643,13 +644,14 @@ getStorage(pgs ,   pgs);
 void set_lowerbounds(model *cov) {    
 getStorage(sBR ,   br); 
   assert(sBR != NULL);
-  assert(sBR->m3.sub[0] != NULL);
+  GETSTOMODEL;  
+  assert(STOMODEL->orig != NULL);
   double step = P0(BR_MESHSIZE),
     *optimarea = P(BR_OPTIMAREA);    
   int j, k,
     dim = OWNXDIM(0),
     minradius = (int) (sBR->m3.minradius / step);
-  model *key = sBR->m3.sub[0];
+  model *key = STOMODEL->orig;
   location_type *keyloc = Loc(key);
   double **xgr = keyloc->xgr;
   Long keytotal = Loctotalpoints(key);
@@ -666,8 +668,9 @@ getStorage(sBR ,   br);
 }
 
 int prepareBRoptim(model *cov) {
-getStorage(sBR ,   br); 
-  model *key = sBR->m3.sub[0];
+getStorage(sBR ,   br);
+ GETSTOMODEL;
+  model *key = STOMODEL->orig;
   location_type *keyloc = Loc(key);
   double  step = P0(BR_MESHSIZE),
         **xgr = keyloc->xgr;
@@ -743,8 +746,8 @@ int init_BRmixed(model *cov, gen_storage *s) {
   location_type *loc = Loc(cov);
   getStorage(sBR ,   br); 
   GETSTOMODEL;
-  assert(sBR->m3.sub[0] != NULL);
-  model *key = sBR->m3.sub[0];
+  assert(STOMODEL->orig != NULL);
+  model *key = STOMODEL->orig;
   location_type *keyloc = Loc(key);
   int  d, err = NOERROR, 
     dim = OWNXDIM(0),
@@ -816,7 +819,7 @@ getStorage(pgs ,   pgs);
   key->simu.active = true;
 
   set_lowerbounds(cov);   
-  cov->rf = sBR->m3.sub[0]->rf;
+  cov->rf = STOMODEL->orig->rf;
   cov->origrf = false;
   cov->fieldreturn = Huetchenownsize;
   pgs->estimated_zhou_c = (bool) ISNAN(P0(BR_LAMBDA));
@@ -842,8 +845,9 @@ void do_BRmixed(model *cov, gen_storage *s) {
   // to do: improve simulation speed by dynamic sizes
   globalparam *global = &(cov->base->global);
   assert(cov->key!=NULL);
-getStorage(sBR ,   br); 
-  model  *key = sBR->m3.sub[0];
+getStorage(sBR ,   br);
+ GETSTOMODEL;
+  model  *key = STOMODEL->orig;
   assert(cov->rf == key->rf);
   location_type *keyloc = Loc(key);
   assert(Locgrid(key)); 
@@ -1224,7 +1228,8 @@ int structBRintern(model *cov, model **newmodel) {
       err = ERRORMEMORYALLOCATION; goto ErrorHandling;
     }
 
-    if ((err = covcpy(sBR->m3.sub, cov->key)) != NOERROR) goto ErrorHandling;
+    if ((err = covcpy(&(STOMODEL->orig), cov->key)) != NOERROR)
+      goto ErrorHandling;
     for (d=0; d<dim; d++) {
       newx[3*d+XSTART] = -sBR->m3.radius - sBR->m3.minradius;
       newx[3*d+XLENGTH] =
@@ -1233,8 +1238,8 @@ int structBRintern(model *cov, model **newmodel) {
     }
 
     err = loc_set(newx, NULL, dim, dim, newxlen, false, grid, 
-                  false, sBR->m3.sub[0]);
-    double **subxgr = Loc(sBR->m3.sub[0])->xgr;
+                  false, STOMODEL->orig);
+    double **subxgr = Loc(STOMODEL->orig)->xgr;
     zeropos = 0;
     for (d = dim; d > 0; d--) {
       double len =  subxgr[d-1][XLENGTH];
@@ -1242,15 +1247,15 @@ int structBRintern(model *cov, model **newmodel) {
     }
     sBR->zeropos = zeropos;
 
-    if ((err = CHECK(sBR->m3.sub[0], OWNLOGDIM(0), OWNXDIM(0), ProcessType,
+    if ((err = CHECK(STOMODEL->orig, OWNLOGDIM(0), OWNXDIM(0), ProcessType,
 		     OWNDOM(0), OWNISO(0), 1, GaussMethodType)) == NOERROR) {
-       if ((err = STRUCT(sBR->m3.sub[0], NULL)) <= NOERROR) {
-         err = CHECK(sBR->m3.sub[0], OWNLOGDIM(0), OWNXDIM(0),  ProcessType,
+       if ((err = STRUCT(STOMODEL->orig, NULL)) <= NOERROR) {
+         err = CHECK(STOMODEL->orig, OWNLOGDIM(0), OWNXDIM(0),  ProcessType,
 		     OWNDOM(0), OWNISO(0), 1, GaussMethodType); 
        }
      }
      if (err > NOERROR) goto ErrorHandling;
-     assert(sBR->m3.sub[0]->calling == cov);
+     assert(STOMODEL->orig->calling == cov);
 
   } else { //  END BRMIXED;  START SHIFTED    
     assert(COVNR == BRSHIFTED_INTERN);

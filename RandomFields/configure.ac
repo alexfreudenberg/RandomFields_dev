@@ -33,7 +33,8 @@ done
 
 AUTOCPPFLAGS="$FX"
  
-## AUTOCPPFLAGS="" ## to be deleted if the above does not cause any problems
+##
+AUTOCPPFLAGS="" ## to be deleted if the above does not cause any problems
 if test "$AUTOCPPFLAGS" != "" ; then
   AC_MSG_RESULT([$AUTOCPPFLAGS])
 else

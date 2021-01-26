@@ -53,9 +53,9 @@ model <- ~ # '~' is necessary if 'params' is used for model description
             var = A # given by a complicated formula, see params
             ) +
   RMdeclare(# a dummy RMmodel just added to the genuine model used
-      B     # B ist used in params and must be estimated. but is not
-      ##      anywhere else in the model. So it must be declared here
-      ## B = B # is the only allowed, alterative form
+  B = B # is currently the only allowed form
+%  # B ist used in params and must be estimated. but is not
+%      ##      anywhere else in the model. So it must be declared here
       ## B = ~B # not allowed
       ## B = 3+B# not allowed
       ## Bx = B # not allowed

@@ -25,9 +25,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef RFsimu_H
 #define RFsimu_H 1
 
-// ACHTUNG : REIHENFOLGE WICHTIG
-#include <Basic_utils.h>
+
+// ACHTUNG : REIHENFOLGE WICHTIG. def.h zuerst; obige defines immer oben
 #include "def.h"
+#include <Basic_utils.h>
 #include "basic.h"
 #include "init.h"
 
@@ -37,13 +38,6 @@ typedef unsigned int Uint;
 typedef uint64_t  Ulong;
 typedef int64_t  Long;
 
-
-//
-//
-//  1
-//
-//
-// 1
 
 // ohne: 0.056
 // mit: 0.268
@@ -388,7 +382,7 @@ typedef bool allowedI_type[LAST_ISOUSER + 1];
 #define INFO_EXTRA_DATA_Y 5 
 #define INFOS_PER_COORD 3
 #define INFO_SIZE (2 * INFOS_PER_COORD)
-#define INFO int * VARIABLE_IS_NOT_USED info
+#define INFO int VARIABLE_IS_NOT_USED *info
 #define DEFAULT_INFO(info)						\
   int info[INFO_SIZE] = {1, NA_INTEGER, false, 1, NA_INTEGER, false}
 
@@ -572,7 +566,9 @@ struct FFT_storage {
   int *iwork, nseg, maxf[MAXCEDIM], kt[MAXCEDIM], m_fac[MAXCEDIM],
     NFAC[MAXCEDIM][21];
 };
-
+#ifdef  DO_PARALLEL
+#warning "DO PARALLEL"
+#endif
 
 struct ce_storage {
   int m[MAXCEDIM], trials,
@@ -690,7 +686,6 @@ struct plus_storage{
 
 
 struct union_m3 {
-  model *sub[MAXSUB];
   int **countvector, vertnumber, next_am_check;
   
   double minradius,  *lowerbounds, *areamatrix, *logvertnumber,
@@ -792,7 +787,7 @@ struct set_storage {
 struct model_storage { // OK
   // Modelle nur hier, da diese rueckverfolgt werden muessen,
   // wenn prevloc umgesetzt wird
-  model *cov, // OK
+  model *cov, // OK, spezial, nie anders als  huetchen.cc verwenden
     *vario,
     *orig,
     *get_cov,
@@ -1001,22 +996,21 @@ typedef cell_type *(*avl_copy_func) (cell_type*, int *);
 typedef
 struct KEY_type KEY_type;
 struct KEY_type {
+  KEY_type *next;
+  globalparam global;
+  utilsparam global_utils;
+  errorloc_type error_location;
+
   model *KEY[MODEL_MAX + 1];
   int pid, currentRegister, visitingpid, nzero, zaehler, set;
   bool ok, stored_init,
     naok_range; // default =false;
   raw_type rawConcerns;
   char PREF_FAILURE[90 * Nothing];
-  KEY_type *next;
   double *zerox;
-  errorloc_type error_location;
   model *error_causing_cov;
-  globalparam global;
-  utilsparam global_utils;
 };
-#define PIDMODULUS 1000
 extern KEY_type *PIDKEY[PIDMODULUS];
-extern int parentpid;
 model **KEY();
 KEY_type *KEYT();
 int currentRegister();
@@ -1552,10 +1546,6 @@ void BRtrend_destruct(double **BRtrend, int trendlen);
 int StructBR(model *cov, gen_storage *s, model **atom);
 void FFT_destruct(FFT_storage *FFT);
 
-void globalparam_NULL(KEY_type *KT, bool copy_messages);
-void globalparam_NULL(KEY_type *KT);
-void globalparam_DELETE(KEY_type *S);
-
 
 double *ZERO(model *cov);
 double *ZERO(int dim, KEY_type *KT);
@@ -1680,12 +1670,12 @@ void lognonstat2statcov(double *x, double *y, int*info, model *cov, double *v,
 #define ASSERT_KERNEL(Cov) assert(isKernel(PREVSYSOF(Cov)))
 
 
-//#define FRAME_ASSERT(F)				\
-//  if (has##F##Frame(cov)){ /* NICHT! : '(Frame)'*/	\
-//  } else {								\
-//    assert(({PMI(cov) ; true;}));					\
-//    SERR2("Frame '%.50s' not recognised by '%.50s'.",			\
-//	  TYPE_NAMES[cov->frame], NICK(cov));				\
+//#define FRAME_ASSERT(F)				
+//  if (has##F##Frame(cov)){ /* NICHT! : '(Frame)'*/	
+//  } else {								
+//    assert(({PMI(cov) ; true;}));					
+//    SERR2("Frame '%.50s' not recognised by '%.50s'.",			
+//	  TYPE_NAMES[cov->frame], NICK(cov));				
 //  }
 
 #define ILLEGAL_FRAME							\
