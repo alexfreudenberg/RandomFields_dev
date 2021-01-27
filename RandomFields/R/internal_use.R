@@ -229,12 +229,12 @@ StartExample <- function(reduced = TRUE, save.seed=TRUE) {
  #   assign("RandomFields_options", envir=.RandomFields.env, L)
     assign("RandomFields_options", envir=.RandomFields.env, RFopt)
   }
-# Print(ls( envir=.RandomFields.env), .RandomFields.env)
+  ## Print(ls( envir=.RandomFields.env), .RandomFields.env)
   if (!interactive() || hasArg("reduced")) {
     ## do not touch next lines
     ## REDUCED <- reduced, reduced
     REDUCED <- reduced
-    setRFoptions(examples_reduced = REDUCED, RETURN=FALSE)
+    RFoptions(examples_reduced = REDUCED, RETURN=FALSE) ## nicht lokal!
   }
 }
 

@@ -25,11 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define rfutils_utils_H 1
 
 void bes_k_simd (double *xv, double alpha, int sx, double *yv);
-//double *ToRealI(SEXP X, bool *create);
-
-//double *ToReal(SEXP X);
-//int *ToInt(SEXP X);
-//void freeGlobals();
-
+void set_num_threads();
+void freeGlobals() ;
 
 #endif

@@ -32,9 +32,6 @@ PKG_CXXFLAGS =  $(SHLIB_OPENMP_CXXFLAGS)  -march=native -mssse3
 
  */
 
-#define BUG assert(false);
-
-#include <assert.h>
 #include "kleinkram.h"
 #include "scalar.h"
 #include "intrinsics.h"
@@ -42,6 +39,8 @@ PKG_CXXFLAGS =  $(SHLIB_OPENMP_CXXFLAGS)  -march=native -mssse3
 #include "errors_messages.h"
 #include "zzz_RandomFieldsUtils.h"
 #include "RandomFieldsUtils.h"
+#include "xport_import.h"
+
 
 
 #define Nmodi 9

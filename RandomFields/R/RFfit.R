@@ -214,7 +214,7 @@ summary.RMmodelFit <- function(object, ..., isna.param) {
 setMethod(f="summary", signature=CLASS_SINGLEFIT, summary.RMmodelFit)#
 
 
-print.summary.RMmodelFit <- function(x, ...) {
+print.summary.RMmodelFit <- function(x, ...) {  
 
   printVariab <- function(x, coordsystem) {
     cat("Internal variables")
@@ -239,16 +239,27 @@ print.summary.RMmodelFit <- function(x, ...) {
   }
 
   printUsers <- function(param) {
-    cat("\nUser's variables:\n")
-    idx <- sapply(param, length) == 1
-    print(unlist(param[idx]), ..., na.print="-")#
-    if (!all(idx)) {
-      p <- param[idx]
-      n <- names(p)
-      for (i in 1:length(p)){
-        cat("user variable '", n[i], "':\n", sep="")
-        print(p[[i]], ..., na.print="-")#
+    cat("\nUser's variables:")
+    idx <- logical(length(param))
+    n <- names(param)
+    for (i in 1:length(param)){
+      q <- param[[i]]
+      cat("\n", n[i], ":\t", sep="")
+      if (is.array(q) && max(dim(q)) == prod(dim(q))) {
+        ## alle dimensionen ausser einer sind 1
+        q <- as.vector(q)
       }
+      if (idx[i] <- is.vector(q)) {
+        q <- signif(q)
+        q[is.na(q)] <- " - "
+        cat(q)
+      }
+    }
+    idx <- which(!idx)
+    cat("\n")
+    for (i in idx) {
+      cat(n[i], ":\n")
+      print(param[[i]], ..., na.print="-") ##
     }
     return(ncol(param))
   }

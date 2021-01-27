@@ -32,10 +32,8 @@ PKG_CXXFLAGS =  $(SHLIB_OPENMP_CXXFLAGS)  -march=native -mssse3
  */
 
 
+#define BUG ERR("undefined value in linear.cc")
 
-#define BUG assert(false);
-
-#include <assert.h>
 #include "kleinkram.h"
 #include "linear.h"
 #include "intrinsics.h"

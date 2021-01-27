@@ -38,10 +38,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "families.h"
 
 
-#undef DO_PARALLEL
-
-
-
 #define ALL_NULL(name)				\
   void name##_NULL(name##_storage *x){		\
     if (x == NULL) return;			\
@@ -495,10 +491,9 @@ void ce_DELETE(ce_storage **S) {
       for(l=0; l<vdim; l++) FREE(x->d[l]);
       UNCONDFREE(x->d);
     }
-#ifdef DO_PARALLEL
+#ifdef CE_PARALLEL
     for (int i=0; i<vdimSQ; i++) FFT_destruct(x->FFT + i);
     FREE(x->FFT);
-    dddd
 #else
     FFT_destruct(&(x->FFT));
 #endif

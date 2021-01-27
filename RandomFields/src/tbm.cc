@@ -31,12 +31,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  
 #include <R_ext/Applic.h>
 #include <R_ext/Utils.h>     
-
+#include "def.h"
 #include "questions.h"
 #include "Processes.h"
 #include "operator.h"
 
-#undef DO_PARALLEL
+//#undef DO_PARALLEL
 
 
 #define MAXNN 100000000.0 /* max number of points simulated on a line */

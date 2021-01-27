@@ -50,10 +50,10 @@ extern "C" {
   
   SEXP RFoptions(SEXP options);
 
-  SEXP loadRandomFieldsUtils();
-  SEXP attachRandomFieldsUtils();
-  SEXP detachRandomFieldsUtils();
-
+  void loadoptions();
+  void detachoptions();
+  SEXP attachoptions();
+  
   SEXP sortX(SEXP Data, SEXP From, SEXP To, SEXP NAlast);
   SEXP orderX(SEXP Data, SEXP From, SEXP To, SEXP NAlast);
 

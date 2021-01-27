@@ -25,7 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "RF.h"
 #include "xport_import.h"
 
-#define pkg "RandomFieldsUtils"
+#define importfrom "RandomFieldsUtils"
 
 #ifdef CALL
 #undef CALL
@@ -34,7 +34,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 UTILSCALLS;
 
 #undef CALL
-#define CALL(what) Ext_##what = (what##_type) R_GetCCallable(pkg, #what)
+#define CALL(what) Ext_##what = (what##_type) R_GetCCallable(importfrom, #what)
 void includeXport() {
   UTILSCALLS;
 } // export C
@@ -194,10 +194,10 @@ void finalizeoptions() {
 }
 
 
-void setoptions(int i, int j, SEXP el, char name[200], bool isList, bool local);
+void setoptions(int i, int j, SEXP el, char name[LEN_OPTIONNAME], bool isList, bool local);
 void getoptions(SEXP sublist, int i, bool local);
 
-void loadRandomFields() { // no print commands!!!
+void loadoptions() { // no print commands!!!
   for (int i=0; i<PIDMODULUS; i++) PIDKEY[i] = NULL; 
   includeXport();
   Ext_pid(&parentpid);
@@ -217,7 +217,7 @@ void loadRandomFields() { // no print commands!!!
   InitModelList();
 }
 
-SEXP attachRandomFields() { // no print commands!!!
+SEXP attachoptions() { // no print commands!!!
 #define NEED_AVX2 false
 #define NEED_AVX true
 #define NEED_SSSE3 false
@@ -252,7 +252,7 @@ void PIDKEY_DELETE() {
   }
 }
 
-void detachRandomFields() {
+void detachoptions() {
   PIDKEY_DELETE();
   Ext_detachRFoptions(prefixlist, prefixN);
 }

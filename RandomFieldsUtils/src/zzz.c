@@ -25,6 +25,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "zzz_RandomFieldsUtils.h"
 #include "Utils.h"
 
+#define none 0
+
  
 static R_NativePrimitiveArgType 
     int_arg[] = { INTSXP },
@@ -39,8 +41,8 @@ static const R_CMethodDef cMethods[]  = {
   CDEF(sleepMicro, 1, int_arg),
   CDEF(pid, 1, int_arg),
   CDEF(hostname, 2, host_arg),
-  // {"attachRFoptionsUtils", (DL_FUNC) &attachRFoptionsUtils, 0, NULL, NULL},
-  // {"detachRFoptionsUtils", (DL_FUNC) &detachRFoptionsUtils, 0, NULL, NULL},
+  CDEF(loadoptions, 0, none),
+  CDEF(detachoptions, 0, none),
   {NULL, NULL, 0, NULL}
 };
 
@@ -49,6 +51,7 @@ static const R_CMethodDef cMethods[]  = {
 #define CALLDEF_DO(name, n) {#name, (DL_FUNC) &name, n}
 static R_CallMethodDef callMethods[]  = {
   // in die respectiven C-Dateien muss RandomFieldsUtils.h eingebunden sein
+  CALLDEF_DO(attachoptions, 0),
   CALLDEF_DO(Chol, 1),
   CALLDEF_DO(SolvePosDef, 3),
   CALLDEF_DO(struve, 4),
@@ -57,9 +60,6 @@ static R_CallMethodDef callMethods[]  = {
   CALLDEF_DO(gaussr, 2),
   CALLDEF_DO(WMr, 4),
   CALLDEF_DO(logWMr, 4),
-  CALLDEF_DO(loadRandomFieldsUtils, 0),
-  CALLDEF_DO(attachRandomFieldsUtils, 0),
-  CALLDEF_DO(detachRandomFieldsUtils, 0),
   CALLDEF_DO(sortX, 4),
   CALLDEF_DO(orderX, 4), 
   CALLDEF_DO(getChar, 0),

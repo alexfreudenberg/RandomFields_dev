@@ -28,14 +28,16 @@
 # sudo tar xvf ~/TMP/bwidget-1.9.5.tar 
 
 .onLoad <- function(lib, pkg) {
-  .C("loadRandomFields")
+  .C("loadoptions")
 }
+
+GetMessage <-function() .Call("attachoptions")
 
 .onAttach <- function (lib, pkg) {
   #print("dooppelte anfuehrungszeichen kroore")
- # packageStartupMessage("This is RandomFields Version: 4.0.0.7") # ")
+ # packageStartupMessage("This is RandomFields Version: 4.0.0.8") # ")
   packageStartupMessage("Note that a new package 'RandomFieldsLight' is upcoming,\nwhich offers a simplified access to modelling random fields.")
-  packageStartupMessage(.Call("attachRandomFields"))
+  packageStartupMessage(GetMessage());
 }
 
 .onDetach <- function(lib) {
@@ -45,7 +47,7 @@
 }
 
 .onUnload <- function(lib, pkg){
-   .C("detachRandomFields")
+   .C("detachoptions")
 }
 
 #Implementierung von Cox & Isham's non-separable model

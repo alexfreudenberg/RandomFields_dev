@@ -496,7 +496,7 @@ int allN[prefixN] = {generalN, gaussN, krigeN, CEN, directN,
 
 
 
-void setoptions(int i, int j, SEXP el, char name[200], bool isList,
+void setoptions(int i, int j, SEXP el, char name[LEN_OPTIONNAME], bool isList,
 		  bool local) {  
   //  printf("setparameter %s %d %d local=%d\n", name, i, j, local);
    

@@ -43,12 +43,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifdef _OPENMP
   #ifndef SCHLATHERS_MACHINE
     #define DO_PARALLEL 1
+    #define CE_PARALLEL 1 // for circulant embedding
+// brownresnick, tbm
   #endif
 #else
    #ifdef DO_PARALLEL
      #undef DO_PARALLEL
    #endif
 #endif
+
 
 #ifdef DO_PARALLEL
 //#undef DO_PARALLEL

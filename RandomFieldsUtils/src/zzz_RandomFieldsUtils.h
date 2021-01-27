@@ -31,10 +31,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 !!!!! HIER NIE EIN SEXP OBJEKT ZURUECKGEBEN  !!!!  
   */
 
-#include "Options_utils.h"
+#include "General_utils.h"
 #include "errors_messages.h"
 #include "scalar.h"
 #include "Utils.h"
+#include "options.h"
 
 
 #ifdef HAVE_VISIBILITY_ATTRIBUTE

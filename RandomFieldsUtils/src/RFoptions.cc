@@ -23,8 +23,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "RandomFieldsUtils.h"
 #include "General_utils.h"
-#include "own.h"
 #include "zzz_RandomFieldsUtils.h"
+#include "options.h"
+#include "xport_import.h"
+#include "kleinkram.h"
 
 
 struct getlist_type{
@@ -45,20 +47,21 @@ void getpDef(SEXP VARIABLE_IS_NOT_USED  sublist, int VARIABLE_IS_NOT_USED i,
   BUG;
 }
 
-
+void setoptions(int i, int j, SEXP el, char name[LEN_OPTIONNAME], bool isList, bool local);
+void getoptions(SEXP sublist, int i, bool local);
 
 #define MAXNLIST 5
 int NList = 0; // originally 1
 int nbasic_options = 0,
-  AllprefixN[MAXNLIST] = {ownprefixN, 0, 0, 0, 0},
-  *AllallN[MAXNLIST] = {ownallN, NULL, NULL, NULL, NULL};
-const char  *basic_options[MAXNLIST] = {ownprefixlist[1], NULL, NULL, NULL},
-  **Allprefix[MAXNLIST] = {ownprefixlist, NULL, NULL, NULL, NULL},
-  ***Allall[MAXNLIST] = { ownall, NULL, NULL, NULL, NULL};
+  AllprefixN[MAXNLIST] = {prefixN, 0, 0, 0, 0},
+  *AllallN[MAXNLIST] = {allN, NULL, NULL, NULL, NULL};
+const char  *basic_options[MAXNLIST] = {prefixlist[1], NULL, NULL, NULL},
+  **Allprefix[MAXNLIST] = {prefixlist, NULL, NULL, NULL, NULL},
+  ***Allall[MAXNLIST] = { all, NULL, NULL, NULL, NULL};
 setoptions_fctn setparam[MAXNLIST] = 
-  {setparameterUtils, setpDef, setpDef, setpDef, setpDef};
+  {setoptions, setpDef, setpDef, setpDef, setpDef};
 getoptions_fctn getparam[MAXNLIST] = 
-  {getparameterUtils, getpDef, getpDef, getpDef, getpDef};
+  {getoptions, getpDef, getpDef, getpDef, getpDef};
 finalsetoptions_fctn finalparam[MAXNLIST] = { NULL, NULL, NULL, NULL, NULL };
 deleteoptions_fctn delparam[MAXNLIST] = { NULL, NULL, NULL, NULL, NULL };
 
@@ -201,11 +204,11 @@ SEXP getRFoptions(int ListNr, int i, bool local) {
 SEXP getRFoptions(bool local) {
   SEXP list, names;
  
-  int  prefixN, totalN, i, ListNr,
+  int  PreFixN, totalN, i, ListNr,
     itot = 0;
   for (totalN=ListNr=0; ListNr<NList; ListNr++) {
-    prefixN = AllprefixN[ListNr];
-    for (i=0; i<prefixN; i++) {
+    PreFixN = AllprefixN[ListNr];
+    for (i=0; i<PreFixN; i++) {
       totalN += STRCMP(Allprefix[ListNr][i], OBSOLETENAME) != 0;
     }
   }
@@ -215,8 +218,8 @@ SEXP getRFoptions(bool local) {
 
   for (ListNr =0; ListNr<NList; ListNr++) {
     //    printf("ListNr %d\n", ListNr);
-    prefixN = AllprefixN[ListNr];    
-    for (i=0; i<prefixN; i++) {
+    PreFixN = AllprefixN[ListNr];    
+    for (i=0; i<PreFixN; i++) {
       if (STRCMP(Allprefix[ListNr][i], OBSOLETENAME) == 0) continue;
       SET_VECTOR_ELT(list, itot, getRFoptions(ListNr, i, local));
       SET_STRING_ELT(names, itot, mkChar(Allprefix[ListNr][i]));
@@ -240,10 +243,10 @@ void getListNr(bool save, int t, int actual_nbasic, SEXP which,
   if (save && t < nbasic_options) z = basic_options[t];
   else z = (char*) CHAR(STRING_ELT(which, t - actual_nbasic));
   for (ListNr=0; ListNr<NList; ListNr++) {
-    int prefixN = AllprefixN[ListNr];
-    for (i=0; i<prefixN; i++)
+    int PreFixN = AllprefixN[ListNr];
+    for (i=0; i<PreFixN; i++)
       if (STRCMP(Allprefix[ListNr][i], z) == 0) break;
-    if (i < prefixN) break;
+    if (i < PreFixN) break;
   }
   if (ListNr >= NList) ERR("unknown value for 'getoptions_'");
   if (getlist != NULL) {
@@ -284,22 +287,22 @@ SEXP getRFoptions(SEXP which, getlist_type *getlist, bool save, bool local) {
 void splitAndSet(SEXP el, char *name, bool isList, getlist_type *getlist,
 		 int warn_unknown_option, bool local) {
   int i, len;
-  char prefix[LEN_OPTIONNAME / 2], mainname[LEN_OPTIONNAME / 2];   
+  char PreFix[LEN_OPTIONNAME / 2], mainname[LEN_OPTIONNAME / 2];   
   //  printf("splitandset\n");
   len = STRLEN(name);
   for (i=0; i < len && name[i]!='.'; i++);
   if (i==0) { ERR1("argument '%.50s' not valid\n", name); }
   if (i==len) {
-    STRCPY(prefix, "");
+    STRCPY(PreFix, "");
     strcopyN(mainname, name, LEN_OPTIONNAME / 2);
   } else {
-    strcopyN(prefix, name, MIN(i + 1, LEN_OPTIONNAME / 2));
+    strcopyN(PreFix, name, MIN(i + 1, LEN_OPTIONNAME / 2));
     strcopyN(mainname, name+i+1, MIN(STRLEN(name) - i, LEN_OPTIONNAME / 2) );
   }
 
   // 
   //  printf("i=%d %d %.50s %.50s\n", i, len, prefix, mainname);
-  setparameter(el, prefix, mainname, isList && GLOBAL.basic.asList, getlist,
+  setparameter(el, PreFix, mainname, isList && GLOBAL.basic.asList, getlist,
 	       warn_unknown_option, local);
   //   printf("ende\n");
 }
@@ -428,28 +431,28 @@ SEXP RFoptions(SEXP options) {
  
 
 int PLoffset = 0;
-void attachRFoptions(const char **prefixlist, int N, 
-		     const char ***all, int *allN,
+void attachRFoptions(const char **PKGprefixlist, int N, 
+		     const char ***PKGall, int *PKGallN,
 		     setoptions_fctn set, finalsetoptions_fctn final,
 		     getoptions_fctn get,
 		     deleteoptions_fctn del,
 		     int pl_offset, bool basicopt) {
   for (int ListNr=0; ListNr<NList; ListNr++) {    
     if (AllprefixN[ListNr] == N && 
-	STRCMP(Allprefix[ListNr][0], prefixlist[0]) == 0) {
+	STRCMP(Allprefix[ListNr][0], PKGprefixlist[0]) == 0) {
       if (PL > 0) {
 	PRINTF("options starting with prefix '%s' have been already attached.",
-		prefixlist[0]);
+		PKGprefixlist[0]);
       }
       return;    
     }
   }
-  if (basicopt) basic_options[nbasic_options++] = prefixlist[0];
+  if (basicopt) basic_options[nbasic_options++] = PKGprefixlist[0];
   if (NList >= MAXNLIST) BUG;
-  Allprefix[NList] = prefixlist;
+  Allprefix[NList] = PKGprefixlist;
   AllprefixN[NList] = N;
-  Allall[NList] = all;
-  AllallN[NList] = allN;
+  Allall[NList] = PKGall;
+  AllallN[NList] = PKGallN;
   setparam[NList] = set;
   finalparam[NList] = final;
   getparam[NList] = get;
@@ -463,22 +466,22 @@ void attachRFoptions(const char **prefixlist, int N,
 
 
 
-void detachRFoptions(const char **prefixlist, int N) {
+void detachRFoptions(const char **PKGprefixlist, int N) {
   int ListNr;
   for (ListNr=0; ListNr<NList; ListNr++) {    
     if (AllprefixN[ListNr] == N && 
-	STRCMP(Allprefix[ListNr][0], prefixlist[0]) == 0) break;
+	STRCMP(Allprefix[ListNr][0], PKGprefixlist[0]) == 0) break;
   }  
   if (ListNr >= NList) {
     ERR1("options starting with prefix '%.50s' have been already detached.",
-	prefixlist[0]);
+	PKGprefixlist[0]);
   }
 
   if (delparam[ListNr] != NULL) delparam[ListNr](false);
   
   int i;
   for (i=0; i<nbasic_options ; i++)
-    if (STRCMP(basic_options[i], prefixlist[0]) == 0) break;
+    if (STRCMP(basic_options[i], PKGprefixlist[0]) == 0) break;
   for (i++ ; i < nbasic_options; i++) basic_options[i - 1] = basic_options[i];
   
   for (ListNr++; ListNr<NList; ListNr++) {    

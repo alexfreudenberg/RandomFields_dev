@@ -28,9 +28,95 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //#include "win_linux_aux.h"
 #include "General_utils.h"
 #include "intrinsics.h"
+#include "kleinkram.h"
 //#include "Solve.h"
+#include "zzz_RandomFieldsUtils.h"
 #include "Utils.h"
-#include "own.h"
+#include "xport_import.h"
+
+
+
+
+
+
+
+
+
+double *ToRealDummy = NULL;
+int  ToRealN = 0;
+double *ToRealI(SEXP X, bool *create) {
+  if (TYPEOF(X) == REALSXP) { 
+    *create = false;
+    return REAL(X);
+  }
+  // TO DO !!
+  //HELPINFO("Better use 'double' as storage mode (for one of the arguments).");
+  int len = length(X); 
+  double *y;
+  if (create || ToRealN < len) {
+    y = (double *) MALLOC(sizeof(double) * len);
+    if (y == NULL) ERR1("not enough memory for an %d vector of doubles", len);
+    if (!create) {
+      FREE(ToRealDummy);
+      ToRealDummy = y;
+      ToRealN = len;
+    }
+  } else y = ToRealDummy;
+  int *x;
+  if (TYPEOF(X)==INTSXP) x=INTEGER(X); else x=LOGICAL(X);
+  for (int i=0; i<len; i++) y[i] = (double) x[i];
+  return y;
+}
+
+double *ToReal(SEXP X) {
+  bool ToFalse[1] = { false };
+ if (TYPEOF(X) == REALSXP) return REAL(X);
+  return ToRealI(X, ToFalse);
+}
+
+
+int *ToIntDummy = NULL;
+int  ToIntN = 0;
+int *ToIntI(SEXP X, bool *create, bool round) {
+  if (TYPEOF(X) == INTSXP) {
+    *create = false;
+    return INTEGER(X);
+  }
+  if (TYPEOF(X) == LGLSXP) {
+    *create = false;
+    return LOGICAL(X);
+  }
+  int len = length(X);
+  // TO DO !!
+  //  if (len > 100 || PL > 1)
+  //    HELPINFO("Better use 'integer' as storage mode (for one of the arguments).");
+  int *y;
+  if (*create || ToIntN < len) {
+    y = (int *) MALLOC(sizeof(int) * len);    
+    if (y == NULL) ERR1("not enough memory for an %d vector of integers", len);
+    if (!*create) {
+      FREE(ToIntDummy);
+      ToIntDummy = y;
+      ToIntN = len;
+    }
+  } else y = ToIntDummy;
+  double *x = (double *) REAL(X);
+  if (round) for (int i=0; i<len; i++) y[i] = (int) ROUND(x[i]);
+  else for (int i=0; i<len; i++) y[i] = (int) x[i];
+  return y;
+}
+
+int *ToInt(SEXP X) {
+  bool ToFalse[1] = { false };
+  return ToIntI(X, ToFalse, false);
+}
+
+
+void freeGlobals() {
+  FREE(ToRealDummy);
+  FREE(ToIntDummy);
+}
+
 
 
 SEXP getChar() {  ERR("does not work");
@@ -458,3 +544,5 @@ SEXP dotXV(SEXP M, SEXP V) {
 }
 
  
+
+

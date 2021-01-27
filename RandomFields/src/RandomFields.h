@@ -248,9 +248,10 @@ extern "C" {
 
   SEXP get_linearpart(SEXP Model_reg, SEXP Set);
 
-  void loadRandomFields();
-  void detachRandomFields();
-  SEXP attachRandomFields();
+  void loadoptions();
+  void detachoptions();
+  SEXP attachoptions();
+
 
   SEXP maintainers_machine();
   SEXP setlocalRFutils(SEXP seed, SEXP printlevel);

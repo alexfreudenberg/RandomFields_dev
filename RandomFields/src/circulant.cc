@@ -37,14 +37,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //#include <stdlib.h>
 #include "def.h"
+
 #include "questions.h"
 #include "operator.h"
 #include "Processes.h"
 
-#undef DO_PARALLEL
 
-
-#ifdef DO_PARALLEL
+#ifdef CE_PARALLEL
 #include <omp.h>
 #endif
 
@@ -186,8 +185,8 @@ assert(VDIM0 == VDIM1);
   cov->method = CircEmbed;
 
   NEW_STORAGE(ce);
-getStorage(s ,   ce); 
-#ifdef DO_PARALLEL
+  getStorage(s ,   ce); 
+#ifdef CE_PARALLEL
   //  printf("%d %d\n", vdimSq, sizeof(FFT_storage));
   s->FFT = (FFT_storage *) CALLOC(vdimSq,  sizeof(FFT_storage)); 
 #endif  
@@ -363,7 +362,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
     }
     
     Long err_occurred = NOERROR;
- #ifdef DO_PARALLEL
+ #ifdef CE_PARALLEL
     //#pragma omp parallel for num_threads(CORES) reduction (+:err_occurred) if (vdim > 1L)
 #endif
     
@@ -399,7 +398,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 	
 	if (ISNAN(c[l][dummy])) {
 
-#ifdef DO_PARALLEL 
+#ifdef CE_PARALLEL 
 	  err_occurred++; break;
 #else	     
 	  GERR1("covariance models returns NAs. %.200s", CONTACT);
@@ -423,7 +422,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
     }
    
     // printf("A end\n");
-#ifdef DO_PARALLEL
+#ifdef CE_PARALLEL
     if (err_occurred)
       GERR1("covariance model returns NAs.%.90s", CONTACT);
 #endif
@@ -432,10 +431,9 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 
     // printf("dim=%d\n", dim);
 
-#ifdef DO_PARALLEL
+#ifdef CE_PARALLEL
 #define S_FFT(l) s->FFT + l
 #define END vdim
-    dddd
 #else
 #define S_FFT(l) &(s->FFT)
 #define END 1    
@@ -457,7 +455,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
     
     err_occurred = NOERROR;
 
-#ifdef DO_PARALLEL
+#ifdef CE_PARALLEL
 #pragma omp parallel for num_threads(CORES) if (vdim > 1) collapse(2) schedule(dynamic, 1) reduction(+:err_occurred)
 #endif
     for (int j=0; j<vdim; j++) {
@@ -475,7 +473,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 	      }; ok__;						\
 	    });
 	  */
-#ifdef DO_PARALLEL 
+#ifdef CE_PARALLEL 
 #else	  
 	  if (PL>=PL_STRUCTURE) { LPRINT("FFT.0.."); }
 #endif
@@ -484,7 +482,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 	  //	  for (int t=0; t<mtot; t++) printf("%f ", c[l][t]);printf("\n");
 
 	  
-#ifdef DO_PARALLEL
+#ifdef CE_PARALLEL
 #else	  
    	  if (err_occurred != NOERROR) goto ErrorHandling;
 	  if (PL>=PL_STRUCTURE) { LPRINT("done %d.\n", l); }
@@ -497,7 +495,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
       }
     }
     
-#ifdef DO_PARALLEL
+#ifdef CE_PARALLEL
     if (err_occurred != NOERROR) { GERR("error within fft"); }
 #endif			       
   //printf("AA end\n");
@@ -543,7 +541,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
     } else {
       int index1, index2, Sign;      
       //  printf("ABC\n");
-#ifdef DO_PARALLEL
+#ifdef CE_PARALLEL
 #pragma omp parallel for num_threads(CORES) if (vdim > 1L) reduction(+:notposdef)
 #endif      
       for(int i = 0; i<mtot; i++) {
@@ -727,7 +725,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
       //print("%d %d %d %d\n", s->positivedefinite, s->trials, trials, force);
      
       if (!s->positivedefinite && (s->trials<trials)) { 
-#ifdef DO_PARALLEL
+#ifdef CE_PARALLEL
 	for (int i=0; i<vdim * vdim; i++) FFT_destruct(s->FFT + i);
 #else
 	FFT_destruct(&(s->FFT));
@@ -1088,7 +1086,7 @@ getStorage(s ,   ce);
   mtot= s->mtot;
   vdim = s->vdim; // so p=vdim
   
-#ifdef DO_PARALLEL
+#ifdef CE_PARALLEL
   omp_set_num_threads(CORES);
 #endif
   
@@ -1258,7 +1256,7 @@ getStorage(s ,   ce);
       
     // MULT
     //
-#ifdef DO_PARALLEL
+#ifdef CE_PARALLEL
 #pragma omp parallel for num_threads(CORES) schedule(static,1)
 #endif	    
     for(int k=0; k<vdim; k++) {

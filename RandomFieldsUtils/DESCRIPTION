@@ -1,5 +1,5 @@
 Package: RandomFieldsUtils
-Version: 0.6.4
+Version: 0.6.5
 Title: Utilities for the Simulation and Analysis of Random Fields and
         Genomic Data
 Author: Martin Schlather [aut, cre], Reinhard Furrer [ctb], Martin Kroll [ctb], Brian D. Ripley [ctb]
@@ -11,5 +11,5 @@ Description: Various utilities are provided that might be used in spatial statis
 License: GPL ( >= 3)
 URL:
         http://ms.math.uni-mannheim.de/de/publications/software/randomfieldsutils
-Packaged: 2021-01-26 14:01:24 UTC; schlather
+Packaged: 2021-01-26 22:58:58 UTC; schlather
 NeedsCompilation: yes

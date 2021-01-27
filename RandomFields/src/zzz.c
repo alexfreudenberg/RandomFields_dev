@@ -58,8 +58,8 @@ static const R_CMethodDef cMethods[]  = {
   CDEF(NoCurrentRegister, 0, none),
   CDEF(GetCurrentRegister, 1, one_int),
   CDEF(PutGlblVar, 2, intdouble),
-  CDEF(loadRandomFields, 0, none),
-  CDEF(detachRandomFields, 0, none),
+  CDEF(loadoptions, 0, none),
+  CDEF(detachoptions, 0, none),
   {NULL, NULL, 0, none}
 };
 
@@ -68,7 +68,7 @@ static const R_CMethodDef cMethods[]  = {
 #define CALLDEF_DO(name, n) {#name, (DL_FUNC) &name, n}
 static R_CallMethodDef callMethods[]  = {
   // in die respectiven C-Dateien muss RandomFieldsUtils.h eingebunden sein
-  CALLDEF_DO(attachRandomFields, 0),
+  CALLDEF_DO(attachoptions, 0),
   CALLDEF_DO(GetParameterNames, 1),
   CALLDEF_DO(GetSubNames, 1),
   CALLDEF_DO(scatter, 1),

@@ -32,11 +32,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define LOCAL_ERRORSTRING
 #define WHICH_ERRORSTRING pt->err_msg
 #include "RandomFieldsUtils.h"
-#include "own.h"
+#include "options.h"
 #include "zzz_RandomFieldsUtils.h"
 #include "General_utils.h"
 #include "kleinkram.h" 
 #include "linear.h"
+#include "xport_import.h"
+
 #ifdef USEGPU
 #include "solve_gpu.h"
 #endif

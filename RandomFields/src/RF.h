@@ -566,9 +566,6 @@ struct FFT_storage {
   int *iwork, nseg, maxf[MAXCEDIM], kt[MAXCEDIM], m_fac[MAXCEDIM],
     NFAC[MAXCEDIM][21];
 };
-#ifdef  DO_PARALLEL
-#warning "DO PARALLEL"
-#endif
 
 struct ce_storage {
   int m[MAXCEDIM], trials,
@@ -587,7 +584,7 @@ struct ce_storage {
     // festgelegt zu werden. Ist aber wesentlich einfacher zu handhaben,
     // da sonst bei internal_dosimulate die parameter alle RFparameter alle
     // nochmals gesetzt werden muessen
-#ifdef DO_PARALLEL
+#ifdef CE_PARALLEL
   FFT_storage *FFT;
 #else
   FFT_storage FFT;

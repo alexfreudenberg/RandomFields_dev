@@ -35,7 +35,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "RF.h"
 //#include "Error.h"
 
-#undef DO_PARALLEL
+//#undef DO_PARALLEL
 
 #if defined SSE2 
 int static inline DoubleAlign(int X) {

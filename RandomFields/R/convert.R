@@ -88,7 +88,7 @@ ExtractNames <- function(Names, data, dont.add.data, model, RFopt, dots, Env) {
         data.names <-
           sapply(data.names, ## AUTHOR: Sebastian Gross, 26.08.2011
                  FUN= function(x) strsplit(x, "\\.n[[:digit:]]+$")[[1]][1])
-      repet <- 1:data@.RFparams$n
+      repet <- data@.RFparams$n
       vdim <- data@.RFparams$vdim
       is.var <- 1:ncol(data@data)
     } else {
@@ -1029,7 +1029,7 @@ PrepareModel2 <- function(model, ...,
 
   if (any(M$add.na)) Help("addNA")
 
-##  Print(M, data,DataNames, return_transform && sum(genuine.formulae) )
+  ##  Print(M, data,DataNames, return_transform && sum(genuine.formulae) )
   
   M
 }
