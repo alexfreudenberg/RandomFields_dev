@@ -15,6 +15,7 @@
 
 
 
+
 __global__ void logdet_kernel(double *d_matrix, Uint *d_size, double *d_logdet){
     __shared__ double logdet_loc;
     __shared__ double submatrix[THREADS_PER_BLOCK];
@@ -23,9 +24,9 @@ __global__ void logdet_kernel(double *d_matrix, Uint *d_size, double *d_logdet){
     int idx = blockDim.x * blockIdx.x + threadIdx.x,
         thread = threadIdx.x;
     if(idx < *d_size){
+        if(THREADS_PER_BLOCK<=thread ) printf("Size %d, access %d",THREADS_PER_BLOCK,thread );
         submatrix[thread] = d_matrix[idx * (*d_size +1)];
     }
-
     __syncthreads();
     atomicAdd(&logdet_loc, idx >= *d_size ? 0 : (log(submatrix[thread])));
 
@@ -48,6 +49,7 @@ int cholGPU(bool copy, double *matrix, Uint size, double *B, Uint rhs_cols,
             vector: contains solution x after the function has been called
     */
 
+    clock_t start = clock();
     //declare/define process variables
     int bufferSize = 0;
     int *info = NULL;
@@ -98,7 +100,11 @@ int cholGPU(bool copy, double *matrix, Uint size, double *B, Uint rhs_cols,
     cudaDeviceSynchronize();
 
     if (0 != h_info) {
-        PRINTF("Error: Cholesky factorization failed\n");
+        if(h_info >0)PRINTF("Error: Cholesky factorization failed at minor %d \n", h_info);
+        if(h_info <0)PRINTF("Error: Wrong parameter in cholesky factorization at %d entry\n", h_info);
+        err = cudaDeviceReset();
+        if(err != cudaSuccess)PRINTF("Device reset not successful");
+        return(1);
     }
     //calculate x = A\b
     cusolverDnDpotrs(handle, uplo, size, rhs_cols, 
@@ -135,8 +141,12 @@ int cholGPU(bool copy, double *matrix, Uint size, double *B, Uint rhs_cols,
     cudaFree(d_B);
     cusolverDnDestroy(handle);
     cudaStreamDestroy(stream);
+    PRINTF("Time: %.3f", (double)(clock() - start) / CLOCKS_PER_SEC);
     return 0;
 };
+
+
+
 
 
 
