@@ -1,6 +1,6 @@
 library(data.table)
 library(RandomFields)
-RFoptions(pivot=PIVOT_NONE, cores=4)
+RFoptions(pivot=PIVOT_NONE, cores=8)
 
 RFoptions(useGPU=TRUE)
 alpha <- 10
@@ -10,7 +10,7 @@ for(i in 1:16) {
   message(paste0("Preparing Dataset ", i, "\n"))
   training <- fread(paste0("~/kaust/Sub-competition_1a/dataset",i,"_training.csv"))
   testing <- fread(paste0("~/kaust/Sub-competition_1b/dataset",i,"_testing.csv"))
-  testing$values <- NA_character_
+  testing$values <- NA_real_
   fit <- readRDS(paste0("kaust/dataset_update2_", i, ".RDS"))
   
   #str(training)
@@ -42,7 +42,7 @@ for(i in 1:16) {
     system.time(pred <- as.vector(comatrix[prediction_rows, known_rows] %*%
                         solvex(comatrix[known_rows, known_rows],
                                conditional_known)))
-    pred <- as.character(round(pred,6))
+    
     testing[testing_selection==TRUE,values:=pred]
   }
     
