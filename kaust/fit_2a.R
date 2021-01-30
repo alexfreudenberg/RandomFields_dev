@@ -11,7 +11,7 @@ str(training)
 #plot(vario)
 
 model <- ~ RMspheric(var=var1, scale=scale1) + RMspheric(var=var2, scale=scale2) + RMdeclare(scaleplus=scaleplus)
-param <- list(var1=NA, scale1=NA, var2=NA, scale2=~scale1+scaleplus, scaleplus=NA)
+param <- list(var1=NA, scale1=NA, var2=NA,  scaleplus=NA, scale2=~scale1+scaleplus)
 lower <- list(var1=1e-1, var2=1e-1, scale1=1e-6, scaleplus=0.01)
 upper <- list(var1=20, var2=20, scale1=1, scaleplus=1)
 
@@ -26,9 +26,10 @@ split_index <- sapply(1:9, function(n)rep(n,len/9))
 split_df <- split(training[,1:2],split_index)
 split_val <- split(training[,3],split_index)
 
-fit2 <- RFfit(model, param=param, lower=lower, upper=upper, 
-              data=training[sampled_rows_training,], 
-              x= split_df[1:4],data=split_val[1:4], 
+fit2 <- RFfit(#model, param=param, lower=lower, upper=upper, 
+              RMmatern(nu=NA, var=NA, scale=NA),
+              x= split_df[1:4],
+              data=split_val[1:4], 
               sub.methods="plain",
               optim.control=list(trace=6,lmm=3))
 
