@@ -1,12 +1,13 @@
 i <- as.numeric(commandArgs(trailingOnly=TRUE))
-sink(paste0("~/kaust/2b_log-",i,".txt"))
+sink(paste0("kaust/2b_log-",i,".txt"))
 
 
 library(RandomFields)
-RFoptions(pivot=PIVOT_NONE, cores=3, useGPU=TRUE, sub_optimiser="soma", optimiser="optim", print=7)
+RFoptions(pivot=PIVOT_NONE, cores=3, useGPU=TRUE, sub_optimiser="optim", optimiser="optim", print=7)
 
   training <- read.csv(paste0("~/kaust/Sub-competition_2b/dataset",i,"_training.csv"))
-  #str(training)
+  print(head(training))
+  str(training)
 
   #n_training <- 2e4
   #sampled_rows_training <- sample(seq_len(nrow(training)), n_training)
