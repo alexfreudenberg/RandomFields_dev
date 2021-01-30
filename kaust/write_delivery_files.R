@@ -4,7 +4,7 @@ teamname <- "Mannheim"
 hardware <- "TODO"
 
 options(scipen = 999)
-
+########################### Competition 1a #####################################
 params_1a <- data.frame(t(sapply(
   1:16, 
   function(i) {
@@ -21,3 +21,9 @@ colnames(params_1a) <- c("sigma squared", "beta", "nu", "tau squared", "time in 
 
 write.csv(x=params_1a, file=paste0("kaust/delivery/", teamname, "-1a.csv"), row.names=FALSE, quote=FALSE)
 cat(hardware, file=paste0("kaust/delivery/", teamname, "-1a-hardware.txt"))
+cat(hardware, file=paste0("kaust/delivery/", teamname, "-1b-hardware.txt"))
+
+
+########################### Competition 2a #####################################
+cat(hardware, file=paste0("kaust/delivery/", teamname, "-2a-hardware.txt"))
+cat(hardware, file=paste0("kaust/delivery/", teamname, "-2b-hardware.txt"))
