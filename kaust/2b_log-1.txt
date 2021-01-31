@@ -1,0 +1,967 @@
+         x        y    values
+1 0.585489 0.625895 -0.868707
+2 0.750729 0.307836  0.259449
+3 0.492363 0.145510  2.721026
+4 0.791577 0.601434 -0.519864
+5 0.266560 0.766217  0.014909
+6 0.097414 0.252567  1.357156
+'data.frame':	900000 obs. of  3 variables:
+ $ x     : num  0.585 0.751 0.492 0.792 0.267 ...
+ $ y     : num  0.626 0.308 0.146 0.601 0.766 ...
+ $ values: num  -0.8687 0.2594 2.721 -0.5199 0.0149 ...
+
+'RFcovariance'
+. 'RMplus'
+. . 'RMmatern'
+. . . 'RMmatern'
+. . . Continuing 'RMmatern' (no err):
+. . Continuing 'RMS' (no err):
+. . 'RMnugget'
+. . Continuing 'RMnugget' (no err):
+. Continuing 'RMplus' (no err):
+. 'RMplus'
+. . 'RMmatern'
+. . . 'RMmatern'
+. . . Continuing 'RMmatern' (no err):
+. . Continuing 'RMS' (no err):
+. . 'RMnugget'
+. . Continuing 'RMnugget' (no err):
+. Continuing 'RMplus' (no err):
+Continuing 'RFcovariance' (no err):
+
+function defintions...
+
+initial settings...
+
+first analysis of model  ...
+
+'RFloglikelihood'
+. 'RMplus'
+. . 'RMmatern'
+. . . 'RMmatern'
+. . . Continuing 'RMmatern' (no err):
+. . Continuing 'RMS' (no err):
+. . 'RMnugget'
+. . Continuing 'RMnugget' (no err):
+. Continuing 'RMplus' (no err):
+Continuing 'RFloglikelihood' (no err):
+. 'RPgauss'
+. . 'RMplus'
+. . . 'RMmatern'
+. . . . 'RMmatern'
+. . . . Continuing 'RMmatern' (no err):
+. . . Continuing 'RMS' (no err):
+. . . 'RMnugget'
+. . . Continuing 'RMnugget' (no err):
+. . Continuing 'RMplus' (no err):
+. Continuing 'RPgauss' (no err):
+gauss.process
+   boxcox
+   stationary_only
+   phi = +
+      C0 = $
+         var
+            1
+         scale
+            2
+         phi = matern
+            nu
+               3
+            notinvnu
+      C1 = nugget
+         tol
+         vdim
+
+trafo...            pmin  pmax type NAN min max omin omax row col bayes iso
+matern.var 0e+00 1e+05    0   0   0 Inf    0    1   1   1     0   0
+matern.s   1e-04 1e+04    4   0   0 Inf    1    1   1   1     0   0
+matern.nu  1e-01 1e+01   11   0   0 Inf    1    0   1   1     0   0
+
+lower and upper ...
+
+transform ...
+
+distances and data...
+bounds...
+split...
+auto...
+preparing fitting...
+preparing fitting (part 2)...
+preparing fitting (part 3)...
+preparing fitting (part 4)...
+preparing fitting (part 5)...
+autostart...Time: 1.701Time: 0.735Time: 0.654Time: 0.640
+
+ans [1] = -33395.87
+MLEMAX [1] = -33395.87
+
+empirical variogram...
+elimination part...
+'RFpseudovariogra'
+. 'RMplus'
+. . 'RMmatern'
+. . . 'RMmatern'
+. . . Continuing 'RMmatern' (no err):
+. . Continuing 'RMS' (no err):
+. . 'RMnugget'
+. . Continuing 'RMnugget' (no err):
+. Continuing 'RMplus' (no err):
+. 'RMplus'
+. . 'RMmatern'
+. . . 'RMmatern'
+. . . Continuing 'RMmatern' (no err):
+. . Continuing 'RMS' (no err):
+. . 'RMnugget'
+. . Continuing 'RMnugget' (no err):
+. Continuing 'RMplus' (no err):
+Continuing 'RFpseudovariogra' (no err):
++
+   C0 = $
+      var
+         1
+      scale
+         2
+      phi = matern
+         nu
+            3
+         notinvnu
+   C1 = nugget
+      tol
+      vdim
+
+ plainN = 3, M = 3 machine precision = 2.22045e-16
+L = 0.00316228 0.0355949 0.1 
+X0 = 31.6228 1.26402 1 
+U = 316.228 28.0939 10 
+At X0, 0 variables are exactly at the bounds
+At iterate     0  f=            1  |proj g|=   4.5284e-07
+
+iterations 0
+function evaluations 1
+segments explored during Cauchy searches 0
+BFGS updates skipped 0
+active bounds at final generalized Cauchy point 0
+norm of the final projected gradient 4.52842e-07
+final function value 1
+
+X = 31.6228 1.26402 1 
+F = 1
+final  value 1.000000 
+converged
+Time: 0.642Time: 0.635Time: 0.636Time: 0.634
+
+ans [1] = -33395.77
+MLEMAX [1] = -33395.77
+
+mle param...
+MLE XXX...
+ mlTime: 0.638Time: 0.634Time: 0.636Time: 0.635
+
+ans [1] = -33395.87
+MLEMAX [1] = -33395.87
+Time: 0.638Time: 0.634Time: 0.637Time: 0.636
+
+ans [1] = -33395.77
+MLEMAX [1] = -33395.77
+N = 3, M = 3 machine precision = 2.22045e-16
+L = 0.0001 0.0281825 0.1 
+X0 = 1 1 1 
+U = 10 22.2435 10 
+At X0, 0 variables are exactly at the bounds
+Time: 0.639Time: 0.635Time: 0.636Time: 0.635
+
+ans [1] = -33395.77
+MLEMAX [1] = -33395.77
+Time: 0.638Time: 0.635Time: 0.636Time: 0.635
+
+ans [1] = -33395.7
+MLEMAX [1] = -33395.7
+Time: 0.639Time: 0.635Time: 0.637Time: 0.635
+
+ans [1] = -33395.84
+MLEMAX [1] = -33395.7
+Time: 0.639Time: 0.634Time: 0.637Time: 0.635
+
+ans [1] = -33395.89
+MLEMAX [1] = -33395.7
+Time: 0.638Time: 0.634Time: 0.636Time: 0.636
+
+ans [1] = -33395.65
+MLEMAX [1] = -33395.65
+Time: 0.635Time: 0.636Time: 0.639Time: 0.638
+
+ans [1] = -33395.85
+MLEMAX [1] = -33395.65
+Time: 0.642Time: 0.637Time: 0.639Time: 0.638
+
+ans [1] = -33395.69
+MLEMAX [1] = -33395.65
+At iterate     0  f=            1  |proj g|=    0.0035848
+Iteration     0
+
+---------------- CAUCHY entered-------------------
+
+There are 3  breakpoints
+
+Piece      1 f1, f2 at start point -2.2953e-05  2.2953e-05
+Distance to the next break point =   2.7109e+02
+Distance to the stationary point =   1.0000e+00
+
+GCP found in this segment
+Piece      1 f1, f2 at start point -2.2953e-05  2.2953e-05
+Distance to the stationary point =   1.0000e+00
+Cauchy X =  1.0021 0.996415 0.997615 
+
+---------------- exit CAUCHY----------------------
+
+3  variables are free at GCP on iteration 1
+Time: 0.642Time: 0.638Time: 0.640Time: 0.639
+
+ans [1] = -33395.02
+MLEMAX [1] = -33395.02
+Time: 0.645Time: 0.638Time: 0.640Time: 0.637
+
+ans [1] = -33394.95
+MLEMAX [1] = -33394.95
+Time: 0.641Time: 0.638Time: 0.638Time: 0.638
+
+ans [1] = -33395.09
+MLEMAX [1] = -33394.95
+Time: 0.641Time: 0.637Time: 0.639Time: 0.639
+
+ans [1] = -33395.14
+MLEMAX [1] = -33394.95
+Time: 0.641Time: 0.637Time: 0.639Time: 0.639
+
+ans [1] = -33394.9
+MLEMAX [1] = -33394.9
+Time: 0.643Time: 0.637Time: 0.654Time: 0.657
+
+ans [1] = -33395.09
+MLEMAX [1] = -33394.9
+Time: 0.641Time: 0.784Time: 0.936Time: 0.867
+
+ans [1] = -33394.94
+MLEMAX [1] = -33394.9
+LINE SEARCH 0 times; norm of step = 0.00479092
+X = 1.0021 0.996415 0.997615 
+G = -0.00205018 0.00350062 0.0022381 
+Iteration     1
+
+---------------- CAUCHY entered-------------------
+
+There are 3  breakpoints
+
+Piece      1 f1, f2 at start point -2.1467e-05  6.9790e-07
+Distance to the next break point =   2.7659e+02
+Distance to the stationary point =   3.0759e+01
+
+GCP found in this segment
+Piece      1 f1, f2 at start point -2.1467e-05  6.9790e-07
+Distance to the stationary point =   3.0759e+01
+Cauchy X =  1.06516 0.888739 0.928773 
+
+---------------- exit CAUCHY----------------------
+
+3  variables are free at GCP on iteration 2
+Time: 0.638Time: 0.640Time: 0.672Time: 0.647
+
+ans [1] = -33379.96
+MLEMAX [1] = -33379.96
+Time: 0.638Time: 0.634Time: 0.654Time: 0.635
+
+ans [1] = -33379.94
+MLEMAX [1] = -33379.94
+Time: 0.638Time: 0.634Time: 0.637Time: 0.643
+
+ans [1] = -33379.98
+MLEMAX [1] = -33379.94
+Time: 0.638Time: 0.634Time: 0.637Time: 0.636
+
+ans [1] = -33379.99
+MLEMAX [1] = -33379.94
+Time: 0.638Time: 0.635Time: 0.636Time: 0.636
+
+ans [1] = -33379.93
+MLEMAX [1] = -33379.93
+Time: 0.638Time: 1.039Time: 0.863Time: 0.928
+
+ans [1] = -33379.89
+MLEMAX [1] = -33379.89
+Time: 0.718Time: 0.816Time: 0.837Time: 0.729
+
+ans [1] = -33380.03
+MLEMAX [1] = -33379.89
+LINE SEARCH 0 times; norm of step = 0.177982
+X = 1.08942 0.845104 0.963595 
+G = -0.000554588 0.000842768 -0.00223075 
+Iteration     2
+
+---------------- CAUCHY entered-------------------
+
+There are 3  breakpoints
+
+Piece      1 f1, f2 at start point -5.9941e-06  3.9091e-07
+Distance to the next break point =   9.6933e+02
+Distance to the stationary point =   1.5334e+01
+
+GCP found in this segment
+Piece      1 f1, f2 at start point -5.9941e-06  3.9091e-07
+Distance to the stationary point =   1.5334e+01
+Cauchy X =  1.09793 0.832182 0.9978 
+
+---------------- exit CAUCHY----------------------
+
+3  variables are free at GCP on iteration 3
+Time: 0.704Time: 0.694Time: 0.639Time: 0.637
+
+ans [1] = -33374.97
+MLEMAX [1] = -33374.97
+Time: 0.641Time: 0.637Time: 0.639Time: 0.639
+
+ans [1] = -33374.96
+MLEMAX [1] = -33374.96
+Time: 0.641Time: 0.638Time: 0.639Time: 0.638
+
+ans [1] = -33374.98
+MLEMAX [1] = -33374.96
+Time: 0.669Time: 0.676Time: 0.694Time: 0.691
+
+ans [1] = -33374.98
+MLEMAX [1] = -33374.96
+Time: 0.678Time: 0.685Time: 0.664Time: 0.688
+
+ans [1] = -33374.96
+MLEMAX [1] = -33374.96
+Time: 0.688Time: 0.655Time: 0.682Time: 0.686
+
+ans [1] = -33374.88
+MLEMAX [1] = -33374.88
+Time: 0.671Time: 0.676Time: 0.691Time: 0.689
+
+ans [1] = -33375.07
+MLEMAX [1] = -33374.88
+LINE SEARCH 0 times; norm of step = 0.0931349
+X = 1.13388 0.771683 0.99975 
+G = -0.000261321 0.000195139 -0.00284357 
+Iteration     3
+
+---------------- CAUCHY entered-------------------
+
+There are 3  breakpoints
+
+Piece      1 f1, f2 at start point -8.1923e-06  4.3683e-07
+Distance to the next break point =   3.1651e+03
+Distance to the stationary point =   1.8754e+01
+
+GCP found in this segment
+Piece      1 f1, f2 at start point -8.1923e-06  4.3683e-07
+Distance to the stationary point =   1.8754e+01
+Cauchy X =  1.13878 0.768023 1.05308 
+
+---------------- exit CAUCHY----------------------
+
+3  variables are free at GCP on iteration 4
+Time: 0.667Time: 0.697Time: 1.112Time: 0.665
+
+ans [1] = -33377.48
+MLEMAX [1] = -33374.88
+Time: 0.693Time: 0.672Time: 0.695Time: 0.829
+
+ans [1] = -33377.52
+MLEMAX [1] = -33374.88
+Time: 0.703Time: 0.696Time: 0.669Time: 0.686
+
+ans [1] = -33377.45
+MLEMAX [1] = -33374.88
+Time: 0.646Time: 0.683Time: 0.685Time: 0.684
+
+ans [1] = -33377.17
+MLEMAX [1] = -33374.88
+Time: 0.732Time: 0.635Time: 0.664Time: 0.695
+
+ans [1] = -33377.8
+MLEMAX [1] = -33374.88
+Time: 0.714Time: 1.387Time: 0.795Time: 1.078
+
+ans [1] = -33377.31
+MLEMAX [1] = -33374.88
+Time: 0.647Time: 0.984Time: 0.644Time: 0.660
+
+ans [1] = -33377.65
+MLEMAX [1] = -33374.88
+Time: 1.056Time: 1.327Time: 1.035Time: 1.590
+
+ans [1] = -33364.56
+MLEMAX [1] = -33364.56
+Time: 1.876Time: 1.331Time: 0.646Time: 0.644
+
+ans [1] = -33364.57
+MLEMAX [1] = -33364.56
+Time: 0.894Time: 1.191Time: 0.646Time: 1.462
+
+ans [1] = -33364.55
+MLEMAX [1] = -33364.55
+Time: 0.653Time: 0.729Time: 1.021Time: 0.646
+
+ans [1] = -33364.49
+MLEMAX [1] = -33364.49
+Time: 0.648Time: 0.906Time: 1.540Time: 1.363
+
+ans [1] = -33364.63
+MLEMAX [1] = -33364.49
+Time: 0.685Time: 0.659Time: 0.646Time: 0.673
+
+ans [1] = -33364.44
+MLEMAX [1] = -33364.44
+Time: 0.669Time: 1.304Time: 1.215Time: 0.970
+
+ans [1] = -33364.68
+MLEMAX [1] = -33364.44
+LINE SEARCH 1 times; norm of step = 0.25867
+X = 1.25355 0.590657 1.14053 
+G = 0.000302313 -0.00213965 -0.00359215 
+Iteration     4
+
+---------------- CAUCHY entered-------------------
+
+There are 3  breakpoints
+
+Piece      1 f1, f2 at start point -1.7573e-05  1.3424e-06
+Distance to the next break point =   2.4663e+03
+Distance to the stationary point =   1.3091e+01
+
+GCP found in this segment
+Piece      1 f1, f2 at start point -1.7573e-05  1.3424e-06
+Distance to the stationary point =   1.3091e+01
+Cauchy X =  1.24959 0.618666 1.18755 
+
+---------------- exit CAUCHY----------------------
+
+3  variables are free at GCP on iteration 5
+Time: 0.652Time: 1.221Time: 1.352Time: 0.643
+
+ans [1] = -33355.01
+MLEMAX [1] = -33355.01
+Time: 0.667Time: 0.643Time: 0.663Time: 0.662
+
+ans [1] = -33355.02
+MLEMAX [1] = -33355.01
+Time: 0.646Time: 0.959Time: 0.650Time: 0.645
+
+ans [1] = -33355
+MLEMAX [1] = -33355
+Time: 0.940Time: 0.694Time: 0.669Time: 1.158
+
+ans [1] = -33354.94
+MLEMAX [1] = -33354.94
+Time: 1.278Time: 0.644Time: 0.650Time: 1.181
+
+ans [1] = -33355.09
+MLEMAX [1] = -33354.94
+Time: 0.652Time: 0.644Time: 1.590Time: 1.272
+
+ans [1] = -33354.92
+MLEMAX [1] = -33354.92
+Time: 0.647Time: 1.221Time: 1.104Time: 0.644
+
+ans [1] = -33355.1
+MLEMAX [1] = -33354.92
+LINE SEARCH 0 times; norm of step = 0.181266
+X = 1.35339 0.534513 1.28102 
+G = 0.000238654 -0.00228678 -0.0026841 
+Iteration     5
+
+---------------- CAUCHY entered-------------------
+
+There are 3  breakpoints
+
+Piece      1 f1, f2 at start point -1.2491e-05  3.1818e-07
+Distance to the next break point =   3.2484e+03
+Distance to the stationary point =   3.9257e+01
+
+GCP found in this segment
+Piece      1 f1, f2 at start point -1.2491e-05  3.1818e-07
+Distance to the stationary point =   3.9257e+01
+Cauchy X =  1.34402 0.624285 1.38639 
+
+---------------- exit CAUCHY----------------------
+
+3  variables are free at GCP on iteration 6
+Time: 1.212Time: 0.645Time: 0.688Time: 1.575
+
+ans [1] = -33342.95
+MLEMAX [1] = -33342.95
+Time: 0.651Time: 1.286Time: 0.646Time: 0.644
+
+ans [1] = -33342.94
+MLEMAX [1] = -33342.94
+Time: 1.524Time: 0.693Time: 0.650Time: 0.678
+
+ans [1] = -33342.97
+MLEMAX [1] = -33342.94
+Time: 0.964Time: 1.084Time: 1.203Time: 0.649
+
+ans [1] = -33343.02
+MLEMAX [1] = -33342.94
+Time: 0.793Time: 0.647Time: 0.812Time: 1.399
+
+ans [1] = -33342.89
+MLEMAX [1] = -33342.89
+Time: 0.656Time: 0.645Time: 0.645Time: 0.644
+
+ans [1] = -33342.95
+MLEMAX [1] = -33342.89
+Time: 0.655Time: 0.638Time: 0.641Time: 1.230
+
+ans [1] = -33342.96
+MLEMAX [1] = -33342.89
+LINE SEARCH 0 times; norm of step = 0.349947
+X = 1.57715 0.561454 1.54872 
+G = -0.000358911 0.00207406 -0.000109238 
+Iteration     6
+
+---------------- CAUCHY entered-------------------
+
+There are 3  breakpoints
+
+Piece      1 f1, f2 at start point -4.4425e-06  1.8120e-07
+Distance to the next break point =   2.5712e+02
+Distance to the stationary point =   2.4517e+01
+
+GCP found in this segment
+Piece      1 f1, f2 at start point -4.4425e-06  1.8120e-07
+Distance to the stationary point =   2.4517e+01
+Cauchy X =  1.58595 0.510605 1.5514 
+
+---------------- exit CAUCHY----------------------
+
+3  variables are free at GCP on iteration 7
+Time: 0.650Time: 0.646Time: 1.640Time: 0.651
+
+ans [1] = -33335.08
+MLEMAX [1] = -33335.08
+Time: 0.997Time: 0.999Time: 0.649Time: 0.953
+
+ans [1] = -33335.08
+MLEMAX [1] = -33335.08
+Time: 0.650Time: 1.017Time: 1.192Time: 0.653
+
+ans [1] = -33335.07
+MLEMAX [1] = -33335.07
+Time: 0.759Time: 0.646Time: 0.984Time: 1.260
+
+ans [1] = -33334.99
+MLEMAX [1] = -33334.99
+Time: 0.655Time: 1.201Time: 1.245Time: 0.648
+
+ans [1] = -33335.17
+MLEMAX [1] = -33334.99
+Time: 1.213Time: 0.674Time: 0.669Time: 1.167
+
+ans [1] = -33335.05
+MLEMAX [1] = -33334.99
+Time: 0.678Time: 0.681Time: 1.629Time: 0.645
+
+ans [1] = -33335.11
+MLEMAX [1] = -33334.99
+LINE SEARCH 0 times; norm of step = 0.465801
+X = 1.86432 0.414666 1.88482 
+G = 0.000146643 -0.00279895 -0.000959897 
+Iteration     7
+
+---------------- CAUCHY entered-------------------
+
+There are 3  breakpoints
+
+Piece      1 f1, f2 at start point -8.7770e-06  7.4558e-07
+Distance to the next break point =   7.7989e+03
+Distance to the stationary point =   1.1772e+01
+
+GCP found in this segment
+Piece      1 f1, f2 at start point -8.7770e-06  7.4558e-07
+Distance to the stationary point =   1.1772e+01
+Cauchy X =  1.86259 0.447615 1.89612 
+
+---------------- exit CAUCHY----------------------
+
+3  variables are free at GCP on iteration 8
+Time: 1.162Time: 0.644Time: 1.121Time: 1.230
+
+ans [1] = -33332.34
+MLEMAX [1] = -33332.34
+Time: 0.652Time: 0.744Time: 0.705Time: 0.648
+
+ans [1] = -33332.34
+MLEMAX [1] = -33332.34
+Time: 1.403Time: 0.646Time: 1.347Time: 0.699
+
+ans [1] = -33332.34
+MLEMAX [1] = -33332.34
+Time: 0.663Time: 0.685Time: 0.644Time: 0.703
+
+ans [1] = -33332.32
+MLEMAX [1] = -33332.32
+Time: 0.646Time: 0.685Time: 0.643Time: 0.689
+
+ans [1] = -33332.36
+MLEMAX [1] = -33332.32
+Time: 0.646Time: 1.201Time: 0.751Time: 1.333
+
+ans [1] = -33332.32
+MLEMAX [1] = -33332.32
+Time: 0.736Time: 0.638Time: 1.066Time: 0.642
+
+ans [1] = -33332.35
+MLEMAX [1] = -33332.32
+LINE SEARCH 0 times; norm of step = 0.103935
+X = 1.93355 0.435566 1.95947 
+G = -6.80082e-06 -0.000483599 -0.000465481 
+Iteration     8
+
+---------------- CAUCHY entered-------------------
+
+There are 3  breakpoints
+
+Piece      1 f1, f2 at start point -4.5059e-07  3.5556e-08
+Distance to the next break point =   1.7274e+04
+Distance to the stationary point =   1.2673e+01
+
+GCP found in this segment
+Piece      1 f1, f2 at start point -4.5059e-07  3.5556e-08
+Distance to the stationary point =   1.2673e+01
+Cauchy X =  1.93364 0.441694 1.96537 
+
+---------------- exit CAUCHY----------------------
+
+3  variables are free at GCP on iteration 9
+Time: 0.870Time: 0.696Time: 0.644Time: 0.669
+
+ans [1] = -33329.12
+MLEMAX [1] = -33329.12
+Time: 0.645Time: 0.689Time: 0.649Time: 0.814
+
+ans [1] = -33329.12
+MLEMAX [1] = -33329.12
+Time: 0.684Time: 0.903Time: 0.688Time: 0.642
+
+ans [1] = -33329.12
+MLEMAX [1] = -33329.12
+Time: 1.141Time: 0.669Time: 0.662Time: 0.695
+
+ans [1] = -33329.11
+MLEMAX [1] = -33329.11
+Time: 0.645Time: 1.316Time: 0.643Time: 1.088
+
+ans [1] = -33329.14
+MLEMAX [1] = -33329.11
+Time: 0.676Time: 0.641Time: 0.706Time: 0.644
+
+ans [1] = -33329.12
+MLEMAX [1] = -33329.11
+Time: 1.250Time: 0.679Time: 0.644Time: 0.674
+
+ans [1] = -33329.13
+MLEMAX [1] = -33329.11
+LINE SEARCH 0 times; norm of step = 0.435887
+X = 2.22063 0.404442 2.28599 
+G = 5.44676e-06 -0.00033204 -0.000226055 
+Iteration     9
+
+---------------- CAUCHY entered-------------------
+
+There are 3  breakpoints
+
+Piece      1 f1, f2 at start point -1.6138e-07  4.6127e-09
+Distance to the next break point =   3.4124e+04
+Distance to the stationary point =   3.4987e+01
+
+GCP found in this segment
+Piece      1 f1, f2 at start point -1.6138e-07  4.6127e-09
+Distance to the stationary point =   3.4987e+01
+Cauchy X =  2.22044 0.416059 2.2939 
+
+---------------- exit CAUCHY----------------------
+
+3  variables are free at GCP on iteration 10
+Time: 0.646Time: 0.670Time: 0.644Time: 0.823
+
+ans [1] = -33327.93
+MLEMAX [1] = -33327.93
+Time: 0.681Time: 0.645Time: 1.036Time: 0.671
+
+ans [1] = -33327.93
+MLEMAX [1] = -33327.93
+Time: 0.652Time: 0.751Time: 0.644Time: 0.921
+
+ans [1] = -33327.93
+MLEMAX [1] = -33327.93
+Time: 0.674Time: 0.642Time: 0.678Time: 0.649
+
+ans [1] = -33327.93
+MLEMAX [1] = -33327.93
+Time: 0.666Time: 0.665Time: 0.676Time: 0.710
+
+ans [1] = -33327.93
+MLEMAX [1] = -33327.93
+Time: 0.702Time: 0.732Time: 0.837Time: 0.875
+
+ans [1] = -33327.92
+MLEMAX [1] = -33327.92
+Time: 1.303Time: 1.237Time: 1.235Time: 1.262
+
+ans [1] = -33327.93
+MLEMAX [1] = -33327.92
+LINE SEARCH 0 times; norm of step = 0.353693
+X = 2.46445 0.389206 2.54176 
+G = 8.09344e-06 -5.70248e-05 -0.000100606 
+Iteration    10
+
+---------------- CAUCHY entered-------------------
+
+There are 3  breakpoints
+
+Piece      1 f1, f2 at start point -1.3439e-08  3.2023e-10
+Distance to the next break point =   7.4134e+04
+Distance to the stationary point =   4.1966e+01
+
+GCP found in this segment
+Piece      1 f1, f2 at start point -1.3439e-08  3.2023e-10
+Distance to the stationary point =   4.1966e+01
+Cauchy X =  2.46411 0.3916 2.54598 
+
+---------------- exit CAUCHY----------------------
+
+3  variables are free at GCP on iteration 11
+Time: 0.863Time: 0.756Time: 0.786Time: 0.866
+
+ans [1] = -33327.54
+MLEMAX [1] = -33327.54
+Time: 0.645Time: 0.637Time: 0.640Time: 0.639
+
+ans [1] = -33327.54
+MLEMAX [1] = -33327.54
+Time: 0.641Time: 0.637Time: 0.639Time: 0.638
+
+ans [1] = -33327.54
+MLEMAX [1] = -33327.54
+Time: 0.644Time: 0.637Time: 0.644Time: 0.638
+
+ans [1] = -33327.53
+MLEMAX [1] = -33327.53
+Time: 0.641Time: 0.637Time: 0.639Time: 0.638
+
+ans [1] = -33327.56
+MLEMAX [1] = -33327.53
+Time: 0.641Time: 0.637Time: 0.646Time: 0.673
+
+ans [1] = -33327.54
+MLEMAX [1] = -33327.53
+Time: 0.693Time: 0.697Time: 0.701Time: 0.676
+
+ans [1] = -33327.55
+MLEMAX [1] = -33327.53
+LINE SEARCH 0 times; norm of step = 0.289085
+X = 2.65626 0.372233 2.75738 
+G = 3.44713e-05 -0.000530321 -8.99798e-05 
+
+iterations 11
+function evaluations 13
+segments explored during Cauchy searches 11
+BFGS updates skipped 0
+active bounds at final generalized Cauchy point 0
+norm of the final projected gradient 0.000530321
+final function value 0.997957
+
+X = 2.65626 0.372233 2.75738 
+F = 0.997957
+final  value 0.997957 
+converged
+
+
+mle first round [1] = mle first round
+MLEVARIAB [3] = 1.698793 0.071181 2.757377
+MLEPARAM [3] = 1.698793 0.071181 2.757377
+MLEMAX [1] = -33327.53
+Time: 0.662Time: 0.671Time: 0.678Time: 0.694
+
+ans [1] = -33327.53
+MLEMAX [1] = -33327.53
+
+end MLE critical part ...
+$N = 3, M = 3 machine precision = 2.22045e-16
+L = 3.76469e-07 0.075509 0.0362664 
+X0 = 1 1 1 
+U = 3.76469 59.5968 3.62664 
+At X0, 0 variables are exactly at the bounds
+Time: 0.695Time: 0.680Time: 0.684Time: 0.663
+
+ans [1] = -33327.53
+MLEMAX [1] = -33327.53
+Time: 0.675Time: 0.687Time: 0.685Time: 0.668
+
+ans [1] = -33327.53
+MLEMAX [1] = -33327.53
+Time: 0.690Time: 0.708Time: 0.692Time: 0.678
+
+ans [1] = -33327.53
+MLEMAX [1] = -33327.53
+Time: 0.692Time: 0.681Time: 0.678Time: 0.668
+
+ans [1] = -33327.52
+MLEMAX [1] = -33327.52
+Time: 0.675Time: 0.679Time: 0.678Time: 0.676
+
+ans [1] = -33327.53
+MLEMAX [1] = -33327.52
+Time: 0.688Time: 0.692Time: 0.671Time: 0.701
+
+ans [1] = -33327.52
+MLEMAX [1] = -33327.52
+Time: 0.675Time: 0.673Time: 0.668Time: 0.682
+
+ans [1] = -33327.54
+MLEMAX [1] = -33327.52
+At iterate     0  f=            1  |proj g|=   0.00022335
+Iteration     0
+
+---------------- CAUCHY entered-------------------
+
+There are 3  breakpoints
+
+Piece      1 f1, f2 at start point -8.1057e-08  8.1057e-08
+Distance to the next break point =   1.1760e+04
+Distance to the stationary point =   1.0000e+00
+
+GCP found in this segment
+Piece      1 f1, f2 at start point -8.1057e-08  8.1057e-08
+Distance to the stationary point =   1.0000e+00
+Cauchy X =  0.999918 1.00016 1.00022 
+
+---------------- exit CAUCHY----------------------
+
+3  variables are free at GCP on iteration 1
+Time: 0.668Time: 0.666Time: 0.670Time: 0.668
+
+ans [1] = -33327.53
+MLEMAX [1] = -33327.52
+Time: 0.686Time: 0.674Time: 0.676Time: 0.660
+
+ans [1] = -33327.53
+MLEMAX [1] = -33327.52
+Time: 0.671Time: 0.691Time: 0.682Time: 0.702
+
+ans [1] = -33327.52
+MLEMAX [1] = -33327.52
+Time: 0.662Time: 0.675Time: 0.672Time: 0.663
+
+ans [1] = -33327.52
+MLEMAX [1] = -33327.52
+Time: 0.685Time: 0.702Time: 0.676Time: 0.705
+
+ans [1] = -33327.53
+MLEMAX [1] = -33327.52
+Time: 0.675Time: 0.699Time: 0.700Time: 0.673
+
+ans [1] = -33327.52
+MLEMAX [1] = -33327.52
+Time: 0.694Time: 0.665Time: 0.674Time: 0.661
+
+ans [1] = -33327.53
+MLEMAX [1] = -33327.52
+LINE SEARCH 0 times; norm of step = 0.000284705
+X = 0.999918 1.00016 1.00022 
+G = 8.04967e-05 -0.000151693 -0.000220086 
+
+iterations 1
+function evaluations 2
+segments explored during Cauchy searches 1
+BFGS updates skipped 0
+active bounds at final generalized Cauchy point 0
+norm of the final projected gradient 0.000220086
+final function value 1
+
+X = 0.999918 1.00016 1.00022 
+F = 1
+final  value 1.000000 
+converged
+
+
+old.control =  List of 6
+ $ trace   : num 6
+ $ lmm     : num 3
+ $ pgtol   : num 1e-04
+ $ factr   : num 1e+11
+ $ parscale: num [1:3] 0.639544 0.190716 1
+ $ fnscale : num -33395.8
+
+fnscale [1] = -33327.53
+revariab [3] = 1.698793 0.071181 2.757377
+param.table[[M]][IDX("param")] [3] = 1.698793 0.071181 2.757377
+MLEMAX [1] = -33327.52
+MLEVARIAB [3] = 1.698654 0.071193 2.76075
+MLEPARAM [3] = 1.698654 0.071193 2.76075
+MLELB [3] = 1e-06 0.005375 0.1
+MLEUB [3] = 6.395436 4.242187 10
+Time: 0.669Time: 0.673Time: 0.681Time: 0.666
+
+ans [1] = -33327.52
+MLEMAX [1] = -33327.52
+
+error checks ...
+
+'RMplus'
+. 'RMmatern'
+. . 'RMmatern'
+. . Continuing 'RMmatern' (no err):
+. Continuing 'RMS' (no err):
+. 'RMnugget'
+. Continuing 'RMnugget' (no err):
+Continuing 'RMplus' (no err):
+
+'RMplus'
+. 'RMmatern'
+. . 'RMmatern'
+. . Continuing 'RMmatern' (no err):
+. Continuing 'RMS' (no err):
+. 'RMnugget'
+. Continuing 'RMnugget' (no err):
+Continuing 'RMplus' (no err):
+preparing for returning ...
+calculating method 2 ... with nas filled ... 
+'RMplus'
+. 'RMmatern'
+. . 'RMmatern'
+. . Continuing 'RMmatern' (no err):
+. Continuing 'RMS' (no err):
+. 'RMnugget'
+. Continuing 'RMnugget' (no err):
+Continuing 'RMplus' (no err):
+AIC...
+Time: 0.675Time: 0.695Time: 0.663Time: 0.689calculating method 3 ... with nas filled ... 
+'RMplus'
+. 'RMmatern'
+. . 'RMmatern'
+. . Continuing 'RMmatern' (no err):
+. Continuing 'RMS' (no err):
+. 'RMnugget'
+. Continuing 'RMnugget' (no err):
+Continuing 'RMplus' (no err):
+AIC...
+Time: 0.692Time: 1.240Time: 0.695Time: 0.657calculating method 10 ... with nas filled ... 
+'RMplus'
+. 'RMmatern'
+. . 'RMmatern'
+. . Continuing 'RMmatern' (no err):
+. Continuing 'RMS' (no err):
+. 'RMnugget'
+. Continuing 'RMnugget' (no err):
+Continuing 'RMplus' (no err):
+AIC...
+Time: 0.705Time: 0.672Time: 0.692Time: 0.662
+hessian ...
+Time: 0.681Time: 0.697Time: 0.699Time: 0.693
+
+ans [1] = -33327.52
+MLEMAX [1] = -33327.52
+S3 / S4 ...

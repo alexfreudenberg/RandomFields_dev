@@ -1,0 +1,33 @@
+Team MS
+
+Sub-competition 1a:
+- Least Squares Variogram Fit as starting value for 
+- Maximum Likelihood Estimation of Gaussian Random Fields.
+
+Sub-competition 1b:
+- Neighbourhood Kriging with Gaussian Random Fields
+
+Sub-competition 1b:
+- Neighbourhood Kriging with Gaussian Random Fields
+
+Sub-competition 2a:
+- Least Squares Variogram Fit as starting value for 
+- Maximum Likelihood Estimation of Gaussian Random Fields; 
+- Sum of two Spherical Covariance Functions with different scale and 
+  variance parameters;
+- Neighbourhood Kriging with Gaussian Random Fields
+
+Sub-competition 2b:
+- Least Squares Variogram Fit as starting value for 
+- Maximum Likelihood Estimation of Gaussian Random Fields; 
+- Matern covariance function
+- Neighbourhood Kriging with Gaussian Random Fields
+
+
+Software:
+Schlather M, Malinowski A, Oesting M, Boecker D, Strokorb K, Engelke S, 
+Martini J, Ballani F, Moreva O, Auel J, Menck PJ, Gross S, Ober U, 
+Ribeiro P, Ripley BD, Singleton R, Pfaff B, R Core Team (2020). 
+RandomFields: Simulation and Analysis of Random Fields. 
+R package version 3.6.1, https://cran.r-project.org/package=RandomFields,
+https://github.com/alexfreudenberg/RandomFields_cracked/tree/master/RandomFields

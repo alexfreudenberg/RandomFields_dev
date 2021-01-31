@@ -1,13 +1,15 @@
+i <- as.numeric(commandArgs(trailingOnly=TRUE))
+sink(paste0("kaust/2a_log-",i,".txt"))
+
 library(RandomFields)
 RFoptions(pivot=PIVOT_NONE, cores=8, useGPU=TRUE, sub_optimiser="soma", optimiser="optim", print=7)
 
-i <- 1
 training <- read.csv(paste0("~/kaust/Sub-competition_2a/dataset",i,"_training.csv"))
 str(training)
 
-#n_training <- 2e4
-#sampled_rows_training <- sample(seq_len(nrow(training)), n_training)
-#system.time(vario <- RFvariogram(data=training[sampled_rows_training,]))
+n_training <- 5e4
+sampled_rows_training <- sample(seq_len(nrow(training)), n_training)
+system.time(vario <- RFvariogram(data=training[sampled_rows_training,]))
 #plot(vario)
 
 model <- ~ RMspheric(var=var1, scale=scale1) + RMspheric(var=var2, scale=scale2) + RMdeclare(scaleplus=scaleplus)
@@ -22,20 +24,17 @@ upper <- list(var1=20, var2=20, scale1=1, scaleplus=1)
 
 
 len <- length(training$x)
-split_index <- sapply(1:9, function(n)rep(n,len/9))
-split_df <- split(training[,1:2],split_index)
-split_val <- split(training[,3],split_index)
+#split_index <- sapply(1:90, function(n)rep(n,len/90))
+split_index <- floor(10*training$x)
+split_df <- split(training, split_index)
 
-fit2 <- RFfit(#model, param=param, lower=lower, upper=upper, 
-              RMmatern(nu=NA, var=NA, scale=NA),
-              x= split_df[1:4],
-              data=split_val[1:4], 
-              sub.methods="plain",
+fit2 <- RFfit(model, param=param, lower=lower, upper=upper, 
+              #RMmatern(nu=NA, var=NA, scale=NA),
+              data=split_df[c(1,2,4,8)], 
+              sub.methods="self",
               optim.control=list(trace=6,lmm=3))
 
-saveRDS(fit2, file="kaust/2a_fit.RDS")
-
-
+saveRDS(fit2, file=paste0("kaust/2a-", i, "_fit.RDS"))
 
 
 ###############
