@@ -1,0 +1,1 @@
+We trained 8 models in parallel at a time on an workstation equipped with an Intel Xeon E5-1630, 64 GB memory and an Nvidia RTX 2080 Ti GPU.
