@@ -11,12 +11,13 @@ RMcovariate(formula=NULL, data, x, y=NULL, z=NULL, T=NULL, grid, raw, %norm,
             addNA, factor, extra_data)
 }
 \arguments{
-  \item{formula, data}{formula and by which the data should be modelled,
+  \item{formula}{formula and by which the data should be modelled,
     similar to \link[stats]{lm}.
 
     If \code{formula} is not given, the the linear model is given by the
     data themselves.
   }
+  \item{data}{\argData}
   \item{x,y,z,T,grid}{optional.
     The usual arguments as in \command{\link{RFsimulate}} to define the
     locations where the covariates are given.
@@ -41,14 +42,9 @@ RMcovariate(formula=NULL, data, x, y=NULL, z=NULL, T=NULL, grid, raw, %norm,
   }
   \item{factor}{real value. From user's point of view very much the same
     as setting the argument \code{var}.}
-  \item{extra_data}{logical. If covariates are used and kriging is
-    performed a set of covariates is needed for the given data and for
-    the locations where prediction is performed. In this case a matrix
-    must be passed with two columns where the second column refers to
-    the given data and must have \code{".."} as column names. (The
-    shorter of the two covariate vectors has to be filled with \code{NA}s.)
-    In the multivariate case, columns for the given data and the for the
-    other locations alternate.  
+  \item{extra_data}{logical. In certain cases needed when
+    kriging or conditional simulation is performed. See details.
+    has to be filled with \code{NA}s at the bottom.)
   }
 }
 \note{
@@ -66,6 +62,17 @@ RMcovariate(formula=NULL, data, x, y=NULL, z=NULL, T=NULL, grid, raw, %norm,
 
   If \code{x} is not given, it is assumed that the globally given
   coordinates
+
+
+  
+    If covariates are used and kriging is
+    performed a set of covariates might be needed for the given data and for
+    the locations where prediction is performed. In this case a matrix
+    must be passed with doubled number of
+    columns where the second column refers to 
+    the given data. (The
+    shorter part of the two covariate vectors (or matrix)
+
 
 %  \NormDetails
 }

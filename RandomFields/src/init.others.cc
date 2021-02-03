@@ -91,7 +91,7 @@ void includeOtherModels() {
   // ******************
   pref_type pshapefct = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5};
         //           CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
-  SHAPE_FCT = IncludeModel("shape", ShapeType, // !!! nicht TrendTYpe
+  SHAPE_FCT = IncludeModel(RM_SHAPE, ShapeType, // !!! nicht TrendTYpe
 		       //       da wie ganz MathDef behandelt
 		       0, 0, 1,
 		       kappashapefct, 
@@ -153,7 +153,7 @@ void includeOtherModels() {
 
  
   COVARIATE = // intern ok
-    IncludeModel("covariate", ShapeType, 0, 0, 7, kappa_covariate,
+    IncludeModel(RM_COVARIATE, ShapeType, 0, 0, 7, kappa_covariate,
 		 XONLY, UNREDUCED, // zwingend bei RAW-Konstruktionen !!
 		 checkcovariate, rangecovariate, PREF_NOTHING, 
 		 INTERN_SHOW, PARAM_DEP, INFDIM-1, (ext_bool) false,
@@ -186,7 +186,7 @@ void includeOtherModels() {
   // is replaced by epsilon
 
   DECLARE =
-  IncludeModel("declare", // never change name without checking all .cc, .R
+  IncludeModel(RM_DECLARE, // never change name without checking all .cc, .R
 	       // TrendType, // warum trend??
 	       TcfType,
 	       0, 0, 16, kappa_declare, PREVMODEL_D, PREVMODEL_I,
@@ -282,9 +282,9 @@ void includeOtherModels() {
   addSpecial(minmaxEigenrotat);
 
 
-  IncludePrim("Rotat",  ShapeType, 1, NULL, XONLY, CARTESIAN_COORD,
-	      checkRotat, rangeRotat, PARAM_DEP, 3, (ext_bool) false, NOT_MONOTONE);
-  nickname("rotation");
+  IncludePrim("rotation",  ShapeType, 1, NULL, XONLY, CARTESIAN_COORD,
+	      checkRotat, rangeRotat, PARAM_DEP, 3, (ext_bool) false,
+	      NOT_MONOTONE);
   addCov(Rotat);
   kappanames("phi", REALSXP);
 
@@ -425,7 +425,7 @@ void includeOtherModels() {
  
   DISTRIBUTION = // FREEVARIABLE vorhanden. Muss extra in SpecialRMmodel.R
 		 // definiert und nicht ueber generatemodels.R 
-    IncludeModel("distr", RandomType, 0, 0, 16, kappa_distr, 
+    IncludeModel(RM_DISTR, RandomType, 0, 0, 16, kappa_distr, 
 		 DOMAIN_MISMATCH, ISO_MISMATCH, // set to "cart sys"
 		 check_distr, range_distr, PREF_AUX,
 		 true, PARAM_DEP, INFDIM-1, (ext_bool) false, MON_MISMATCH);
@@ -931,7 +931,7 @@ void includeOtherModels() {
     IncludeModel(METHOD_NAMES[Shapefctproc], ProcessType, 
 		 0, 1, 1, kappashapefct, XONLY, UNREDUCED,
 		 checkShapefctproc, rangeshapefct, PREF_TREND,
-		 false, SUBMODEL_DEP, INFDIM-1, (ext_bool) false,
+		 true, SUBMODEL_DEP, INFDIM-1, (ext_bool) false,
 		 MON_MISMATCH);
   addSpecific(SHAPE_FCT);
   RandomShape(2, init_Shapefctproc, do_Shapefctproc);

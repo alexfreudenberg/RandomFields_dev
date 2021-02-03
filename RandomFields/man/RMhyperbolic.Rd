@@ -7,9 +7,9 @@
  The corresponding covariance function only depends on the distance
  \eqn{r \ge 0}{r \ge 0} between two points and is given by
  \deqn{C(r) = \frac{(\delta^2+r^2)^{\nu/2}
- K_\nu(\xi(\delta^2+r^2)^{1/2})}{\delta^\nu K_\nu(\xi
+ K_\nu(\lambda(\delta^2+r^2)^{1/2})}{\delta^\nu K_\nu(\lambda
  \delta)}}{C(r) = \delta^(-\nu) (K_\nu(\nu \delta))^{-1}
- (\delta^2+r^2)^{\nu/2} K_\nu(\xi(\delta^2+r^2)^{1/2})}
+ (\delta^2+r^2)^{\nu/2} K_\nu(\lambda(\delta^2+r^2)^{1/2})}
  where \eqn{K_{\nu}}{K_\nu} denotes the modified Bessel function of
  second kind. 
 }
@@ -19,11 +19,11 @@ RMhyperbolic(nu, lambda, delta, var, scale, Aniso, proj)
 \arguments{
  \item{nu, lambda, delta}{numerical values; should either satisfy\cr
  \eqn{\delta \ge 0}{\delta \ge 0}, \eqn{\lambda > 0}{\lambda > 0}
- and \eqn{\nu > 0}{\nu > 0}, or\cr
+ and \eqn{\nu > -1/2}{\nu > -1/2}, or\cr
  \eqn{\delta > 0}{\delta > 0}, \eqn{\lambda > 0}{\lambda > 0} and
- \eqn{\nu = 0}{\nu = 0}, or\cr
+ \eqn{\nu = -1/2}{\nu = -1/2}, or\cr
  \eqn{\delta > 0}{\delta > 0}, \eqn{\lambda \ge 0}{\lambda \ge 0}
- and \eqn{\nu < 0}{\nu < 0}.}
+ and \eqn{\nu < -1/2}{\nu < -1/2}.}
  \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
@@ -31,7 +31,7 @@ RMhyperbolic(nu, lambda, delta, var, scale, Aniso, proj)
 \details{
  This class is over-parametrized, i.e. it can be reparametrized by
  replacing the three parameters \eqn{\lambda}{\lambda},
- \eqn{\delta}{\delta} and scale by two other parameters. This means
+ \eqn{\delta}{\delta} and \code{scale} by two other parameters. This means
  that the representation is not unique.
 
  Each generalized hyperbolic covariance function is a normal scale

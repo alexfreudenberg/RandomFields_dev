@@ -509,9 +509,9 @@ ConvertRMlist2string <- function(model) {
                                                       paste(x, collapse=","),
                                                       if (length(x) > 1) ")")))
 
-  if (model[[1]] %in% DOLLAR &&
+  if (model[[1]] %in% RM_S &&
       length(sub) == 1 && ## may be scale or var are given by models
-      !(model[subi][[1]] %in% c(RM_PLUS, RM_MULT, DOLLAR))) {
+      !(model[subi][[1]] %in% c(RM_PLUS, RM_MULT, RM_S))) {
     n <- nchar(sub)
     return(paste0(substring(sub, 1, n - 1),
                   if (substring(sub, n - 1, n - 1) != "(") ", ",
@@ -629,6 +629,7 @@ calculateRFplot <- function(model_,
 
   RFopt <- internalRFoptions(getoptions_=c("internal", "graphics", "basic"))
   graphics <- RFopt$graphics  ##
+  ## Print(RFopt, graphics)
   plotMethods <- c("plot.xy", "image", "matplot", "contour", "persp", "none")
   if (is.contour <- is.character(plotmethod)) { # else a function
     pm <- pmatch(plotmethod, plotMethods)
@@ -669,6 +670,9 @@ calculateRFplot <- function(model_,
 
   dotnames <- names(dots) ## alles namen werden gebraucht
   dots <- mergeWithGlobal(dots[!models])
+
+  ## Print(dots)
+  
   ylim <- dots$ylim
   xlim <- dots$xlim
 
@@ -702,6 +706,7 @@ calculateRFplot <- function(model_,
   for (i in 1:length(model)) {
     fctn.type <- fctnTypes
     m0 <- model[[i]]
+    ## Print(m0)    
     if (is(m0, CLASS_SINGLEFIT)) m0 <- if (isS4(m0)) m0@model else m0$model
     m <- list("", PrepareModel2(m0, xdim=dim, params=params)$model)
     ##    Print(m, i, no.dot)
@@ -724,9 +729,10 @@ calculateRFplot <- function(model_,
                               reg=MODEL_AUX, RFopt=RFopt, NAOK=FALSE))
         ## !! result of MODEL_AUX may not be used for model evaluation !!
         ## since RMcovariate is wrongly evaluated !!
+
         if (is.numeric(vdim)) break
         if (RFopt$basic$printlevel >= PL_ERRORS)
-          cat(strsplit(vdim$ message, "\n")[[1]][2], "\n")
+          cat(strsplit(vdim$message, "\n")[[1]][2], "\n")
       }
       if (is.numeric(vdim)) break
       fctn.type <- fctn.type[-1]
@@ -812,14 +818,17 @@ calculateRFplot <- function(model_,
   dimnames(value) <- c(rep(list(NULL), length(dimvalue) - 1), list(mnames))
 
 ##  for (i in 1:2) for(j in 1:2) { matplot(coords, value[, i, j,]); readline()}
-
+## Print("ende", dots)
   dots$xlim <- xlim
   if (!is.null(ylim)) dots$ylim <- ylim
-  L <- list(coords=coords, value=value, ## model=x,
-            fctncall=fctncall, distance=distance,
+  L <- list(coords=coords,
+            value=value, ## model=x,
+            fctncall=fctncall,
+            distance=distance,
             MARGIN=if(!missing(MARGIN)) MARGIN,
             fixed.MARGIN=if(!missing(fixed.MARGIN))fixed.MARGIN,
             distanceY=distanceY,
+            verballist=verballist,
             dots=dots,
             vdim = all.vdim[1],
             graphics = graphics)
@@ -840,53 +849,54 @@ RFplotModel <- function(x, y, dim=1,
                             MARGIN = MARGIN, fixed.MARGIN = fixed.MARGIN,
                             ..., params=params, plotmethod=plotmethod)
   
-  for (i in names(L)) assign(i, L[[i]])
+ ## for (i in names(L)) assign(i, L[[i]])
   if (plotmethod == "none") return(L)
+  dots <- L$dots
 
   if (is(x, CLASS_PLOT)) {
     Dots <- list(...)
     dots[names(Dots)] <- Dots
   }
 
-  dimvalue <- dim(value)
-  mnames <- dimnames(value)[[length(dimvalue)]]
+  dimvalue <- dim(L$value)
+  mnames <- dimnames(L$value)[[length(dimvalue)]]
   n.models <- length(mnames)
   various.models <- n.models > 1
   dotnames <- names(dots)
 
-  if (is.list(fctncall)) {
-    Len <- length(fctncall[[1]])
-    if (same.calls <- all(sapply(fctncall, function(x) length(x) == Len))) {
-      same.calls <- all(unlist(fctncall) == unlist(fctncall))
+  if (is.list(L$fctncall)) {
+    Len <- length(L$fctncall[[1]])
+    if (same.calls <- all(sapply(L$fctncall, function(x) length(x) == Len))) {
+      same.calls <- all(unlist(L$fctncall) == unlist(L$fctncall))
     }
-  } else same.calls <- all(fctncall[1] == fctncall)
+  } else same.calls <- all(L$fctncall[1] == L$fctncall)
   ylab <- if (same.calls) {
             alpha <- 0
-            if (is.list(fctncall)) {
-              if (is.list(fctncall)) fctncall <- fctncall[[1]]
-              if (is.list(fctncall)) {
-                alpha <- fctncall$alpha ## vorhanden gdw Pseudomadogram
-                fctn.call <- fctncall[[1]]
-              } else fctncall <- fctncall[1]
-            } else fctncall <- fctncall[1]
-            switch(fctncall,
+            if (is.list(L$fctncall)) {
+              if (is.list(L$fctncall)) L$fctncall <- L$fctncall[[1]]
+              if (is.list(L$fctncall)) {
+                alpha <- L$fctncall$alpha ## vorhanden gdw Pseudomadogram
+                fctn.call <- L$fctncall[[1]]
+              } else L$fctncall <- L$fctncall[1]
+            } else L$fctncall <- L$fctncall[1]
+            switch(L$fctncall,
                    "Covariance" = "C(distance)",
-                   "Variogram" = expression(gamma(distance)),
+                   "Variogram" = expression(gamma(L$distance)),
                    "Fctn" = "f(distance)",
                    "Pseudomadogram" = {
                      if (alpha == PSEUDOMADOGRAM) {
-                       if (vdim == 1) "Madogram" else "Pseudomadogram"
-                     } else if (alpha == PSEUDO) {
-                       if (vdim == 1) "Variogram" else "Pseudovariogram"
+                       if (L$vdim == 1) "Madogram" else "Pseudomadogram"
+                     } else if (alpha == PSEUDOVARIOGRAM) {
+                       if (L$vdim == 1) "Variogram" else "Pseudovariogram"
                      } else paste0(if (alpha != 0) "alpha-",
-                                   if (vdim == 1) "Madrogram"
+                                   if (L$vdim == 1) "Madrogram"
                                    else "Pseudomadogram",
                                    if (alpha != 0) paste0(" for alpha=",
                                                           abs(alpha)))
                    },
                    "Madogram" = "Madogram",
                    "Pseudovariogram" = "Pseudovariogram",
-                   stop("method only implemented for ", verballist))
+                   stop("method only implemented for ", L$verballist))
           } else "f(distance)"
 
   lab <- if (dim == 1) xylabs("distance", ylab) else xylabs("", "")
@@ -898,9 +908,9 @@ RFplotModel <- function(x, y, dim=1,
                 "\n", sep="")
     if (dim >= 3)
       main <- paste(sep="", main, ";  component", if (dim>3) "s", " ",
-                    paste((1:dim)[-MARGIN], collapse=", "), 
+                    paste((1:dim)[-L$MARGIN], collapse=", "), 
                     " fixed to the value", if (dim>3) "s", " ",
-                    paste(format(fixed.MARGIN, digits=4), collapse=", "))
+                    paste(format(L$fixed.MARGIN, digits=4), collapse=", "))
    dots$main <- main
   }
 
@@ -925,17 +935,17 @@ RFplotModel <- function(x, y, dim=1,
    
   scr <- NULL
   if (length(dimvalue) == 2) { ## i.e. vdim == 1
-    if (plotmethod != "plot.xy") ArrangeDevice(graphics, c(1,1))
+    if (plotmethod != "plot.xy") ArrangeDevice(L$graphics, c(1,1))
     if (!("lty" %in% dotnames)) dots$lty <- 1:5
-    singleplot(cov=value, dim=dim, plotmethod=plotmethod, dots=dots,
-               distance=distance, distanceY=distanceY, 
+    singleplot(cov=L$value, dim=dim, plotmethod=plotmethod, dots=dots,
+               distance=L$distance, distanceY=L$distanceY, 
                dotnames=dotnames)
 
     if (various.models) legend(x="topright", legend=mnames,
                              col=dots$col, lty=dots$lty)
   } else { ## multivariate
     figs <- dimvalue[c(-1, -length(dimvalue))]
-    if (plotmethod != "plot.xy") ArrangeDevice(graphics, figs)
+    if (plotmethod != "plot.xy") ArrangeDevice(L$graphics, figs)
                                         #plot(Inf, Inf, axes=FALSE, xlim=c(0,1), ylim=c(0,1))
     par(oma=dots$oma)
     scr <- matrix(split.screen(erase=!FALSE, figs=figs), ncol=dimvalue[2],
@@ -954,11 +964,11 @@ RFplotModel <- function(x, y, dim=1,
         screen(scr[i,j], new=FALSE)
         par(mar=dots$mar)
 
-        v <- value[,i,j,]
+        v <- L$value[,i,j,]
         dim(v) <- dimvalue[c(1,4)]
         singleplot(cov = v,
                    dim = dim, plotmethod=plotmethod, dots=dots,
-                   distance=distance, distanceY=distanceY, 
+                   distance=L$distance, distanceY=L$distanceY, 
                    dotnames = dotnames)
 
         box()
@@ -970,7 +980,7 @@ RFplotModel <- function(x, y, dim=1,
     }
   }
 
-  if (graphics$split_screen && graphics$close_screen) {
+  if (L$graphics$split_screen && L$graphics$close_screen) {
     close.screen(scr)
     scr <- NULL
   }
@@ -1004,10 +1014,10 @@ list2RMmodel <- function(x) {
   
   len <- length(x)
   
-  if (name %in% DOLLAR) return(list2RMmodel(c(x[[len]], x[-c(1, len)])))
-#  if (name == RM_DISTR[1]){
+  if (name %in% RM_S) return(list2RMmodel(c(x[[len]], x[-c(1, len)])))
+#  if (name == RM_DISTR){
 #    x <- x[-1]
-#    m <- do.call(RM_DISTR[1], args=list())
+#    m <- do.call(RM_DISTR, args=list())
 #    m@par.model <- x
 #    return(m)
 #  }

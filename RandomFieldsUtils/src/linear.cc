@@ -37,8 +37,7 @@ PKG_CXXFLAGS =  $(SHLIB_OPENMP_CXXFLAGS)  -march=native -mssse3
 #include "kleinkram.h"
 #include "linear.h"
 #include "intrinsics.h"
-#include "Basic_utils.h"
-#include "errors_messages.h"
+#include "RFU.h"
 
 #define Nlinmodi 9
 name_type linmodi = { "1x1", "2x2", "4x4", "8x8", "near", "simple", "precise",

@@ -115,6 +115,9 @@ approx_test_single <- function(model, method, alpha, modelinfo) {
     m <- model[[method]]
   }
 
+  submodels <- number.of.parameters <- likelihood <- report <-
+    p.proj <- v.proj <- x.proj <- true.tsdim <- true.vdim <- AIC <-
+      BIC <- number.of.data <- modelAsList <- NULL
   for (i in c("submodels", "number.of.parameters", "likelihood", "report",
               "p.proj", "v.proj", "x.proj", "true.tsdim", "true.vdim", "AIC",
               "BIC", "number.of.data", "modelAsList"))
@@ -366,13 +369,18 @@ RFratiotest <- function(nullmodel, alternative, ## no params as output of RFfit
                  distances=distances, dim=dim, RFopt=RFopt,
                  further.models = list(alternative),
                  ...)
-  aternative <- Z$further.models[[1]]
-  nullmodel <- Z$model 
+  alternative <- Z$further.models[[1]]
+  nullmodel <- Z$model
+
+##  Print("************************************************************")
 
   values <- Try(GetValuesAtNA(NAmodel=nullmodel, valuemodel=alternative,
                             #  spatialdim=Z$spatialdim, Time=Z$has.time.comp,
-                           #   shortnamelength=3,
+                                        #   shortnamelength=3,
+                              type="null model", C_coords = Z$C_coords,
                               skipchecks=FALSE))
+
+##  Print("++++++++++++++++++++++++++++++++++++++++++++++++++")
 
   isSubmodel <- is.numeric(values) && all(is.na(values))
   if (!isSubmodel && printlevel >= PL_IMPORTANT)
@@ -382,15 +390,18 @@ RFratiotest <- function(nullmodel, alternative, ## no params as output of RFfit
   data.fit <- list()
   guess <- users.guess
 
+##  Print(Z, data)
+
   for (m in 1:length(model.list)) {
+  ##  Print(m, "data.fit", model.list[[m]])
     data.fit[[m]] <-
       RFfit(COPY=FALSE,
-            model.list[[m]], x=x, y=y, z=z, T=T, grid=grid, data=data,
+            model.list[[m]], x=Z$coords, data=Z$data,
             lower=lower, upper=upper,
             methods=methods,
-            sub.methods=sub.methods, optim.control=optim.control,
+            sub.methods=sub.methods,
+            optim.control=optim.control,
             users.guess=guess,
-            distances=distances, dim=dim,
             ..., spConform = FALSE)
     guess <- if (isSubmodel) data.fit[[m]]$ml$model else NULL
   }

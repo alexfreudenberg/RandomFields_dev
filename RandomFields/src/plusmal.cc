@@ -322,7 +322,7 @@ void rangeselect(model VARIABLE_IS_NOT_USED *cov, range_type *range){
 }
 
 
-
+//int zaehler = 0;
 void plus(double *x, int *info, model *cov, double *v){
   model *sub;
   int i, m,
@@ -332,6 +332,9 @@ void plus(double *x, int *info, model *cov, double *v){
   bool *conform = cov->Splus->conform;
 
   TALLOC_XX1(z, vsq);
+
+  //printf("vsq=%d\n", vsq);
+  // if (zaehler > 20299) printf("cross plus %d %ld\n", zaehler,  v); zaehler++;
 
   for (m=0; m<vsq; v[m++] = 0.0);
  
@@ -636,7 +639,7 @@ void spectralplus(model *cov, gen_storage *s, double *e){
   assert(VDIM0 == 1);
   int nr;
   double dummy;
-  spec_properties *cs = &(s->spec);
+  spectral_storage *cs = &(s->Sspectral);
   double *var_cum = cs->sub_var_cum; // UNKLAR: SD ODER VAR ?? 12.3.19
 
   nr = cov->nsub - 1;
@@ -688,7 +691,7 @@ int initplus(model *cov, gen_storage *s){
   for (int i=0; i<maxv; i++) cov->mpp.maxheights[i] = RF_NA;
 
   if (hasGaussMethodFrame(cov)) {
-    spec_properties *cs = &(s->spec);
+    spectral_storage *cs = &(s->Sspectral);
     double *var_cum = cs->sub_var_cum;
  
     if (VDIM0 == 1) {
@@ -1052,7 +1055,7 @@ int initmal(model *cov, gen_storage *s){
   for (int i=0; i<maxv; i++)cov->mpp.maxheights[i] = RF_NA;
 
   if (hasGaussMethodFrame(cov)) {
-    spec_properties *cs = &(s->spec);
+    spectral_storage *cs = &(s->Sspectral);
  
     if (VDIM0 == 1) {
       for (int i=0; i<nsub; i++) {
@@ -1417,8 +1420,8 @@ int checkplusproc(model *cov) {
 
 
 int structplusmalproc(model *cov, model VARIABLE_IS_NOT_USED**newmodel){
-  int err,
-    dim =  PREVXDIM(0);
+  int //dim =  PREVXDIM(0),
+    err;
   switch(cov->frame) {
   case GaussMethodType : {
     ONCE_NEW_STORAGE(plus);
@@ -1478,8 +1481,7 @@ int structplusmalproc(model *cov, model VARIABLE_IS_NOT_USED**newmodel){
 		       GaussMethodType)) != NOERROR) {
 	RETURN_ERR(err);
       }
-
-     
+    
       if ((err = STRUCT(STOMODEL->keys[m], NULL))  > NOERROR) RETURN_ERR(err);
       
     }
@@ -1712,12 +1714,21 @@ void domultproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
       else {	  
 	factors ++;
 	DO(key, sub->Sgen);
-	for(int i=0; i<totalvdim; i++) res[i] *= keyrf[i];
+	for(int i=0; i<totalvdim; i++){
+	  res[i] *= keyrf[i];
+
+	  //if (!R_finite(keyrf[i]) || (i < 2 && keyrf[i] != 0.0 && FABS(keyrf[i]) < 1e-308))  printf("c=%d, m=%d i =%d,  %e\n",  c, m, i, keyrf[i]);
+	  
+	}
       }
     }
     if (factors == 1) return; // no Error, just exit
     if (c == 0) res = z;
-    else for(int i=0; i<totalvdim; i++) cov->rf[i] += res[i];
+    else for(int i=0; i<totalvdim; i++) {
+	//if (!R_finite(res[i]) || (i < 2 && res[i] != 0.0 && FABS(res[i]) < 1e-308)) printf("c=%d, i =%d,  %e\n",  c, i, res[i]);
+	cov->rf[i] += res[i];
+      }
+    //    if (cov->rf != NULL) printf("mult :: %e %e\n", cov->rf[0], cov->rf[1]);  else printf("mlt cov->rf == NULL");
   }
 
   double f;
@@ -1726,7 +1737,7 @@ void domultproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
   for(int i=0; i<totalvdim; i++) cov->rf[i] *= f;
 
   END_TALLOC_X1;
-
+  //  printf("mult done %e %e\n", cov->rf[0], cov->rf[1]);
 }
 
 

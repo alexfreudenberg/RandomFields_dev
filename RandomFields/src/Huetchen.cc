@@ -101,7 +101,7 @@ void closest(double *x, model *cov, double *delta) {
       start = gr[d][XSTART],
       step = gr[d][XSTEP],
       idx = ROUND((x[d] - start) / step),
-      maxidx = gr[d][XLENGTH] - 1.0;
+      maxidx = gr[d][XLENGTH] - 1.0; // OK
     idx = idx < 0.0 ? 0.0 : idx > maxidx ? maxidx : idx;
     delta[d] = x[d] - (start + idx * step);
   }
@@ -1445,7 +1445,7 @@ getStorage(pgs ,   pgs);
     // um Pythagoras fuer dim > 1
     pgs->totalmass = 1;
     for (d=0; d<dim; d++) { // Berechnung der ausgeduennten Reihe
-      if (gr[d][XLENGTH] > 1) {
+      if ((int) gr[d][XLENGTH] > 1) {
 	double range = gr[d][XSTEP] * (gr[d][XLENGTH] - 1.0);
 	xgr[d][XLENGTH] = CEIL(range / y[d] + 1.0);
 	if (xgr[d][XLENGTH] >= gr[d][XLENGTH]) {
@@ -1456,9 +1456,8 @@ getStorage(pgs ,   pgs);
 	    gr[d][XSTART] - 0.5 *((xgr[d][XLENGTH] - 1.0) * y[d] - range);
 	  xgr[d][XSTEP] = y[d];
 	}
-	pgs->totalmass *= xgr[d][XLENGTH];
+	pgs->totalmass *= (int) xgr[d][XLENGTH];
       
-      // printf("%d %10g %10g %10g \n", d,xgr[d][XSTART], xgr[d][XSTEP], xgr[d][XLENGTH] ); 
 	assert(xgr[d][XSTEP] >= 0);
       } else {
 	int i; assert(XSTART == 0 && XLENGTH == 2);
@@ -1466,9 +1465,6 @@ getStorage(pgs ,   pgs);
       }
 
     }
-    //for (d=0; d<=1; d++)
-    //    printf("%d %10g %10g %10g \n", d,xgr[d][XSTART], xgr[d][XSTEP], xgr[d][XLENGTH] );    assert(false);
-
   } else { // not grid
     pgs->totalmass = Loctotalpoints(cov);
   }
@@ -1532,7 +1528,7 @@ getStorage(pgs ,   pgs);
     for (d=0; d<dim; d++) {
       //printf("e1 %10g %10g\n", x[d], y[d]);
       int which = i % (int) xgr[d][XLENGTH];
-      i /= xgr[d][XLENGTH];
+      i /= (int) xgr[d][XLENGTH];
       cov->q[d] = xgr[d][XSTART] + xgr[d][XSTEP] * which + v[d];
       // to determine the points that contribute to the value of the 
       // density function at cov->q

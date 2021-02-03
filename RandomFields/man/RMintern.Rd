@@ -29,7 +29,7 @@
 \alias{RPplus}
 \alias{RPmult}
 \alias{RPmppplus}
-\alias{RPtrend}
+%\alias{RPtrend}
 
 \title{Internal models}
 \description{
@@ -51,7 +51,10 @@ The following and many more internal models exist:
 
    \item \code{ROmissing} : for error messages only
 
-   \item \code{RMmixed} : internal representation of a \link[=formula]{mixed model}
+ %  \item \code{RMmixed} : internal representation of a
+ %  \link[=formula]{mixed model}
+
+ 
 
    \item \code{RMselect} : will be obsolete in future
 
@@ -65,9 +68,9 @@ The following and many more internal models exist:
    \link{RMS} and  \link{RMplus} etc. (For those covariance models that
    have specific simulation processes programmed.)
 
-   \item \command{\link{RMS}} : internal representation of
-   the modifying arguments \code{var}, \code{scale}, \code{Aniso},
-   \code{proj}
+%   \command{RPtrend} is the process for \command{\link{RMshape}},
+%   which is constant almost surely.  % internal currently
+
  }
  }
 

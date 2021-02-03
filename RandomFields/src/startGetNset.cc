@@ -629,6 +629,7 @@ void do_statiso(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
 }
 
 void nickname(const char *name, int nr, int type) {
+  if (name[0] == 'R') name += 2;
   char dummy[MAXCHAR];
   defn *C = DefList + nr; // nicht gatternr
   int sl = STRLEN(CAT_TYPE_NAMES[type]);  
@@ -1149,12 +1150,13 @@ int IncludeModel(const char *name, Types type, int minsub, int maxsub,
 		 int vdim, int maxdim, ext_bool finiterange,
 		 monotone_type monotonicity) {  
   //    assert(maxsub > 0); // check deleted 25. nov 2008 due to nugget 
-  // printf("name = %s\n", name);
+  //  printf("name = %s\n", name);
 
   createmodel(name, type, kappas, kappasize, domain, isotropy, check,
 	      range, range_multi,
 	      vdim, pref, maxdim, finiterange, monotonicity);
   assert(!isPrevModelI(isotropy) || maxsub != 0 || isMathDef(type)
+	 || STRCMP(RM_DECLARE, name) == 0
 	 || STRCMP("shape", name) == 0
 	 || STRCMP("U", name) == 0 
 	 || STRCMP("declare", name) == 0 

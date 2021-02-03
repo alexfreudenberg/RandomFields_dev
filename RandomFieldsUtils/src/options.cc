@@ -25,11 +25,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <omp.h>
 #endif
 #include <unistd.h>
+#include "options.h"
 #include "General_utils.h"
 #include "kleinkram.h"
 #include "zzz_RandomFieldsUtils.h"
-#include "options.h"
 #include "xport_import.h"
+#include <time.h>
 
 #define PLverbose 2
 
@@ -69,6 +70,69 @@ int numCPU = MAXINT;
 #endif
 
 
+
+
+int doPosDef(double *M0, int size, bool posdef,
+	     double *rhs0, int rhs_cols, double *result,
+	     double *logdet, int calculate, solve_storage *Pt,
+	     solve_param *sp);
+
+
+#define FASTER 1.3 // 1.3 as for typical application of likelihood,
+// the determinant calculation in RandomFieldsUtils is for free. Somehow a
+// balance
+int own_chol_up_to(int size, int maxtime) {
+  if (size <= 0) return true;
+  Long delta[2];
+  solve_param sp;						       
+  MEMCOPY(&sp, &(GLOBAL.solve), sizeof(solve_param)); 
+  sp.Methods[0] = Cholesky;					     
+  sp.Methods[1] = NoFurtherInversionMethod;
+  int zaehler = 0;
+  double old_quotient = RF_NAN;
+  // basic assumption is that R implementation's getting faster
+  // for larger matrices
+  while (true) {
+    int size1 = size + 1,
+    sizesq = size * size;
+    double *M = (double*) CALLOC(sizesq, sizeof(double));
+    for (int j=0; j<=1; j++) {
+      for (int i=0; i<sizesq; i+=size1) M[i] = 1.0;
+      M[1] = M[size] = 1e-5;
+      sp.pivot = j == 0 ? PIVOT_NONE : PIVOT_NONE_R;
+      clock_t start = clock();
+      doPosDef(M, size, true, NULL, 0, NULL, NULL, MATRIXSQRT, NULL, &sp);   
+      delta[j] = (Long) clock() - start; 
+      if (delta[j] < 0) delta[j] += MAXINT; // manual: 32bit repres. of clock
+      //
+      if (j==0) MEMSET(M, 0, sizesq * sizeof(double));
+    }
+    FREE(M);
+    if (PL > 0)
+      PRINTF("Cholesky decomposition for a %d x %d matrix needs %ld and %ld [mu s] on R and facile code, respectively.\n", size, size, delta[1], delta[0]);
+    if (delta[0] > maxtime || delta[1] > maxtime ||
+	delta[0] >= FASTER * delta[1]) break;
+    old_quotient = (double) delta[0] / delta[1];
+    size *= 2;
+  }
+  double new_quotient = (double) delta[0] / delta[1];
+  if (new_quotient < FASTER) return MAXINT;
+  if (!R_FINITE(old_quotient)) {
+   int compare = own_chol_up_to(size / 2, 0);
+   return compare == MAXINT ? size : compare;
+  }
+  double x0 = 0.5 * size * (1.0 + (FASTER - old_quotient) /
+			    (new_quotient - old_quotient)); //lin interpol
+  assert(x0 >= 0.5 * size && x0 <= size);
+  int compare = own_chol_up_to((int) x0, 0);
+  //  printf("%f %f %f %f %d %d\n", x0,FASTER,  old_quotient, new_quotient, size, compare);
+  return (int) (compare == MAXINT ?  x0 : 0.5 * size);
+}
+int own_chol_up_to() {
+  return own_chol_up_to(256, 50000);
+}
+
+
 void setoptions(int i, int j, SEXP el, char name[LEN_OPTIONNAME], 
 		       bool isList, bool local) {
   //  printf("i=%d j=%d\n", i, j);
@@ -102,6 +166,9 @@ void setoptions(int i, int j, SEXP el, char name[LEN_OPTIONNAME],
 	PRINTF("The system does not allow for OpenMP: the value 1 is kept for 'cores'.");
       }      
 #endif
+      if (!isList && GLOBAL.solve.pivot == PIVOT_NONE_AUTO)
+	GLOBAL.solve.pivotMaxTakeOwn = own_chol_up_to();
+
       CORES = gp->cores;
       break;
     case 4: gp->skipchecks = LOGI;    break;
@@ -172,7 +239,9 @@ void setoptions(int i, int j, SEXP el, char name[LEN_OPTIONNAME],
 	so->pivot = PIVOT_NONE;
 	ERR("'pivot' must be PIVOT_NONE if 'useGPU=TRUE'");
       }
-      if (so->pivot > PIVOTLAST) so->pivot = PIVOT_UNDEFINED;
+      if (!isList && so->pivot == PIVOT_NONE_AUTO)
+	GLOBAL.solve.pivotMaxTakeOwn = own_chol_up_to();
+     if (so->pivot > PIVOTLAST) so->pivot = PIVOT_UNDEFINED;
       break;    
     case 13: if (!isList) {
       int len = length(el);

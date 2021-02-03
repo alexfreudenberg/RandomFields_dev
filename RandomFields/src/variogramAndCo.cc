@@ -34,7 +34,6 @@ model* wheregenuineStatOwn(model *cov) {
     sub = sub->sub[0];
     while (equalsnowGaussMethod(sub) || SUBNR==GAUSSPROC) sub = sub->sub[0];
   } else if (isnowProcess(sub)) {
-    NotProgrammedYet("");
   };
 
   if (cov->pref[Nothing] == PREF_NONE ||
@@ -51,7 +50,7 @@ model* wheregenuineStatOwn(model *cov) {
 } 
 
 
-#define STANDARDSTART(ignore_x, ignore_y, TOTX, TOTY, I_BASE)	\
+#define STANDARDSTART(ignore_x, ignore_y, TOTX, TOTY, I_COL_BASE)	\
   model *cov = Cov;					\
   assert(cov != NULL); 				\
   if (equalsnowGaussMethod(cov) || COVNR==GAUSSPROC) cov = cov->sub[0];	\
@@ -67,12 +66,12 @@ model* wheregenuineStatOwn(model *cov) {
   assert(calling != NULL);						\
   if ((calling)->Sfctn == NULL) { BUG; }				\
   model *genuine = wheregenuineStatOwn(cov); /* might have gaussmethod-proc 28.12.20: genuine nicht durch cov ersetzten!! (Konflikt in FINISH_START) */;\
-  FINISH_START(calling, cov, ignore_x, ignore_y, 0, TOTX, TOTY, I_BASE); \
+  FINISH_START(calling, cov, ignore_x, ignore_y, 0, TOTX, TOTY, I_COL_BASE); \
   double *cross = fctn->cross			        
 
 //  printf("OKcc\n\n");PMI0(calling);PMI0(cov);assert(calling != NULL && (equalsnowInterface(calling) || isnowProcess(calling))); printf("OK\n\n");
 
-
+ 
 /* assert(VDIM0 == VDIM1); */	
 void CovVario(model *Cov, bool is_cov, bool pseudo, int select, bool ignore_y,
 	      double *v);
@@ -89,9 +88,10 @@ void CovarianceT(model *cov, int base_i_row, double *v) {
 }
 void Pseudomadogram(model *cov, double alpha, double *v) {
   model *calling = cov->calling;
-  CovVario(cov, false, true, NA_INTEGER, false, v);
+  bool ignore_y = false;
+  CovVario(cov, false, true, NA_INTEGER, ignore_y, v);
   if (alpha < 2.0) {
-    Long tot = Loctotalpoints(cov),
+    Long tot = LoctotalpointsY(cov, ignore_y),
       vdim = VDIM0,      
       end = vdim * vdim * tot;
     double half = 0.5 * alpha,
@@ -106,7 +106,7 @@ void CovVario(model *Cov, bool is_cov, bool pseudo, int select, bool ignore_y,
   globalparam *global = &(Cov->base->global);
   // note: here, only a vector is return (in the univatiate case),
   //       not a matrix. So, distances do not make sense.
-  // if kernel and y not given then y:=0
+  // if callingKernel and y not given then y:=0
   // if x and y are given, length of x is taken und y is recycled
  
   STANDARDSTART(ignore_y, ignore_y, 0, 1, // 12.1.21 select!=NA_INTEGER,
@@ -119,7 +119,7 @@ void CovVario(model *Cov, bool is_cov, bool pseudo, int select, bool ignore_y,
    *C0x = fctn->C0x,
     *C0y = fctn->C0y;
   int vdimP1 = vdim0 + 1;
-
+  
   assert(cov != NULL);
   assert(cov->base != NULL);
   assert(cov->ownloc != NULL || cov->prevloc != NULL);
@@ -130,10 +130,13 @@ void CovVario(model *Cov, bool is_cov, bool pseudo, int select, bool ignore_y,
   assert(Loc(cov) != NULL);
   if (LocDist(cov)) BUG;
 
-  bool kernel = equalsKernel(DOM(PREVSYSOF(genuine), 0));
+  bool callingKernel = equalsKernel(DOM(PREVSYSOF(genuine), 0));
 
-  if (kernel && !ygiven && PL > 0 &&
+  if (callingKernel && !extraData && PL > 0 &&
       cov->base->global.messages.warn_singlevariab){
+    //  PMI0(cov);
+    // printf("kernel but y not there ignorey = %d %d\n", ignore_y, select);
+    //   crash();
     WARN1("'%.50s' is called with a single variable only, although it is used as a kernel. So, the second variable is set to zero, here.\n", NICK(cov));
   }
  
@@ -148,12 +151,12 @@ void CovVario(model *Cov, bool is_cov, bool pseudo, int select, bool ignore_y,
       assert(({PMI(cov); true;})); //
       ERR("given model is not a variogram");
     }
-    if (!kernel && isCartesian(PREV)) {   
+    if (!callingKernel && isCartesian(PREV)) {   
       if (!isCartesian(OWN)) BUG;
       COV(zero, info, genuine, C0y);
       //printf("C0y=%f\n", *C0y);
     } else {
-      if (vdim0 > 1 && kernel) 
+      if (vdim0 > 1 && callingKernel) 
 	ERR("multivariate variogram only calculable for stationary models");
       NONSTATCOV(zero, zero, info, genuine, C0y);
     }
@@ -215,55 +218,64 @@ void CovVario(model *Cov, bool is_cov, bool pseudo, int select, bool ignore_y,
     }									\
   }
       
-  // printf("covvario 2 %.50s, line %d %d %ld %ld %ld\n",				
-  //     __FILE__, __LINE__, ygiven, y, zero, fctn->y) ;	
-
-  //  printf("grid = %d ygiven=%d kernel=%d trafo=%d\n", grid, ygiven, kernel, trafo);
-  
   assert(y == fctn->y);
   if (select != NA_INTEGER) {
+    assert(totY==1);
     if (caniso != NULL) BUG;
     if (trafo) // TO DO --- should not appear as ExpandGrid in kriging.R
       ERR("kriging and conditional simulation for spatio-temporal fields are not programmed yet");
     // trafoY wird hier komplett umgangen:
-    if (gridY) { // works for both grid and !grid (for x)
-      int r = i_col_base;
- 	assert(y == fctn->y);
-     for (d=0; d<tsxdim; d++) {
-	int n = r % (int) grY[d][XLENGTH];
-	r /= grY[d][XLENGTH];	
+    if (ggridY) { // works for both grid and !grid (for x)
+      assert(grY != NULL);
+      assert(grY[0] != NULL);
+      int r = i_col_base,
+	tY = totY;
+      assert(y == fctn->y);
+      for (d=0; d<tsxdim; d++) {
+	int
+	  len =  (int) grY[d][XLENGTH],
+	  n = r % len;
+	r /= len;	
+	// printf("%d\n", d); 
 	incy[d] = grY[d][XSTEP];	   
 	y[d] = ystart[d] = grY[d][XSTART] + incy[d] * n;
-	endy[d] = 1;
+	if (tY == 1) endy[d] = 1;
+	else {
+	  if (tY % len != 0) ERR("totalY must be the product of lower dimensions")
+	  else endy[d] = len;
+	  tY /= len;
+	}
 	ny[d] = startny[d] = 0; 
       }
     } else {
       int spatialdim = Locspatialdim(cov),
-	spptsY = LocspatialpointsY(cov);
-      MEMCOPY(y, LocY(cov) + spatialdim * (i_col_base % spptsY),
+	spptsY = LocspatialpointsY(cov, ignore_y);
+      if (LocAniso(cov)!= NULL) BUG; // TO DO ?!???
+      
+      /// printf("a %d %ld %ld; %d pts=%d dim=%d gridY=%d %d %d\n", NA_INTEGER, Locx(cov), LocY(cov, ignore_y), i_col_base, spptsY, spatialdim, ggridY, yAvailable, ignore_y); 
+
+      assert(y != NULL);
+      //PMI0(cov);
+      assert( LocY(cov, ignore_y) != NULL);
+      MEMCOPY(y, LocY(cov, ignore_y) + spatialdim * (i_col_base % spptsY),
 	      spatialdim * sizeof(double));
       if (Time) {
-	double *T = LocTY(cov);
+	double *T = LocTY(cov, ignore_y);
 	y[spatialdim] = T[XSTART] + (i_col_base / spptsY) * T[XSTEP];
-      }
-      for (d=0; d<tsxdim; d++) { // works for grid (x)
-	incy[d] = 1.0;	   
-	ystart[d] = y[d];
-	endy[d] = 1;
-	ny[d] = startny[d] = 0; 
       }
     }
   } else {
     PERFORM_PREPARE;
   }
 
-  //  printf("covvario ygien %d %d tot=%ld %ld\n", ygiven, kernel, totX, totY);
-  
-  //   printf("grid = %d %d %d\n", grid, ygiven, kernel);
-  //    PMI0(cov);
-  //if (ygiven && !kernel) crash();
+  // printf("%f %f\n", y[0], y[1]); 
 
-    if (is_cov) {  
+  //  PMI0(cov);
+  //  crash();
+
+  //  printf("vario = %d %d %d %d; %d %d \n", grid, extraData, callingKernel, vdimSq, totX, totY);
+  
+  if (is_cov) {   
     PERFORM(UNIVAR, MULT, UNIVAR_Y, MULT_Y);
   } else if (pseudo) {    
     PERFORM(VARIO_UNIVAR, PSEUDO_MULT, VARIO_UNIVAR_Y, PSEUDO_MULT_Y);
@@ -303,16 +315,17 @@ void CovarianceMatrix(model *Cov, bool ignore_y, double *v) {
     }								\
   }								       
   
-  bool kernel = equalsKernel(DOM(PREVSYSOF(genuine), 0));
+  bool callingKernel = equalsKernel(DOM(PREVSYSOF(genuine), 0));
   assert(y == fctn->y);
+  //printf("ignorey = %d %d %d yAvailable=%d\n", ignore_y, ggridY, LocgridY(cov), yAvailable);
 
   if (grid) {
     for (d=0; d<tsxdim; d++){		
       incy[d] = gr[d][XSTEP];
-      endy[d] = gr[d][XLENGTH];
+      endy[d] = (int) gr[d][XLENGTH];
       startny[d] = 0;	
     }
-    if (!kernel) { // i.e. stationary, i.e. in the case of tsdim=1 
+    if (!callingKernel) { // i.e. stationary, i.e. in the case of tsdim=1 
       // we have the same value on any (off)diagonal. Similar for tsdim>1.
       // So using this fact, algorithm gets much faster.
       int lastD = tsxdim - 1,
@@ -357,9 +370,10 @@ void CovarianceMatrix(model *Cov, bool ignore_y, double *v) {
 		}							
 	      }								
 	    }
-	    
+	     
 	  }
-	  STANDARDINKREMENT_Y;
+	  // PMI0(cov);
+	  STANDARDINKREMENT_Y; 
 	  //	APMI(genuine);
 	  if (d >= tsxdim) break; 
 	}
@@ -367,18 +381,19 @@ void CovarianceMatrix(model *Cov, bool ignore_y, double *v) {
       }
       
     } else { // KERNEL
-      while (true) {
+     while (true) {
 	i_col = i_row;
 	info[INFO_IDX_Y] = i_col;
 	
 	for (d=0; d<tsxdim; d++) {
 	  y[d] = x[d];
-	  ystart[d] = xstart[d];
+	  ystart[d] = xstart[d]; 
 	  ny[d] = nx[d];
 	}
 	while (true) {
 	  NONSTATCOV(x, y, info, genuine, cross);
-	  MULTICOV; 
+	  MULTICOV;
+	  //PMI0(cov);
 	  STANDARDINKREMENT_Y;
 	  //	APMI(genuine);
 	  if (d >= tsxdim) break; 
@@ -389,8 +404,8 @@ void CovarianceMatrix(model *Cov, bool ignore_y, double *v) {
     
   } else { // not a grid
     if (trafo) {
-      localdim = TransformLoc(cov, NULL, ygiven ? NULL : &xx,
-			      ygiven ? &xx : NULL,
+      localdim = TransformLoc(cov, NULL, yAvailable ? NULL : &xx,
+			      yAvailable ? &xx : NULL,
 			      False);
       assert(localdim == tsxdim);
       x0 = xx;
@@ -429,7 +444,7 @@ void CovarianceMatrix(model *Cov, bool ignore_y, double *v) {
 
 	  //PMI(genuine);	  printf("kernel =  %d\n", kernel);
 	  
-	  if (kernel) NONSTATCOV(x, y, info, genuine, cross)
+	  if (callingKernel) NONSTATCOV(x, y, info, genuine, cross)
 	  else NONSTAT2STATCOV(x, y, info, genuine, cross);
 	  if (!R_FINITE(cross[0])) GERR("model creates non-finte values.");	
 	  MULTICOV; 
@@ -461,7 +476,7 @@ void CovarianceMatrix(model *Cov, bool ignore_y, int *idx, int Nidx,
   // NOTE: if LocHasY & !ignore_y then LocY is taken and not LocX 
   StartCovarianceMatrix(Nidx, Nidx);
 
-  bool kernel = equalsKernel(DOM(PREVSYSOF(genuine), 0));
+  bool callingKernel = equalsKernel(DOM(PREVSYSOF(genuine), 0));
   assert(y == fctn->y);
   
   if (grid) {
@@ -469,16 +484,16 @@ void CovarianceMatrix(model *Cov, bool ignore_y, int *idx, int Nidx,
       int I = info[INFO_IDX_X] = idx[i_row];
       for (d=0; d<tsxdim; d++) {
 	x[d] = gr[d][XSTART] + (I % (int) gr[d][XLENGTH]) * gr[d][XSTEP];
-	I /= gr[d][XLENGTH];
+	I /= (int) gr[d][XLENGTH];
       }
       for (i_col = i_row; i_col < Nidx; i_col++) {
 	I = info[INFO_IDX_Y] = idx[i_col];
 	assert(y == fctn->y);
 	for (d=0; d<tsxdim; d++) {
 	  y[d] = gr[d][XSTART] + (I % (int) gr[d][XLENGTH]) * gr[d][XSTEP];
-	  I /= gr[d][XLENGTH];
+	  I /= (int) gr[d][XLENGTH];
 	}
-	if (kernel) NONSTATCOV(x, y, info, genuine, cross)
+	if (callingKernel) NONSTATCOV(x, y, info, genuine, cross)
 	else NONSTAT2STATCOV(x, y, info, genuine, cross);
 	if (!R_FINITE(cross[0])) GERR("model creates non-finte values.");	
 	MULTICOV;
@@ -486,8 +501,8 @@ void CovarianceMatrix(model *Cov, bool ignore_y, int *idx, int Nidx,
     }  
   } else { // not a grid
     if (trafo) {
-      localdim = TransformLoc(cov, NULL, ygiven ? NULL : &xx,
-			      ygiven ? &xx : NULL, False);
+      localdim = TransformLoc(cov, NULL, yAvailable ? NULL : &xx,
+			      yAvailable ? &xx : NULL, False);
       assert(localdim == tsxdim);
       x0 = xx;
     } else x0 = LocY(cov, ignore_y);
@@ -515,7 +530,7 @@ void CovarianceMatrix(model *Cov, bool ignore_y, int *idx, int Nidx,
 	for (i_col = i_row; i_col < Nidx; i_col++) {
 	  int J = info[INFO_IDX_Y] = idx[i_col];
 	  y = x0 + localdim * J;
-	  if (kernel) NONSTATCOV(x, y, info, genuine, cross)
+	  if (callingKernel) NONSTATCOV(x, y, info, genuine, cross)
 	  else NONSTAT2STATCOV(x, y, info, genuine, cross);
 	  if (!R_FINITE(cross[0])) GERR("model creates non-finte values.");	
 	  MULTICOV;
@@ -567,7 +582,7 @@ void CovarianceMatrixCols(model *Cov, bool ignore_y, int row, double *v) {
     for (d=0; d<tsxdim; d++) {
       incy[d] = gr[d][XSTEP];   
       y[d] = ystart[d] = gr[d][XSTART];
-      endy[d] = gr[d][XLENGTH]; 
+      endy[d] = (int) gr[d][XLENGTH]; 
       ny[d] = startny[d]= 0;
 
       nx[d] = r % end[d];
@@ -583,8 +598,8 @@ void CovarianceMatrixCols(model *Cov, bool ignore_y, int row, double *v) {
     }
   } else { 
     if (trafo) {
-      localdim = TransformLoc(cov, NULL, ygiven ? NULL : &xx,
-			      ygiven ? &xx : NULL, False);    
+      localdim = TransformLoc(cov, NULL, yAvailable ? NULL : &xx,
+			      yAvailable ? &xx : NULL, False);    
       assert(localdim == tsxdim);
       x = xx;
     } else x = LocY(cov, ignore_y);
@@ -635,12 +650,12 @@ void CovarianceMatrixCols(model *Cov, bool ignore_y, int row, double *v) {
   
 } // CovarianzMatrixCol
 
-
+/*
 void InverseCovMatrix(model *cov, double *v, double *det) {// currently unused
   // needed when Markov models are implemented
-  Long vdimtot = (Long) Loctotalpoints(cov) * VDIM0;
+  Long vdimtot = (Long) Lo ctotalpoints Y(cov, dfg) * VDIM0;
   assert(VDIM0 == VDIM1);
-  Covariance(cov, v);
+  Covar iance(cov, v);
   if (cov->Ssolve == NULL) SOLVE_STORAGE;
   int Exterr = Ext_solvePosDef(v, vdimtot, true, NULL, 0, det, cov->Ssolve);
   if (Exterr != NOERROR){
@@ -648,7 +663,7 @@ void InverseCovMatrix(model *cov, double *v, double *det) {// currently unused
     OnErrorStop(Exterr, cov->err_msg);
   }
 }
-
+*/
 
 //////////////////////////////////////////////////////////////////////
 // Schnittstellen

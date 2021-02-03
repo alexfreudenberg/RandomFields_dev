@@ -97,48 +97,66 @@ void SqMatrixcopyNA(double *dest, double *src, double *cond, int rows) {
 
  
 void boxcox_inverse(double boxcox[], int vdim, double *res, int pts, 
-		    int repet) {	
+		    int repet) {
+  assert(boxcox != NULL);
+  if (boxcox[0] == RF_INF) return;
   // (y * L + 1)^{1/L} - mu
-
-  for (int r=0; r<repet; r++) {
-    for (int v=0; v<vdim; v++) {
-      double lambda = boxcox[2 * v],
-	invlambda = 1.0 / lambda,
-	mu = boxcox[2 * v + 1];
-      if ((!ISNA(lambda) && FABS(lambda) < 1e-20)) {	
-	for (Long i=0; i<pts; i++) {
-	  res[i] = EXP(res[i]) - mu; 
+  int totvdim = vdim * pts;
+  for (int v=0; v<vdim; v++) {
+    double lambda = boxcox[2 * v];
+    double *p = res + v * pts,
+      invlambda = 1.0 / lambda,
+      mu = boxcox[2 * v + 1];
+    if (!ISNA(lambda)) {
+      if (lambda == 1.0 && mu == 1.0) continue;
+      if (FABS(lambda) < 1e-20) {	
+	for (int r=0; r<repet; r++, p+=totvdim) {
+	  for (Long i=0; i<pts; i++) {
+	    p[i] = EXP(p[i]) - mu; 
+	  }
 	}
-      } else if (ISNA(lambda) || lambda != RF_INF)
+      }
+    } else {      
+      for (int r=0; r<repet; r++, p+=totvdim) {
 	for (int i=0; i<pts; i++) {
-	  double dummy = lambda * res[i] + 1.0;
+	  double dummy = lambda * p[i] + 1.0;
 	  if ((dummy < 0 && lambda != CEIL(lambda)) || 
 	      (dummy == 0 && invlambda <= 0) ) {
 	    RFERROR("value(s) in the inverse Box-Cox transformation not positive");
 	  }
-	  res[i] = POW(dummy, invlambda) - mu;
+	  p[i] = POW(dummy, invlambda) - mu;
 	}
+      }
     }
   }
 }
 
 void boxcox_trafo(double boxcox[], int vdim, double *res, Long pts, int repet){	
+  assert(boxcox != NULL);
+  if (boxcox[0] == RF_INF) return;
   // box cox: (x + mu)^L - 1) / L
-  for (int r=0; r<repet; r++) {
-    for (int v=0; v<vdim; v++) {
-      double lambda = boxcox[2 * v],
-	invlambda = 1.0 / lambda,
+  int totvdim = vdim * pts;
+  for (int v=0; v<vdim; v++) {
+    double lambda = boxcox[2 * v];
+    double *p = res + v * pts,
+      invlambda = 1.0 / lambda,
 	mu = boxcox[2 * v + 1];
-      if ((!ISNA(lambda) && FABS(lambda) < 1e-20)) {	
+    if (!ISNA(lambda)) {
+      if (lambda == 1.0 && mu == 1.0) continue;
+      if (FABS(lambda) < 1e-20) {	
 	// to do taylor
-	for (Long i=0; i<pts; i++) {
-	  double dummy = res[i] + mu;
-	  if (dummy < 0 || (dummy == 0 && lambda <= 0) ) {
-	    RFERROR2("%ld-th value in the Box-Cox transformation not positive (%e)", i, dummy); // PRINTF
+	for (int r=0; r<repet; r++, p+=totvdim) {
+	  for (Long i=0; i<pts; i++) {
+	    double dummy = res[i] + mu;
+	    if (dummy < 0 || (dummy == 0 && lambda <= 0) ) {
+	      RFERROR2("%ld-th value in the Box-Cox transformation not positive (%e)", i, dummy); // PRINTF
+	    }
+	    res[i] = LOG(dummy);			
 	  }
-	  res[i] = LOG(dummy);			
 	}
-      } else if (ISNA(lambda) || lambda != RF_INF) {
+      }
+    } else {
+      for (int r=0; r<repet; r++, p+=totvdim) {
 	for (Long i=0; i<pts; i++) {
 	  //printf("%d %f\n", i, res[i]);
 	  double dummy = res[i] + mu;
@@ -305,8 +323,7 @@ void get_logli_residuals(model *cov, double *work, double *ans,
 
   if (modus == LOGLI_RESIDUALS) {
     MEMCOPY(pres, data, ndata * sizeof(double));
-    if (R_FINITE(P(GAUSS_BOXCOX)[0]) && R_FINITE(P(GAUSS_BOXCOX)[1]))
-      boxcox_trafo(P(GAUSS_BOXCOX), vdim, pres, nrow, repet);
+    boxcox_trafo(P(GAUSS_BOXCOX), vdim, pres, nrow, repet);
   } else {
     // BUG; printf("what's that good for?");
     for (int i=0; i<ndata; pres[i++] = 0.0);
@@ -460,10 +477,9 @@ SEXP get_logli_wholetrend(SEXP model_reg) {
   err = NOERROR,							\
     vdim = VDIM0,							\
     ncol = NCOL_OUT_OF(datasets),					\
-    repet = ncol / vdim,						\
-    pred_tot = Loctotalpoints(cov);					\
-  Long pred_totvdim = (Long) pred_tot * vdim
+    repet = ncol / vdim;
 
+ 
 
 void get_fx(model *cov, double *v, int set) {
   // do NOT set cov->base->set
@@ -471,7 +487,9 @@ void get_fx(model *cov, double *v, int set) {
   cov->base->set = set;
 
   START_PREDICT;
-  
+  int pred_tot = Loctotalpoints(cov);					
+  Long pred_totvdim = (Long) pred_tot * vdim;
+
   
   // currently unsused! kriging.variance?!
   // TO DO WITH 
@@ -536,7 +554,9 @@ void get_F(model *cov, double *work, double *ans) {
   // do NOT set cov->base->set = 0;
 
    START_PREDICT;
- 
+  int pred_tot = Loctotalpoints(cov);					
+Long pred_totvdim = (Long) pred_tot * vdim;
+
   assert(ans != NULL);
   
   int
@@ -549,8 +569,7 @@ void get_F(model *cov, double *work, double *ans) {
     *data = SET_OUT_OF(datasets);
   
   //MEMCOPY(pres, data, ndata * sizeof(double));
-  if (R_FINITE(P(GAUSS_BOXCOX)[0]) && R_FINITE(P(GAUSS_BOXCOX)[1]))
-    boxcox_trafo(P(GAUSS_BOXCOX), vdim, pres, nrow, repet);
+  boxcox_trafo(P(GAUSS_BOXCOX), vdim, pres, nrow, repet);
   
   //   for (int i=0; i<ndata; i++) printf("%10g ", pres[i]);  BUG;
   //  printf("\n%d %d %d vdim=%d\n", L->ignore_trend, L->dettrends, L->fixedtrends, vdim);
@@ -620,25 +639,27 @@ void get_F(model *cov, double *work, double *ans) {
   Sparam.Methods[1] = NoFurtherInversionMethod
 
 void gauss_trend(model *cov, double *v, int set, bool ignore_y) {
+  //  printf("entering gauss trend\n");
+  
   int store = cov->base->set;
   cov->base->set = set;
 
   START_PREDICT;
- 
+  int pred_tot = Loctotalpoints(cov);					
+  Long pred_totvdim = (Long) pred_tot * vdim;
+
   assert (set >= 0 && set < LocSets(cov));
   int  betatot = L->cum_n_betas[L->fixedtrends];
-  if (L->betas_separate) repet = 1;
- 
-  
   Long pred_totvdimrepet = (Long) pred_tot * ncol;
   
-  for (Long k=0; k<pred_totvdimrepet; v[k++] = 0.0);
+  for (Long k=0; k<pred_totvdimrepet; v[k++] = 0.0)
+    ;
 
   // APMI(predict);
   TALLOC_XXX1(X, pred_totvdim);
+  //  printf("Gauss trend %d %d %d bug:%d %d %d\n", pred_totvdim, L->ignore_trend, ignore_y,  !L->betas_separate && repet > 1, L->betas_separate, repet);
   
   if (L->ignore_trend) goto ErrorHandling; // exist
-  if (!L->betas_separate && repet > 1) GERR("BUG");
  
   int r,m;
   for (int i=0; i<L->dettrends; i++) {      
@@ -665,6 +686,8 @@ void gauss_trend(model *cov, double *v, int set, bool ignore_y) {
   cov->base->set = store;
 
  END_TALLOC_XXX1;
+
+// printf("end gauss trend %d\n", err);
   
   if (err != NOERROR) XERR(err);
 }
@@ -682,6 +705,7 @@ void gauss_trend(model *cov, double *v, int set, bool ignore_y) {
 
 
 void gauss_predict(model *cov, double *v) {
+  // printf("entering gausss predict\n");
   // do NOT set cov->base->set
   globalparam *global = &(cov->base->global);
   assert(!global->krige.ret_variance);
@@ -689,40 +713,12 @@ void gauss_predict(model *cov, double *v) {
     ERR("'vdim_close_together' must be false for kriging and conditional simulation");
   }
 
-  // START_PREDICT;
-  model *conditioning = cov->key != NULL				
-    ? cov->key : cov->sub[PREDICT_CONDITIONING],			
-    *predict = cov->sub[PREDICT_PREDICT];
-  assert(conditioning != NULL && predict != NULL);
-  assert(COVNR == PREDICT_CALL);					
-  assert(isnowProcess(conditioning) && conditioning->Ssolve != NULL &&	
-	 MODELNR(conditioning) == GAUSSPROC);				
-  assert(conditioning->Sfctn != NULL && conditioning->Slikelihood != NULL && 
-	 isnowVariogram(conditioning->key == NULL			
-			? conditioning->sub[0] : conditioning->key));	
-  if (isnowProcess(predict))						
-    predict = predict->key == NULL ? predict->sub[0] : predict->key;	
-  assert(isnowVariogram(predict));					
-  assert(predict->Sfctn != NULL);					
-  assert(conditioning -> Slikelihood != NULL);				
-  GETSTORAGE(L, conditioning, likelihood);				
-  assert(L != NULL);							
-  listoftype *datasets = L->datasets;					
-  assert(L->datasets != NULL);
-  assert(cov->base != NULL);
-  //  printf("%d\n", (cov)->base->set);
+  // printf("A\n");
   
-  //  PMI(cov);
-  
-  int									
-  err = NOERROR,							
-    vdim = VDIM0,							
-    ncol = NCOL_OUT_OF(datasets),					
-    repet = ncol / vdim,						
-    pred_tot = Loctotalpoints(cov),					
-    pred_totvdim = pred_tot * vdim
-    ;
-
+  START_PREDICT;
+  int pred_tot = Loctotalpoints(cov);					
+  Long pred_totvdim = (Long) pred_tot * vdim;
+ // printf("BA\n");
 
   int 
     Exterr = NOERROR,
@@ -741,25 +737,32 @@ void gauss_predict(model *cov, double *v) {
     has_nas = L->data_nas[cov->base->set];
 
   CHOLESKY_ONLY;
+ // printf("CBA\n");
   CovarianceMatrix(conditioning, false, L->C);  // tot x tot x vdim x vdim //sub -> cov 30.12.15
+  // printf("BCDA\n");
 
-  bool with_trend = false;
+  bool with_trend = true;
   if (with_trend) gauss_trend(cov, v, cov->base->set, true);//vor TALLOC sein!
   else for(int i=0; i<pred_totvdim; v[i++] = 0.0);
+  // printf("BCDAX\n");
+
 
   //PMI0(cov);  printf("totYvdimrepet=%d %d %d, vdim=%d set=%d\n", totYvdimrepet, repet, ncol, vdim,cov->base->set);
   TALLOC_X1(residuals, totYvdimrepet); // X1 egal, da eh zu wenig
 
-  //printf("RESIFUALS %d\n", totYvdimrepet);
+   // printf("BCDA\n");
+//// printf("RESIFUALS %d\n", totYvdimrepet);
 
   
   get_logli_residuals(conditioning, NULL, residuals, LOGLI_RESIDUALS);
+  //for (int i=0; i<201; i++) printf("%f ", residuals[i]); printf("\n");
 
 
   TALLOC_XXX1(cross, totptsYvdimSq);
-  //  printf("CROSS tot = %d\n", totptsYvdimSq);
+  //  printf(" ACROSS tot = %d %ld\n", totptsYvdimSq, cross);
   TALLOC_XXX2(dummy, has_nas ? totptsYvdimSq : 1);
 
+ // printf("WBA\n");
   double *ResiWithoutNA = NULL,
     *Ccur, *ptcross;
   int atonce, endfor,
@@ -777,6 +780,7 @@ void gauss_predict(model *cov, double *v) {
   }
   endfor = repet / atonce;
  
+ // printf("BRA\n");
 
   for (int r=0; r<endfor; r++) { // over alle repetitions (in case of splitting)
     double *resi = residuals + r * totptsYvdim * atonce,
@@ -834,8 +838,10 @@ void gauss_predict(model *cov, double *v) {
       // Technically faster is to use is S_i^T, so thats why Covariance*T.
       // In definition of CovVario: y is recycled. Here: x must be recycled.
       // So, CovarianceT also swaps role of x and y
-      
+
+       
       CovarianceT(predict, i_row, cross);
+     
       if (has_nas) matrixcopyNA(dummy, cross, resi, totptsYvdim, vdim, 0);
 
       //printf("ptcross = %ld %ld\n", ptcross, cross);
@@ -859,7 +865,7 @@ void gauss_predict(model *cov, double *v) {
 
 	  (*pv) += SCALAR_P(ptc, rWNA, notnas);
 
-	  // printf("i=%d j=%d s=%d %d %e %e\n", i_row, j, s, r, *pv, sum);
+	  //	  printf("i=%d j=%d s=%d %d %e \n", i_row, j, s, r, *pv);
 	}// j, vdim
       } // s, atonce
     } // i_row
@@ -867,7 +873,9 @@ void gauss_predict(model *cov, double *v) {
   END_TALLOC_XXX1;
   END_TALLOC_XXX2;
   END_TALLOC_X1;
-   
+
+  //  printf("done\n");
+  
  ErrorHandling :
   cov->base->set = 0;
 
@@ -1712,6 +1720,9 @@ getStorage(L ,   likelihood);
   // to do : betas_separate bereinigen && ignore_trend nicht alles
   // allocieren!
 
+  // PMI0(calling);
+  // printf("%d %d \n", LIKELIHOOD_BETASSEPARATE, PARAM0INT(calling, LIKELIHOOD_BETASSEPARATE));
+  
   L->betas_separate = 
     CALLINGNR == LIKELIHOOD_CALL && PARAM0INT(calling, LIKELIHOOD_BETASSEPARATE);
   if (L->betas_separate && sets > 1) SERR("separate estimation of the betas only for one data set possible.");
@@ -1947,7 +1958,7 @@ getStorage(L ,   likelihood);
 	  }
 	}
       
-	if (L->nas_boxcox == 0 && R_FINITE(P0(GAUSS_BOXCOX)))
+	if (L->nas_boxcox == 0)
 	  boxcox_trafo(P(GAUSS_BOXCOX), vdim, Xdata, nrow, repet);    
 	
       }

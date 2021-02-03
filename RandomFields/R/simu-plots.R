@@ -317,7 +317,7 @@ RFplotSimulation <- function(x, y,
                              height.pixel=300, width.pixel=height.pixel,
                              ..., plotmethod="image") {
   ## x: "RFdataFrame", "RFspatialGridDataFrame", "RFspatialPointsDataFrame"
-  
+ 
   if (is(x, "RFdataFrame"))
     return(RFplotSimulation1D(x=x, y=y, nmax=nmax,
                            plot.variance=plot.variance, legend=legend, ...))
@@ -515,7 +515,7 @@ RFplotSimulation <- function(x, y,
 
   image.par <- prepareplotRFsp(x=x, vdim=vdim, select=select.variables,
                                data.range = data.range, var.range=var.range,
-                               plot.var=plot.variance, MARGIN=NEWMARGIN,
+                               plot.variance=plot.variance, MARGIN=NEWMARGIN,
                                n=n, n.slices=n.slices, plot.legend=legend,
                                zlim=zlim,
                               ...)

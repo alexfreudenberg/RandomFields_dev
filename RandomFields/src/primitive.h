@@ -32,9 +32,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "RF.h"
 #include "Coordinate_systems.h" // noetig ??
 
-#define HAS_SPECTRAL_FRAME(cov)				\
-  hasGaussMethodFrame(cov) && cov->method==SpectralTBM
-
 double interpolate(double y, double *stuetz, int nstuetz, int origin,
 		   double lambda, int delta);
 

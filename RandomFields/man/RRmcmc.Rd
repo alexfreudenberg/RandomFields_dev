@@ -6,7 +6,7 @@
   modulus of any given function (provided the integral is finite).
 }
 \usage{
-RRmcmc(phi, mcmc_n, sigma, normed, maxdensity, rand.loc, gibbs)
+RRmcmc(phi, mcmc_n, sigma, normed, maxdensity, rand_loc, gibbs)
 }
 \arguments{
   \item{phi}{an arbitrary integrable function
@@ -32,7 +32,7 @@ RRmcmc(phi, mcmc_n, sigma, normed, maxdensity, rand.loc, gibbs)
     Default: 1000.
   }
   
-  \item{rand.loc}{logical. Internal. Do not change the value.
+  \item{rand_loc}{logical. Internal. Do not change the value.
     
    Default: \code{FALSE}.
    }

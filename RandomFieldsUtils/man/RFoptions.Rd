@@ -2,6 +2,7 @@
 \alias{RFoptions}
 \alias{PIVOT_UNDEFINED}
 \alias{PIVOT_NONE}
+\alias{PIVOT_NONE_R}
 \alias{PIVOT_AUTO}
 \alias{PIVOT_DO}
 \alias{PIVOT_IDX}
@@ -244,6 +245,8 @@
       decomposition. Possible values are 
       \describe{
 	\item{PIVOT_NONE}{No pivoting.}
+	\item{PIVOT_NONE_R}{No pivoting, using C implementation of
+	  \command{\link[base]{chol}}.}
 	\item{PIVOT_AUTO}{If the  matrix has a size greater than
 	  3x3 and Choleskey fails without pivoting, privoting
 	  is done. For matrices of size less than 4x4, no pivoting and
@@ -267,7 +270,8 @@
 %	\code{RFoptions()$solve$pivot_idx}.}
       }
 
-      Default: \code{PIVOT_NONE}
+      Default: \code{PIVOT_NONE} or \code{PIVOT_NONE_R} depending on a
+    small speed test when loading the package.
     }
     
     \item{\code{pivot_actual_size}}{integer.

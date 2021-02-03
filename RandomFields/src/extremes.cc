@@ -419,7 +419,7 @@ void dompp(model *cov, gen_storage *s, double *simuxi) { // cov ist process
 	if (false || zaehler < 0) {
 	  PRINTF("d=%d start=%d, end=%d xstart=%10g %10g pgs=[%4.3f, %4.3f] xgr=%10g %10g %10g inc=%3.2f\n", 
 	  	 d, start[d], end[d], xstart[d], pgs->xstart[d], pgs->supportmin[d], pgs->supportmax[d],
-	 	 xgr[d][XSTART], xgr[d][XSTEP], xgr[d][XLENGTH],
+	 	 xgr[d][XSTART], xgr[d][XSTEP], xgr[d][XLENGTH], // OK
 	  	 inc[d]);
 	   // 	  assert(false);
 	}
@@ -1313,7 +1313,7 @@ int addPGS(model **Key, // struct of shape
   for (i=0; i<specific; i++) {
     if (method != POISSON_SCATTER_ANY && i != method) continue;    
     if (i > 0) {
-      errorMSG(err, msg[i-1]);
+      errorMSG(err, shape->base, msg[i-1]);
       //     XERR(err);  // eigentlich muss das hier weg
     }
     //    if (i > 0) XERR(err); assert(i ==0);
@@ -1726,6 +1726,7 @@ int check_randomcoin(model *cov) {
   kdefault(cov, RANDOMCOIN_INTENSITY, gp->intensity[dim]);
   kdefault(cov, RANDOMCOIN_METHOD, 0);
   if ((err = checkkappas(cov, false)) != NOERROR) RETURN_ERR(err);
+  RESERVE_BOXCOX;
 
 
   

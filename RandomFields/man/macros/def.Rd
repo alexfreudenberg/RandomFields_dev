@@ -1,6 +1,6 @@
 % M-x auto-fill-mode
 
-\newcommand{\argModel}{ object of class  \code{\link[=RMmodel-class]{RMmodel}}, \command{\link{RFformula}} or  \command{\link[stats]{formula}}; best is to consider the examples below, first. \cr The argument \code{params} is a list that specifies free parameters in a formula description, see \link{RMformula}.}
+\newcommand{\argModel}{ object of class  \code{\link[=RMmodel-class]{RMmodel}}, \command{\link{RFformula}} or  \command{\link[stats]{formula}}; \cr The argument \code{params} is a list that specifies free parameters in a formula description, see \link{RMformula}.}
 
 \newcommand{\argX}{vector of x coordinates, or object of class \code{\link[sp:GridTopology-class]{GridTopology}} or \code{\link[raster]{raster}}; for more options see \link{RFsimulateAdvanced}.}
 
@@ -10,7 +10,7 @@
 
 \newcommand{\argGrid}{logical; the function finds itself the correct value in nearly all cases, so that usually \code{grid} need not be given. See also \link{RFsimulateAdvanced}.}
 
-\newcommand{\argData}{matrix, data.frame or object of class \command{\link[=RFsp-class]{RFsp}}; \cr If a matrix is given the ordering of the colums is the following: space, time, multivariate, repetitions, i.e. the index for the space runs the fastest and that for repetitions the slowest.}
+\newcommand{\argData}{matrix, data.frame or object of class \command{\link[=RFsp-class]{RFsp}}; \cr If a matrix is given, the ordering of the colums is the following: space, time, multivariate, repetitions, i.e. the index for the space runs the fastest and that for repetitions the slowest. See also \link{RFsimulateAdvanced}}
 
 \newcommand{\argBin}{a vector giving the borders of the bins; If not specified an array describing the empirical (pseudo-)(cross-) covariance function  in every direction is returned.}
 
@@ -42,7 +42,7 @@
 
 \newcommand{\argGiven}{optional, matrix or list.  If \code{given} matrix then the coordinates  can be given separately, namely by \code{given} where, in each row, a single location is given.\cr  If \code{given} is a  list, it may consist of \code{x}, \code{y}, \code{z}, \code{T},  \code{grid}.\cr  If \code{given} is provided, \code{data} must be a matrix or an array containing the data only. }
 
-\newcommand{\argDataGiven}{ If \code{given} is not given and \code{data} is a matrix or \code{data} is  a data.frame, \pkg{RandomFields} tries to identify  where the data and the coordinates are, e.g. by names in formulae or by fixed names,  see \link{Coordinate systems}. See also \link{RFsimulateAdvanced}.  If all fails, the first columns are interpreted as coordinate vectors, and the last column(s) as (multiple) measurement(s) of the field. Notes that also lists of data can be passed.}
+\newcommand{\argDataGiven}{ If \code{given} is not given and \code{data} is a matrix or \code{data} is  a data.frame, \pkg{RandomFields} tries to identify  where the data and the coordinates are, e.g. by names in formulae or by fixed names,  see \link{Coordinate systems}. See also \link{RFsimulateAdvanced}. Notes that also lists of data can be passed, which refer to independent data sets then.}
 
 \newcommand{\argErrmodel}{In case of (assumed) error-free measurements (which is mostly the case in geostatistics) the argument \code{err.model} is not given. In case of measurement errors we have usually \code{err.model=RMnugget(var=var)}, but any other \code{RMmodel} with mean zero is allowed.\cr \code{err.param} plays the same role as \code{params} for \code{model}.}
 

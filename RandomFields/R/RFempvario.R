@@ -96,7 +96,7 @@ rfempirical <- function(x, y = NULL, z = NULL, T = NULL, data, grid,
   }
   
   pseudo <- alpha > 0
-#  Print(pseudo, alpha,  PSEUDO, PSEUDOMADOGRAM)
+#  Print(pseudo, alpha,  PSEUDOVARIOGRAM, PSEUDOMADOGRAM)
 
   deltaT <- RFopt$empvario$delta
   deltaTgiven <- all(deltaT > 0)
@@ -131,7 +131,7 @@ rfempirical <- function(x, y = NULL, z = NULL, T = NULL, data, grid,
 #Print(phi0, phigiven)
   
   fft <- RFopt$empvario$fft && grid[1] && all(grid == grid[1]) &&
-    alpha %in% c(VARIOGRAM, PSEUDO) && !dist.given
+    alpha %in% c(VARIOGRAM, PSEUDOVARIOGRAM) && !dist.given
   
   if (alpha == COVARIANCE && dist.given && vdim > 1)
     warning("Fully symmetric covariance structure assumed as only distances are given.")

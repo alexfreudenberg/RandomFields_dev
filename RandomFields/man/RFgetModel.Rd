@@ -10,7 +10,7 @@
 }
 \usage{
 RFgetModel(register, explicite.natscale, show.call=FALSE,
-           origin="original")
+           origin="original model")
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

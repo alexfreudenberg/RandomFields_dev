@@ -871,7 +871,7 @@ void leer(int level){
 }
 
 void PrintPoints(location_type *loc, char *name, 
-		 double *x, coord_type xgr, Long totalpoints, bool grid) {
+		 double *x, coord_type xgr, Long spatialpoints, bool grid) {
 #ifndef SHOW_ADDRESSES  
   return; // unclear Error below on CRAN
 #endif 
@@ -882,14 +882,14 @@ void PrintPoints(location_type *loc, char *name,
     PRINTF("loc:%sgr    ", name);
     for (i=0; i<loc->timespacedim - loc->Time; i++) {
       PRINTF("(%3.3f, %3.3f, %2.0f) ", xgr[i][XSTART], xgr[i][XSTEP], 
-	     xgr[i][XLENGTH]);
+	     xgr[i][XLENGTH]); // OK
     }
   } else {
-    PRINTF("loc:%s [%d,%d] ", name, loc->spatialdim, totalpoints );
-    if (totalpoints <= 0) {
+    PRINTF("loc:%s [%d,%d] ", name, loc->spatialdim, spatialpoints );
+    if (spatialpoints <= 0) {
       PRINTF("not given! (%d)", addressbits(x));
     } else {
-      Long total =  (Long) loc->distances ? totalpoints * (totalpoints-1) / 2 : totalpoints * loc->xdimOZ,
+      Long total =  (Long) loc->distances ? spatialpoints * (spatialpoints-1) / 2 : spatialpoints * loc->xdimOZ,
 	endfor = total;
        if (endfor > maxpts) endfor = maxpts;
       for (i=0; i<endfor; i++) {
@@ -924,15 +924,18 @@ void PrintLoc(int level, location_type *loc, bool own) {
   leer(level); PRINTF("%-10s %s/%s\n","loc:grid", FT[loc->grid],
 		      Y ? FT[loc->gridY] : "");
   leer(level); PRINTF("%-10s %s\n","loc:dist", FT[loc->distances]);
-  leer(level); PRINTF("%-10s %s\n","loc:Time", FT[loc->Time]);
+  leer(level); PRINTF("%-10s ","loc:Time");
+  if (loc->Time) PRINTF("%f %f %d\n", loc->T[XSTART], loc->T[XSTEP],
+			(int) loc->T[XLENGTH]);
+  else PRINTF("%s\n", FT[loc->Time]);
 #ifdef SHOW_ADDRESSES
   leer(level); PrintPoints(loc, (char *) "x", loc->x, loc->xgr,
-			   loc->totalpoints,
+			   loc->spatialtotalpoints,
 			   loc->grid);
   if (Y) {
     assert(loc->totalpointsY > 0);
     leer(level); PrintPoints(loc, (char*) "y", loc->Y, loc->grY,
-			     loc->totalpointsY,
+			     loc->spatialtotalpointsY,
 			     loc->gridY);
   } 
 #else
@@ -1452,7 +1455,7 @@ getStorage(pgs ,       pgs);
 #ifdef SHOW_ADDRESSES
 	location_type *loc = Loc(cov);
 	leer(level); PrintPoints(loc, (char *) "pgs.x", loc->x, pgs->xgr,
-				 loc->totalpoints, loc->grid);
+				 loc->spatialtotalpoints, loc->grid);
 #endif
 	SHOW("pgs:y", y);
 	SHOWINT("pgs:pos", pos);
@@ -1890,12 +1893,12 @@ void PSTOR(model *cov, gen_storage *x) {
    PRINTF("%d. info:[%3.3f, %3.3f] E=%3.3f cum=%3.3f\n",
 	   d, //x->window.min[d], x->window.max[d], x->window.centre[d],
 	   RF_NA, RF_NA, 
-	  x->spec.E[d], x->spec.sub_var_cum[d]);  
+	  x->Sspectral.E[d], x->Sspectral.sub_var_cum[d]);  
   }
 
   PRINTF("spec:step=%3.3f phi=%3.3f id=%3.3f grid=%s sig=%3.3f nmetr=%d\n",
 	 x->Sspectral.phistep2d, x->Sspectral.phi2d, x->Sspectral.prop_factor,
-	 FT[x->Sspectral.grid], x->spec.sigma,x->spec.nmetro);
+	 FT[x->Sspectral.grid], x->Sspectral.sigma,x->Sspectral.nmetro);
 }
 
 

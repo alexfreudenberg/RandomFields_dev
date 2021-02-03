@@ -923,13 +923,14 @@ int check_ce(model *cov) {
   FRAME_ASSERT_GAUSS_INTERFACE; 
   ASSERT_UNREDUCED;
   ASSERT_ONESYSTEM;
-
+  RESERVE_BOXCOX;
+  
   if (dim > MAXCEDIM) RETURN_ERR(ERRORCEDIM);
   if ((err = check_ce_basic(cov)) != NOERROR) RETURN_ERR(err);
   if ((err = checkkappas(cov, false)) != NOERROR) RETURN_ERR(err);
   if (Loctsdim(cov) > MAXCEDIM || OWNTOTALXDIM > MAXCEDIM)
     RETURN_ERR(ERRORCEDIM);
-   
+  
   if (cov->key != NULL) {
     if ((err = CHECK_PASSFRAME(cov->key, GaussMethodType)) != NOERROR) {
        //PMI(cov->key); XERR(err);
@@ -956,7 +957,7 @@ int check_ce(model *cov) {
   }
   setbackward(cov, next);
   if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) RETURN_ERR(err);
-  if ((err = checkkappas(cov, true)) != NOERROR) RETURN_ERR(err);
+   if ((err = checkkappas(cov, true)) != NOERROR) RETURN_ERR(err);
   RETURN_NOERROR;
 }
 
@@ -1431,9 +1432,11 @@ int check_local_proc(model *cov) {
   FRAME_ASSERT_GAUSS_INTERFACE;
   ASSERT_UNREDUCED;
   ASSERT_ONESYSTEM;
+  RESERVE_BOXCOX;
+  
    if ((err = check_ce_basic(cov)) != NOERROR) RETURN_ERR(err);
    if (dim > MAXCEDIM) RETURN_ERR(ERRORCEDIM);
-
+ 
   if (key != NULL) {
     // falls nicht intern muessen die parameter runter und rauf kopiert
     // werden, ansonsten sind die kdefaults leer.
@@ -1498,8 +1501,8 @@ int check_local_proc(model *cov) {
 
   // no setbackward ?!
   setbackward(cov, sub); 
-  VDIM0 = VDIM1 = sub->vdim[0];
   if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) RETURN_ERR(err);
+  VDIM0 = VDIM1 = sub->vdim[0];
   
   RETURN_NOERROR;
 }
@@ -1560,6 +1563,7 @@ int init_circ_embed_local(model *cov, gen_storage *S){
   kdefault(key, CE_TRIALS, P0INT(CE_TRIALS));
   kdefault(key, CE_USEPRIMES, P0INT(CE_USEPRIMES));
   kdefault(key, CE_DEPENDENT, P0INT(CE_DEPENDENT));
+  RESERVE_BOXCOX;
 
   //  APMI(key);
  
@@ -1576,10 +1580,12 @@ int init_circ_embed_local(model *cov, gen_storage *S){
   for (d=0; d<timespacedim; d++) old_mmin[d] = mmin[d];
   
 
-  model *local = key->sub[0];
+  model *local ;
+  local = key->sub[0];
   GETSTORAGE(ss , local,   localCE); 
   assert(ss != NULL);
-  localvariab *q = ss->q;
+  localvariab *q;
+  q = ss->q;
   assert(q != NULL);
   assert(err == NOERROR);
   for (instance = first_instance; instance < 2; instance++) {
@@ -1596,7 +1602,7 @@ int init_circ_embed_local(model *cov, gen_storage *S){
       if (old_mmin[d]==0.0) {
 	
 	mmin[d] = - q->R / 
-	  (grid_ext[d] * (loc->xgr[d][XLENGTH] - 1.0) * loc->xgr[d][XSTEP]);
+	  (grid_ext[d] * (loc->xgr[d][XLENGTH] - 1.0) * loc->xgr[d][XSTEP]); // OK
 	if (mmin[d] > -1.0) mmin[d] = - 1.0;
 	
       }
@@ -1618,11 +1624,10 @@ int init_circ_embed_local(model *cov, gen_storage *S){
     assert(COVNR == CE_CUTOFFPROC_INTERN);
   }
 
-  if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) !=NOERROR) goto ErrorHandling;
-
   assert(err == NOERROR);
   
   ReturnOtherField(cov, cov->key);
+  if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) !=NOERROR) goto ErrorHandling;
  
  ErrorHandling :
   for (d=0; d<timespacedim; d++) mmin[d] = old_mmin[d];
@@ -1832,7 +1837,7 @@ void do_circ_embed_intr(model *cov, gen_storage *S) {
     for (int k=0; k<row; k++) res[r] += (double) x[k]; 
     r++;
     int k=0;
-    while( (k<row) && (++index[k]>=loc->xgr[k][XLENGTH])) {
+    while( (k<row) && (++index[k]>= (int) loc->xgr[k][XLENGTH])) { // OK
       index[k]=0;
       x[k] = 0.0;
       k++;
@@ -1879,8 +1884,8 @@ int struct_ce_approx(model *cov, model **newmodel) {
     GetDiameter(loc, min, max, centre);
   
     if (loc->Time) {
-      if (loc->T[XLENGTH] > maxgridsize) SERR("temporal grid too large");
-      maxgridsize /= loc->T[XLENGTH];
+      if ((int) loc->T[XLENGTH] > maxgridsize) SERR("temporal grid too large");
+      maxgridsize /= (int) loc->T[XLENGTH];
     }
 
     if (ISNAN(approx_gridstep)) {
@@ -1890,7 +1895,7 @@ int struct_ce_approx(model *cov, model **newmodel) {
       for (k=d=0; d<spatialdim; d++, k+=3) {
 	x[k+XSTART] = min[d];
 	x[k+XLENGTH] = (int) POW(size, 1.0 / (double) spatialdim);
-	x[k+XSTEP] = (max[d] - min[d]) / (x[k+XLENGTH] - 1.0);
+	x[k+XSTEP] = (max[d] - min[d]) / (x[k+XLENGTH] - 1.0); // OK
       }
     } else {
      len = 1;
@@ -2008,7 +2013,7 @@ void do_ce_approx(model *cov, gen_storage *S){
   if (key_loc->Time) { // time separately given   
     Long  t,
       j = 0,
-      instances = (Long) loc->T[XLENGTH],
+      instances = (int) loc->T[XLENGTH],
       totspatialpts = loc->spatialtotalpoints,
       gridpoints = Loc(key)->spatialtotalpoints;
     

@@ -2,7 +2,7 @@
 #define AutoRandomFields_H 1
 #include <R.h>
 
-#define AUTHOR "martin.schlather@math.uni-mannheim.de.\\"
+#define AUTHOR "martin.schlather@math.uni-mannheim.de."
 #define CONTACT " Please contact the maintainer martin.schlather@math.uni-mannheim.de.\n"
 
 
@@ -437,7 +437,7 @@ typedef enum sort_origin {
 // pseudo hat positive Werte, nicht-pseudo negative
 // pos und neg Werte matchen
 #define PSEUDOMADOGRAM 1 // RC NEVER change ordering nor values!! 
-#define PSEUDO 2// RC // as values are identical to corresp. alpha values
+#define PSEUDOVARIOGRAM 2// RC //as value is identical to corresp. -alpha value
 #define TOTAL_FCTN_TYPE 5
 #define ALPHAPSEUDOMADOGRAM 3// for internal purposes only
 
@@ -487,6 +487,7 @@ extern const char *ISO_NAMES[LAST_ISO + 1],
   *NAMES_OF_NAMES[nNamesOfNames],
   *RMCOV_X[nVAR2COV_METHODS],
   *FCTN_TYPE_NAMES[TOTAL_FCTN_TYPE],
+  *RM_S[2], *RM_PLUS[2], *RM_MULT[2],
   *POISSON_SCATTER_NAMES[nPOISSON_SCATTER];
 
 
@@ -496,7 +497,7 @@ extern const char *ISO_NAMES[LAST_ISO + 1],
 ///////////////////////////////////////////////////////////////////////
 #define XSTART 0
 #define XSTEP 1
-#define XLENGTH 2
+#define XLENGTH 2 // OK
 
 
 #define NEIGHB_MIN 0
@@ -508,6 +509,28 @@ extern const char *ISO_NAMES[LAST_ISO + 1],
 #define EG_NAME "schlather"
 #define OPITZ_NAME "opitz"
 #define SMITH_NAME "smith"
+
+#define SYMBOL_L_PAR "("
+#define SYMBOL_R_PAR  ")"
+#define SYMBOL_PLUS  "+"
+#define SYMBOL_MULT  "*"
+#define RM_DECLARE "RMdeclare"
+#define RM_MATRIX "RMmatrix"
+#define R_C "R.c"
+#define R_P "R.p"
+#define R_CONST "R.const"
+#define RM_COVARIATE "RMcovariate"
+#define NO_DOLLAR_VALUE "_no value given_"
+#define RM_DISTR "RRdistr"
+#define RM_SHAPE "RMshape"
+#define RM_USER "RMuser"
+#define RM_NUGGET "RMnugget"
+#define SYMBOL_S "$"
+#define S_NICK "RMS"
+#define PLUS_NICK "RMplus"
+#define MULT_NICK "RMmult"
+
+
 
 #define MAX_NA 100
 

@@ -1,5 +1,6 @@
 \name{RMS}
 \alias{RMS}
+\alias{RM_S}
 \title{Scaling operator}
 \description{
  \command{\link{RMS}} is an operator that modifies the variance and the

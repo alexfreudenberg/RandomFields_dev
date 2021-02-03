@@ -27,7 +27,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  
 
 void metropolis(model *cov, gen_storage *S, double *x) {
-  spec_properties *s = &(S->spec);
+
+  spectral_storage *s = &(S->Sspectral);
+  assert(s != NULL);
   spectral_density density = s->density;
   int i,d,
     dim = total_logicaldim(OWN),
@@ -37,7 +39,8 @@ void metropolis(model *cov, gen_storage *S, double *x) {
     sigma = s->sigma;
   if (dim >= MAXTBMSPDIM) BUG;
   //ERR("too high dimension for metropolis.");
- 
+  //  printf("METROPOLIS %d %f n=%d\n", dim, E[0], n);
+	 
   for (i=0; i<n; i++) {
     dx = density(E, cov);
     for (d=0; d<dim; d++) {
@@ -67,7 +70,7 @@ void metropolis(model *cov, gen_storage *S, double *x) {
 // to do ?! in rectangle umschreiben ?!
 
 int search_metropolis(model *cov, gen_storage *S) {
-  spec_properties *s = &(S->spec);
+  spectral_storage *s = &(S->Sspectral);
   double Sigma[maxSearch], x[MAXTBMSPDIM], oldx[MAXTBMSPDIM], log_s, p,
     prop_factor = S->Sspectral.prop_factor,
     factor = Factor;
@@ -155,6 +158,7 @@ int search_metropolis(model *cov, gen_storage *S) {
   }
   p = (double) zaehler / (double) nBase2;
   s->nmetro = 1 + (int) FABS(prop_factor / LOG(p));
+  assert(false);
   if (PL >= PL_DETAILS) {
     for (d=0; d<dim; d++)  PRINTF("d=%d E=%10g\n", d, s->E[d]);
   }

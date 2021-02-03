@@ -341,6 +341,11 @@ Types TypeConsistency(Types requiredtype, Types deliveredtype);
 Types TypeConsistency(Types requiredtype, model *cov,
 			 isotropy_type requirediso);
 
+
+#define HAS_SPECTRAL_FRAME(cov)				\
+  hasGaussMethodFrame(cov) && cov->method==SpectralTBM
+
+
 #endif
 
 /* 

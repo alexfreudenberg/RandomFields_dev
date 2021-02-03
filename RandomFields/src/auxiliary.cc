@@ -201,7 +201,11 @@ SEXP distInt(SEXP XX, SEXP N, SEXP Genes) {
   UNPROTECT(1);
   return Dist;
 }
-
+ 
+#ifdef __cplusplus
+extern "C" {
+#endif
+  //  SEXP vectordist(SEXP V, SEXP DIAG){
 
 SEXP vectordist(SEXP V, SEXP DIAG){
   bool notdiag = !LOGICAL(DIAG)[0];
@@ -234,6 +238,11 @@ SEXP vectordist(SEXP V, SEXP DIAG){
   return DIST;
 }
 
+#ifdef __cplusplus
+}
+#endif
+
+  
 /*
 int xMatch(char *name, char **list, unsigned int llen)  {
   unsigned int ln, nr;

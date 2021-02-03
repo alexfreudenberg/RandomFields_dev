@@ -7,7 +7,8 @@
 
  Copyright (C) 2015 -- 2017  Martin Schlather
 
-This program is free software; you can redistribute it and/or
+This
+ program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
 as published by the Free Software Foundation; either version 3
 of the License, or (at your option) any later version.
@@ -28,18 +29,19 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define variogramAndCo_H 1
 
 #define FINISH_START(whereSfctn, whereVdim, ignore_x, ignore_y, idxVdim1, \
-		     TOTX, TOTY, I_COL_BASE)					\
-  GETSTORAGE(fctn, whereSfctn, fctn); \
+		     TOTX, TOTY, I_COL_BASE)				\
+  /*//  printf("ignor %d %d\n", ignore_x, ignore_y); */			\
+  GETSTORAGE(fctn, whereSfctn, fctn);					\
   if (fctn == NULL) { /* // PMI0(whereSfctn);printf("\n\n\n\n");PMI0(whereVdim); printf("fctn=NULL\n"); */ BUG;} \
   assert(Loc(whereSfctn) != NULL);					\
   double *caniso = LocAniso(whereSfctn);				\
-  bool grid = LocgridY(whereSfctn, !ignore_x) && caniso==NULL,		\
+  bool grid = LocgridY(whereSfctn, !(ignore_x)) && caniso==NULL,	\
     Time = LocTime(whereSfctn),						\
     trafo = ((Time && !grid)|| caniso != NULL);				\
   grid &= !trafo;							\
   if (trafo && LocDist(whereSfctn))					\
     ERR("complex construction with distances currently not programed -- pls contract maintainer"); /* ODER EHER BUG WENNS AUFTRITT? TO DO */ \
-  Long totX = (TOTX) ? (TOTX) : LoctotalpointsY(whereSfctn, !ignore_x), \
+   Long totX = (TOTX) ? (TOTX) : LoctotalpointsY(whereSfctn, !(ignore_x)), \
     totY = (TOTY) ? (TOTY) : LoctotalpointsY(whereSfctn, ignore_y);	\
   int d,								\
     i_col_base = I_COL_BASE,						\
@@ -48,24 +50,26 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
     i_row = 0,								\
     *nx=fctn->nx,							\
     tsxdim = PREVTOTALXDIM,						\
-    VARIABLE_IS_NOT_USED localdim = tsxdim; /* dim after trafo */ \
+    VARIABLE_IS_NOT_USED localdim = tsxdim; /* dim after trafo */	\
   if (end == NULL) {/* //printf("end=NULL\n");*/ BUG;}			\
   double *x = fctn->x,							\
     *xstart= fctn->xstart,						\
     *inc=fctn->inc,							\
     *xx = NULL;		/* dito			   */			\
   assert(x != NULL);							\
-  coord_type gr = LocgrY(whereSfctn, !ignore_x);			\
+  coord_type gr = LocgrY(whereSfctn, !(ignore_x));			\
   if (grid) {								\
     STANDARDSTART_X;							\
   } else x = LocY(whereSfctn, !ignore_x);				\
   									\
-  bool ygiven = !((ignore_x) xor (ignore_y)) && LocHasY(whereSfctn),/* might be changed !*/ \
+  /*// printf("************************************************** %s %d %d %d\n", #whereSfctn, (ignore_x), (ignore_y), LocHasY(whereSfctn)); */ \
+  bool yAvailable = ((ignore_x) || !(ignore_y)) && LocHasY(whereSfctn),/* might be changed !*/ \
+    extraData =  !((ignore_x) xor (ignore_y)) && LocHasY(whereSfctn),	\
     xswapped = (ignore_x) && LocHasY(whereSfctn),			\
-    gridY = (ygiven) && LocgridY(whereSfctn),				\
-    trafoY = ((Time && !gridY) || caniso != NULL);			\
-  gridY &= !trafoY;							\
-  int i_col = 0,						\
+    ggridY = LocgridY(whereSfctn, ignore_y),		\
+    trafoY = ((Time && !ggridY) || caniso != NULL);			\
+  ggridY &= !trafoY;							\
+  int i_col = 0,							\
     vdim0  = (whereVdim)->vdim[0],					\
     vdim1 = (whereVdim)->vdim[idxVdim1],				\
     vdimSq = vdim0 * vdim1, /*not nec. squ!!*/				\
@@ -118,7 +122,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
   for (d=0; d<tsxdim; d++) {			\
     inc[d] = gr[d][XSTEP];			\
     start[d] = 0;				\
-    end[d] = gr[d][XLENGTH];			\
+    end[d] = (int) gr[d][XLENGTH];		\
     nx[d] = start[d];				\
     x[d] = xstart[d] = gr[d][XSTART];		\
   }								
@@ -145,7 +149,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
   for (d=0; d<tsxdim; d++){						\
     incy[d] = grY[d][XSTEP];						\
     y[d] = ystart[d] = grY[d][XSTART];					\
-    endy[d] = grY[d][XLENGTH];						\
+    endy[d] = (int) grY[d][XLENGTH];					\
     ny[d] = startny[d] = 0;						\
   }									\
   i_col = 0;							\
@@ -189,23 +193,24 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
   FREE(yy)
 
 
+
 #define GRIDCYCLES(SOME_FCTN)				\
   while (true) {					\
     SOME_FCTN;						\
-    if (gridY) { STANDARDINKREMENT_Y; RECYCLE_Y;}	\
-    STANDARDINKREMENT_X;				\
+    if (totY > 1) { assert(yAvailable &&  ggridY); STANDARDINKREMENT_Y; RECYCLE_Y;}	\
+    STANDARDINKREMENT_X;	\
   }				
 
 #define GRIDCYCLE_X(SOME_FCTN)			\
-  while (true) {				\
-    SOME_FCTN;					\
+   while (true) {				\
+     SOME_FCTN;					\
     STANDARDINKREMENT_X;			\
   }
 
 
 
     
-#define DO_INCREMENTY ,  i_col++, y+=tsxdim
+#define DO_INCREMENTY  if (totY > 1) { i_col++;  y+=tsxdim;}
 
 #define PREPAREX							\
   info[INFO_IDX_X]  = i_row
@@ -219,70 +224,62 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define NONGRIDCYCLE(INCREMENT, PREPARE, FCTN1, FCTN2)			\
   if (vdimSq == 1) {							\
-    for (; i_row<totX; i_row++, x+=tsxdim INCREMENT){			\
+    for (; i_row<totX; i_row++, x+=tsxdim){				\
       PREPARE;								\
       FCTN1;								\
+      INCREMENT								\
     }									\
   } else {								\
-    for (; i_row<totX; i_row++, x+=tsxdim INCREMENT){			\
+    for (; i_row<totX; i_row++, x+=tsxdim){				\
       PREPARE;								\
       FCTN2;								\
+      INCREMENT								\
     }									\
   }
 
-#define PERFORM_PREPARE						\
+#define PERFORM_PREPARE							\
   if (trafo) { /* implies no grid */					\
     localdim = TransformLoc(cov, NULL, xswapped ? NULL : &xx,		\
-			    xswapped ? &xx : NULL,  False);	\
+			    xswapped ? &xx : NULL,  False);		\
     x = xx;								\
   }									\
-  if (ygiven && !gridY) {						\
-    if (trafoY) { /* falls xswapped && ygiven, so auch yswapped	*/	\
+  if (yAvailable && !ggridY){						\
+    if (trafoY) { /* falls xswapped && yAvailable, so auch yswapped	*/	\
       localdim = TransformLoc(cov, NULL, xswapped ? &yy : NULL,\
 			      xswapped ? NULL : &yy, False);		\
       y = yy;								\
     } else y=LocY(cov, xswapped);					\
-  } else if (gridY) {							\
+  } else if (yAvailable && ggridY) {					\
     STANDARDSTART_Y_SUPPL;						\
-  } else y=zero	       
+  } else y=zero
+	   
 	   
 #define PERFORM(UNIVAR_FCTN_X, MULTIVAR_FCTN_X, UNIVAR_KERNEL,		\
 		MULTIVAR_KERNEL)					\
-  assert(!ygiven || kernel);			\
-    if (grid) {								\
-    if (ygiven || kernel) {						\
-      if (vdimSq == 1) {						\
-      	if (gridY){ GRIDCYCLES(UNIVAR_KERNEL; v+=vdimSq);}		\
-	else { BUG;} /* somewhen in future */				\
-      } else {								\
-	if (gridY) { GRIDCYCLES(MULTIVAR_KERNEL); }			\
-	else {BUG;}							\
-      }									\
+  assert(!yAvailable || totY==1 || !(grid xor ggridY));			\
+  assert(!extraData || callingKernel);					\
+  if (grid) {								\
+     if (extraData || callingKernel) {						\
+      if (vdimSq == 1) { GRIDCYCLES(UNIVAR_KERNEL; v++); }		\
+      else { GRIDCYCLES(MULTIVAR_KERNEL); }				\
     } else { /* grid, y not given */					\
-      if (vdimSq == 1) {						\
-	GRIDCYCLE_X(UNIVAR_FCTN_X; v+=vdimSq);			\
-      } else {GRIDCYCLE_X(MULTIVAR_FCTN_X); }				\
+      if (vdimSq == 1) { GRIDCYCLE_X(UNIVAR_FCTN_X; v++); }		\
+      else { GRIDCYCLE_X(MULTIVAR_FCTN_X); }				\
     }									\
-  } else { /* not a grid */						\
-    assert(ygiven xor (y==zero));					\
-    if (ygiven || kernel) {		\
+  } else { /* x not a grid */						\
+    assert(yAvailable xor (y==zero));					\
+    if (extraData || callingKernel) {					\
       double *y0 = y,							\
-	*yend = ygiven ? y + localdim * totY : y;	\
-      if (grid) {							\
-	{BUG; } /* maybe somewhen in future */				\
-      } else {								\
-	NONGRIDCYCLE(DO_INCREMENTY, PREPAREY,				\
-		     UNIVAR_KERNEL; v+=vdimSq, MULTIVAR_KERNEL);	\
-      }									\
-    } else {				\
-      if (grid) {BUG; } /* maybe somewhen in future */			\
-      else {								\
-	NONGRIDCYCLE(EMPTY, PREPAREX, UNIVAR_FCTN_X; v+=vdimSq,	\
-		     MULTIVAR_FCTN_X);					\
-      }									\
+	*yend = yAvailable ? y + localdim * totY : y;			\
+      NONGRIDCYCLE(DO_INCREMENTY, PREPAREY,				\
+		   UNIVAR_KERNEL; v+=vdimSq, MULTIVAR_KERNEL);		\
+    } else {								\
+      NONGRIDCYCLE(EMPTY, PREPAREX, UNIVAR_FCTN_X; v+=vdimSq,		\
+		   MULTIVAR_FCTN_X);					\
     }									\
     if (err != NOERROR) XERR(err);					\
   }
+
 
 // kein komma in der nachfolgenden Defintion!!
 #define VDIM_LOOP(DO)							\

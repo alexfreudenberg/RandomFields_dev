@@ -75,7 +75,7 @@ resolve.register <- function(register){
              "RFgui" =  MODEL_GUI,
              ##                   interpolate und bedingte Simu
              "RFinterpolate" =  RFopt$predict_register, 
-             "RFlikelihood" = RFoptlikelihood_register,
+             "RFlikelihood" = RFopt$likelihood_register,
              "RFlinearpart" = MODEL_USER,
              "RFratiotest" =  MODEL_MLE,
              "RFsimulate" =  RFopt$register,
@@ -237,9 +237,9 @@ RFgetModel <- function(register, explicite.natscale, show.call=FALSE,
 		       origin = "original model") {
    ## Fctn darf intern nicht aufgerufen werden!
   internalRFoptions(COPY=TRUE,RETURN=FALSE) 
-  register <- resolve.register(if (missing(register)) NULL else
-                               if (is.numeric(register)) register else
-                               deparse(substitute(register)))
+  register <- resolve.register(if (missing(register)) NULL
+                               else if (is.numeric(register)) register
+                               else deparse(substitute(register)))
   modus <- (if (missing(explicite.natscale)) GETMODEL_AS_SAVED else
             if (explicite.natscale)  GETMODEL_DEL_NATSC else
             GETMODEL_SOLVE_NATSC)
@@ -532,6 +532,16 @@ mergeWithGlobal <- function(dots) {
   dots
 }
 
+
+
+
+GetModelEffects <- function(Z) {
+  .Call(C_SetAndGetModelLikelihood, MODEL_AUX,
+        list("RFloglikelihood", data = Z$data, Z$model),
+        Z$C_coords, ignoreValues, original_model)$effect
+}
+
+
 RFpar <- function(...) {
   l <- list(...)
   if (length(l) == 1 && is.null(l[[1]]) && length(names(l)) ==0) {
@@ -554,3 +564,4 @@ RFpar <- function(...) {
 }
 
 # resetWarnings <- function (all = FALSE) .C(C_ResetWarnings, as.integer(all))
+

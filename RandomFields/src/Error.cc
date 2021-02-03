@@ -134,10 +134,9 @@ void errorMSG(int err, errorstring_type errorstring, KEY_type *KT,
 	    RFOPTIONS, 
 	    "cPrintlevel",
 	    PL_DETAILSUSER);
-    
     SPRINTF(m, 
 	    "Running out of list of methods. %.100s%.50s",
-	    KT->global_utils.basic.skipchecks
+	    KT != NULL && KT->global_utils.basic.skipchecks
 	    ? "Did you try an invalid parameter combination?" : restrictive,
 	    PL <= 2 ? string : "" );
     break;

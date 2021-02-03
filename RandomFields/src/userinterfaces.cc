@@ -692,7 +692,7 @@ SEXP Init(SEXP model_reg, SEXP Model, SEXP x, SEXP NA_OK) {
   // printf("init A\n");
   
   if (PL >= PL_COV_STRUCTURE) {
-    PMI(cov);// OK
+    // PMI(cov);// OK
   }
 
   SEXP ans;
@@ -743,15 +743,26 @@ SEXP EvaluateModel(SEXP X, SEXP I, SEXP Covnr){
     for (d=0; d<len; d++) INTEGER(dummy)[d] = (int) cov->q[d];
     PROTECT(result=allocArray(REALSXP, dummy));
   }
-  GetRNGstate();  
+  GetRNGstate();
+
+  
+  //  int n=cov->q[0] * cov->q[1] * cov->q[2]; printf("short do %s, %d; %f %f %f\n", NAME(cov), len, cov->q[0], cov->q[1], cov->q[2]); double *r=REAL(result);for (int i=0; i<n; i++) r[i]=3.14;
+  // return result;
+  
+  
   DefList[COVNR].cov(REAL(X),
 		     INTEGER(I),// for simulations: gives the number of repetitions
 		     // predict: selection indices
 		     cov, REAL(result));// nicht FCTN, COV o.ae
+  
+  //  if (length(result) > 1)  printf("evaluation call done %d %e %e\n", REAL(result)[0], REAL(result)[1]);  else printf("userinterf %d\n", length(result));
+
+  
   PutRNGstate(); // PutRNGstate muss vor UNPROTECT stehen!!
   UNPROTECT(prot);
+  //
   //  printf("evaluation end\n");
- return result;
+  return result;
 }
 
 

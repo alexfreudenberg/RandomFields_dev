@@ -18,12 +18,13 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
+
 #include <Rmath.h>  
 #include <stdio.h>  
+#include "def.h"
 #include "questions.h"
 #include "operator.h"
 #include "Processes.h"
-
 
 #define SPECTRAL_LINES (COMMON_GAUSS + 1)
 #define SPECTRAL_GRID (COMMON_GAUSS + 2)
@@ -48,6 +49,7 @@ int check_spectral(model *cov) {
   kdefault(cov, SPECTRAL_METRO_FACTOR, gp->prop_factor);
   kdefault(cov, SPECTRAL_SIGMA, gp->sigma); // ok
   if ((err = checkkappas(cov, false)) != NOERROR) RETURN_ERR(err);
+  RESERVE_BOXCOX;
 
   // APMI(cov);
   // printf("\n\ncheck_spectral %d %s %d\n", key==NULL, NICK(sub), cov->frame);
@@ -59,6 +61,7 @@ int check_spectral(model *cov) {
       iso[loops] = {ISOTROPIC, DOUBLEISOTROPIC};
     //
     for (i=0; i<loops; i++) {
+      //      printf("check spectral dim %d %d\n", OWNLOGDIM(0), OWNXDIM(0));
       if ((err2[i] = CHECK(next, OWNLOGDIM(0), OWNXDIM(0), 
 			   PosDefType, XONLY, iso[i],
 			   SUBMODEL_DEP, GaussMethodType)) == NOERROR) break;
@@ -83,6 +86,7 @@ int check_spectral(model *cov) {
       //		     SUBMODEL_DEP, GaussMethodType)) != NOERROR) {
       RETURN_ERR(err);
     }
+    //      printf("check sub %d %d\n", SUBLOGDIM(0), SUBXDIM(0));
   }
 
   // APMI(cov);
@@ -146,11 +150,12 @@ int init_spectral(model *cov, gen_storage *S){
     *key =cov->key,
     *sub = key == NULL ? next : key;
 
-  //  PMIR(cov);
+  //  PMI0(cov);
+  
   
   int err=NOERROR,
-    dim = ANYDIM;
-  spec_properties *s = &(S->spec);
+    dim = Loctsdim(cov);
+  spectral_storage *s = &(S->Sspectral);
 
   if (hasEvaluationFrame(cov)) {
     RETURN_NOERROR;
@@ -187,6 +192,12 @@ int init_spectral(model *cov, gen_storage *S){
 
  ErrorHandling:
   cov->simu.active = err == NOERROR;
+
+ 
+  for (int d=0; d<dim; d++) S->Sspectral.E[d] = UNIFORM_RANDOM;
+
+  //  printf("spectral init dim = %d %s\n", dim, NAME(sub));
+    
   RETURN_ERR(err);
 }
 
@@ -220,17 +231,18 @@ void E12(spectral_storage *s, int dim, double A, double *e) {
     e[0]=e1[0];
   }
 }
+
 void E3(spectral_storage *s, double A, double *e) {
   // ignore grid
   if (s->grid) warning("in 3d no spectral grid implemented yet");
-  double phi, psi, Asinpsi;
-  phi = TWOPI*UNIFORM_RANDOM;
-  psi = PI*UNIFORM_RANDOM;
-  Asinpsi = A * SIN(psi);
-  e[0] = A * COS(psi);
-  e[1] = Asinpsi * COS(phi);
-  e[2] = Asinpsi * SIN(phi);
+#define dimE3 3
+  double x[dimE3] = {rnorm(0.0, 1.0), rnorm(0.0, 1.0), rnorm(0.0, 1.0)},
+    L = 0;
+  for (int i=0; i<dimE3; i++) L += x[i] * x[i];
+  L = A / SQRT(L);
+  for (int i=0; i<dimE3; i++) e[i] = x[i] * A;
 }
+
 void E(int dim, spectral_storage *s, double A, double *e) {
   switch (dim) {
   case 1 : E1(s, A, e); break;
@@ -242,6 +254,8 @@ void E(int dim, spectral_storage *s, double A, double *e) {
 
 
 void do_spectral(model *cov, gen_storage *S) {  // in two dimensions only!
+
+  
   globalparam *global = &(cov->base->global);
   //  gauss_param *dp = &(gp->gauss);
   usr_bool exact = global->general.exactness;
@@ -255,9 +269,8 @@ void do_spectral(model *cov, gen_storage *S) {  // in two dimensions only!
     *caniso = LocAniso(cov);
  
   assert(S != NULL);
-  spec_properties *cs = &(S->spec);
   spectral_storage *s = &(S->Sspectral);
-  assert(s != NULL && cs != NULL);
+  assert(s != NULL);
   int d, n, gridlenx, gridleny, gridlenz, gridlent,
     ntot = P0INT(SPECTRAL_LINES),
     origdim = Loctsdim(cov),
@@ -280,7 +293,8 @@ void do_spectral(model *cov, gen_storage *S) {  // in two dimensions only!
   s->grid = P0INT(SPECTRAL_GRID);
   s->phistep2d = TWOPI/ (double) ntot; 
   s->phi2d = s->phistep2d * UNIFORM_RANDOM;
-//  print("%d %10g %10g\n", s->grid, s->phistep2d, s->phi2d); assert(false);
+//  printf("%d %10g %10g\n", s->grid, s->phistep2d, s->phi2d);
+//  TREE(cov);
   
   for (d=0; d<MAXTBMSPDIM; d++) E[d] = inc[d] = 0.0;
   for (n=0; n<total; n++) res[n]=0.0;
@@ -304,18 +318,22 @@ void do_spectral(model *cov, gen_storage *S) {  // in two dimensions only!
     }
   }
 
+  //  PL = 7; printf("PL=7\n");
 
   for (n=0; n<ntot; n++) {
     C->spectral(next, S, E);
     if (PL > 6) {
-      PRINTF("spect: %d %10g %10g %d %d sigma=%10g nmetro=%d\n",
-	     n, E[0], E[1], grid, caniso  != NULL,
-	     cs->sigma, cs->nmetro);
+      
+      PRINTF("spect: %s %d %10g %10g %d %d sigma=%10g nmetro=%d\n",
+	     NAME(next), n, E[0], E[1], grid, caniso  != NULL,
+	     s->sigma, s->nmetro);
+       //
+      assert(n < 0);
+    
     }
-       //assert(n < 3);
-   
-    //   if (meth->cscale != 1.0) {
-    //    double invscale = 1.0 / meth->cscale;       
+    
+    //   if (meth->scale != 1.0) {
+    //    double invscale = 1.0 / meth->scale;       
     //   for (d=0; d<cov->ts dim; d++)  E[d] *= invscale;
     //}
     if (caniso != NULL) {
@@ -478,6 +496,12 @@ void do_spectral(model *cov, gen_storage *S) {  // in two dimensions only!
     res[nx]  *= (double) sqrttwodivbyn; 
   }
 
+
+  //  printf("%f %f %d\n", res[0], res[1], PL);
+  
   BOXCOX_INVERSE;
+
+  //  printf("spectral %f %f %f\n", res[0], res[1], sqrttwodivbyn);
+  
 } 
 

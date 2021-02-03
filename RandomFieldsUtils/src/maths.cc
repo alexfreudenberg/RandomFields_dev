@@ -24,6 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "intrinsics.h"
 #include "General_utils.h"
 #include "Utils.h"
+#include "xport_import.h"
 
 
 double struve_intern(double x, double nu, double factor_Sign, bool expscaled)
@@ -232,19 +233,12 @@ double D4Gauss(double x) {
 
 #define LOW_MATERN 1e-20
 double logWM(double x, double nu1, double nu2, double factor) {
+   KEY_type *KT = KEYT();
   // check calling functions, like hyperbolic and gneiting if any changings !!
 
   //  printf("%10g %10g %10g %10g\n", x, nu1, nu2, factor);
 
-#ifdef DO_PARALLEL
-  double loggamma;
-#else 
-  static double loggamma, loggamma1old, loggamma2old, loggamma_old, 
-    nuOld=-RF_INF,
-    nu1old=-RF_INF,
-    nu2old=-RF_INF;
-#endif  
-  double v, y, 
+   double v, y, loggamma,
     nu = 0.5 * (nu1 + nu2),
     nuThres = nu < MATERN_NU_THRES ? nu : MATERN_NU_THRES,
 		   scale = 1.0;
@@ -254,28 +248,23 @@ double logWM(double x, double nu1, double nu2, double factor) {
 
   if (x > LOW_MATERN && nu < RF_INF) {
     if (x == RF_INF) return RF_NEGINF;
-#ifdef DO_PARALLEL
-    if (simple) loggamma = lgammafn(nuThres);
-    else loggamma = 0.5*(lgammafn(nu1) + lgammafn(nu2));
-#else 
     if (simple) {
-      if (nuThres != nuOld) {
-	nuOld = nuThres;
-	loggamma_old = lgammafn(nuThres);
+      if (nuThres != KT->nuOld) {
+	KT->nuOld = nuThres;
+	KT->loggamma_old = lgammafn(nuThres);
       } 
-      loggamma = loggamma_old;      
+      loggamma = KT->loggamma_old;      
     } else {
-      if (nu1 != nu1old) {
-	nu1old = nu1;
-	loggamma1old = lgammafn(nu1);
+      if (nu1 != KT->nu1old) {
+	KT->nu1old = nu1;
+	KT->loggamma1old = lgammafn(nu1);
       }
-      if (nu2 != nu2old) {
-	nu2old = nu2;
-	loggamma2old = lgammafn(nu2);
+      if (nu2 != KT->nu2old) {
+	KT->nu2old = nu2;
+	KT->loggamma2old = lgammafn(nu2);
       }
-      loggamma = 0.5 * (loggamma1old + loggamma2old);
+      loggamma = 0.5 * (KT->loggamma1old + KT->loggamma2old);
     }
-#endif  
     
     y = x  * scale;
     v = LOG2 + nuThres * LOG(0.5 * y) - loggamma + 
@@ -310,12 +299,7 @@ double WM(double x, double nu, double factor) {
 }
 
 double DWM(double x, double nu, double factor) { 
-#ifdef DO_PARALLEL
-  double loggamma;
-#else 
-  static double nuOld=RF_INF;
-  static double loggamma;
-#endif  
+   KEY_type *KT = KEYT();
   double   y, v,
     nuThres = nu < MATERN_NU_THRES ? nu : MATERN_NU_THRES,
 		   scale = 1.0;
@@ -324,16 +308,12 @@ double DWM(double x, double nu, double factor) {
   
   if (x > LOW_MATERN && nu < RF_INF) {
     if (x == RF_INF) return 0.0;
-#ifdef DO_PARALLEL
-    loggamma = lgammafn(nuThres);
-#else 
-   if (nuThres!=nuOld) {
-      nuOld = nuThres;
-      loggamma = lgammafn(nuThres);
+  if (nuThres!=KT->nuOld) {
+      KT->nuOld = nuThres;
+      KT->loggamma_old = lgammafn(nuThres);
     }
-#endif    
     y = x * scale;  
-    v = - 2.0 * EXP(nuThres * LOG(0.5 * y) - loggamma + 
+    v = - 2.0 * EXP(nuThres * LOG(0.5 * y) - KT->loggamma_old + 
 			     LOG(bessel_k_ex(y, nuThres - 1.0, 2.0, bk)) - y);
   } else {
     v = (nuThres > 0.5) ? 0.0 : (nuThres < 0.5) ? INFTY : 1.253314137;
@@ -352,12 +332,7 @@ double DWM(double x, double nu, double factor) {
 }
 
 double DDWM(double x, double nu, double factor) { 
-#ifdef DO_PARALLEL
-  double gamma;
-#else 
-  static double nuOld=RF_INF;
-  static double gamma;
-#endif  
+   KEY_type *KT = KEYT();
   double  y, v,
     nuThres = nu < MATERN_NU_THRES ? nu : MATERN_NU_THRES,
 		   scale = 1.0;
@@ -367,16 +342,12 @@ double DDWM(double x, double nu, double factor) {
   
   if (x > LOW_MATERN && nu < RF_INF) {
     if (x == RF_INF) return 0.0;
-#ifdef DO_PARALLEL
-    gamma = gammafn(nuThres);
-#else 
-    if (nuThres!=nuOld) {
-      nuOld = nuThres;
-      gamma = gammafn(nuThres);
+    if (nuThres!=KT->nuOld) {
+      KT->nuAlt = nuThres;
+      KT->gamma = gammafn(nuThres);
     }
-#endif    
     y = x * scale;
-    v = POW(0.5 * y , nuThres - 1.0) / gamma *
+    v = POW(0.5 * y , nuThres - 1.0) / KT->gamma *
       (- bessel_k_ex(y, nuThres - 1.0, 1.0, bk)
        + y * bessel_k_ex(y, nuThres - 2.0, 1.0, bk));
   } else {
@@ -397,12 +368,7 @@ double DDWM(double x, double nu, double factor) {
 }
 
 double D3WM(double x, double nu, double factor) { 
-#ifdef DO_PARALLEL
-  double gamma;
-#else 
-  static double nuOld=RF_INF;
-  static double gamma;
-#endif  
+   KEY_type *KT = KEYT();
   double y, v,
     nuThres = nu < MATERN_NU_THRES ? nu : MATERN_NU_THRES,
     scale = (factor != 0.0) ? factor * SQRT(nuThres) : 1.0,
@@ -411,16 +377,12 @@ double D3WM(double x, double nu, double factor) {
  
   if (x > LOW_MATERN && nu < RF_INF) {
     if (x == RF_INF) return 0.0;
-#ifdef DO_PARALLEL
-     gamma = gammafn(nuThres);
- #else 
-    if (nuThres!=nuOld) {
-      nuOld = nuThres;
-      gamma = gammafn(nuThres);
+    if (nuThres!=KT->nuOld) {
+      KT->nuAlt = nuThres;
+      KT->gamma = gammafn(nuThres);
     }
-#endif    
     y = x * scale;
-    v = POW(0.5 * y , nuThres - 1.0) / gamma *
+    v = POW(0.5 * y , nuThres - 1.0) / KT->gamma *
       ( 3.0 * bessel_k_ex(y, nuThres - 2.0, 1.0, bk) 
 	-y * bessel_k_ex(y, nuThres - 3.0, 1.0, bk)); 
   } else {
@@ -441,6 +403,7 @@ double D3WM(double x, double nu, double factor) {
 }
 
 double D4WM(double x,  double nu, double factor) { 
+   KEY_type *KT = KEYT();
   double y, v,
     nuThres = nu < MATERN_NU_THRES ? nu : MATERN_NU_THRES,
     scale = (factor != 0.0) ? factor * SQRT(nuThres) : 1.0,
@@ -451,18 +414,14 @@ double D4WM(double x,  double nu, double factor) {
   
   if (x > LOW_MATERN && nu < RF_INF) {
     if (x == RF_INF) return 0.0;
-#ifdef DO_PARALLEL
-    double gamma = gammafn(nuThres);
-#else 
     static double nuOld=RF_INF;
     static double gamma;
-    if (nuThres!=nuOld) {
-      nuOld = nuThres;
-      gamma = gammafn(nuThres);
+    if (nuThres!=KT->nuOld) {
+      KT->nuAlt = nuThres;
+      KT->gamma = gammafn(nuThres);
     }
-#endif    
     y = x * scale;
-    v = 0.25 * POW(0.5 * y , nuThres - 3.0) / gamma *
+    v = 0.25 * POW(0.5 * y , nuThres - 3.0) / KT->gamma *
       (+ 6.0 * (nuThres - 3.0 - y * y) * bessel_k_ex(y, nuThres - 3.0, 1.0, bk)
        + y * (3.0  + y * y) * bessel_k_ex(y, nuThres - 4.0, 1.0, bk)); 
   } else {

@@ -27,6 +27,10 @@ RFgui <- function(data, x, y,
                   sim_only1dim=FALSE,
                   wait = 0, 
                   ...) {
+  
+ # message("RFgui is currently not available.")
+ # return(NULL)
+  
   if (!interactive() || !requireNamespace("tkrplot", quietly = TRUE)) {
     warning("'RFgui' can be used only in an interactive mode")
     return(NULL)
@@ -36,7 +40,11 @@ RFgui <- function(data, x, y,
   assign("RFgui.model", NULL, envir=Env)
   if (exists(".RFgui.exit", .GlobalEnv)) rm(".RFgui.exit", envir=.GlobalEnv)
  
-  RFopt <- if (same.alg) 
+  circ.trials <- 1
+  circ.force <- TRUE
+  circ.min <- -2
+ 
+  RFopt <- if (same.algorithm) 
              internalRFoptions(storing=FALSE,
                                circulant.trials=circ.trials,
                                circulant.force=circ.force,
@@ -75,9 +83,6 @@ rfgui.intern <- function(data, x, y,
                          parent.ev=NULL,
                          RFopt,
                          printlevel=0,...) {
-  circ.trials <- 1
-  circ.force <- TRUE
-  circ.min <- -2
 
   if (missing(y)) y <- NULL
   if (missing(ev)) ev <- NULL
@@ -321,8 +326,8 @@ rfgui.intern <- function(data, x, y,
     if(!as.numeric(tkValue(showAniso))) {
       scale <- exp(as.numeric(tkValue(slScaleValue)))
       newmodel <- list(SYMBOL_PLUS,
-                    list(DOLLAR[1], var=variance, scale=scale, baseModel),
-                    list(DOLLAR[1], var=nugget, list(RM_NUGGET[1])))
+                    list(RM_S[2], var=variance, scale=scale, baseModel),
+                    list(RM_S[2], var=nugget, list(RM_NUGGET)))
     } else {
       a <-  as.numeric(tkValue(slRotationValue))
       r <- c(exp(as.numeric(tkValue(slScaleAValue))),
@@ -330,8 +335,8 @@ rfgui.intern <- function(data, x, y,
       u <- matrix(c(cos(a), sin(a), -sin(a), cos(a)), ncol=2 )
       aniso <- u %*% (1/r * t(u))
       newmodel <- list(SYMBOL_PLUS,
-                    list(DOLLAR[1], var=variance, aniso=aniso, baseModel),
-                    list(DOLLAR[1], var=nugget, list(RM_NUGGET[1])))
+                    list(RM_S[2], var=variance, aniso=aniso, baseModel),
+                    list(RM_S[2], var=nugget, list(RM_NUGGET)))
     }
     return(newmodel)
   }
@@ -810,7 +815,11 @@ rfgui.intern <- function(data, x, y,
   #------------------------------------------------------------------
   # GUI
   #------------------------------------------------------------------
-  tt <- tcltk::tktoplevel()#title="RFgui")
+  if (is(tt <- Try(tcltk::tktoplevel()), CLASS_TRYERROR)) {   #title="RFgui")
+    message(tt)
+    cat("'tcltk' is not fully supported anymor. Stop 'RFgui' (by pressing Ctrl-C (several times) under Unix)\n")
+    return()
+  }
   tcltk::tktitle(tt) <- "RFgui"
   tcltk::tkwm.protocol(tt, "WM_DELETE_WINDOW", OnReturn)
   

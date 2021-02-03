@@ -1,9 +1,7 @@
 \name{RFoptions}
 \alias{RFoptions}
 \alias{RFOPTIONS}
-\alias{RC_VARIOGRAM}
-\alias{RC_PSEUDO}
-\alias{RC_COVARIANCE}
+\alias{RC_DUPLICATEDLOC_NAMES}
 \title{Setting control arguments}
 \description{
  \command{\link{RFoptions}} sets and returns control arguments for the analysis
@@ -53,7 +51,7 @@
   \bold{20. \code{special}: Options for some special methods}\cr
   \bold{21. \code{spectral}: Options for the spectral (turning bands) method}\cr
   \bold{22. \code{tbm}: Options for the turning bands method}\cr
-  \bold{23. \code{\link{messsage}}: Options for hints, notes and
+  \bold{23. \code{\link{message}}: Options for hints, notes and
     warnings}\cr
  \bold{24. \code{internal}: Internal options, which should not be
    changed by the user}\cr
@@ -75,9 +73,9 @@
 \describe{
   % only works for RFsimulate, not for RFsimulate
   
-  \item{\code{duplicated_locations}}{Allowed values are \code{"error"},
-    \code{"risk error"},
-    \code{"regard as repeated"} and \code{"scatter"}:
+  \item{\code{duplicated_locations}}{Allowed values are
+    given by \code{RC_DUPLICATEDLOC_NAMES}:
+%    \code{"error"},   \code{"risk error"}, \code{"regard as repeated"} and \code{"scatter"}:
     \describe{
       \item{\code{"error"}}{
 	In case of kriging, locations that appear in both the given data

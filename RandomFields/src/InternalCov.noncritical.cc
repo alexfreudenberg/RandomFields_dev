@@ -42,6 +42,44 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //#include <R_ext/BLAS.h> 
 
 
+
+
+#ifdef SCHLATHERS_MACHINE
+#define INFO_TRACE(where, info, cov)
+void INFO_TRACEX(const char *where, int *info, model *cov) {
+  if (parallel()) BUG;
+  static int oldcovnr = UNSET; // ok, da nur schlathers machine
+  if (COVNR != oldcovnr && (COVNR < FIRSTDOLLAR || COVNR > LASTDOLLAR)) { 
+    oldcovnr = COVNR;
+    model *calling = cov->calling;
+    if (calling != NULL && (CALLINGNR >= FIRSTDOLLAR && CALLINGNR<=LASTDOLLAR)){
+      PRINTF("%s", NAME(calling));
+    }
+    PRINTF("%s%s (%d i=%d e=%d) [INFO_TRACE]\n", NAME(cov), where,
+	   info[INFO_N_X], info[INFO_IDX_X], info[INFO_EXTRA_DATA_X]);
+  }
+}
+#define INFO_TRACE_RETURN(where, info, cov)
+void INFO_TRACE_RETURNX(const char *where, int *info, model *cov) {
+  if (parallel()) BUG;
+  static int oldcovnr = UNSET; // ok, da nur schlathers machine
+  if (COVNR != oldcovnr && (COVNR < FIRSTDOLLAR || COVNR > LASTDOLLAR)) { 
+    oldcovnr = COVNR;
+    model *calling = cov->calling;
+    if (calling != NULL && (CALLINGNR >= FIRSTDOLLAR && CALLINGNR<=LASTDOLLAR)){
+      PRINTF("%s", NAME(calling));
+    }
+    PRINTF("RETURN %s%s (%d i=%d e=%d) [INFO_TRACE]\n", NAME(cov), where,
+	   info[INFO_N_X], info[INFO_IDX_X], info[INFO_EXTRA_DATA_X]);
+  }
+}
+#else
+#define INFO_TRACE(where, info, cov)
+#define INFO_TRACE_RETURN(where, info, cov)
+#endif
+
+
+
 void kdefault(model *cov, int i, double v) {
   utilsparam *global_utils = &(cov->base->global_utils);
 
@@ -551,26 +589,6 @@ void stat2_Intern(double *x, model *cov, double **Z) {
 
 //
 
-#ifdef SCHLATHERS_MACHINE
-#define INFO_TRACE(where, info, cov)
-void INFO_TRACEX(const char *where, int *info, model *cov) {
-  if (parallel()) BUG;
-  static int oldcovnr = UNSET; // ok, da nur schlathers machine
-  if (COVNR != oldcovnr && (COVNR < FIRSTDOLLAR || COVNR > LASTDOLLAR)) { 
-    oldcovnr = COVNR;
-    model *calling = cov->calling;
-    if (calling != NULL && (CALLINGNR >= FIRSTDOLLAR && CALLINGNR<=LASTDOLLAR)){
-      PRINTF("%s", NAME(calling));
-    }
-    PRINTF("%s%s (%d i=%d e=%d) [INFO_TRACE]\n", NAME(cov), where,
-	   info[INFO_N_X], info[INFO_IDX_X], info[INFO_EXTRA_DATA_X]);
-  }
-}
-#else
-#define INFO_TRACE(where, info, cov)
-#endif
-
-
 
 void stat2(double *x, int *info, model *cov, double *v) {
   //  if (!equalsXonly(PREVDOM(0))) { PMI0(cov); crash(); }
@@ -588,6 +606,7 @@ void stat2(double *x, int *info, model *cov, double *v) {
   
   DefList[COVNR].cov(*z1, info, cov, v);// nicht gatternr
   END_TALLOC_z; // very crucial that not z is freed!
+  INFO_TRACE_RETURN("2", info, cov);
 }
 
 void logstat2(double *x, int *info, model *cov, double *v, double *Sign) {
@@ -598,6 +617,7 @@ void logstat2(double *x, int *info, model *cov, double *v, double *Sign) {
   stat2_Intern(x, cov, z1);
   DefList[COVNR].log(*z1, info, cov, v, Sign);// nicht gatternr
   END_TALLOC_z;
+  INFO_TRACE_RETURN("2L", info, cov);
 }
 
 
@@ -696,6 +716,7 @@ void nonstat2(double *x, double *y, int *info, model *cov, double *v) {
   }
   FREE_TALLOC(z1);
   FREE_TALLOC(z2);
+  INFO_TRACE_RETURN("N2", info, cov);
 }
 
 void nonstat_log2(double *x, double *y, int *info, model *cov,
@@ -726,6 +747,7 @@ void nonstat_log2(double *x, double *y, int *info, model *cov,
   }
   FREE_TALLOC(z1);
   FREE_TALLOC(z2);
+  INFO_TRACE_RETURN("NL2", info, cov);
 }
 
 
@@ -758,6 +780,7 @@ void D_2(double *x, int *info, model *cov, double *v){
       C->D(y, info, cov, v); 
     }
   }
+  INFO_TRACE_RETURN("D2", info, cov);
 }
 
 void DD_2(double *x, int *info, model *cov, double *v) {
@@ -799,6 +822,7 @@ void DD_2(double *x, int *info, model *cov, double *v) {
       C->D2(y, info, cov, v); // nicht gatternr
     } else BUG;
   }
+  INFO_TRACE_RETURN("D2", info, cov);
 }
 
 void D3_2(double *x, int *info, model *cov, double *v) {
@@ -841,7 +865,7 @@ void D3_2(double *x, int *info, model *cov, double *v) {
       C->D3(y, info, cov, v); // nicht gatternr
     } else BUG;
   }
-
+  INFO_TRACE_RETURN("D3", info, cov);  
 }
 
 
@@ -888,6 +912,7 @@ void D4_2(double *x, int *info, model *cov, double *v) {
       C->D4(y, info, cov, v); // nicht gatternr
     } else BUG;
   }
+  INFO_TRACE_RETURN("D4", info, cov);
 
 }
 
@@ -1008,8 +1033,11 @@ void do2(model *cov, gen_storage *s){
   //    if (param != NULL && isnowRandom(param)) DORANDOM(param, P(i));
   //  }
 
+  // printf("do2 hier %s\n", NAME(cov));
+
   DefList[COVNR].Do(cov, s); // ok
 
+  //  printf("do2 ende hier\n");
   // assert(false);
 }
 

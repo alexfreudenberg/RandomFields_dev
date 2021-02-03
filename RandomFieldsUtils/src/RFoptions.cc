@@ -24,7 +24,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "RandomFieldsUtils.h"
 #include "General_utils.h"
 #include "zzz_RandomFieldsUtils.h"
-#include "options.h"
 #include "xport_import.h"
 #include "kleinkram.h"
 
@@ -67,7 +66,7 @@ deleteoptions_fctn delparam[MAXNLIST] = { NULL, NULL, NULL, NULL, NULL };
 
 
 void hintVariable(char *name, int warn_unknown_option) {
-  static bool printing = true; 
+  static bool printing = true; // da nur Mutterprozess schreiben darf
   if (warn_unknown_option > 0 && GLOBAL.basic.Rprintlevel > 0) {
     PRINTF("'%s' is considered as a variable (not as an option).\n", name);
     if (printing && GLOBAL.basic.helpinfo && !parallel()) {

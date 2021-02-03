@@ -116,7 +116,7 @@ int get_index(double *x, bool ignore_y, model *cov) {
     coord_type gr = LocgrY(loc, ignore_y);
     for (int d = 0; d<dim; d++) {
       int idx,
-	len = gr[d][XLENGTH];
+	len = (int) gr[d][XLENGTH];
       double step = gr[d][XSTEP];                
       if (cartesian || d > 1) {// also arth height; earth time
 	idx = cutidx((x[d] - gr[d][XSTART]) / step, len);
@@ -345,9 +345,9 @@ void covariate(double *x, int *info, model *cov, double *v){
  
   assert(isnowTrend(cov));
   globalparam *global = &(cov->base->global);
-getStorage(S ,   covariate);
- kdefault(cov, COVARIATE_EXTRA_DATA, false);
- if (PisNULL(COVARIATE_C)) ERR1("argument '%.20s' not given.", KNAME(FIXCOV_M));
+  getStorage(S ,   covariate);
+  if (PisNULL(COVARIATE_C)) ERR1("argument '%.20s' not given.",
+				 KNAME(FIXCOV_M));
    bool
     extradata = P0INT(COVARIATE_EXTRA_DATA),
     extra = info[INFO_EXTRA_DATA_X] && !S->onlyOne;
@@ -359,8 +359,9 @@ getStorage(S ,   covariate);
   assert(idx != NA_INTEGER);
 
   if (S->merged_x) { // bei bedingter simulation muessen x udn y
-    // zusammengeworfen werden
-    // darf nicht ge-indexed sein. siehe assert in indexedSet
+    // zusammengeworfen werden;
+    // darf nicht ge-indexed sein (also keien Teilmengen von x und y betrachtet
+    // werden). siehe assert in indexedSet
     assert(extradata);
     // assert(loc->rawidx == NULL && loc->rawset == UNSET);
     int i = 2 * cov->base->set;
@@ -489,7 +490,9 @@ int checkcovariate(model *cov){
       ERR("coordinates do not match data size");
     
     if (merged_x) {
-      int idx = 2 * set;
+      // da ein Teil mit NAs aufgefuellt ist und zunaechst nicht klar ist
+      // welcher, werden diese gesucht
+      int idx = 2 * set; // index fuer die wahren nrows des Datensatzes      
       if (!S->nrow_checked) {
 	if (S->nrow == NULL) S->nrow = (int*) CALLOC(2 * sets, sizeof(int));
 	double *p = LP(COVARIATE_C);

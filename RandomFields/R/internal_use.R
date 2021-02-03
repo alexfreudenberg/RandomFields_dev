@@ -221,8 +221,11 @@ ArrangeDevice <- function(graphics, figs, dh=2.8, h.outer=1.2,
 
 
 
+
+
+
 StartExample <- function(reduced = TRUE, save.seed=TRUE) {
-  if (save.seed) {
+   if (save.seed) {
     RFopt <- internalRFoptions()    
 #    L <- list(se ed=RFopt$ba sic$s eed)
  #   if (length(RFopt$coords) != 0) L$coord_system= RFopt$coords$coord_system
@@ -231,10 +234,19 @@ StartExample <- function(reduced = TRUE, save.seed=TRUE) {
   }
   ## Print(ls( envir=.RandomFields.env), .RandomFields.env)
   if (!interactive() || hasArg("reduced")) {
+    n <- 1
+    while (n <= 10 && !exists("topic", envir=parent.frame(n=n),
+                              inherits=FALSE)) n <- n +1
+    if (n <= 10) {
+      topic <- get("topic", envir=parent.frame(n=n))
+      assign("RFpar_options_main", envir=.RandomFields.env, RFpar()$main)
+      RFpar(main = paste0("Example '", topic, "'"))
+    }
+    
     ## do not touch next lines
     ## REDUCED <- reduced, reduced
     REDUCED <- reduced
-    RFoptions(examples_reduced = REDUCED, RETURN=FALSE) ## nicht lokal!
+    RFoptions(examples_reduced = REDUCED) ## nicht lokal!
   }
 }
 
@@ -258,7 +270,11 @@ FinalizeExample <- function() {
   RFoptions(list_ = options) ## internalRFoptions geht nicht, da
   ##                            printlevel, seed auch gesetzt werden muss
   #do.call("RFoptions", options)
-  #print("done finalize")
+                                        #print("done finalize")
+  if (exists("RFpar_options_main", envir=.RandomFields.env)) {
+    RFpar(main=get("RFpar_options_main", envir=.RandomFields.env))
+    rm("RFpar_options_main", envir=.RandomFields.env)
+  }
 }
 
 

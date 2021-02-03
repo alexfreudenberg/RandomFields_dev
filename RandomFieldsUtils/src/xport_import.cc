@@ -27,21 +27,124 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "win_linux_aux.h"
 #include "zzz_RandomFieldsUtils.h"
 #include "RandomFieldsUtils.h"
-
 //#include "zzz_RandomFieldsUtils.h" // always last
 
 
 #define PLoffset -10
-
 int PL = C_PRINTLEVEL,
   CORES = 1; //  return;  TO DO: replace by KEYT->global_utils
 
+
+KEY_type *PIDKEY[PIDMODULUS];
 int parentpid=0;
 bool parallel() {
   int mypid;
   pid(&mypid);
   return mypid != parentpid;
 }
+
+void globalparam_NULL(KEY_type VARIABLE_IS_NOT_USED *KT,
+		      bool VARIABLE_IS_NOT_USED copy_messages) {
+  // lokale Version noch nicht verwendet
+}
+
+void globalparam_NULL(KEY_type *KT) {
+  globalparam_NULL(KT, true);
+}
+
+void globalparam_DELETE(KEY_type *KT) {
+   // pointer loeschen
+  utilsparam_DELETE(&(KT->global_utils));
+}
+
+
+
+void KEY_type_NULL(KEY_type *KT) {
+  // ACHTUNG!! setzt nur die uninteressanten zurueck. Hier also gar ncihts.
+  KT->next = NULL; // braucht es eigentlich nicht
+  KT->doshow = true;
+  KT->ToIntDummy = NULL;
+  KT->ToIntN = 0;
+  KT->ToRealDummy = NULL;
+  KT->ToRealN = 0;
+  KT->nu2old = KT->nuOld = KT->nu1old = KT->nuAlt = -RF_INF;
+  globalparam_NULL(KT);
+}
+
+void KEY_type_DELETE(KEY_type **S) {
+  KEY_type *KT = *S;
+  globalparam_DELETE(KT);
+  FREE(KT->ToIntDummy);
+  FREE(KT->ToRealDummy);
+  UNCONDFREE(*S);
+}
+
+
+
+KEY_type *KEYT() {
+  int mypid;
+  pid(&mypid);
+  //  printf("entering KEYT %d %d \n", mypid, parentpid);
+  // for (int i=0; i<PIDMODULUS; i++) printf("%ld ", PIDKEY[i]);
+  KEY_type *p = PIDKEY[mypid % PIDMODULUS];
+  //  printf("%d %d %ld\n", mypid,  PIDMODULUS, p);
+  if (p == NULL) {
+    KEY_type *neu = (KEY_type *) XCALLOC(1, sizeof(KEY_type));
+    assert(neu != NULL);
+    PIDKEY[mypid % PIDMODULUS] = neu;
+    neu->visitingpid = mypid;    
+    if (PIDKEY[mypid % PIDMODULUS] != neu) { // another process had the
+      //                                        same idea
+      FREE(neu);
+      return KEYT(); // ... and try again
+    }
+    neu->pid = mypid;
+    //    printf("neu %d %d\n", mypid);
+    neu->visitingpid = 0;
+    neu->ok = true;
+    if (PIDKEY[mypid % PIDMODULUS] != neu) BUG;
+    KEY_type_NULL(neu);    
+    if (GLOBAL.basic.warn_parallel && mypid == parentpid) {
+      PRINTF("Do not forget to run 'RFoptions(storing=FALSE)' after each call of a parallel command (e.g. from packages 'parallel') that calls a function in 'RandomFields'. (OMP within RandomFields is not affected.) This message can be suppressed by 'RFoptions(warn_parallel=FALSE)'.\n"); // ok
+    }
+   return neu;
+  }
+  while (p->pid != mypid && p->next != NULL) {
+    //    printf("pp = %d\n", p->pid);
+    p = p->next;
+  }
+  //  printf("pp m = %d %d\n", p->pid, mypid);
+  if (p->pid != mypid) {
+    if (!p->ok || p->visitingpid != 0) {
+      if (PL >= PL_ERRORS) {
+	PRINTF("pid collision %d %d\n",  p->ok, p->visitingpid);
+      }
+      //
+      BUG;
+      return KEYT();
+    }
+    p->visitingpid = mypid;
+    p->ok = false;
+    if (p->visitingpid != mypid || p->ok) {
+      return KEYT();
+    }
+    KEY_type *neu = (KEY_type *) XCALLOC(1, sizeof(KEY_type));
+    neu->pid = mypid;
+    if (!p->ok && p->visitingpid == mypid) {
+      p->next = neu;
+      p->visitingpid = 0;
+      p->ok = true;      
+      return neu;
+    }
+    FREE(neu);
+    p->visitingpid = 0;
+    p->ok = true;
+    KEY_type_NULL(neu); 
+   return KEYT();
+  }
+  return p;
+}
+
 
 void setoptions(int i, int j, SEXP el, char name[LEN_OPTIONNAME], bool isList, bool local);
 void getoptions(SEXP sublist, int i, bool local);
@@ -57,9 +160,15 @@ void loadoptions() {
 		  getoptions,
 		  deloptions,
 		  0, true);
+  int save = CORES;
+  GLOBAL.solve.pivot = PIVOT_NONE_AUTO; // OK
+  GLOBAL.solve.pivotMaxTakeOwn = own_chol_up_to();
+  if (PL > 0) PRINTF("limit size for simple Cholesky algorithm  = %d\n",
+		     GLOBAL.solve.pivotMaxTakeOwn);
 }
 
 
+    
 SEXP attachoptions() {
 #define NEED_AVX2 true
 #define NEED_AVX true
@@ -70,11 +179,22 @@ SEXP attachoptions() {
   ReturnAttachMessage(RandomFieldsUtils, true);  
 }
 
+void PIDKEY_DELETE() {
+  for (int kn=0; kn<PIDMODULUS; kn++) {
+    KEY_type *KT = PIDKEY[kn];
+    while (KT != NULL) {
+      KEY_type *q = KT;
+      KT = KT->next;
+      KEY_type_DELETE(&q);
+    }
+    PIDKEY[kn] = NULL;
+  }
+}
 
 
 void  detachoptions(){
- freeGlobals();
- detachRFoptions(prefixlist, prefixN);
+  PIDKEY_DELETE();
+  detachRFoptions(prefixlist, prefixN);
 }
 
 

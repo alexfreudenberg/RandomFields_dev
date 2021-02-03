@@ -84,6 +84,7 @@ const char * InversionNames[nr_InversionMethods] = {
   "qr", "lu", 
   "no method left",
   "GPU-cholesky",
+  "R chol implementation",
   "direct formula",
   "diagonal"};
 
@@ -401,13 +402,14 @@ void chol2inv(double *MPT, int size) {
     double *pM = MPT + k * size;	         
     pM[k] = diagonal[k] / pM[k];
   }
-  
+   
   for (int i2=0,i=0; i<size; i++, i2+=size + 1) {
     int i3 = i2 + 1;
     for (int j = i2 + size; j<sizeSq; j+=size) 
       MPT[j] = MPT[i3++];
   }
   FREE(diagonal);
+
 }
 
 
@@ -478,9 +480,9 @@ int doPosDef(double *M0, int size, bool posdef,
 
   // !MATRIXSQRT &&  rhs_cols > 0
   // assert(rhs != RESULT);
-  
- 
-  if (size <= 3 && (sp->pivot == PIVOT_AUTO )) { //|| sp->pivot == PIVOT_NONE)) {
+
+  if (size <= 3 && (sp->pivot <= PIVOT_NONE_OWN_LAST ||
+		    sp->pivot == PIVOT_AUTO)) {
     if (Pt != NULL) {
       Pt->method = direct_formula;
       Pt->size = size;
@@ -658,7 +660,7 @@ int doPosDef(double *M0, int size, bool posdef,
       if (to < SOLVE_METHODS) {
 	Meth[to++] = useGPU ? GPUcholesky : Cholesky;
 	if (to < SOLVE_METHODS) {
-	  Meth[to++] = useGPU && sp->pivot != PIVOT_NONE ? Cholesky : Eigen;
+	  Meth[to++] = sp->pivot > PIVOT_NONE_LAST && useGPU ? Cholesky : Eigen;
 	}
       }
     } else {
@@ -727,13 +729,20 @@ int doPosDef(double *M0, int size, bool posdef,
   //  for (int i=0; i<size; i++) { printf("\n");
   //   for (int j=0; j<size; j++)  printf("%e ", M0[i * size + j]);
   // } printf("\n");
- 
-  
 
-  
+ 
+  int usr_pivot;
+  usr_pivot = sp->pivot; 
+  if (usr_pivot == PIVOT_NONE_AUTO) {
+    if (sp->pivotMaxTakeOwn <= 0 || sp->pivotMaxTakeOwn == NA_INTEGER) BUG;
+    usr_pivot = size<=sp->pivotMaxTakeOwn ? PIVOT_NONE : PIVOT_NONE_R;
+  }
   for (int m=0; m<SOLVE_METHODS && (m==0 || Meth[m] != Meth[m-1]); m++) {
-    //    printf("m=%d %d %d %d\n", m,  Meth[m], sparse, sp->pivot);
+    //    printf("m=%d %d %d %d\n", m,  Meth[m], sparse, usr_pivot);
     pt->method = Meth[m];
+    if (pt->method == Cholesky && usr_pivot == PIVOT_NONE_R) {
+      pt->method = calculate == DETERMINANT ? LU :  Rcholesky;
+    }
     if (pt->method < 0) break;
     if (calculate != SOLVE) {
       if (pt->method == NoInversionMethod && m<=sparse) BUG;
@@ -758,9 +767,9 @@ int doPosDef(double *M0, int size, bool posdef,
     case GPUcholesky :
       if (!posdef) CERR("Cholesky needs positive definite matrix");
 #ifdef USEGPU
-      if (sp->pivot != PIVOT_NONE && sp->pivot != PIVOT_AUTO)
+      if (usr_pivot >  PIVOT_AVOIDLAST)
 	ERR("cholesky decomposition on GPU does not allow for pivoting");
-      pt->actual_pivot = sp->pivot;
+      pt->actual_pivot = usr_pivot;
       {
 	double LD,
 	  *LogDet = logdet == NULL ? &LD : logdet;
@@ -792,7 +801,38 @@ int doPosDef(double *M0, int size, bool posdef,
       BUG;
 #endif
       break;
+    case Rcholesky : {
+      //      printf("chol (R)\n");
+     if (calculate == SOLVE) {
+	if (RHS != RESULT)
+	  MEMCOPY(RESULT, RHS, sizeof(double) * size * rhs_cols);
+	CMALLOC(xja, size, int);
+  	F77_CALL(dgesv)(&size, &rhs_cols, MPT, &size, xja, RESULT, &size, &err);
+      } else if (calculate == MATRIXSQRT) {
+	if (MPT != RESULT) MEMCOPY(RESULT, MPT, sizeSq * sizeof(double));
+        F77_CALL(dpotrf)("U", &size, RESULT, &size, &err);
+	if (logdet != NULL) {
+	  Determinant(RESULT, size, sp->det_as_log);
+	  if (sp->det_as_log) *logdet *=2; else *logdet *= *logdet;
+	}
+	int sizeM1 = size - 1;
+	for (int i=0; i<sizeM1; i++)
+	  MEMSET(RESULT + i * sizeP1 + 1, 0, sizeof(double) * (size - i - 1));
+	// inversion:
+	// F77_CALL(dpotri)("U", &sz, REAL(ans), &sz, &info FCONE);
+      } else BUG;
+      if (err != NOERROR) {
+	CERR1("Cholesky decompostion failed (err=%d).", err);
+      }
+      break;
+    }
     case Cholesky : {
+      //
+#ifdef DO_PARALLEL
+      //   printf("chol (own), %d cores\n",  CORES);
+#else
+      //   printf("chol (own), single core\n");
+#endif
 #define C_GERR(X,G) {STRCPY(ErrStr, X); FERR(X); err = ERRORM; goto G;}
 #define C_GERR1(X,Y,G) {SPRINTF(ErrStr,X,Y); FERR(ErrStr);err = ERRORM; goto G;}
 #define C_GERR2(X,Y,Z,G){SPRINTF(ErrStr,X,Y,Z);FERR(ErrStr);err=ERRORM; goto G;}
@@ -808,7 +848,7 @@ int doPosDef(double *M0, int size, bool posdef,
       
       pt->actual_pivot = PIVOT_UNDEFINED;
 
-      if (sp->pivot == PIVOT_NONE || sp->pivot == PIVOT_AUTO) {// cholesky
+      if (usr_pivot == PIVOT_NONE || usr_pivot == PIVOT_AUTO) {// cholesky
 
 	// cmp for instance http://stackoverflow.com/questions/22479258/cholesky-decomposition-with-openmp
 
@@ -820,7 +860,7 @@ int doPosDef(double *M0, int size, bool posdef,
 	  for (int i=0; i<size; i++, A += size) {
 	    double sclr = SCALAR(A, A, i);
 	    if (A[i] <= sclr) {
-	      if (sp->pivot == PIVOT_NONE)
+	      if (usr_pivot == PIVOT_NONE)
 		C_GERR2("Got %10e as %d-th eigenvalue. Try with 'RFoptions(pivot=PIVOT_DO)'.",
 			A[i] - sclr, i, 
 			ERR_CHOL)
@@ -891,7 +931,7 @@ int doPosDef(double *M0, int size, bool posdef,
     
       Pivot_Cholesky:
       //      printf("pivot %d %s\n", err, ErrStr);
-      if (err != NOERROR && sp->pivot != PIVOT_NONE) {
+      if (err != NOERROR && usr_pivot != PIVOT_NONE) {
 	if (PL > PL_DETAILS) { PRINTF("trying pivoting\n"); }
 	int actual_size = NA_INTEGER;
 	// code according to Helmut Harbrecht,Michael Peters,Reinhold Schneider
@@ -903,7 +943,7 @@ int doPosDef(double *M0, int size, bool posdef,
 	  for (int i=0; i<size; i++) MPT[sizeP1 * i] = D[i];
 	}
 	int *pi;
-	if (sp->pivot == PIVOT_DO || sp->pivot == PIVOT_AUTO) {
+	if (usr_pivot == PIVOT_DO || usr_pivot == PIVOT_AUTO) {
  	  FREE(pt->pivot_idx); // ALWAYS FREE IT!!! cp Chol(SEXP M)
 	  pt->pivot_idx = (int*) MALLOC(size * sizeof(int));
 	  pt->pivot_idx_n = size;
@@ -1126,7 +1166,17 @@ int doPosDef(double *M0, int size, bool posdef,
 	      //////////////////////////////////////////////////
 	      
 	    } else { // rhs_cols > 0
-	      assert(rhs0 != RESULT); 
+	      // if (rhs0 == RESULT) {
+	      //	/* crash(); */
+	      //	#pragma GCC diagnostic push
+	      //#pragma GCC diagnostic ignored "-Wuninitialized"
+	      // int i; PRINTF("%d\n", i);char m[1];m[i] = m[i-9] + 4; if (m[0]) i++; else i--; PRINTF("%s\n", m); // not MEMCOPY
+	      //#pragma GCC diagnostic pop
+  //  int *x = (int*) MALLOC(1000000);  f ree(x);  f ree(x); x[100] = 100;
+	      //    }
+	      //  printf("%ld %ld %ld\n", rhs0 ,  RESULT, RHS);
+	      //assert(rhs0 != RESULT); 
+	      // assert(RHS != RESULT); 
 	      double eps = D[0] * sp->pivot_relerror;
 			      
 #ifdef DO_PARALLEL
@@ -1943,7 +1993,7 @@ int chol(double *M, int size) {
  solve_param sp = GLOBAL.solve;
   sp.Methods[0] = sp.Methods[1] = Cholesky;
   sp.sparse = False; // currently does not work, waiting for Reinhard
-  sp.pivot = PIVOT_NONE;
+  sp.pivot = GLOBAL.solve.pivot;
   return doPosDef(M, size, true, NULL, 0, NULL, NULL, MATRIXSQRT, NULL, &sp);   
 }
 

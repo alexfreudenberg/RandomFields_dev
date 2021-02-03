@@ -251,7 +251,8 @@ int checktbmproc(model *cov) {
 
   kdefault(cov, TBM_POINTS, gp->points);
   if ((err = checkkappas(cov, false)) != NOERROR)  RETURN_ERR(err);
- 
+  RESERVE_BOXCOX;
+   
   if (key == NULL && !isProcess(sub)) { // thus isVariogram(sub)
     // Abfolge Tbm $(Aniso) iso-model braucht Moeglichkeit des 
     // anisotropen Modells
@@ -544,10 +545,7 @@ getStorage(s ,   tbm);
 
   // only needed for nongrid !
   s->spatialtotalpts = totpts;
-  if (s->ce_dim == 2) {
-    s->spatialtotalpts /= timecomp[XLENGTH];
-    //    assert(false);
-  }
+  if (s->ce_dim == 2) s->spatialtotalpts /= (int) timecomp[XLENGTH];
  
 
   /****************************************************************/
@@ -652,9 +650,7 @@ getStorage(s ,   tbm);
   // 4465  0.000948
 
 
-  //printf("xline %10g %10g %10g\n", xline[XSTART], xline[XSTEP], xline[XLENGTH]);
-  
-  err = loc_set(xline, timecomp, 1, 1, xline[XLENGTH], ce_dim2 /* time */, 
+  err = loc_set(xline, timecomp, 1, 1, (int) xline[XLENGTH], ce_dim2 /* time */, 
 	  true /* grid */, false, cov->key);
   model *key = cov->key;
   if (err != NOERROR) goto ErrorHandling;
@@ -998,9 +994,9 @@ getStorage(s ,   tbm);
           }
 
     inct = nn; // number of spatial points
-    gridlent = loc->Time ? loc->T[XLENGTH] : 1; 
+    gridlent = loc->Time ? (int) loc->T[XLENGTH] : 1; 
     assert(gridlent * nn * vdim == ntot);
-
+    
     switch (simuspatialdim) {
     case 1 : //see Martin's techrep f. details
       TBMSTART;

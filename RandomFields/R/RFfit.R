@@ -156,6 +156,8 @@ summary.RMmodelFit <- function(object, ..., isna.param) {
     model <- object$model
   }
 
+  covariat <- globalvariance <- param <- residuals <- variab <-
+    likelihood <- AIC <- AICc <- BIC <- coordsystem <- params.list <- NULL
   for (i in c("covariat", "globalvariance", "param", "residuals", "variab",
               "likelihood", "AIC", "AICc", "BIC", "coordsystem", "params.list"))
     assign(i, do.call(OP, list(object, i)))
@@ -603,7 +605,7 @@ RFfit <- function(model, x, y=NULL, z=NULL, T=NULL,  grid=NULL, data,
   ## are turned into genuine models 
   further.models <- list()
   models <- c("lower", "upper", "users.guess", "parscale")
-  parscale <- optim.control$parscale ## could be given by RMmodel!!
+  parscale <- optim.control$parscale ## could be given by a RMmodel!!
   if (paramlist <- length(params) > 0)
     for (m in models) further.models[[m]] <- get(m)
 

@@ -27,7 +27,7 @@
 #include "AutoRandomFields.h"
 #include "shape.h"
 #include "primitive.h"
-
+#include "startGetNset.h"
 
 
 /* Models involving Gauss */
@@ -543,5 +543,69 @@ void rangeStrokorbOesting(model VARIABLE_IS_NOT_USED *cov, range_type *range) {
   range->pmax[STROES_Y0] = 1000;
   range->openmin[STROES_Y0] = true;
   range->openmax[STROES_Y0] = true;
+
+}
+
+
+void includeAsymmetricModels() {
+  pref_type pgaussgauss = {5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
+  //                      CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
+  IncludePrim("gaussgauss", PosDefType, 1, XONLY, SYMMETRIC, checkOK, rangegaussgauss, pgaussgauss, 2, INFDIM, (ext_bool) false, NOT_MONOTONE);
+  kappanames("nu", REALSXP);
+  addCov(gaussgauss);
+ 
+  pref_type pgaussGammalike = {5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
+  //                CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
+  IncludePrim("gaussGammalike", PosDefType, 1, XONLY, SYMMETRIC, checkOK,
+	      rangegaussGammalike, pgaussGammalike,
+	      2/*this is hopefully the parameter that controls the dim*/,
+	      INFDIM, (ext_bool) false, NOT_MONOTONE);
+  kappanames("m", INTSXP); // TODO ask or find version for int
+  addCov(gaussGammalike); 
+
+  
+    pref_type pCauchyUnif1 = {5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
+    //                CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
+    IncludePrim("cauchyUnif1", PosDefType, 2, XONLY, SYMMETRIC, checkOK, rangeCauchyUnif1, pCauchyUnif1, 2, INFDIM, (ext_bool) false, NOT_MONOTONE);
+    kappanames("eps", REALSXP, "b", REALSXP);
+    addCov(cauchyUnif1);
+
+
+    pref_type pCauchyUnif2 = {5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
+    //                CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
+    IncludePrim("cauchyUnif2", PosDefType, 2, XONLY, SYMMETRIC, checkOK, rangeCauchyUnif2, pCauchyUnif2, 2, INFDIM, (ext_bool) false, NOT_MONOTONE);
+    kappanames("eps", REALSXP, "b", REALSXP);
+    addCov(cauchyUnif2);
+
+
+    pref_type pCauchyUnif3 = {5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
+    //                CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
+    IncludePrim("cauchyUnif3", PosDefType, 2, XONLY, SYMMETRIC, checkOK, rangeCauchyUnif3, pCauchyUnif3, 2, INFDIM, (ext_bool) false, NOT_MONOTONE);
+    kappanames("eps", REALSXP, "b", REALSXP);
+    addCov(cauchyUnif3);
+
+    pref_type platentCauchy1 = {5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
+    //                CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
+    IncludePrim("latentCauchy1", PosDefType, 2, XONLY, SYMMETRIC, checkOK, rangelatentCauchy1, pCauchyUnif3, 2, INFDIM, (ext_bool) false, NOT_MONOTONE);
+    kappanames("a", REALSXP, "b", REALSXP);
+    addCov(latentCauchy1);
+
+    pref_type platentCauchy2 = {5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
+    //                CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
+    IncludePrim("latentCauchy2", PosDefType, 2, XONLY, SYMMETRIC, checkOK, rangelatentCauchy2, platentCauchy2, 2, INFDIM, (ext_bool) false, NOT_MONOTONE);
+    kappanames("a", REALSXP, "b", REALSXP);
+    addCov(latentCauchy2);
+
+    pref_type platentCauchy3 = {5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
+    //                CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
+    IncludePrim("latentCauchy3", PosDefType, 2, XONLY, SYMMETRIC, checkOK, rangelatentCauchy3, platentCauchy3, 2, INFDIM, (ext_bool) false, NOT_MONOTONE);
+    kappanames("a", REALSXP, "b", REALSXP);
+    addCov(latentCauchy3);
+
+    pref_type platentCauchy4 = {5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
+    //                CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
+    IncludePrim("latentCauchy4", PosDefType, 3, XONLY, SYMMETRIC, checkOK, rangelatentCauchy4, platentCauchy4, 2, INFDIM, (ext_bool) false, NOT_MONOTONE);
+    kappanames("a", REALSXP, "b", REALSXP, "gamma", REALSXP);
+    addCov(latentCauchy4);
 
 }

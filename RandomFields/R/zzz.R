@@ -35,7 +35,7 @@ GetMessage <-function() .Call("attachoptions")
 
 .onAttach <- function (lib, pkg) {
   #print("dooppelte anfuehrungszeichen kroore")
- # packageStartupMessage("This is RandomFields Version: 4.0.0.8") # ")
+ # packageStartupMessage("This is RandomFields Version: 4.0.0.9") # ")
   packageStartupMessage("Note that a new package 'RandomFieldsLight' is upcoming,\nwhich offers a simplified access to modelling random fields.")
   packageStartupMessage(GetMessage());
 }

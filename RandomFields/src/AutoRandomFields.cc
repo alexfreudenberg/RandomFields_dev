@@ -11,7 +11,7 @@ const char // muss in separater Zeile sein
 
   *OPTIMISER_NAMES[nOptimiser] = { // RC
   "optim", "optimx", "soma", "nloptr", // nloptr muss immer 4. sein
-    "GenSA", "minqa", "pso", "optimParallel", "DEoptim"},
+    "GenSA", "minqa", "pso", "DEoptim"},
   
   *NLOPTR_NAMES[nNLOPTR] = { // RC
     "NLOPT_GN_DIRECT", "NLOPT_GN_DIRECT_L", 
@@ -137,6 +137,11 @@ const char // muss in separater Zeile sein
   *FCTN_TYPE_NAMES[TOTAL_FCTN_TYPE] = {
   "Variogram", "Madogram", "Covariance", "Pseudomadogram", "Pseudovariogram"},
 
+  *RM_S[2] = {S_NICK, SYMBOL_S},
+  *RM_PLUS[2] = {PLUS_NICK, SYMBOL_PLUS},
+  *RM_MULT[2] = {MULT_NICK, SYMBOL_MULT},
+  
+  
   *METHOD_NAMES[Forbidden+1]={"circulant", // RC
 			     "cutoff",
 			     "intrinsic",

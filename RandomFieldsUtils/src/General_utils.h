@@ -24,17 +24,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 
-#ifndef rfutils_H
-#define rfutils_H 1
+#ifndef rfutils_general_H
+#define rfutils_general_H 1
 
 #include <R.h>
 #include <Rinternals.h>
 #include <Rmath.h>
 #include <string.h>
-#include "Basic_utils.h"
-#include "errors_messages.h"
-#include "Solve.h"
-#include "scalar.h"
+#include "RFU.h"
 
 
 

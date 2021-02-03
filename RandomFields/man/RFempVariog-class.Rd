@@ -23,10 +23,9 @@
 \usage{
 RFplotEmpVariogram(x, model = NULL, nmax.phi = NA, nmax.theta = NA,
                     nmax.T = NA,
-                     plot.nbin = TRUE, plot.sd=FALSE, method = "ml",
-                     variogram=TRUE,
+                     plot.nbin = TRUE, plot.sd=FALSE, method,
                                boundaries = TRUE,
-                               ...)
+                               ..., all=FALSE)
 \S4method{plot}{RFempVariog,missing}(x, y, ...)
 \S4method{persp}{RFempVariog}(x, ...)
 }
@@ -53,12 +52,11 @@ RFplotEmpVariogram(x, model = NULL, nmax.phi = NA, nmax.theta = NA,
   \item{plot.sd}{logical; only for \code{class(x)=="RFempVariog"};
     indicates whether the calculated standard deviation (\code{x@sd}) is
     to be plotted (in form of arrows of length +-1*sd)}
-  \item{method}{character. Currently restricted to \code{"ml"} for
-    maximum-likelihood method.
+  \item{method}{character vector, e.g. \code{c("ml", "plain")} for
+    plotting the result of MLE and standard LSQ.
+    If missing, all results are plotted.
+    See also \code{all}.
   }
-  \item{variogram}{logical; This argument should currently not be set
-    by the user. If \code{TRUE} then the empirical variogram
-    is plotted, else an estimate for the covariance function.} 
   \item{boundaries}{logical; only for \code{class(x)=="RFempVariog"} and
     the anisotropic case where \code{model} is given.
     As the empirical variogram is calculated on a sector of angles,
@@ -75,6 +73,11 @@ RFplotEmpVariogram(x, model = NULL, nmax.phi = NA, nmax.theta = NA,
     can be passed, no \command{\link{RFoptions}}.
     %see Details.
   }
+  \item{all}{
+    logical. If \code{TRUE}, all available results within the list given
+    by \code{method} are plotted. If \code{FALSE}, the first non-missing
+    result is plotted, which is then \code{"ml"} by default.
+  }
 }
 
 
@@ -86,7 +89,8 @@ RFplotEmpVariogram(x, model = NULL, nmax.phi = NA, nmax.theta = NA,
    the empirical (overall) variance in the data
  }
  \item{\code{sd}:}{standard deviation of the variogram cloud within each
- bin} 
+   bin}
+ \item{\code{dim}}{dimension of the field}
  \item{\code{n.bin}:}{number of bins} 
  \item{\code{phi.centers}:}{centres of the bins with respect to the
    (first) angle (for anisotropic empirical variograms only)} 
@@ -100,9 +104,8 @@ RFplotEmpVariogram(x, model = NULL, nmax.phi = NA, nmax.theta = NA,
  \item{\code{varunits}:}{string giving the units of the variables,
    see also option \code{varunits} of \command{\link{RFoptions}}.
  }
- \item{\code{call}:}{language object; the function call by which the
-   object was generated}
- \item{\code{method}:}{integer; variogram (0), covariance (2), madogram (4) }
+ \item{\code{alpha}:}{real number between -2 and +2., see
+ \code{emp_alpha} in \link{RFoptionsFit}}
 }
 }
 

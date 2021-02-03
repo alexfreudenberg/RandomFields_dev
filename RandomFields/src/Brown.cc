@@ -497,8 +497,8 @@ double IdxDistance(int maxind, int zeropos, double **xgr, int dim) {
     y = zeropos;
   for (d=0; d<dim; d++) {
     delta += ( (x % (int) xgr[d][XLENGTH]) - (y % (int) xgr[d][XLENGTH]))* ( (x % (int) xgr[d][XLENGTH]) - (y % (int) xgr[d][XLENGTH]));
-    x /= xgr[d][XLENGTH];
-    y /= xgr[d][XLENGTH];
+    x /= (int) xgr[d][XLENGTH];
+    y /= (int) xgr[d][XLENGTH];
   }
   return SQRT(delta);
 }
@@ -788,7 +788,7 @@ getStorage(pgs ,   pgs);
     area *= sBR->m3.suppmax[d] - sBR->m3.suppmin[d];
     pgs->own_grid_start[d] = RF_NEGINF;
     pgs->own_grid_step[d] = keyloc->xgr[d][XSTEP];
-    pgs->own_grid_len[d] = keyloc->xgr[d][XLENGTH];
+    pgs->own_grid_len[d] = (int) keyloc->xgr[d][XLENGTH];
   }
   
   for (d=0; d<=cov->mpp.moments; d++) {
@@ -1242,7 +1242,7 @@ int structBRintern(model *cov, model **newmodel) {
     double **subxgr = Loc(STOMODEL->orig)->xgr;
     zeropos = 0;
     for (d = dim; d > 0; d--) {
-      double len =  subxgr[d-1][XLENGTH];
+      double len =  subxgr[d-1][XLENGTH]; // OK
       zeropos = zeropos * (int) len + (int) CEIL(len * 0.5) - 1;
     }
     sBR->zeropos = zeropos;
@@ -1277,7 +1277,7 @@ int structBRintern(model *cov, model **newmodel) {
   if (COVNR != BRMIXED_INTERN && grid) {
     double **subxgr = Loc(cov->key)->xgr;
     for (d=dim; d>0; d--) {
-      double len =  subxgr[d-1][XLENGTH];
+      double len =  subxgr[d-1][XLENGTH]; // OK
       zeropos = zeropos * len + (int) CEIL(len * 0.5) - 1;
     }
     sBR->zeropos = zeropos;

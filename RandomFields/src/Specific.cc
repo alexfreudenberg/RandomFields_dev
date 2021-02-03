@@ -42,6 +42,7 @@ int check_specificGauss(model *cov) {
    
   if (DefList[NEXTNR].Specific == MISMATCH || DefList[NEXTNR].Specific ==UNSET)
     SERR1("specific method for '%.50s' not known", NAME(next));
+  RESERVE_BOXCOX;
 
   if (key == NULL) {
 #define SPEC_TYPES 4
@@ -135,12 +136,11 @@ int struct_specificGauss(model *cov, model VARIABLE_IS_NOT_USED **newmodel) {
   set_type(PREVSYSOF(cov->key), 0, GaussMethodType);
   set_type(SYSOF(cov->key), 0, GaussMethodType);
 
- 
   if ((err = STRUCT(cov->key, NULL)) != NOERROR) RETURN_ERR(err);
 
 
   //APMI(cov);
-   //  printf("ok\n");
+   // printf("ok\n");
 
   if ((err = CHECK_PASSTF(cov->key, GaussMethodType, VDIM0, GaussMethodType))
       != NOERROR) {
@@ -148,7 +148,7 @@ int struct_specificGauss(model *cov, model VARIABLE_IS_NOT_USED **newmodel) {
    //		   XONLY, CoordinateSystemOf(OWNISO(0)),
    //		   cov->vdim, GaussMethodType)) != NOERROR) {
     //
-    //    PMI(cov->key); XERR(err);
+    //    PMI0(cov->key);
 
     //    printf("err = %d\n", err);
     
@@ -178,8 +178,9 @@ int init_specificGauss(model *cov, gen_storage *S) {
 
   FRAME_ASSERT_GAUSS_INTERFACE;
 
+ 
   cov->method = Specific;
-  //printf("specific : %.50s\n", NAME(key));
+  //  printf("specific : %.50s\n", NAME(key));
   if ((err = INIT(key, 0, S)) != NOERROR) RETURN_ERR(err);
 
   cov->simu.active = true;
@@ -193,7 +194,20 @@ void do_specificGauss(model *cov, gen_storage *S) {
   double *res = cov->rf;
   SAVE_GAUSS_TRAFO;
   assert(key != NULL);
-  DO(key, S);
+
+  //DO(key, S);
+
+  assert(key->initialised);
+  assert(key != NULL);
+  assert(S != NULL);
+    
+    ASSERT_GATTER(key);							
+    PL--;								
+    DefList[FIRSTGATTER].Do(key, S);					
+    PL++;								
+
+
+  
   BOXCOX_INVERSE;
 }
 

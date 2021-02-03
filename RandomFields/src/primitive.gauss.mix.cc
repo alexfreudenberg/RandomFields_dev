@@ -27,6 +27,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <R_ext/Lapack.h>
 #include <R_ext/Linpack.h>
 
+#include "def.h"
 #include "questions.h"
 #include "primitive.h"
 #include "operator.h"
@@ -321,7 +322,6 @@ void rangeconstant(model *cov, int VARIABLE_IS_NOT_USED k, int i, int j,
 /* exponential model */
 void exponential(double *x, INFO, model VARIABLE_IS_NOT_USED *cov, double *v){
    *v = EXP(- *x);
-   //  printf(": %10g %10g\n", *x, *v);
 }
 void logexponential(double *x, INFO, model VARIABLE_IS_NOT_USED *cov, double *v, double *Sign){
   *v = - *x;
@@ -378,12 +378,14 @@ int initexponential(model *cov, gen_storage *s) {
   double D = (double) dim;
 
   //  TREE0(cov);
-  //  PMI(cov);
-  
+  //  APMI(cov);
+
+  /// printf("init spec%d %d\n", hasGaussMethodFrame(cov), cov->method==SpectralTBM);
 
   if (HAS_SPECTRAL_FRAME(cov)) {
-    spec_properties *cs = &(s->spec);
+    spectral_storage *cs = &(s->Sspectral);
    if (PREVLOGDIM(0) <= 2) RETURN_NOERROR;
+   assert(false);
     cs->density = densityexponential;
     return search_metropolis(cov, s);
   }
@@ -451,9 +453,10 @@ void spectralexponential(model *cov, gen_storage *S, double *e) {
   if (dim <= 2) {
     double A = 1.0 - UNIFORM_RANDOM;
     E12(s, dim, SQRT(1.0 / (A * A) - 1.0), e);
-    //    printf("dim = %d %f %f %f\n", dim, A, e[0]);
+    //  printf("dim = %d %f %f; %f\n", dim, A, SQRT(1.0 / (A * A) - 1.0), e[0]);
   } else {
     metropolis(cov, S, e);
+    // printf("metro %f %f\n", e[0], e[1]);
   }
 }
 
@@ -652,7 +655,7 @@ int initGauss(model *cov, gen_storage *s) {
 
   if (HAS_SPECTRAL_FRAME(cov)) {
 
-   spec_properties *cs = &(s->spec);
+   spectral_storage *cs = &(s->Sspectral);
   
    if (OWNLOGDIM(0) <= 2) RETURN_NOERROR;
     cs->density = densityGauss;
@@ -1346,12 +1349,15 @@ void rangehyperbolic(model VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->openmax[BOLIC_NU] = true;
 
   int i;
-  for (i=1; i<=2; i++) { 
+  
+  for (i=1; i<=2; i++) { // lambda =1, delta=2
     range->min[i] = 0.0;
     range->max[i] = RF_INF;
     range->pmin[i] = 0.000001;
     range->pmax[i] = 10.0;
-    range->openmin[i] = false;
+    range->openmin[i] =
+      (i == 2 && (!R_FINITE(P0(BOLIC_NU) || P0(BOLIC_NU) <= -0.5))) ||
+      (i == 1 && (!R_FINITE(P0(BOLIC_NU) || P0(BOLIC_NU) >= -0.5)));
     range->openmax[i] = true;
   }
 }

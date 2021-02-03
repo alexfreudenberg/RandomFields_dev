@@ -216,6 +216,35 @@ ParScale <- function(optim.control, current, lower, upper) {
 }
 
 
+GetValuesAtNA <- function(NAmodel, valuemodel, skipchecks, type="",
+                          C_coords) {
+  aux.reg <- MODEL_AUX
+  
+  info <- neu <- list()
+  models <- list(NAmodel, ReplaceC(#P repareModel2( ## 13.7.19 geaendert
+                              valuemodel)) #)
+  
+  for (m in 1:2) {
+    info[[m]] <- .Call(C_SetAndGetModelLikelihood, aux.reg,
+                       list("Covariance",ExpliciteGauss(models[[m]])),
+                       C_coords, noConcerns,#raw ok, aber nicht gebraucht
+                       original_model)
+      neu[[m]] <- GetModel(register=aux.reg, modus=GETMODEL_DEL_MLE,
+                           return.which.param=INCLUDENOTRETURN)
+  }
+  NAs <- sum(info[[1]]$NAs) - info[[1]]$NaNs
+  ret <- TRY(.Call(C_Take2ndAtNaOf1st, aux.reg, list("Covariance", neu[[1]]),
+                   list("Covariance", neu[[2]]), C_coords, NAs,
+                   as.logical(skipchecks), noConcerns))
+  if (!is.numeric(ret)) {
+    model<-neu[[1]]
+    "lower/upper/users.guess" <- neu[[2]]
+    stop("'", type, "' does not match 'model'.\n  Better use the formula notation for the model given in ?RFformulaAdvanced.")
+  }
+  
+  return(ret)
+}
+
 
 
 ######################################################################
@@ -582,7 +611,8 @@ recurs.estim <- function(split, level, splitReg, Z,
     
     sp <- split[[s]]
 
-    if (!is.null(p <- sp$use.new.bounds)) {
+    p <- sp$use.new.bounds
+    if (!is.null(p)) {
       if (printlevel >= PL_STRUCTURE) {
         cat("    calculating new lower and upper bounds for the parameters ",
             paste(p, collapse=", "), "\n", seq="")
@@ -995,7 +1025,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
 ######################################################################
 ###                function definitions                            ###
 ######################################################################
-
+  
 
 # Gradient Approx
 
@@ -1290,35 +1320,7 @@ grad <- function(func, x, method="Richardson", side=NULL,
 ######################################################################
   ##  lower, upper, users.model must match 'model'. This is checked here.
 ######################################################################
-  GetValuesAtNA <- function(NAmodel, valuemodel, skipchecks, type="") {
-    aux.reg <- MODEL_AUX
-    
-    info <- neu <- list()
-    models <- list(NAmodel, ReplaceC(#P repareModel2( ## 13.7.19 geaendert
-                                valuemodel)) #)
-    
-    for (m in 1:2) {
-      info[[m]] <- .Call(C_SetAndGetModelLikelihood, aux.reg,
-                         list("Covariance",ExpliciteGauss(models[[m]])),
-                         C_coords, noConcerns,#raw ok, aber nicht gebraucht
-                         original_model)
-      neu[[m]] <- GetModel(register=aux.reg, modus=GETMODEL_DEL_MLE,
-                           return.which.param=INCLUDENOTRETURN)
-    }
-    NAs <- sum(info[[1]]$NAs) - info[[1]]$NaNs
-    ret <- TRY(.Call(C_Take2ndAtNaOf1st, aux.reg, list("Covariance", neu[[1]]),
-                     list("Covariance", neu[[2]]), C_coords, NAs,
-                     as.logical(skipchecks), noConcerns))
-    if (!is.numeric(ret)) {
-      model<-neu[[1]]
-      "lower/upper/users.guess" <- neu[[2]]
-      stop("'", type, "' does not match 'model'.\n  Better use the formula notation for the model given in ?RFformulaAdvanced.")
-    }
-    
-    return(ret)
-  }
-
-
+ 
 
 
   SetUsers <- function(users, own=NULL, type) {
@@ -1337,7 +1339,8 @@ grad <- function(func, x, method="Richardson", side=NULL,
                "', or the param definition in case of formula notation for the model.")
       } else {
         users <- GetValuesAtNA(NAmodel=Z$model, valuemodel=users,
-                               skipchecks=!is.null(trafo), type=type)
+                               skipchecks=!is.null(trafo), type=type,
+                               C_coords = C_coords)
       }
 
       if (!is.null(own)) {
@@ -1362,7 +1365,7 @@ grad <- function(func, x, method="Richardson", side=NULL,
     if (!fit$return_hessian)
       function(variab, ...) 
         list(hessian=matrix(NA, ncol=length(variab), nrow=length(variab)),
-             sd=rep(NA,length(p)), invH <- NULL)
+             sd=rep(NA,length(variab)), invH <- NULL)
     else
       function(variab, control=NULL, MLELB, MLEUB, ...) {
         nvariab <- length(variab)
@@ -1517,7 +1520,7 @@ grad <- function(func, x, method="Richardson", side=NULL,
 
     .C(C_PutValuesAtNA, COVreg, param)
     model.values <- .Call(C_MomentsIntern, COVreg, emp_alpha)
-    
+
     ##    Print(model.values, binned.variogram)
     stopifnot(length(model.values) == length(binned.variogram))
 
@@ -2144,31 +2147,25 @@ grad <- function(func, x, method="Richardson", side=NULL,
                spatialdim = spatialdim,   #4
                has.time.comp = C_coords[[1]]$has.time.comp,  #5
                dist.given = dist.given,   #6 ok
-               totpts = nrow(x),     #7
+               totpts = nrow(C_coords[[1]]$x),     #7
                l = spatialdim,            #8
                coordunits = C_coords[[1]]$coordunits,
                new_coordunits = C_coords[[1]]$new_coordunits))
 
     
-    if (!is(split <- TRY(xx), CLASS_TRYERROR)) {
-      ## error appears e.g. when RMfixcov is used with raw=TRUE.
-      
-      stopifnot(ncol(Z$rangex) == ts.xdim)
+       
+    stopifnot(ncol(Z$rangex) == ts.xdim)
      
-      split <- TRY(ModelSplit(splitReg=splitReg, info.cov=info.cov,trafo=trafo,
-                              variab=new.param,
-                              lower=lower, upper=upper,
-                              rangex = Z$rangex,
+    split <- TRY(ModelSplit(splitReg=splitReg, info.cov=info.cov,trafo=trafo,
+                            variab=new.param,
+                            lower=lower, upper=upper,
+                            rangex = Z$rangex,
                               ## ts.xdim != tsdim falls distances (x has.time.compy)
-                              modelinfo=list(ts.xdim=ts.xdim, tsdim=tsdim,
-                                  xdimOZ = xdimOZ, vdim=vdim,
-                                  dist.given=dist.given,
-                                  refined = fit$split_refined),
-                              model=Z$model))
-    }
-
-
- 
+                            modelinfo=list(ts.xdim=ts.xdim, tsdim=tsdim,
+                                           xdimOZ = xdimOZ, vdim=vdim,
+                                           dist.given=dist.given,
+                                           refined = fit$split_refined),
+                            model=Z$model))
     
       
     if (is(split, CLASS_TRYERROR)) {
@@ -2638,15 +2635,15 @@ grad <- function(func, x, method="Richardson", side=NULL,
           sqrt(pmax(0, vario2 / n.bin / 2.0 - vario^2)) ## numerische Fehler
         sdvario[1] <- vario[1] <- 0
         n.bin[1] <- sum(len)
-        centers <- 0.5 * (bins[-1] + bins[-length(bin)])
+        centers <- 0.5 * (bins[-1] + bins[-length(bins)])
         centers[1] <- 0
         empirical <- vario[-length(n.bin)]
         sdv <- sdvario[-length(n.bin)]
-        nbin <- n.bin[-length(n.bin)]
+        tmp <- n.bin[-length(n.bin)]
         dims <-  c(length(empirical), rep(1, 5))
-        dim(empirical) <- dim(sdv) <- dim(nbin) <- dims
-        ev <- list(centers=centers, empirical=empirical, sd=sdv, n.bin=nbin,
-                   Fehtl* noch * viel ## auch alpha fehlt hier
+        dim(empirical) <- dim(sdv) <- dim(tmp) <- dims
+        ev <- list(centers=centers, empirical=empirical, sd=sdv, n.bin=tmp,
+                  stop(" Fehtl* noch * viel") ## auch alpha fehlt hier
                    )
 	sd[[j]] <- ev$sd # j:vdim; ev contains the sets
 	if (is.null(binned.variogram))
@@ -3502,7 +3499,7 @@ grad <- function(func, x, method="Richardson", side=NULL,
         param.table[[Meth_i]][tblidx[[M]][1]] <- stop("") # crosstarget(variab)
       }
     }
-  
+
     ##+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     ## die nachfolgenden Zeilen aendern die Tabellenwerte -- somit
     ## muessen diese Zeilen unmittelbar vor dem return stehen !!!
@@ -3527,7 +3524,7 @@ grad <- function(func, x, method="Richardson", side=NULL,
 
     if (globalvariance) .C(C_PutGlblVar, as.integer(LiliReg),
                            as.double(param.table[[Meth_i]][glblvar.idx]))
- 
+
     modelres <- GetModel(register = LiliReg, modus = GETMODEL_SOLVE_MLE,
                          C_conform = FALSE,
 			solve_random = TRUE,

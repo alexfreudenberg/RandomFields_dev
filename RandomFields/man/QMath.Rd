@@ -19,6 +19,7 @@
 \alias{R.p}
 \alias{R.lon}
 \alias{R.lat}
+\alias{R.ggamma}
 \alias{R.gamma}
 \alias{gamma}
 \alias{R.acos}
@@ -280,22 +281,27 @@ R.fmin(x, y)
     
 \details{
   \describe{ 
-  \item{R.plus}{adds two values}
-  \item{R.minus}{substracts two values}
-  \item{R.mult}{multiplies two values}
-  \item{R.div}{devides two values}
-  \item{R.const}{defines a constant }
-  \item{R.c}{builds a vector}
-  \item{R.is}{evaluates equalities and inequalities;
-	note that \code{TRUE} is returned if the equality or
-	 inequality holds up to a tolerance given by 
-	\code{\link{RFoptions}()$nugget$tol}}
-  \item{R.p}{takes a component out of the vector giving the location}
-  \item{R.lon, R.lat}{longitudinal and latitudinal coordinate, given
-        in the \emph{spherical system}, i.e. in radians.
-        (earth system is in degrees).}
-  \item{R.round}{Note that \command{R.round} rounds away from zero.
-  }
+    \item{R.plus}{adds two values}
+    \item{R.minus}{substracts two values}
+    \item{R.mult}{multiplies two values}
+    \item{R.div}{devides two values}
+    \item{R.const}{defines a constant }
+    \item{R.c}{builds a vector}
+    \item{R.is}{evaluates equalities and inequalities;
+      note that \code{TRUE} is returned if the equality or
+      inequality holds up to a tolerance given by 
+      \code{\link{RFoptions}()$nugget$tol}}
+    \item{R.p}{takes a component out of the vector giving the location}
+    \item{R.lon, R.lat}{longitudinal and latitudinal coordinate, given
+      in the \emph{spherical system}, i.e. in radians.
+      (earth system is in degrees).}
+    \item{R.round}{Note that \command{R.round} rounds away from zero.}
+    \item{R.gamma, R.ggamma}{In several models, it is important that
+      \code{R.gamma(x)} is a positive value, which guaranteed for
+      \eqn{x>0}. As the Gamma function is likely to be used in this
+      framework. \command{R.gamma} does not allow for negative values, in
+      contrast to \command{R.ggamma}.
+    }
   }
   For the remaining models see the corresponding C functions for
   their return value. 
@@ -313,7 +319,7 @@ Neither vectors nor parentheses are allowed.
 \note{
   Instead of \code{R.model} the standard function can be used in case
   there is no ambiguity, i.e.,
-\code{c(...)},\code{asin(x)}, \code{atan(x)}, \code{atan2(y, x)}, \code{cos(x)},
+  \code{c(...)},\code{asin(x)}, \code{atan(x)}, \code{atan2(y, x)}, \code{cos(x)},
   \code{sin(x)}, \code{tan(x)}, \code{acosh(x)}, \code{asinh(x)},
   \code{atanh(x)}, \code{cosh(x)}, \code{sinh(x)}, \code{tanh(x)},
   \code{exp(x)}, \code{log(x)}, \code{expm1(x)}, \code{log2(x)},
@@ -322,21 +328,24 @@ Neither vectors nor parentheses are allowed.
   \code{floor(x)}, \code{round(x)}, \code{trunc(x)},
   \code{erf(x)}, \code{ erfc(x)}, \code{lgamma(x)}. See the examples
   below. 
-
   
-The function \command{RFcalc} is intended for simple calculations only
-and it is not excessively tested. Especially, binary
-operators should be used with caution.
-
-Note that all the functions here are NOT recognized as being
-positive definite (or negative definite), e.g. \command{cos} in
-\eqn{R^1}:
-\enumerate{
-  \item please use the functions given in \command{\link{RMmodels}}
-       for definite functions (for \code{cos} see \command{\link{RMbessel}})
-  \item Using uncapsulated substraction to build up a covariance
-	function is ambiguous, see the example in \command{\link{RMshape}}
-      }      
+  
+  The function \command{RFcalc} is intended for simple calculations only
+  and it is not excessively tested. Especially, binary
+  operators should be used with caution.
+  
+  Note that all the functions here are NOT recognized as being
+  positive definite (or negative definite), e.g. \command{cos} in
+  \eqn{R^1}:
+  \enumerate{
+    \item{please use the functions given in \command{\link{RMmodels}}
+      for definite functions (for \code{cos} see
+      \command{\link{RMbessel}})
+    }
+    \item{ Using uncapsulated substraction to build up a covariance
+      function is ambiguous, see the example in \command{\link{RMshape}}
+    }   
+  }
 }
 
 

@@ -28,9 +28,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef kleinkram_rfutils_h
 #define kleinkram_rfutils_h 1
 
+
+
 #include <R.h>
 #include <Rinternals.h>
 #include "Basic_utils.h" //#include <Basic_utils.h>
+
+#define USE_OWN_ALG (GLOBAL.solve.pivotMaxTakeOwn == MAXINT)
+
 
 
 #define LAST_R_TYPE_NAME 32
@@ -119,6 +124,8 @@ SEXP ExtendedBooleanUsr(usr_bool x);
  
 
 
+#ifndef akfjsakfjskajf
+
 double XkCXtl(double *X, double *C, int nrow, int dim, int k, int l);
 void XCXt(double *X, double *C, double *V, int nrow, int dim);
 void AtA(double *a, int nrow, int ncol, double *A);
@@ -142,6 +149,10 @@ void matmult_2ndtransp(double *A, double *B, double *C, int m, int l);
 void matmult_tt(double *A, double *B, double *C, int m, int l, int n);
 double *matrixmult(double *m1, double *m2, int dim1, int dim2, int dim3);
 
+double scalar(double *A, double *B, int N);
+
+#endif
+
 
 
 void GetName(SEXP el, char *name, const char * List[], int n,
@@ -151,7 +162,7 @@ int GetName(SEXP el, char *name, const char * List[], int n,
 	    int defaultvalue) ;
 
 
-#define SCALAR_PROD(A, B, N, ANS) {			\
+#define SCALAR_PROD_OLD(A, B, N, ANS) {			\
     int  k_ =0,				\
     end_ = N - 4;				\
   ANS = 0.0;					\
@@ -171,7 +182,6 @@ int GetName(SEXP el, char *name, const char * List[], int n,
     for (int k_=0; k_<end_; (A)[k_++]=VALUE);		\
 }
 
-double scalar(double *A, double *B, int N);
 double ownround(double x);
 
 #define Mod(Z, modulus) ((Z) - FLOOR((Z) / (modulus)) * (modulus))

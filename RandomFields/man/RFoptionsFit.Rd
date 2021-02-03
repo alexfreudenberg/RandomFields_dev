@@ -1,6 +1,13 @@
 \name{RFoptionsFit}
 \alias{RFoptionsFit}
 \alias{fit}
+\alias{RC_VARIOGRAM}
+\alias{RC_MADOGRAM}
+\alias{RC_PSEUDOVARIOGRAM}
+\alias{RC_PSEUDOMADOGRAM}
+\alias{RC_COVARIANCE}
+
+
 \title{Setting control arguments for \command{\link{RFfit}},
     \command{\link{RFratiotest}}, and \command{\link{RFcrossvalidate}}}
 \description{
@@ -112,7 +119,7 @@
   }
 
  \item{\code{emp_alpha}}{integer within \code{RC_VARIOGRAM},
-   \code{RC_PSEUDO},  \code{RC_PSEUDOMADOGRAM},
+   \code{RC_PSEUDOVARIOGRAM},  \code{RC_PSEUDOMADOGRAM},
    \code{RC_MADOGRAM},
    \code{RC_COVARIANCE} or a real value within \eqn{(0,2]}
    for (cross-)pseudovariograms.

@@ -14,9 +14,7 @@
 
 #include <Rmath.h>
 #include "intrinsics.h"
-#include "Basic_utils.h"
 #include "General_utils.h"
-#include "errors_messages.h"
 
 #define xmax_BESS_K	705.342 /*From bessel.h*/
 #define sqxmin_BESS_K	1.49e-154 /*From bessel.h*/

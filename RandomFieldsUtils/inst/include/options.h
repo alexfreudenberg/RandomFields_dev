@@ -4,8 +4,7 @@
 
 #include <R.h>
 #include <Rdefines.h>
-#include "Basic_utils.h"
-#include "Solve.h"
+#include "RFU.h"
 
 
 #define basicN 12
@@ -38,9 +37,9 @@ struct solve_param {
     max_deviation, max_reldeviation;
   InversionMethod Methods[SOLVE_METHODS];
   int spam_min_n[2], spam_sample_n, spam_factor, pivotsparse, max_chol,
-    max_svd, pivot,
-    actual_pivot, actual_size,
-    *pivot_idx, pivot_idx_n;//permutation; phys+logi laenge
+    max_svd, pivot, actual_pivot, actual_size,
+    *pivot_idx, pivot_idx_n,//permutation; phys+logi laenge
+    pivotMaxTakeOwn;
   //  bool tmp_delete;
 } solve_param;
 #ifdef SCHLATHERS_MACHINE
@@ -55,7 +54,7 @@ struct solve_param {
   {NoInversionMethod,  NoFurtherInversionMethod},			\
     {400, 10000}, 500, 4294967, PIVOTSPARSE_MMD, 16384,			\
 	10000, PIVOT_NONE, /* never change -- see RFoptions.Rd */	\
-        PIVOT_UNDEFINED, 0, NULL, 0}
+		    PIVOT_UNDEFINED, 0, NULL, 0, NA_INTEGER}
 extern const char * solve[solveN];
 
 typedef // benoetigt
@@ -86,6 +85,8 @@ typedef void (*deleteoptions_fctn) (bool);
 #define ADDCHAR(ELT) x[0] = ELT; ADD(ScalarString(mkChar(x)))
 
 
+//int own_chol_up_to(int size, int maxtime);
+int own_chol_up_to();
 
 
 #endif

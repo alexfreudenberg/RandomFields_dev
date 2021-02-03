@@ -222,7 +222,8 @@ RFplotSimulation1D(x, y, nmax=6,
     of size \code{width.pixel} x \code{height.pixel} are created.
   }
   \item{...}{arguments to be passed to methods; only 
-    arguments for \command{\link[utils]{}} and further models in case of class \code{CLASS_CLIST},
+    arguments for \command{\link[graphics]{par}}
+    and further models in case of class \code{CLASS_CLIST},
     see Details. \command{\link{RFoptions}} cannot be passed.
   }
 %  \item{f i tmethod}{character; only for \code{class(x)=="RFfit"}; a

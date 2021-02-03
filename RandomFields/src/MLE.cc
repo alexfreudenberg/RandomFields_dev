@@ -1271,8 +1271,8 @@ void PutValuesAtNAintern(int *reg, double *values, bool init){
     NAs = s->NAS;
   defn *C = NULL;
   model *cov = NULL;
-  gen_storage S;
   double *pt_variance = s->PT_VARIANCE;
+  gen_storage S;
   gen_NULL(&S);
   S.check = S.dosimulate = false;
   // set ordinary parameters for all (sub)models

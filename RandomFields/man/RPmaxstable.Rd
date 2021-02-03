@@ -2,6 +2,7 @@
 \alias{maxstable}
 \alias{Maxstable}
 \alias{RPmaxstable}
+\alias{RC_MAXSTABLE_NAMES}
 
 \title{Simulation of Max-Stable Random Fields}
 \description{
@@ -51,7 +52,10 @@ Methods
 }
  
 \me
-
+\note{
+  \code{RC_MAXSTABLE_NAMES} gives the currently implemented list of
+  processes
+}
 
 \examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set

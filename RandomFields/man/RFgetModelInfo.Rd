@@ -15,11 +15,11 @@
 RFgetModelInfo(...) 
 
 RFgetModelInfo_register(register, level = 1, spConform =
-                 RFoptions()$general$spConform, which.submodels =
+                 RFopt$spConform, which.submodels =
                  c("user", "internal", "call+user", "call+internal",
                  "user.but.once", "internal.but.once",
                  "user.but.once+jump", "internal.but.once+jump", "all"),
-                 modelname = NULL, origin = "original")
+                 modelname = NULL, origin = "original model")
 
 RFgetModelInfo_model(model, params, dim = 1, Time = FALSE,
                      kernel = FALSE, exclude_trend = TRUE, ...)

@@ -50,11 +50,6 @@ StartExample(reduced = TRUE, save.seed = TRUE)
 %                 "RandomFields")
 showManpages(path="/home/schlather/svn/RandomFields/RandomFields/man")
 
-plotWithCircles(data, factor=1.0,
-                xlim=range(data[,1])+c(-maxr,maxr),
-                ylim=range(data[,2])+c(-maxr,maxr),
-                col=1, fill=0, ...)
-
 maintainers.machine()
 }
 \arguments{
@@ -64,7 +59,6 @@ maintainers.machine()
   \item{Cfile, Rfile, do.cfile }{internal}
 %  \item{pkgs, dir,install, check, reverse}{internal}
   \item{height,width}{window sizes}
-  \item{data, factor, xlim, ylim, col, fill, ...}{internal}
   \item{reduced, save.seed, path}{internal}
  % \item{REGISTER, COVREGISTER, RELAX}{internal}
 }

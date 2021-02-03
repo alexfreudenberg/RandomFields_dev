@@ -238,7 +238,10 @@ RFplotEmpVariogram <- function(x, model = NULL, nmax.phi = NA, nmax.theta = NA,
       stop("method only for objects of class '", CLASS_EMPIR, "' or '",
            CLASS_FITLIST, "'")
   }
-  
+
+
+  empirical <- sd <- centers <- phi.centers <- theta.centers <-
+    n.bin <- coordunits <- vdim <- dim <- alpha <- NULL
   for (i in c("empirical", "sd", "centers", "phi.centers", "theta.centers",
               "n.bin", "coordunits", "vdim", "dim",
               "alpha")) ## emprical variogram/covariance/etc
@@ -473,7 +476,7 @@ RFplotEmpVariogram <- function(x, model = NULL, nmax.phi = NA, nmax.theta = NA,
                     angles <- expand.grid(phi.centers[iph] + phi.angles,
                                           theta.centers[iph] + theta.angles)
                     phis <- angles[ ,1]
-                    thetas <- angels[ ,2]
+                    thetas <- angles[ ,2]
                     ct <- cos(thetas)
                     x.space <- cbind(rep(ct * cos(phis), each=n.points),
                                      rep(ct * sin(phis), each=n.points),

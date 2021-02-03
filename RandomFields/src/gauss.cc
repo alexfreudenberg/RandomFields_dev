@@ -72,8 +72,9 @@ void GetInternalMean(model *sub, int vdim, double *mean){
     for (int d=0; d<tsdim; d++) x[d] = gr[d][XSTART];
   } else {
     int spatialdim =  Locspatialdim(cov);
-    MEMCOPY(x, v, //Locx(cov),
-	    sizeof(double) * spatialdim);
+    double *xloc = Locx(cov);
+    //    printf("getmean %d %f \n", spatialdim, x[0]);
+    MEMCOPY(x, xloc, sizeof(double) * spatialdim);
     if (LocTime(cov)) x[spatialdim] = LocT(cov)[XSTART];
   }
   info[INFO_IDX_X] = 0;
@@ -114,8 +115,7 @@ void location_rules(model *cov, pref_type pref) {
 
   if (exactness == True) {
    pref[TBM] = pref[SpectralTBM] = pref[Average] = pref[RandomCoin] = 
-      pref[Sequential] = pref[Hyperplane] 
-      = LOC_PREF_NONE - 2;
+      pref[Sequential] = pref[Hyperplane] = LOC_PREF_NONE - 2;
   }
 
   if (loc->timespacedim == 1) pref[TBM] -= 2 * PREF_PENALTY;
@@ -208,6 +208,30 @@ void mixed_rules(model *cov, pref_type locpref,
 				    LOC_PREF_NONE - 7;
     if (isAnySpherical(OWNISO(0)) && OWNTOTALXDIM < 3)
      pref[Sequential] = LOC_PREF_NONE - 8;
+  } else {
+    double factor = (double) (vdimtot - best_dirct) / (max_variab - best_dirct);
+    factor = MIN(1, factor); // < 0  ist ok
+
+    //printf("fehltnoxh\n:: %f", factor);
+    pref[Sequential] = (double) pref[Sequential] * factor;
+    if (pref[Sequential] > PREF_NONE && LocLocTime(loc)) {      
+      Long  
+	timelength =
+             (int) (loc->grid ? loc->xgr[loc->timespacedim -1] : loc->T)[XLENGTH],
+	back = global->sequ.back;
+      double
+	quot = (double) timelength / back;
+      quot = MIN(quot, 1000);
+      Long
+	advantage = quot * quot * quot * 0.5 - 1 - 1;
+      //      printf("timelen %d \n", timelength);
+
+      //0.5 ist schaetzung  des Wenigerufwandes von Cholesky gegenueber
+      // Sequentiell
+      // -1 damit advantage auf 0 kalibriert ist
+      // -1 ist ein Abschlag wegen der ungenauigkeit von sequentiell
+      pref[Sequential] = MIN(pref[Sequential], advantage);
+    }
   }
 
   Ext_orderingInt(pref, Nothing, 1, order);
@@ -223,21 +247,32 @@ int kappaBoxCoxParam(model *cov, int BC) {
     vdim = VDIM0,
     vdim_2 = vdim * 2,
     vdimMax = MIN(vdim, MAXBOXCOXVDIM);					
-  if (PisNULL(BC)) {						
-    PALLOC(BC, 2, vdim);				
-    if (global->gauss.loggauss) {					
-      for (int i=0; i<vdim_2; i++) P(BC)[i] = 0.0;	
-      global->gauss.loggauss = false;					
-    } else {
-      int i=0,
-	vdimMax_2 = 2 * vdimMax;
-      for (; i<vdimMax_2; i++) P(BC)[i] = global->gauss.boxcox[i];
-      for (; i<vdim_2; ) {
-	P(BC)[i++] = RF_INF;
-	P(BC)[i++] = 0;
+  // printf("********* %s BC=%d %d %d %d\n", NAME(cov), BC, cov->base->use_external_boxcox,cov->zaehler, PisNULL(BC));
+   if (PisNULL(BC)) {
+    PALLOC(BC, 2, vdim);
+    if (cov->base->use_external_boxcox == cov->zaehler) {
+      if (global->gauss.loggauss) {					
+	for (int i=0; i<vdim_2; i++) P(BC)[i] = 0.0;	
+	global->gauss.loggauss = false;					
+      } else {
+	int i=0,
+	  vdimMax_2 = 2 * vdimMax;
+	for (; i<vdimMax_2; i++) {
+	  P(BC)[i] = global->gauss.boxcox[i];
+	}
+	for (; i<vdim_2; ) {
+	  P(BC)[i++] = 1.0;
+	  P(BC)[i++] = 1.0;
+	}
       }
-    }									
-  } else {								
+    } else {
+      for (int i=0; i<vdim_2; ) {
+	P(BC)[i++] = RF_INF;
+	P(BC)[i++] = RF_INF;
+      }
+    }
+  } else {
+    if (P0(BC) == RF_INF) return NOERROR;;
     int total = cov->nrow[BC] * cov->ncol[BC];	
     if (total == 1) {							
       double _boxcox = P0(BC);				
@@ -272,10 +307,6 @@ int kappaBoxCoxParam(model *cov, int BC) {
     if (notok)								
       SERR("Box Cox transformation is given twice, locally and through 'RFoptions'"); 
   }									
-  for (int i=0; i<vdimMax; i++) {				
-    global->gauss.boxcox[2 * i] = RF_INF;				
-    global->gauss.boxcox[2 * i + 1] = 0.0;				
-  }								
   RETURN_NOERROR;
 }
 
@@ -308,14 +339,16 @@ int checkgaussprocess(model *cov) {
     ILLEGAL_FRAME;
   }
  						      
-  kdefault(cov, GAUSSPROC_STATONLY, (int) gp->stationary_only);
-
+  kdefault(cov, GAUSSPROC_STATONLY, (int) gp->stationary_only);  
+  RESERVE_BOXCOX;
+  
   if (MAX(global->direct.maxvariables, cov->base->global_utils.solve.max_chol)
       < gp->direct_bestvariables)
     SERR("maximum variables less than bestvariables for direct method");
   if ((err = checkkappas(cov, false)) != NOERROR) RETURN_ERR(err);
 
   set_maxdim(OWN, 0, INFDIM);
+  RESERVE_BOXCOX;
 
   if (key == NULL) {
     if (isGaussMethod(next)) {// waere GaussMethodType 
@@ -761,14 +794,18 @@ int struct_gaussprocess(model *cov, model **newmodel) {
 	       METHOD_NAMES[unimeth], err, unimeth, METHOD_NAMES[unimeth]);     
 	
 	if (PL > PL_ERRORS) {
-	  char msg[LENERRMSG]; errorMSG(err, msg);
+	  char msg[LENERRMSG]; errorMSG(err, cov->base, msg);
 	  PRINTF("error in gauss (init): %s\n",msg);
 	  // BUG;//
 	}
       } // else if (PL >= PL_BRANCHING) M ERR(err);
     } else {
       if (PL > PL_ERRORS) {
-	char msg[LENERRMSG]; errorMSG(err,msg);
+	
+	//printf("KT = %ld\n", cov->base);
+	//  printf("KT->global_utils.basic.skipchecks %d\n", cov->base->global_utils.basic.skipchecks);
+
+  char msg[LENERRMSG]; errorMSG(err,cov->base,msg);
 	PRINTF("error in check: %s\n", msg);
       }
     }
@@ -1122,6 +1159,8 @@ int checkchisqprocess(model *cov) {
   assert((Loc(cov)->distances && xdim==1) || xdim == logicaldim);
 
   if (PisNULL(CHISQ_DEGREE)) SERR("degree of freedom must be given");
+  RESERVE_BOXCOX;
+ 
   if (key == NULL) {
     //    if (!isGaussMethod(next) && !isVariogram(next))
     //      SERR1("Gaussian process required, but '%.50s' obtained", NICK(cov));
@@ -1170,9 +1209,8 @@ int checkchisqprocess(model *cov) {
     //		       SUBMODEL_DEP, cov->frame)) != NOERROR) RETURN_ERR(err);
     setbackward(cov, key);
   }
-
   if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) RETURN_ERR(err);
- 
+
   RETURN_NOERROR;
 }
  

@@ -31,8 +31,6 @@
 
 //#include <stdlib.h>
 #include "def.h"
-#include <Basic_utils.h>
-#include "basic.h"
 #include "convhull2D.h"
 
 

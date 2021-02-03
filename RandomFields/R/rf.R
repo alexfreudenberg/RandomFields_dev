@@ -285,7 +285,7 @@ initRFlikelihood <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
                 betas_separate = FALSE,
                 ignore_trend=ignore.trend)
 
-  rfInit(mode=model, x=Z$C_coords, reg=Reg, RFopt=RFopt)
+  rfInit(model=model, x=Z$C_coords, reg=Reg, RFopt=RFopt)
 }
 
 
@@ -556,7 +556,7 @@ RFpseudovariogram <- function(model, x, y=NULL,  z = NULL, T=NULL, grid,
 			      params, distances, dim, data, vdim=NULL, ...)
    covETC(model=model, x=x, y = y, z = z, T=T, grid=grid,
          params=params, distances=distances, dim=dim, data=data, vdim=vdim, ...,
-         alpha = PSEUDO)
+         alpha = PSEUDOVARIOGRAM)
 
 RFmadogram <- function(model, x, y=NULL,  z = NULL, T=NULL, grid, params,
                        distances, dim,data, vdim=NULL, ..., alpha=1){
@@ -735,6 +735,9 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
                       env=.GlobalEnv, model), x=x, reg=reg, RFopt=RFopt)
     if (n < 1) return(NULL)
     res <- rfDoSimulate(n=n, reg=reg, spConform=FALSE)
+
+    ## Print(res)
+      
   } # end of uncond simu
 
   
@@ -759,7 +762,10 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
                                       vdim=info$vdim[1],
                                       T=x$T,
                                       vdim_close_together=
-                                      RFopt$general$vdim_close_together)
+                                        RFopt$general$vdim_close_together)
+
+##str(res)
+    
     if (is.raster(x)) {
       res <- raster::raster(res)
       raster::projection(res) <- raster::projection(x)

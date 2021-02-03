@@ -1,30 +1,22 @@
-/*
- Authors 
- Martin Schlather, schlather@math.uni-mannheim.de
+#ifndef RFU_rfutils_h
+#define RFU_rfutils_h 1
 
-
- Copyright (C) 2015 -- 2017 Martin Schlather
-
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 3
-of the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
-*/
-
+#include "Basic_utils.h"
 #include "errors_messages.h"
 
-#ifndef rfutils_solve_H
-#define rfutils_solve_H 1
 
+#define SCALAR_RU_H 1
+#define SCALAR_NEARFMA 5  // never change number, see haplogeno.R !!
+#define SCALAR_AVX 6
+#define SCALAR_KAHAN 8
+#define SCALAR_BASE 2
+#define SCALAR_AVX_PARALLEL 9
+#define SCALAR_BASE_PARALLEL 10
+
+
+#define SOLVE 0
+#define MATRIXSQRT 1
+#define DETERMINANT 2
 
 typedef enum InversionMethod { 
   Cholesky, // 0
@@ -36,7 +28,8 @@ typedef enum InversionMethod {
   LU, // 6 currently not propagated
   NoFurtherInversionMethod, // 7, local values
   GPUcholesky,		    // 8
-  direct_formula,           // 9
+  Rcholesky,
+  direct_formula,           // 10
   Diagonal // 10, always last one!
 } InversionMethod;
 #define nr_InversionMethods ((int) Diagonal + 1)
@@ -73,8 +66,6 @@ struct solve_storage {
     *to_be_deleted; 
 } solve_storage;
 
-#define SOLVE 0
-#define MATRIXSQRT 1
-#define DETERMINANT 2
+
 
 #endif

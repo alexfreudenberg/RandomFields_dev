@@ -19,30 +19,10 @@
 ## along with this program; if not, write to the Free Software
 ## Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
 
-SYMBOL_L_PAR <- "("
-SYMBOL_R_PAR <- ")"
-SYMBOL_PLUS <- '+'
-SYMBOL_MULT <- '*'
-DOLLAR <- c("$", "RMS")
-SYMBOLS <- c(SYMBOL_PLUS, SYMBOL_MULT , DOLLAR[1])
+SYMBOLS <- c(SYMBOL_PLUS, SYMBOL_MULT , RM_S[2])
+iR_P <- paste0("i", R_P)
+RC_MAXSTABLE_NAMES <- c(BR_NAME, OPITZ_NAME, EG_NAME, SMITH_NAME)
 
-RM_PLUS <- c("RMplus", SYMBOL_PLUS)
-RM_MULT <- c("RMmult", SYMBOL_MULT)
-#RM_MIXED <- c( "RMmixed", "mixed") 
-##RM_INTERNALMIXED <- "internalRMmixed"
-RM_TREND <- c("RMshape", "trend")
-RM_DISTR <- c('RRdistr', 'Distr')
-RM_USER <- c('RMuser', 'U')
-RM_NUGGET <- c("RMnugget", "nugget")
-RM_COVARIATE <- "RMcovariate"
-NO_DOLLAR_VALUE<- "_no value given_"
-RM_DECLARE <- "RMdeclare"
-R_C <- "R.c"
-R_P <- "R.p"
-iR_P <- "iR.p"
-R_CONST <- "R.const"
-##R_CC <- c(R_C, R_CONST)
-RM_MATRIX <- "RMmatrix"
 
 CLASS_CLIST <- 'RMmodel'
 CLASS_RM <- 'RMmodelgenerator'
@@ -50,21 +30,8 @@ CLASS_SINGLEFIT <- 'RMmodelFit'
 CLASS_FITLIST <- 'RFfit'
 CLASS_EMPIR <- "RFempVariog"
 CLASS_PLOT <- "RFplot"
-
  
-isPosDef <- function(type) {
-  if (is.character(type)) type <- pmatch(type, TYPE_NAMES, duplicates.ok=TRUE)-1
-  ##  .C(C_isPosDef, as.integer(type))$type
-  type==TcfType | type == PosDefType | type == ManifoldType
-}
-isVariogram <- function(type) { 
-  if (is.character(type)) type <- pmatch(type, TYPE_NAMES, duplicates.ok=TRUE)-1
-  ##  .C(C_isNefDef, as.integer(type))$type
-  isPosDef(type) | type == VariogramType
-}
-
 VOID <- "..void.."
-
 
 ## if names are changed fitgauss.R, weights, must be changed
 LSQMETHODS <- c("plain", "self", "sqrt.nr", "sd.inv",
@@ -72,12 +39,10 @@ LSQMETHODS <- c("plain", "self", "sqrt.nr", "sd.inv",
 MLMETHODS <- c("ml") # "reml", "rml1"),
 PRIMMETHODS <- c("users.guess", "autostart")
 CROSSMETHODS <- NULL
-
 METHOD_PREFLIST <- c(MLMETHODS, LSQMETHODS, PRIMMETHODS)
 
 par.storage <- ".RandomFields.par"
 .RandomFields.env <- new.env()
-
 
 ## ACHTUNG! Die in C definierten PL_* haben andere Bedeutung
 PL_IMPORTANT 	<- as.integer(1)
@@ -93,4 +58,15 @@ PL_FCTN_SUBDETAILS 	<- as.integer(8)
 PL_DETAILS 	<- as.integer(9)
 PL_SUBDETAILS 	<- as.integer(10)
 
-RC_MAXSTABLE_NAMES <- c(BR_NAME, OPITZ_NAME, EG_NAME, SMITH_NAME)
+
+
+isPosDef <- function(type) {
+  if (is.character(type)) type <- pmatch(type, TYPE_NAMES, duplicates.ok=TRUE)-1
+  ##  .C(C_isPosDef, as.integer(type))$type
+  type==TcfType | type == PosDefType | type == ManifoldType
+}
+isVariogram <- function(type) { 
+  if (is.character(type)) type <- pmatch(type, TYPE_NAMES, duplicates.ok=TRUE)-1
+  ##  .C(C_isNefDef, as.integer(type))$type
+  isPosDef(type) | type == VariogramType
+}

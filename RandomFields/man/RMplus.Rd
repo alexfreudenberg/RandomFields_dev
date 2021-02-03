@@ -1,6 +1,7 @@
 \name{RMplus}
 \alias{RMplus}
-\alias{RMshapeplus}
+\alias{RMmodelplus}
+\alias{RMtrendplus}
 \alias{+}
 \alias{RM_PLUS}
 \title{Addition of Random Field Models}
@@ -18,7 +19,9 @@
 \usage{
 RMplus(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, trend,
        var, scale, Aniso, proj)
-RMshapeplus(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, add.na=FALSE,
+RMtrendplus(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, add.na=FALSE,
+            var, scale, Aniso, proj)
+RMmodelplus(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, 
             var, scale, Aniso, proj)
 }
 \arguments{
@@ -43,15 +46,23 @@ RMshapeplus(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, add.na=FALSE,
  }
 }
 \details{
- \command{\link{RMmodel}}s can also be summed up via the
- \code{+}-operator, e.g. C0 + C1. 
+ \command{Usually, \link{RMmodel}}s are summed up via the
+ \code{+}-operator, e.g. C0 + C1, which is indeed only a short cut
+ for using \command{RMplus}. \command{RMplus} shows a greater flexibility.
+ In particular,
+ the global arguments \code{var,scale,Aniso,proj} of \command{\link{RMplus}}
+ applying to all submodels, e.g.\ usefull for a global variance parameter.
 
- The global arguments \code{var,scale,Aniso,proj} of \command{\link{RMplus}}
- are multiplied to the corresponding arguments of the submodels
- (from the right side).
+ \code{RMtrendplus} and  \code{RMmodelplus} have a two-fold purpose:
+ (i) they can be used clarify whether a model defines a trend/shape or
+ a definite function (ii) the arguments of 
+ \code{RMtrendplus} and \code{RMmodelplus} are more flexible,
+ allowing for both formulae and the most flexible list notation for models,
+ see the Notes in \link{RMmodelsAdvanced}.
 
- \code{RMshapeplus} behaves as \code{RMplus}, but with argument
- \code{trend=TRUE}. Further, it allows for formulae for the submodels.
+ Note, that \command{RMplus}, \code{RMtrendplus} and
+ \code{RMmodelplus} also allow only one argument, in contrast to the
+ binary operator \code{+}.
 }
 \value{
  \command{\link{RMplus}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.

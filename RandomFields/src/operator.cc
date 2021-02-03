@@ -1433,7 +1433,8 @@ int structMproc(model *cov, model **newmodel) {
 int initMproc(model *cov, gen_storage *S){
   int err = NOERROR;
 
-  //  PMI(cov); //crash();
+  //  PMI(cov);
+  //crash();
   
   // assert(cov->key != NULL);
   GETSTOMODEL;
@@ -1462,6 +1463,7 @@ void doMproc(model *cov, gen_storage *S){
    
  
   bool
+    ignore_y = true,
     subM = cov->kappasub[M_M] != NULL,
     anyM = subM || !PisNULL(M_M),
     close = global->general.vdim_close_together;
@@ -1485,7 +1487,7 @@ void doMproc(model *cov, gen_storage *S){
     return;
   }
   
-  bool kernel = false;
+  bool callingKernel = false;
 
   
   TALLOC_X2(z, keyvdim);
@@ -1497,7 +1499,7 @@ void doMproc(model *cov, gen_storage *S){
   double
     *w = close && cov->nsub == 1 ? sub - keyvdim : z;
   
-  FINISH_START(cov, cov, false, true, 0, 0, 0, 0);
+  FINISH_START(cov, cov, false, ignore_y, 0, 0, 0, 0);
   // default info[INFO_EXTRA_DATA_X]
   
    TALLOC_X1(zz, vdim);
@@ -1513,7 +1515,7 @@ void doMproc(model *cov, gen_storage *S){
     rf += vdim;								\
   } else {								\
     Ax(M, w, vdim, keyvdim, zz);					\
-    for (int j=0; j<vdim; j++) rf[i_row + j * totX] = zz[j];		\
+     for (int j=0; j<vdim; j++) rf[i_row + j * totX] = zz[j];		\
   }
 
   trafo &= subM;
@@ -1698,7 +1700,7 @@ int checkScatter(model *cov) {
 	  BUG; // ehem xmin vorige Zeile kann nicht stimmen?! x doch auch nicht
 	} else {
 	  min[d] = 0;
-	  max[d] = gr[d][XLENGTH];
+	  max[d] = (int) gr[d][XLENGTH];
 	}
       } else {
 	if (P(SCATTER_STEP)[d] > 0) {
@@ -3231,6 +3233,8 @@ int inittrafoproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){// auch fuer 
   model *key = cov->key;
   int err;
 
+  //PMI(cov);TREE(cov);
+  
   if (VDIM0 != 1) NotProgrammedYet("");
   if ((err = INIT(key, 0, s)) != NOERROR) RETURN_ERR(err);
 
@@ -3242,7 +3246,10 @@ int inittrafoproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){// auch fuer 
 
 void dotrafoproc(model *cov, gen_storage *s){
   model *key = cov->key;
+  //   printf("zz=%f %d %f %d\n", x[0], LocxdimOZ(cov), z[0], vdim); 
   DO(key, s);
+  //  printf("short %s %f %f %f\n", NAME(cov), cov->rf[0], cov->rf[1],
+  //	 cov->rf[Loctotalpoints(cov) * VDIM0 -1]); 
 }
 
 
@@ -3312,7 +3319,8 @@ int structprodproc(model  VARIABLE_IS_NOT_USED *cov,
 int initprodproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){// auch fuer Trendproc
   int err;
   if (VDIM0 != 1) NotProgrammedYet("");
-
+  //  PMI(cov); TREE0(cov);
+  
   if ((err = check_fctn_intern(cov)) != NOERROR) RETURN_ERR(err);
   
   FRAME_ASSERT_GAUSS;
@@ -3324,18 +3332,23 @@ int initprodproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){// auch fuer T
 
 
 void doprodproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
-  Long i,
+  Long 
     vdim = VDIM0,
     totvdim = Loctotalpoints(cov) * vdim;
   double *res = cov->rf;
   assert(res != NULL);
 
+
+  //  for (int i=0; i<totvdim; i++) res[i] = 2.1; printf("short do %s %f %f %d\n", NAME(cov), cov->rf[0], cov->rf[totvdim-1], totvdim); return;
+ 
   Fctn(cov, true, res);
 
   if (cov->q[PRODPROC_RANDOM]) {
     double g = GAUSS_RANDOM(1.0);  
-    for(i=0; i<totvdim; i++) res[i] *= g;
+    for(Long i=0; i<totvdim; i++) res[i] *= g;
   }
+  // printf("prodproc %f %f %f; %f %f\n", cov->rf[0], cov->rf[1], cov->rf[2],cov->rf[1]/cov->rf[2], cov->rf[1]/cov->rf[3] ); 
+  
 }
 
 
@@ -3512,7 +3525,7 @@ getStorage(s ,     covariate);
 	    }
 	    for (int d=0; d<dim; d++) {
 	      factor[d]++;
-	      if (factor[d] < gr[d][XLENGTH]) break;
+	      if (factor[d] < gr[d][XLENGTH]) break; // OK
 	      else factor[d] = 0.0;
 	    }
 	  }

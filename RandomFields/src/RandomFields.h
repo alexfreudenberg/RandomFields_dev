@@ -27,7 +27,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #ifndef RFsimu_public_H
 #define RFsimu_public_H 1
-#include "basic.h"
 
 //#define NATSCALE_EXACT 1 
 //#define NATSCALE_ORNUMERIC 2
@@ -251,6 +250,7 @@ extern "C" {
   void loadoptions();
   void detachoptions();
   SEXP attachoptions();
+  SEXP copyoptions();
 
 
   SEXP maintainers_machine();
@@ -263,7 +263,6 @@ extern "C" {
   SEXP CovLocNonGrid(SEXP reg, SEXP x, SEXP y, SEXP result);
   SEXP LocNonGrid(SEXP reg, SEXP x);
   
-  SEXP copyoptions();
 
 #ifdef __cplusplus
 }

@@ -1,4 +1,4 @@
-## Authors 
+# Authors 
 ## Martin Schlather, schlather@math.uni-mannheim.de
 ##
 ##
@@ -42,12 +42,13 @@ initpredict <- function(conditioning, C_coords, grid=NULL, given, model, data,
 }
 
 
+
 ModelAbbreviations <- function(model){
   L <- length(model)
   N <- character(L)
   for (mm in 1:L) {
     m <- unlist(model[[mm]])
-    dollar <- m==DOLLAR[1] | m==DOLLAR[2]
+    dollar <- m==RM_S[1] | m==RM_S[2]
     idx <- which( names(m) != "" & !dollar) ## names(m):names of parameters
     for (s in which(dollar)) {
       z <- idx[min(which(idx > s))] ## to which model belongs the dollar param?
@@ -85,8 +86,9 @@ ModelParts <- function(model, effects, complete) { ## model immer schon aufbrtt
   }
 }
 
-xRFranef <- function(fit, method="ml", OP='@') {
-  Z <- do.call(OP, list(object, "Z"))
+"
+xRFranef <- function(fit, method='ml', OP='@') {
+  Z <- do.call(OP, list(object, 'Z')
   model <- fit[method]
   parts <- ModelParts(model, effect=GetModelInfos(Z)$effect, complete=TRUE)
   
@@ -102,7 +104,7 @@ xRFranef <- function(fit, method="ml", OP='@') {
     )
   return(ans)
 }
-
+"
 
 FinImputIntern <- function(data, simu, coords, coordnames, data.column, vdim,
                            spConform, fillall=FALSE) {
@@ -146,7 +148,7 @@ FinImputIntern <- function(data, simu, coords, coordnames, data.column, vdim,
 
 FinishImputing <- function(data, simu, Z, spConform, fillall) {
   ## to do: grid
-  is.var <- Z$is.var
+  is.var <- Z$is.var.orig
   vdim <- Z$vdim
   if (is.list(data)) {
     for (i in 1:length(data))
@@ -334,7 +336,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
   
   if (length(err.model) > 1 && is.list(err.model) &&
       is(err.model[[1]], CLASS_CLIST)) {
-    ccccc
+    stop("this variation of RFinterpolate has to be progreammed yet")
     names <- ModelAbbreviations(err.model)
     ans <- vector("list", length(err.model))    
     for (i in 1:length(ans)) {
@@ -412,7 +414,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
                        reg=reg, err = err.model, err.params=err.params,
                        ...)
 
-  if (err.NA) {
+  if (err.NA) {# GetModelEffects
     if (length(err.NA) != 1 || !is.na(err.NA)) stop("'err.model' invalid.")
     model <- list(ModelParts(model, effects=GetModelEffects(all$Z),
                              complete = FALSE)$model)    
@@ -536,6 +538,8 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
               Reg=reg, RFopt=RFopt)
 
   .Call(C_set_boxcox, c(Inf, 0), reg)
+
+##  Print("x")
   
   for (p in 1:totalparts) {
     ##    Print(p, totalparts)
@@ -551,10 +555,13 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
              .Call(C_EvaluateModel,
                      as.double(c(length(givenidx[[p]]),
                                  length(idx[[3]][[p]]))),
-                   as.integer(c(given.idx[[p]], idx[[3]][[p]])), reg)
+                   as.integer(c(givenidx[[p]], idx[[3]][[p]])), reg)
 
     whereto <- idx[[3]][[p]]
     isNA <- is.na(Res[whereto, ])
+
+  ##  Print("yx")
+  
 
 # Print(whereto, isNA); Print(Res, Res[whereto, ][isNA]); Print(res, res[isNA])
     
@@ -711,7 +718,7 @@ rfCondGauss <- function(model, x, n=1,
 
   coords <- ExpandGrid(Z$coords[[1]]) ## conditioning locations
   simu <- NULL
-  if (simu.grid) { ## simulation on a grid
+   if (simu.grid) { ## simulation on a grid
     xgr <- cbind(X$x, X$T)
     l <- ncol(xgr)
     ind <- 1 + (t(coords$x) - xgr[1, ]) / xgr[2, ] 
@@ -726,7 +733,7 @@ rfCondGauss <- function(model, x, n=1,
       ## simulate as if there is no grid
 
       if (!all(outside.grid))
-        ERR("locations of given data and those to be predicted partially match. This cannot be treated currently with the current value of the option 'duplicated_locations'. See man pages for alternative values.") ## TO DO
+        stop("locations of given data and those to be predicted partially match. This cannot be treated currently with the current value of the option 'duplicated_locations'. See man pages for alternative values.") ## TO DO
       
       simu.grid <- FALSE
  
@@ -809,7 +816,7 @@ rfCondGauss <- function(model, x, n=1,
   }
 
     if (any(index == 0) && any(index != 0))
-      ERR("locations of given data and those to be predicted partially match. This cannot be treated currently with the current value of the option 'duplicated_locations'. See man pages for alternative values.") ## TO DO
+      stop("locations of given data and those to be predicted partially match. This cannot be treated currently with the current value of the option 'duplicated_locations'. See man pages for alternative values.") ## TO DO
 
   
   if (!simu.grid) {
@@ -824,6 +831,7 @@ rfCondGauss <- function(model, x, n=1,
     xx <- rbind(t(xx), coords$x[notfound, , drop=FALSE])
     simu <- rfSimulate(model=all$conditioning, x=UnifyXT(xx, grid=FALSE), n=n,
                        RFopt = RFopt, reg=reg)
+
 
     if (is.vector(simu)) dim(simu) <- c(length(simu), 1)
     simu.given <-  do.call("[", c(list(simu, index, drop=FALSE),

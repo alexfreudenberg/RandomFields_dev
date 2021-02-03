@@ -228,7 +228,11 @@ void boxcox_inverse(double boxcox[], int vdim, double *res, int pts,
 //#define BOXCOX_TRAFO boxcox_trafo(boxcox, res, Loctotalpoints(cov) * VDIM0); 
 #define BOXCOX_INVERSE_PARAM(GAUSS_BOXCOX)				\
   boxcox_inverse(P(GAUSS_BOXCOX), VDIM0, res, Loctotalpoints(cov), 1)
-#define BOXCOX_INVERSE BOXCOX_INVERSE_PARAM(GAUSS_BOXCOX)
+#define BOXCOX_INVERSE \
+  BOXCOX_INVERSE_PARAM(GAUSS_BOXCOX)
+#define RESERVE_BOXCOX				\
+  if (cov->base->use_external_boxcox == 0)	\
+    cov->base->use_external_boxcox = cov->zaehler;
 int kappaBoxCoxParam(model *cov, int BC);
 
 #define FRAME_ASSERT_GAUSS assert(hasGaussMethodFrame(cov));

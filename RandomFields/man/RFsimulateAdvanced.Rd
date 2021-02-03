@@ -2,6 +2,7 @@
 \alias{RFsimulateAdvanced}
 \title{Simulation of Random Fields -- Advanced}
 
+% TO DO 
 
 \description{
  This function simulates \bold{unconditional} random fields:
@@ -38,8 +39,7 @@
  specifies
  
  \itemize{
-   \item the type of random field by using \code{RP}functions,
-   e.g.,
+   \item the type of random field by using \code{RP}functions, e.g.,
    \itemize{ 
      \item \command{\link{RPgauss}}: Gaussian random field (default
      if none of the functions in the list is given)
@@ -115,9 +115,10 @@
  coordinates and response values of
  measurements in case that conditional simulation is to
  be performed;
- if a matrix or a data.frame, the first columns are
- interpreted as coordinate vectors, and the last column(s) as
- (multiple) measurement(s) of the field; if \code{x} is missing,
+% if a matrix or a data.frame, the first columns are
+% interpreted as coordinate vectors, and the last column(s) as
+%(multiple) measurement(s) of the field;
+if \code{x} is missing,
  \code{data} may contain \code{NA}s, which are then replaced by
  conditionally simulated values; if \code{data} is missing, unconditional
  simulation is performed;

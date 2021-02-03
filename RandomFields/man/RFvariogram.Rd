@@ -26,10 +26,10 @@ RFcov(model, x, y = NULL, z = NULL, T=NULL, grid, params,
 
 
 RFmadogram(model, x, y=NULL, z=NULL, T=NULL, grid, params,
-           distances, dim, data, ..., alpha=1)
+           distances, dim, data, vdim = NULL,  ..., alpha=1)
 
 RFpseudomadogram(model, x, y=NULL, z=NULL, T=NULL, grid, params,
-                 distances, dim, data, ..., alpha=1)
+                 distances, dim, data, vdim=NULL, ..., alpha=1)
 }
 
 \arguments{
@@ -59,7 +59,7 @@ RFpseudomadogram(model, x, y=NULL, z=NULL, T=NULL, grid, params,
     }
     \item{\command{RFmadogram}}{
       is the (univariate, generalized) madogram
-      \deqn{\gamma_\alpha(r):=\frac12 \EE  |(X(t_{i})-X(t_{j}))|^\alpha}
+      \deqn{\gamma_\alpha(r):=\frac12 E  |(X(t_{i})-X(t_{j}))|^\alpha}
       so that the standard madogram is given by \eqn{\alpha=1}.
       
       There is no cross-madrogram.
@@ -70,7 +70,7 @@ RFpseudomadogram(model, x, y=NULL, z=NULL, T=NULL, grid, params,
     }
     \item{\command{RFpseudomadogram}}{
       of two multivariate random fields \eqn{X}{X} and \eqn{Y}{Y} is given by 
-      \deqn{\gamma_\alpha(r):=\frac{1}{2} \EE
+      \deqn{\gamma_\alpha(r):=\frac{1}{2} E
 	|(X(t_{i})--Y(t_{j}))|^\alpha}.
     }
   }

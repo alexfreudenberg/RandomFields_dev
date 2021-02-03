@@ -19,11 +19,10 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
 */
 
-#include <R_ext/Lapack.h>
+//#include <R_ext/Lapack.h>
 //#include "def.h" // never change this line
 
 #include "RandomFieldsUtils.h"
-#include "Basic_utils.h" 
 #include "General_utils.h" 
 #include "zzz_RandomFieldsUtils.h"
 #include "kleinkram.h"
@@ -1212,20 +1211,6 @@ void vectordist(double *v, int *Dim, double *Dist, int *diag){
     }
   }
 } 
-
-
-int addressbits(void VARIABLE_IS_NOT_USED *addr) {
-#ifndef RANDOMFIELDS_DEBUGGING  
-  return 0;
-#else
-  double x = (Long) addr,
-    cut = 1e9;
-  x = x - TRUNC(x / cut) * cut;
-  return (int) x;
-#endif
-
-}
-
 
 
 

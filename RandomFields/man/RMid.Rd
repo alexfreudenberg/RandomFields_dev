@@ -8,7 +8,6 @@
  }
  \usage{
 RMidcoord()%var, scale, Aniso, proj)
-RMid() ## obsolete
 }
 
 %\arguments{

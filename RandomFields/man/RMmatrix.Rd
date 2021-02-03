@@ -1,5 +1,6 @@
 \name{RMmatrix}
 \alias{RMmatrix}
+\alias{RM_MATRIX}
 \alias{coregionalisation}
 \alias{coregionalization}
 %\alias{diag}

@@ -111,7 +111,7 @@ extern const char *METHOD_NAMES[Forbidden+1],
 
 void includeOtherModels();
 void includeCovModels();
-
+void includeAsymmetricModels();
 
 
 #endif /* RF_INIT_H */

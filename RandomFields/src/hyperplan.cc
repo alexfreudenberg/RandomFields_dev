@@ -78,7 +78,8 @@ int check_hyperplane(model *cov) {
   kdefault(cov, HYPER_MAR_PARAM, gp->mar_param);
   kdefault(cov, HYPER_ADDITIVE, true);
   if ((err = checkkappas(cov, false)) != NOERROR) RETURN_ERR(err);
- 
+   RESERVE_BOXCOX;
+
   isotropy_type iso = (cov->calling != NULL && CALLINGNR == HYPERPLANE_INTERN)
     ? ISOTROPIC : SYMMETRIC;
 

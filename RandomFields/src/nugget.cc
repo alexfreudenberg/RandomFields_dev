@@ -351,6 +351,7 @@ int check_nugget_proc(model *cov) {
     s->spatialnugget = SpatialNugget(cov);
   }
   getStorage(s ,   nugget); 
+  RESERVE_BOXCOX;
 
   if (key == NULL) { 
     intern = sub;
@@ -511,7 +512,7 @@ int init_nugget(model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
 
       for (d=0; d<dim; d++) {
 	if (FABS(loc->xgr[d][XSTEP]) > tol) 
-	  reduced_dim[d] = loc->xgr[d][XLENGTH];
+	  reduced_dim[d] = (int) loc->xgr[d][XLENGTH];
 	else if (FABS(loc->xgr[d][XSTEP]) * loc->xgr[d][XLENGTH] <= tol)
 	  reduced_dim[d] = 1;
 	else {
@@ -655,7 +656,7 @@ void do_nugget(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
 	}
 	d = 0; 
 	(s->index[d])++; 
-	while (d < dimM1 && s->index[d] >= loc->xgr[d][XLENGTH]) { 
+	while (d < dimM1 && s->index[d] >= (int) loc->xgr[d][XLENGTH]) { 
 	  assert(d<dim); // assert(d>=0);
 	  s->index[d] = 0; 
 	  d++;   

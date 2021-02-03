@@ -120,7 +120,7 @@ RFratiotest(nullmodel, alternative, x, y = NULL, z = NULL, T = NULL,
 }
 \seealso{
   \command{\link{RFfit}},
-  \command{\link{RFoptonsFit}},
+  \command{\link{RFoptionsFit}},
  \command{\link{RMmodel}},
  \code{\link[=RandomFields-package]{RandomFields}},
  \command{\link{weather}}.

@@ -157,18 +157,18 @@ int setgrid(coord_type xgr, double *x, int spatialdim) {
   // folgende Zeile nur beim ersten Mal zu setzen, aber egal
   for (d=1; d<spatialdim; d++) {
     xgr[d] = &(xgr[0][d * lx]); 
-    if (xgr[d][XLENGTH] != (int) xgr[d][XLENGTH]) 
+    if (xgr[d][XLENGTH] != (int) xgr[d][XLENGTH])  
       FAILED2("grid length must be integer valued. Got %10e in dimension %d.",
- 	    xgr[d][XLENGTH], d);
-     if (xgr[d][XLENGTH] < 1.0) 
+	      xgr[d][XLENGTH], d); // OK
+    if (xgr[d][XLENGTH] < 1.0) // OK
       FAILED2("grid length must be positive. Got %10e in dimension %d.",
- 	    xgr[d][XLENGTH], d);
+	      xgr[d][XLENGTH], d); // OK
    }
   
   /*
   if (glob al->internal.examples_reduced) {    
     for (d=0; d<spatialdim; d++) {
-      if (xgr[d][XLENGTH] > gl obal->internal.examples_reduced) {
+       if (xgr[d][XLENGTH] > gl obal->internal.examples_reduced) { // OK
 	warning("the size of the example has been reduced");
 	xgr[d][XLENGTH] = glo bal->internal.examples_reduced;
       }
@@ -199,7 +199,7 @@ int partial_loc_set_x(location_type *loc, double *x, Long spatialpoints,
     loc->delete_x = true;
     if ((Err = setgrid(loc->xgr, x, loc->spatialdim)) != NOERROR) return Err;
     double len = 1.0;
-    for (int d=0; d<loc->spatialdim; d++) len *= (double) loc->xgr[d][XLENGTH];
+    for (int d=0; d<loc->spatialdim; d++) len *= (double) loc->xgr[d][XLENGTH];// OK
     assert (T !=NULL || spatialpoints < 0 || len == spatialpoints);
     if (len < MAXINT) loc->totalpoints = loc->spatialtotalpoints = (int) len;
     else return XERRORTOOMANYLOC;
@@ -272,7 +272,7 @@ int partial_loc_set_y(location_type *loc, double *y, Long spatialpointsy,
 	return Err;
     }
     double len = 1.0;
-    for (int d=0; d<loc->spatialdim; d++) len *=(double) loc->grY[d][XLENGTH];
+    for (int d=0; d<loc->spatialdim; d++) len *=(double) loc->grY[d][XLENGTH];// OK
     assert (Ty == NULL || spatialpointsy<0 || len == spatialpointsy);
     if (len < MAXINT) loc->totalpointsY = loc->spatialtotalpointsY = (int)len;
       else return XERRORTOOMANYLOC;
@@ -506,12 +506,12 @@ location_type **loc_set(SEXP xlist){
       *T = REAL(VECTOR_ELT(set, XLIST_T)),
       *Ty = ygiven ? REAL(VECTOR_ELT(set, XLIST_TY)) : NULL;
     if (Time) {
-      spatialpoints /= T[XLENGTH];
+      spatialpoints /= (int) T[XLENGTH];
       if (spatialpoints * T[XLENGTH] != totalpoints) BUG;
       if (ygiven) {
 	assert(Ty != NULL);
-	spatialpointsy /= Ty[XLENGTH];
-	if (spatialpointsy * Ty[XLENGTH] != totalpointsy) BUG;
+	spatialpointsy /= (int) Ty[XLENGTH];
+	if (spatialpointsy * (int) Ty[XLENGTH] != totalpointsy) BUG;
       }
     }
     
@@ -1459,16 +1459,16 @@ double GetDiameter(location_type *loc, double *min, double *max,
       if (loc->xgr[d][XSTEP] > 0) {
 	origmin[d] = loc->xgr[d][XSTART];
 	origmax[d] = loc->xgr[d][XSTART] + loc->xgr[d][XSTEP] * 
-	  (loc->xgr[d][XLENGTH] - 1.0);
+	  (loc->xgr[d][XLENGTH] - 1.0); // OK
       } else {
 	origmin[d] = loc->xgr[d][XSTART] + loc->xgr[d][XSTEP] * 
-	  (loc->xgr[d][XLENGTH] - 1.0);
+	  (loc->xgr[d][XLENGTH] - 1.0); // OK
 	origmax[d] = loc->xgr[d][XSTART];
       }
       if (center_on_loc) {
-	double pos = FLOOR(0.5 * loc->xgr[d][XLENGTH]);
+	double pos = FLOOR(0.5 * loc->xgr[d][XLENGTH]); // OK
 	origcenter[d] = origmin[d] + // do not change floor, see below
-	  FABS(loc->xgr[d][XSTEP]) * FLOOR(0.5 * loc->xgr[d][XLENGTH]);
+	  FABS(loc->xgr[d][XSTEP]) * FLOOR(0.5 * loc->xgr[d][XLENGTH]); // OK
 	if (position != NULL) position[d] = (int) pos;
       }
       else origcenter[d] = 0.5 * (origmin[d] + origmax[d]);
@@ -1557,10 +1557,10 @@ double GetDiameter(location_type *loc, double *min, double *max,
       if (loc->T[XSTEP] > 0) {
 	min[spatialdim] = loc->T[XSTART];
 	max[spatialdim] =
-	  loc->T[XSTART] + loc->T[XSTEP] * (loc->T[XLENGTH] - 1.0);
+	  loc->T[XSTART] + loc->T[XSTEP] * (loc->T[XLENGTH] - 1.0); // OK
       } else {
 	min[spatialdim] =
-	  loc->T[XSTART] + loc->T[XSTEP] * (loc->T[XLENGTH] - 1.0);
+	  loc->T[XSTART] + loc->T[XSTEP] * (loc->T[XLENGTH] - 1.0); // OK
 	max[spatialdim] = loc->T[XSTART];
       }
     }
@@ -1581,7 +1581,7 @@ double GetDiameter(location_type *loc, double *min, double *max,
       if (loc->Time) {
 	assert(spatialdim == origdim - 1);
 	center[spatialdim] = min[spatialdim] + // do not change floor, see below
-	  FABS(loc->T[XSTEP]) * FLOOR(0.5 * loc->T[XLENGTH]);
+	  FABS(loc->T[XSTEP]) * FLOOR(0.5 * loc->T[XLENGTH]); // OK
       }
 
       for (i=0; i<endfor; ) {
@@ -1699,7 +1699,7 @@ void expandgrid(coord_type xgr, double **xx, double* aniso,
   assert(olddim <= nrow);
   if (aniso == NULL && olddim != ncol) BUG;
 
-  for (pts=1, i=0; i<olddim; i++) pts *= (Long) xgr[i][XLENGTH];
+  for (pts=1, i=0; i<olddim; i++) pts *= (int) xgr[i][XLENGTH];
 
   total = ncol * pts;
   // printf("total = %ld %d %d\n", total, ncol, pts);
@@ -1724,7 +1724,7 @@ void expandgrid(coord_type xgr, double **xx, double* aniso,
     (yi[i])++;
     y[i] += xgr[i][XSTEP];
 
-    while(yi[i]>=xgr[i][XLENGTH]) {
+    while(yi[i]>=(int) xgr[i][XLENGTH]) {
       yi[i]=0;
       y[i] = xgr[i][XSTART];
       if (i<dimM1) {
@@ -1798,7 +1798,7 @@ void xtime2x(double *x, int nx, double *T,
     *z, dummy, t;
   int j, k, i, d, n, endfor, w,
     spatialdim = nrow - 1,
-    timelen = T[XLENGTH],
+    timelen = (int) T[XLENGTH],
     nxspdim = nx * spatialdim;
 
   if (aniso == NULL) {
@@ -2128,7 +2128,7 @@ void TransformCovLoc(model *cov, bool timesep, usr_bool gridexpand,
     assert(grid xor !Loc(cov)->grid);
   } else {
     assert(Time);
-    err = loc_set(xgr, NULL, grY, NULL, 1, 1, xgr[XLENGTH],
+    err = loc_set(xgr, grY, NULL, NULL, 1, 1, (int) xgr[XLENGTH],
 		  ygiven * UNKNOWN_NUMBER_GRIDPTS,
 		  false, true, true, false, cov);  
   }

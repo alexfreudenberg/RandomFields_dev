@@ -1,6 +1,7 @@
 \name{RMshape}
 \alias{RMshape}
 \alias{shape}
+\alias{RM_SHAPE}
 \title{Shape Model}
 \description{
  \command{\link{RMshape}} is a pure shape model with covariance 0.
@@ -9,7 +10,7 @@
 RMshape(mean) %, plane, polydeg, polycoeff, arbitraryfct, fctcoeff)
 }
 \arguments{ % to do orthogonale Polynome
-  \item{mean}{numeric or \link{RMmodel}.
+  \item{mean}{\link{RMmodel}, or numeric in case of \command{RMshape}.
     If it is numerical, it should be a vector of length \eqn{p}{p}, where
     \eqn{p}{p} is the number of variables taken into account by the
     corresponding multivariate random field
@@ -22,10 +23,11 @@ RMshape(mean) %, plane, polydeg, polycoeff, arbitraryfct, fctcoeff)
 }
 
 \details{ 
- Note that this function refers to trend surfaces in the geostatistical
- framework. Fixed effects in the mixed models framework are also being
+ This function refers to trend surfaces in the geostatistical
+ framework. Fixed effects in the mixed models framework are also
  implemented, see \command{\link{RFformula}}.
 }
+
 \note{
  Any function that is defined inside \command{RMshape} is considered as
  a single trend surface (or covariate).
@@ -63,7 +65,6 @@ x <- seq(0, pi, len=10)
 trend <- 2 * sin(R.p(new="isotropic")) + 3
 model1 <- RMexp(var=2, scale=1) + trend
 dta <- RFsimulate(model1, x=x, n=repet)
-
 
 
 ## now, let us estimate variance, scale, and two parameters of the trend

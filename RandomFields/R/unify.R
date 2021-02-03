@@ -206,7 +206,7 @@ UnifyXT <- function(x=NULL, y=NULL, z=NULL, T=NULL, grid,
     y <- UnifyXT(x=y, T=Ty, grid=gridy)
     if (L$spatialdim != y$spatialdim)
       stop("'x' and 'y' do not indicate the same spatial dimension")
-    if (xor(length(mmaxL$T) == 0, length(y$T)==0))
+    if (xor(length(L$T) == 0, length(y$T) == 0))
       stop("Time must be given for both 'x' and 'y', or for none")
     L$y <- y$x
     L$Ty <- y$T
@@ -381,7 +381,6 @@ UnifyXT <- function(x=NULL, y=NULL, z=NULL, T=NULL, grid,
   ##     same structure. Especially, x and y must be matrices and
   ##     dim(x) == dim(y)
   if (is.matrix(x)) {
-
     if (!is.numeric(x)) stop("x is not numeric.")
     if (nrow(x) == 1) {
       grid <- gridtriple <- FALSE
@@ -389,6 +388,7 @@ UnifyXT <- function(x=NULL, y=NULL, z=NULL, T=NULL, grid,
                x[1, ncol(x)] == x[2, ncol(x)])  ## fast check whether
       ##    expanded grid currentlyl, for y not programmed yet
     {
+
       dims <- integer(d)
       start <- step <- double(d)
       for (i in 1:d) {
@@ -482,8 +482,7 @@ UnifyXT <- function(x=NULL, y=NULL, z=NULL, T=NULL, grid,
       ## do it??
       x <- lapply(apply(x, 2, list), function(r) r[[1]])   
       if (length(y) != 0) y <- lapply(apply(y, 2, list), function(r) r[[1]])
-    }
-    
+    }    
   } else { ## x, y, z given separately (x not a matrix)
     if (length(y)==0 && length(z)!=0) stop("y is not given, but z")
     xyzT <- list(x=if (!missing(x) && !is.null(x)) x, y=y, z=z, T=T)
@@ -771,7 +770,7 @@ UnifyData <- function(model, x, y=NULL, z=NULL, T=NULL,  grid=NULL, data,
                       return_transform = FALSE,
                       ...) {
 
-##  if (missing(x)) Print(data, T) else Print(data, T, x)
+  ##  if (missing(x)) Print(data, T) else Print(data, T, x)
 
   ##  if (missing(x)) Print(data, T) else Print(data, T, x)
   ##  if (!missing(model)) print(model)
@@ -862,6 +861,8 @@ UnifyData <- function(model, x, y=NULL, z=NULL, T=NULL,  grid=NULL, data,
     
     neu <- UnifyXT(x=x)
 
+#    Print("A")
+    
     info <- data.columns(data=orig.data, model=model, ## ultralangsam !!
                          x = neu,  RFopt=RFopt, vdim=vdim,
                          params=params, add.na=add.na,
@@ -912,6 +913,7 @@ UnifyData <- function(model, x, y=NULL, z=NULL, T=NULL,  grid=NULL, data,
 
       neu <- UnifyXT(distances=distances, dim = spatialdim)
       xdim <- spatialdim
+#      Print("B")
      info <- data.columns(data, ## auch PM2
                           model=model,  ## auch PM2
                           xdim=xdim, ## auch PM2
@@ -959,9 +961,9 @@ UnifyData <- function(model, x, y=NULL, z=NULL, T=NULL,  grid=NULL, data,
         neu <- UnifyXT(x=x)
       } else neu <- NULL
       
-      ##      Print(neu, dim)
-      if (missing.x) xdim <- dim
-       info <- data.columns(data, model=model,
+      ##
+     if (missing.x) xdim <- dim      
+      info <- data.columns(data, model=model,
                            xdim=xdim,
                            x = neu,
                            RFopt = RFopt,
@@ -970,16 +972,23 @@ UnifyData <- function(model, x, y=NULL, z=NULL, T=NULL,  grid=NULL, data,
                            vdim=vdim, params=params, add.na=add.na,
                         return_transform = return_transform,
                         ...)
+##      Print(info)
     } # ! distance
     sets <- length(data)
     
-  } # !isRFsp 
+  } # !isRFsp
+
+##  Print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 
   newmodel <- info$model$model
+  
   varnames <- names(info$is.var)
   varnames[varnames == VOID] <- ""
   coordnames <- names(info$is.x)
   if (!is.null(info$model$C_coords)) C_coords <- info$model$C_coords
+
+  
+  ## Print(isRFsp, dist.given, missing.x)
 
   if (!isRFsp && !dist.given) { ## dritter, benoetigt def von varnames  
     if (missing.x) { ## dec 2012: matrix.indep.of.x.assumed        
@@ -1001,6 +1010,7 @@ UnifyData <- function(model, x, y=NULL, z=NULL, T=NULL,  grid=NULL, data,
       
       for (i in 1:sets) {
         data[[i]] <- data[[i]][ , info$is.var, drop=FALSE]
+##Print(i, data[[i]], info$is.var)        
         if (!is.null(info$data.trafo)) {
           stop("currently formulae on the left hand side are not supported")
         }
@@ -1074,7 +1084,7 @@ UnifyData <- function(model, x, y=NULL, z=NULL, T=NULL,  grid=NULL, data,
        setRFoptions(coords.coordnames = coordnames, coords.varnames = varnames)
        for (m in 1:length(further.models))
          if (!is.null(further.models[[m]]) &&
-             !is.numeric(further.models[[m]])) {
+             !is.numeric(further.models[[m]])) {           
            further.models[[m]] <-
              if (model.dependent.further.models) {        
                nf <- names(further.models)
@@ -1137,7 +1147,7 @@ UnifyData <- function(model, x, y=NULL, z=NULL, T=NULL,  grid=NULL, data,
   ##  Print(vdim, vrep, repetitions); stopifnot(vdim ==2)
                                         #  Print(repetitions)
 
-  ## Print("unify", if (missing(model)) NULL else newmodel, C_coords)
+  ##  Print("end unify") 
 
   .Call(C_setlocalRFutils, NULL, PL) # fuer UnifyXT-Aufrufe
   return(list(
@@ -1162,7 +1172,7 @@ UnifyData <- function(model, x, y=NULL, z=NULL, T=NULL,  grid=NULL, data,
     vdim = vdim,
     coordnames=coordnames,
     varnames=varnames,
-    is.var = info$is.var,
+    is.var.orig = info$is.var,
     repetitions = repetitions,
     C_coords = C_coords,
     orig.trend = list(...)$trend,

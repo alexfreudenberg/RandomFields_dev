@@ -28,11 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // ACHTUNG : REIHENFOLGE WICHTIG. def.h zuerst; obige defines immer oben
 #include "def.h"
-#include <Basic_utils.h>
-#include "basic.h"
 #include "init.h"
-
-
 #include <inttypes.h>
 typedef unsigned int Uint;
 typedef uint64_t  Ulong;
@@ -345,8 +341,15 @@ typedef double (*spectral_density)(double *, model *cov);
 // beschrieben werden! Ansonsten ist TALLOC, siehe z.b. tbm in operator.gauss.cc
 // zu verwenden !!
 struct spectral_storage {
+  //init:
+  spectral_density density;
+  double sigma, E[MAXTBMSPDIM];
+  int nmetro;
+  double sub_var_cum[MAXSUB]; 
+  // simu:
   double phistep2d, phi2d, prop_factor;
-  bool grid; 
+  bool grid;
+  
 };
 
 
@@ -655,7 +658,7 @@ struct direct_storage {
 
 // see sequential.cc
 struct sequ_storage {
-  int back, totpnts, spatialpnts, ntime, initial;
+  int back, totpnts, spatialpnts, ntime, initial, delta_back_MuT;
   double *U11, *U22, *MuT,  *G,   *Cov21, *Inv22;
   double *res0;
 };
@@ -847,10 +850,11 @@ struct rect_storage {
 
 
 struct dollar_storage {
-  bool busy, done, warned, timeprojection, separable;
+  bool busy, done, warned, timeprojection, separable,
+    somegrid, blockmatrix;
   matrix_type type;
   double *sd, *save_aniso, *inv_aniso;
-  int pid, *proj, nproj,
+  int pid, *proj, nproj, 
     *cumsum, *total, *len, 
     n_z, n_z2, n_nx;
   isotropy_type orig_owniso;
@@ -907,13 +911,6 @@ struct mcmc_storage{
 };
 
 
-struct spec_properties {
-  spectral_density density;
-  double sigma, E[MAXTBMSPDIM];
-  int nmetro;
-  double sub_var_cum[MAXSUB];
-};
-
 
 struct mpp_properties {
   double 
@@ -949,7 +946,6 @@ struct gen_storage { // cov_storage, do_storage, init_storage
   // wird in Struct initialisiert, sofern INIT aufgerufen wird;
   // abgespeichert wird es immer im aktuell aufrufenden (fuer next oder key)
   bool check, dosimulate; // used in biWM, BiGneiting
-  spec_properties spec;       // used in init
   spectral_storage Sspectral; // used in do
 };
 
@@ -999,7 +995,8 @@ struct KEY_type {
   errorloc_type error_location;
 
   model *KEY[MODEL_MAX + 1];
-  int pid, currentRegister, visitingpid, nzero, zaehler, set;
+  int pid, currentRegister, visitingpid, nzero, zaehler, set,
+    use_external_boxcox;
   bool ok, stored_init,
     naok_range; // default =false;
   raw_type rawConcerns;
@@ -1486,8 +1483,8 @@ void plus_NULL(plus_storage *x);
 void plus_DELETE(plus_storage ** S);
 void sequ_NULL(sequ_storage *x);
 void sequ_DELETE(sequ_storage **S);
-void spectral_NULL(sequ_storage *x);
-void spectral_DELETE(sequ_storage **S);
+void spectral_NULL(spectral_storage *x);
+void spectral_DELETE(spectral_storage **S);
 void tbm_DELETE(tbm_storage **S); 
 void tbm_NULL(tbm_storage* x);
 void br_DELETE(br_storage **S); 
@@ -1824,7 +1821,7 @@ BUG
    assert((STANDARD) > 0)
 
 
-#ifdef DO_PARALLEL
+#ifdef DO_TALLOC_SAVE
 #define TALLOCCOV_NEW(cov,Snew, Z, SIZE, WHAT, STANDARD)	\
   TALLOC_ASSERT(cov, Snew, SIZE, STANDARD);				\
   bool free_##Z = ((SIZE) > (STANDARD));				\
@@ -1853,8 +1850,6 @@ BUG
     Z =  WHAT##__Y;							\
   } else Z = WHAT##__X
 
-	 
-
   
 #define END_TALLOC_NEW(WHAT) FREE(WHAT##__Y)//very crucial that Z isn't freed!
 //                                           see stat2(_Intern) !
@@ -1865,7 +1860,10 @@ BUG
 // MALLOC ?
 // MALLOC :
 
-#else // NOT DO_PARALLEL
+
+
+
+#else // NOT DO_TALLOC_SAVE
 #define TALLOCCOV_NEW(cov, Snew, Z, SIZE, WHAT, STANDARD)	\
   TALLOC_ASSERT(cov, Snew, SIZE, STANDARD);				\
    double *Z = (cov)->Snew->WHAT;					\
@@ -1890,13 +1888,13 @@ BUG
 #define FREE_TALLOC(Z) 
 #define TALLOC_DOUBLE(z) double *z=NULL
 #define TALLOC_INT(z) int *z=NULL
-#endif // (NOT) DO_PARALLEL
+#endif // (NOT) DO_TALLOC_SAVE
 
 
 #define TALLOC_NEW(Snew, Z, SIZE, WHAT, STANDARD)		\
   TALLOCCOV_NEW(cov, Snew, Z, SIZE, WHAT, STANDARD)
 // ACHTUNG!!! NIE TALLOC_GLOBAL_XX1 OHNE TALLOC_DOUBLE ABZUANENDERN !!
-#ifdef DO_PARALLEL
+#ifdef DO_TALLOC_SAVE
 #define TALLOC_GLOBAL_X1(Z, SIZE) TALLOCCOV_G_NEW(cov, Z, SIZE, XSIZE) 
 #define TALLOC_GLOBAL_X2(Z, SIZE) TALLOCCOV_G_NEW(cov, Z, SIZE, XSIZE) 
 #define TALLOC_GLOBAL_X3(Z, SIZE) TALLOCCOV_G_NEW(cov, Z, SIZE, XSIZE)
@@ -2038,7 +2036,7 @@ void printI(model *cov); //
   PRINTF("\n\nPMIE '%s', line %d", __FILE__, __LINE__);	\
   PRINTF("\n%s level=%d err=%d (%s)\n\n", NAME(Cov), Cov->err_level, Cov->err, Cov->err_msg); \
   }
-
+ 
 #define TREE(Cov) { PRINTF("\n(TREE '%s', line %d)\n", __FILE__, __LINE__); tree(Cov, true); }
 #define TREE0(Cov) { PRINTF("\n(TREE '%s', line %d)\n", __FILE__, __LINE__); tree(Cov, false); }
 
@@ -2161,7 +2159,8 @@ bool parallel();
 
 #define GETSTORAGE(Sx, From, Storage)			\
   assert((From) != NULL && (From)->S##Storage != NULL);	\
-  Storage##_storage *Sx = (From)->S##Storage;		\
+  Storage##_storage *Sx;				\
+  Sx = (From)->S##Storage;				\
   assert(Sx != NULL)
 #define getStorage(S, Storage)  GETSTORAGE(S, cov, Storage)
 

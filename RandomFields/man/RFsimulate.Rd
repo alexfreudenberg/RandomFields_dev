@@ -62,7 +62,8 @@ RFsimulate(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
    If the argument
  \code{x} is missing,
  \code{data} may contain \code{NA}s, which are then replaced by
- conditionally simulated values (random imputing);
+ conditionally simulated values (stochastic imputing);
+ see also\link{RFsimulateAdvanced}
  }
  \item{given}{\argGiven }
  

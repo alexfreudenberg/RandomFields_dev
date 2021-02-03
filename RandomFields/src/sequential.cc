@@ -30,11 +30,23 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "Coordinate_systems.h"
 
 
+//#define  debug_sequ 1
+
+bool debugging = true;
+
+
+
 #define SEQU_BACK (COMMON_GAUSS + 1)
 #define SEQU_INIT (COMMON_GAUSS + 2)
 
-
-bool debugging = true;
+static inline double scalar(double *A, double *B, Long C) {
+ double  sum=0.0;			    
+ for (Long i=0; i<C; i++) sum += A[i] * B[i];
+ return sum;
+}
+//#define SCALAR_PROD(A,B,C) scalar(A,B,C)
+#define SCALAR_PROD(A,B,C) Ext_scalarX(A,B,C, SCALAR_AVX)
+ 
 
 
 int check_sequential(model *cov) {
@@ -51,6 +63,7 @@ int check_sequential(model *cov) {
   kdefault(cov, SEQU_BACK, gp->back);
   kdefault(cov, SEQU_INIT, gp->initial);
   if ((err = checkkappas(cov, false)) != NOERROR) RETURN_ERR(err);
+  RESERVE_BOXCOX;
 
   
   if ((err = CHECK(next, dim, dim, PosDefType, XONLY, 
@@ -105,7 +118,7 @@ int init_sequential(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   location_type *loc = Loc(cov);
   if (loc->distances) RETURN_ERR(ERRORFAILED);
 
-  int withoutlast, d, endfor, l, 
+  int withoutlast,  endfor,
     err = NOERROR,
     dim = ANYDIM,
     spatialdim = dim - 1,
@@ -131,7 +144,7 @@ int init_sequential(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
     *res0 = NULL;
   sequ_storage* S = NULL;
   Long  
-    timelength = loc->grid ? loc->xgr[spatialdim][XLENGTH] :loc->T[XLENGTH],
+    timelength = (int) (loc->grid ? loc->xgr[spatialdim] :loc->T)[XLENGTH],
     spatialpnts = loc->totalpoints / timelength,
     totpnts = back * spatialpnts, 
     totpntsSQ =  totpnts * totpnts,
@@ -172,6 +185,10 @@ int init_sequential(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   } 
   if (back < 1) back = max / spatialpnts;
 
+  //PMI0(cov);
+  //  TREE0(cov);
+  //  printf("spectal %d %d %d %d vdim=%d back=%d spa=%d tot=%d\n", totpntsSQ, spatialpntsSQback, totpnts, vdim * (totpnts + spatialpnts * initial), vdim, back, spatialpnts, totpnts);
+
   if ((U22 = (double *) MALLOC(sizeof(double) * totpntsSQ))==NULL ||
       (Inv22 = (double *) MALLOC(sizeof(double) * totpntsSQ))==NULL ||
       (COV21 = (double *) MALLOC(sizeof(double) * spatialpntsSQback))==NULL ||
@@ -204,20 +221,17 @@ int init_sequential(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   /* ********************* */
   /* matrix creation part  */
   /* ********************* */
-  Long k, k0, k1, k2, segment;
-  int  row, sub_err,
-    icol, irow;
+  int  row, sub_err;
   double *y;
   y = (double*) MALLOC(dim * sizeof(double));
 
   if (PL >= PL_SUBDETAILS) { LPRINT("covariance matrix...\n"); }
-  k = 0;
-  for (k0 = icol = 0; icol<totpnts; icol++, k0+=dim) {
+  for (Long k0=0, k=0, icol = 0; icol<totpnts; icol++, k0+=dim) {
     k += icol;
-    for (segment = icol * (totpnts + 1), irow=icol, k2=k0; 
+    for (Long segment = icol * (totpnts + 1), irow=icol, k2=k0; 
 	 irow < totpnts; irow++) {
-      k1 = k0;
-      for (d=0; d<dim; d++) {
+      Long k1 = k0;
+      for (int d=0; d<dim; d++) {
 	y[d] = xx[k1++] - xx[k2++];
       }
       COV(y, info, next, U22 + segment); 
@@ -249,11 +263,8 @@ int init_sequential(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   */
 
   // *** S11 und S21
-  int jj;
-  jj = 0;
-  k = 0;
   withoutlast = totpnts - spatialpnts;
-  for (int i=withoutlast * totpnts; i<totpntsSQ; ) {
+  for (Long jj=0, k=0, i=withoutlast * totpnts; i<totpntsSQ; ) {
     jj += spatialpnts;
     endfor = jj + withoutlast;
     for (; jj<endfor; ) {
@@ -266,12 +277,11 @@ int init_sequential(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
 
   
   // *** S21 rest
-  k = 0;
   y[spatialdim] = timecomp[XSTEP] * back;
-  for (k0 = icol = 0; icol<spatialpnts; icol++, k0+=dim) { // t_{n+1}
-      for (k2=irow=0; irow<spatialpnts; irow++) { // t_1
-	k1 = k0;
-	for (d=0; d<spatialdim; d++) {
+  for (Long k=0, k0 = 0, icol = 0; icol<spatialpnts; icol++, k0+=dim) {//t_{n+1}
+    for (Long k2=0, irow=0; irow<spatialpnts; irow++) { // t_1
+	Long k1 = k0;
+	for (int d=0; d<spatialdim; d++) {
 	    y[d] = xx[k1++] - xx[k2++];
 	}
 	COV(y, info, next, COV21 + k);	
@@ -287,9 +297,10 @@ int init_sequential(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
 //  }
 //  assert(false);
 
-/*
-  LPRINT("U11\n");
-  for (i=0; i<spatialpnts; i++) {
+
+ #ifdef debug_sequ
+  LPRINT("U11 spatialpts=%d\n", spatialpnts);
+  for (int i=0; i<spatialpnts; i++) {
     for (int j=0; j<spatialpnts; j++) {
       LPRINT("%3.2f ", U11[i + j * spatialpnts]);
     }
@@ -297,14 +308,15 @@ int init_sequential(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   }
 
   LPRINT("S22 %d %d\n", totpnts,spatialpnts );
-  for (i=0; i<totpnts; i++) {
+  for (int i=0; i<totpnts; i++) {
     LPRINT("%2d: ", i);
     for (int j=0; j<totpnts; j++) {
-      LPRINT("%3.2f ", U22[i + j * totpnts]);
+      LPRINT("%3.3f ", U22[i + j * totpnts]);
    }
     LPRINT("\n");
   }
-*/
+#endif
+
 
 
   /* ********************* */
@@ -327,60 +339,121 @@ int init_sequential(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   if (PL>=PL_STRUCTURE) { LPRINT("inverse of Cov22...\n"); }
   MEMCOPY(Inv22, U22, sizeof(double) * totpntsSQ);
   Ext_chol2inv(Inv22, row);
-  k = 0;
-  for (int i=0; i<totpnts; i++) {
+  for (Long k=0, i=0; i<totpnts; i++) {
     k += i;
-    for (segment=i* totpnts+i; segment<totpntsSQ; segment += totpnts) {
+    for (Long segment=i* totpnts+i; segment<totpntsSQ; segment += totpnts) {
 	Inv22[k++] = Inv22[segment]; 
 //	LPRINT("sg %d %10g %d \n", k, Inv22[segment] , segment);
     }
   }
 
 
-/*
-  LPRINT("C21\n");
-  for (i=0; i<totpnts; i++) {
-    for (int j=0; j<spatialpnts; j++) {
-      LPRINT("%3.2f ", COV21[i + j * totpnts]);
+
+#ifdef debug_sequ
+ LPRINT("Cholesky S22 %d %d\n", totpnts,spatialpnts );
+  for (int i=0; i<totpnts; i++) {
+    LPRINT("%2d: ", i);
+    for (int j=0; j<totpnts; j++) {
+      LPRINT("%3.3f ", U22[i + j * totpnts]);
    }
     LPRINT("\n");
   }
-*/  
+  
+   LPRINT("Inverse S22 %d %d\n", totpnts,spatialpnts );
+   for (int i=0; i<totpnts; i++) {
+    LPRINT("%2d: ", i);
+    for (int j=0; j<totpnts; j++) {
+      LPRINT("%3.3f ", Inv22[i + j * totpnts]);
+   }
+    LPRINT("\n");
+  }
+  
+  
+  LPRINT("C21\n");
+  for (int i=0; i<totpnts; i++) {
+    for (int j=0; j<spatialpnts; j++) {
+      LPRINT("%3.3f ", COV21[i + j * totpnts]);
+   }
+    LPRINT("\n");
+  }
+
+#endif
 
 
-  // *** MuT
-
+  // *** Mu = C21^T Inv22
+  // b)ack s)spatial
+  // MuT : sb x s
+  // Mu : s x sb
+  // C21 : sb x s
+  // Inv22 : (sb)^2
   if (PL>=PL_STRUCTURE) { LPRINT("calculating matrix for the mean...\n"); }
-  l = 0;
-  for (int i=0; i<spatialpntsSQback; i+=totpnts) {
-    for (int j=0; j<totpntsSQ; j+=totpnts) {
-	double dummy;
-	dummy = 0.0;
-	for (k=0; k<totpnts; k++) dummy += COV21[i + k] * Inv22[j + k];
-	MuT[l++] = dummy;
+
+  // ##define remove_bottom_zeros 1
+#ifdef remove_bottom_zeros  
+  double *Maxi;
+  Maxi = (double*) CALLOC(back, sizeof(double));
+#endif  
+  for (Long l=0, z=0; z<spatialpnts; z++) { // C21:s
+    int i = z * totpnts;
+    for (int k=0, j=0; k<back; k++) { // Inv sb
+      double m=RF_NEGINF;
+      for (int n=0; n<spatialpnts; n++, j+=totpnts, l++) { // Inv sb
+	double dummy = 0.0;
+	// for (k=0; k<totpnts; k++) dummy += COV21[i + k] * Inv22[j + k];
+	//	MuT[l++] = dummy;
+	MuT[l] = SCALAR_PROD(COV21 + i, Inv22 + j, totpnts);
+#ifdef remove_bottom_zeros  	
+	double f = FABS(MuT[l]);
+	m = MAX(m, f);
+#endif  
+      }
+#ifdef remove_bottom_zeros  
+      Maxi[k] = MAX(Maxi[k], m);
+ #endif  
+   }
+  }
+
+
+  S->delta_back_MuT = 0;
+  
+#ifdef remove_bottom_zeros  
+  double threshold;
+  threshold = 0.0;
+  for (int i=0; i<back; i++) threshold = MAX(threshold, Maxi[i]);
+  threshold *= 1e-13;
+  // nett gedacht mit den Nullen wegstreichen. Bringt aber quasi nichts,
+  // nicht mal bei exponential
+  for (int start=0; start<back; start++) {
+     if (Maxi[start] > threshold) {
+      S->delta_back_MuT = start;
+      // printf("gain = %d\n",  S->delta_back_MuT);
+      break;
     }
   }
+#endif  
+ 
 
-/*
+
+#ifdef debug_sequ
   LPRINT("MuT\n");
-  for (i=0; i<totpnts; i++) {
+  for (int i=0; i<totpnts; i++) {
     for (int j=0; j<spatialpnts; j++) {
-      LPRINT("%3.2f ", MuT[i + j * totpnts]);
+      LPRINT("%3.2e", MuT[i + j * totpnts]);
    }
     LPRINT("\n");
   }
-*/
+#endif
+
   //  assert(false);
  
   // *** C11
   if (PL>=PL_STRUCTURE) { LPRINT("calculating cov matrix...\n"); }
-  l = 0;
-  for (int i=0; i<spatialpntsSQback; i+=totpnts) {
+  for (Long l=0, i=0; i<spatialpntsSQback; i+=totpnts) {
     for (int j=0; j<spatialpntsSQback; j+=totpnts) {
-	double dummy;
-	dummy = 0.0;
+      // TO DO: SYMMETRIE NUTZEN
+	double dummy = 0.0;
 	for (int kk=0; kk<totpnts; kk++) dummy += MuT[i + kk] * COV21[j + kk];
-	U11[l++] -= dummy;
+	U11[l++] -= SCALAR_PROD(MuT + i, COV21 + j, totpnts);
     }
   }
 
@@ -398,8 +471,20 @@ int init_sequential(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   // *** sqrt C11
   if (PL>=PL_STRUCTURE) { LPRINT("Cholesky decomposition of Cov11...\n"); }
   row=spatialpnts;
+  
   sub_err = Ext_chol(U11, row);
-  if (sub_err!=NOERROR) {
+
+#ifdef debug_sequ
+  LPRINT("trafo U11 spatialpts=%d\n", spatialpnts);
+  for (int i=0; i<spatialpnts; i++) {
+    for (int j=0; j<spatialpnts; j++) {
+      LPRINT("%3.2f ", U11[i + j * spatialpnts]);
+    }
+    LPRINT("\n");
+  }
+#endif
+  
+    if (sub_err!=NOERROR) {
     if (PL>=PL_ERRORS) { LPRINT("U11: Error code in chol = %d\n", sub_err); }
     err=ERRORDECOMPOSITION;
     goto ErrorHandling;
@@ -414,9 +499,10 @@ int init_sequential(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
       S->spatialpnts = spatialpnts;
       S->back = back;
       S->initial = initial;
-      S->ntime = timecomp[XLENGTH];
+      S->ntime = (int) timecomp[XLENGTH];
   }
   if (!storing && err!=NOERROR) {
+    //  printf("storing = %d\n", storing); BUG;
     FREE(MuT);
     FREE(U11);
     FREE(U22);
@@ -424,6 +510,7 @@ int init_sequential(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
     FREE(res0); 
   } else {
     if (S != NULL) {
+      // printf("%f %f\n", U11[0], U11[1]);
       S->U22=U22;
       S->U11=U11;
       S->MuT=MuT;
@@ -447,25 +534,20 @@ int init_sequential(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
 }
 
 
-void sequentialpart(double *res, Long totpnts, int spatialpnts, int ntime,
+void sequentialpart(double *res, Long totpnts, int spatialpnts,
+		    int truelybackpnts, // == totpnts by default
+		    int ntime,
 		    double *U11, double *MuT, double *G) {
-  double *rp, *oldrp;
-  rp = res + totpnts;
-  oldrp = res;
-  for (int n=0; n<ntime; n++, rp += spatialpnts, oldrp += spatialpnts) {
-    for (int i=0; i<spatialpnts; i++) G[i] = GAUSS_RANDOM(1.0);
-    for (int mutj=0, k=0, i=0; i<spatialpnts; i++, k+=spatialpnts) {
-      double dummy;
-      double *Uk;
-      Uk = &U11[k]; 
-      dummy =0.0;
-      for (int j=0; j<=i; j++) {
-	dummy += G[j] * Uk[j];
-      }
-      for (int j=0; j<totpnts; j++) {
-	  dummy += MuT[mutj++] * (double) oldrp[j];
-      }
-      rp[i] = (double) dummy; 
+  MuT += totpnts - truelybackpnts;
+  double *rp = res + totpnts;
+  for (int n=0; n<ntime; n++, rp += spatialpnts) {    
+    for (int i=0; i<spatialpnts; i++) G[i] =GAUSS_RANDOM(1.0);
+#ifdef DO_PARALLEL
+#pragma omp parallel for num_threads(CORES) if (spatialpnts > 5 * CORES)
+#endif
+    for (int i=0; i<spatialpnts; i++) {
+      rp[i] = SCALAR_PROD(G, U11 + i * spatialpnts, i+1) 
+	+ SCALAR_PROD(MuT + i * totpnts, rp - truelybackpnts, truelybackpnts);
     }
   }
 }
@@ -506,16 +588,22 @@ void do_sequential(model *cov, gen_storage VARIABLE_IS_NOT_USED *s)
     Uk = &U22[k]; 
     dummy =0.0;
     for (int j=0; j<=i; j++){
+      // printf("k=%d %d %f %f\n", k, j, G[j], Uk[j]);
       dummy += G[j] * Uk[j];
     }
-    res0[i] = (double) dummy; 
+    res0[i] = (double) dummy;
+    // printf("%d %f \n",i, res0[i]);
   }
-  
-  sequentialpart(res0, totpnts, S->spatialpnts, S->initial, U11, MuT, G);
+
+  int truely_back_points = totpnts - S->spatialpnts * S->delta_back_MuT;
+  sequentialpart(res0, totpnts, S->spatialpnts, truely_back_points, 
+		 S->initial, U11, MuT, G);
   res0 += S->initial * S->spatialpnts;
   MEMCOPY(res, res0, sizeof(double) * totpnts * vdim);
-  sequentialpart(res, totpnts, S->spatialpnts, S->ntime - S->back, 
-		 U11, MuT, G);
-  BOXCOX_INVERSE;
 
+  sequentialpart(res, totpnts, S->spatialpnts, truely_back_points,
+		 S->ntime - S->back, U11, MuT, G);
+ 
+
+  BOXCOX_INVERSE;
 }

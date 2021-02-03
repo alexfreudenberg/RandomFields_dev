@@ -214,7 +214,7 @@ data.columns <- function(data, model=NULL, xdim=0, x=NULL,
   data <- if (is.list(data) && !is.data.frame(data)) data[[1]] else data
   data <- if (is(data, "RFsp")) data@data else data
   cn <- colnames(data)
-  data.info <- "safe"
+  data.info <- "unsafe"
   if (x.given <- hasArg("x") || hasArg("distances")) {
     ## besser mit ...names, so dass missing(param) nicht zu einem Fehler fuehrt
     L <- list(...)
@@ -228,7 +228,7 @@ data.columns <- function(data, model=NULL, xdim=0, x=NULL,
                        x=x, ...,  data=orig.data, xdim=xdim,
                        return_transform = return_transform)
     components <- c("is.x", "is.factor", "is.var", "is.covariate",
-                    "is.unclear")
+                    "is.unclear")    
     for (i in components) assign(i, c(M[[i]]))# resolve in case of matrix
     if (length(is.x) > 0 && x.given) stop("bug in 'data.matrix'")
     if (M$repet > 0) repet <- M$repet
@@ -271,13 +271,15 @@ data.columns <- function(data, model=NULL, xdim=0, x=NULL,
 
     M <- list()
   }
+
+  ## Print("data.columns; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ", is.x, is.var, searching.for.x, is(data, "RFsp"), vdim)
   
   if (length(is.var) == 0) {
     is.var <- if (ncol(data) == 1) 1L
               else if (vdim > 0 && ncol(data) == vdim) 1:vdim
   }
 
-  if ((n <- length(is.var)) > 0) {
+  if (FALSE && (n <- length(is.var)) > 0) {
     d <- min(c(is.var, which(cn == "")))
     m <- max(0, is.x, is.covariate, is.factor)
     if (m < d) {
@@ -286,6 +288,7 @@ data.columns <- function(data, model=NULL, xdim=0, x=NULL,
                (max(is.var) - min(is.var) + 1) <= vdim) {
         if (repet == 0) repet <- (ncol(data) - d + 1) /  vdim
         is.var <- is.var + ((0:(repet-1)) * vdim)
+##        Print(repet, is.var, data, M)
       }
       data.info <-  "1stsafe"      
       if (n != length(is.var)) {
@@ -310,6 +313,9 @@ data.columns <- function(data, model=NULL, xdim=0, x=NULL,
     }
   }
 
+##  Print(is.var);
+  
+
   if (isRFsp <- is(data, "RFsp")) {
     xdim <- if (is(data, "SpatialPointsDataFrame") ||
 		is(data, "RFpointsDataFrame")) ncol(data@coords)
@@ -332,6 +338,7 @@ data.columns <- function(data, model=NULL, xdim=0, x=NULL,
            "coordinate names of RandomFields.")
   }
 
+##  Print("data.columns", is.x, is.var, searching.for.x)
 
   ######### NOTPROGRAM ###############
   ##
@@ -354,6 +361,7 @@ data.columns <- function(data, model=NULL, xdim=0, x=NULL,
            paste(is.var, collapse=","),
            " as data column", S(is.var))
   }
+
 
   if (!x.given) {
     if (length(is.x) == 0) {
@@ -401,8 +409,6 @@ data.columns <- function(data, model=NULL, xdim=0, x=NULL,
     if (length(is.x) > 0) names(is.x) <- cn[is.x]
   }
 
-  #  Print(is.var=is.var, is.x=is.x, is.factor=is.factor,vdim=vdim, repet = repet, data.info=data.info, model=M)
-
   return(list(is.var=is.var, is.x=is.x, is.factor=is.factor,
               vdim=vdim, repet = repet,
               data.info=data.info, model=M))
@@ -421,7 +427,8 @@ SystemCoordNames <- function(locinfo, opt) {
   if (system == "earth") {
     coordnames <- if (tsdim == 4) opt$earth_coord_names
 		  else if (tsdim == 2) opt$earth_coord_names[1:2]
-		  else if (tsdim == 3) c(opt$earth_coord_names[1:2], "HeightOrTime")
+		  else if (tsdim == 3) c(opt$earth_coord_names[1:2],
+                                         "height or time")
   } else if (system == "cartesian" && tsdim <= 4) {
     coordnames <- opt$cartesian_names[1:tsdim]
     if (has.time.comp) coordnames[tsdim] <- opt$cartesian_names[3 + 1]

@@ -23,8 +23,16 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <R_ext/Rdynload.h>
 #include "def.h"
 #include "RandomFields.h"
-#include "auxiliary2.h"
 #include <Basic_utils.h>
+
+#if defined(__clang__)
+//# pragma clang diagnostic ignored "-Wcast-function-type"
+#endif
+
+#ifdef __GNUC__
+// https://gcc.gnu.org/onlinedocs/gcc/Diagnostic-Pragmas.html
+#pragma GCC diagnostic ignored "-Wcast-function-type"
+#endif
 
 #define none 0
 static R_NativePrimitiveArgType
@@ -63,55 +71,57 @@ static const R_CMethodDef cMethods[]  = {
   {NULL, NULL, 0, none}
 };
 
+SEXP vectordist(SEXP V, SEXP diag);
 
 
-#define CALLDEF_DO(name, n) {#name, (DL_FUNC) &name, n}
+#define CALLDEF(name, n) {#name, (DL_FUNC) &name, n}
 static R_CallMethodDef callMethods[]  = {
   // in die respectiven C-Dateien muss RandomFieldsUtils.h eingebunden sein
-  CALLDEF_DO(attachoptions, 0),
-  CALLDEF_DO(GetParameterNames, 1),
-  CALLDEF_DO(GetSubNames, 1),
-  CALLDEF_DO(scatter, 1),
-  CALLDEF_DO(GetAllModelNames, 1),
-  CALLDEF_DO(GetCoordSystem, 3),
-  CALLDEF_DO(GetModelInfo, 5),
-  CALLDEF_DO(GetModel, 7),
-  CALLDEF_DO(Init, 4),
-  CALLDEF_DO(setlocalRFutils, 2),
-  CALLDEF_DO(EvaluateModel, 3),
-  //  CALLDEF_DO(EvaluateModelXX, 0),
-   CALLDEF_DO(GetProcessType, 2),
-  CALLDEF_DO(empirical, 10),
-  CALLDEF_DO(empvarioXT, 13),
-  CALLDEF_DO(fftVario3D, 16),
-  CALLDEF_DO(fftVario3DX, 15),
-  CALLDEF_DO(boxcounting, 5),
-  CALLDEF_DO(detrendedfluc, 5),
-  CALLDEF_DO(periodogram, 6),
-  CALLDEF_DO(minmax, 5), 
-  CALLDEF_DO(MomentsIntern, 2),
-  CALLDEF_DO(CovLocNonGrid, 4),
-  CALLDEF_DO(LocNonGrid, 2),
-  CALLDEF_DO(GetNAPositions, 8),
-  CALLDEF_DO(SetAndGetModelFacts, 10),   
-  CALLDEF_DO(SetAndGetModelLikelihood, 5), 
-  CALLDEF_DO(Take2ndAtNaOf1st, 7),
-  CALLDEF_DO(countelements, 3), 
-  CALLDEF_DO(countneighbours, 6), 
-  CALLDEF_DO(getelements, 5), 
-  CALLDEF_DO(getneighbours, 5), 
-  CALLDEF_DO(set_boxcox, 2), 
-  CALLDEF_DO(copyoptions, 0),
-  CALLDEF_DO(get_boxcox, 1),
-  //  CALLDEF_DO(BoxCox_inverse, 2), 
-  CALLDEF_DO(BoxCox_trafo, 4),
-  CALLDEF_DO(get_logli_residuals, 1),
-  CALLDEF_DO(get_likeliinfo, 1),
-  CALLDEF_DO(simple_residuals, 1), 
-  CALLDEF_DO(get_linearpart, 2),
-  CALLDEF_DO(vectordist, 2),
-  CALLDEF_DO(maintainers_machine, 0),
-//  CALLDEF_DO(),
+  CALLDEF(attachoptions, 0),
+  CALLDEF(copyoptions, 0),
+  
+  CALLDEF(GetParameterNames, 1),
+  CALLDEF(GetSubNames, 1),
+  CALLDEF(scatter, 1),
+  CALLDEF(GetAllModelNames, 1),
+  CALLDEF(GetCoordSystem, 3),
+  CALLDEF(GetModelInfo, 5),
+  CALLDEF(GetModel, 7),
+  CALLDEF(Init, 4),
+  CALLDEF(setlocalRFutils, 2),
+  CALLDEF(EvaluateModel, 3),
+  //  CALLDEF(EvaluateModelXX, 0),
+   CALLDEF(GetProcessType, 2),
+  CALLDEF(empirical, 10),
+  CALLDEF(empvarioXT, 13),
+  CALLDEF(fftVario3D, 16),
+  CALLDEF(fftVario3DX, 15),
+  CALLDEF(boxcounting, 5),
+  CALLDEF(detrendedfluc, 5),
+  CALLDEF(periodogram, 6),
+  CALLDEF(minmax, 5), 
+  CALLDEF(MomentsIntern, 2),
+  CALLDEF(CovLocNonGrid, 4),
+  CALLDEF(LocNonGrid, 2),
+  CALLDEF(GetNAPositions, 8),
+  CALLDEF(SetAndGetModelFacts, 10),   
+  CALLDEF(SetAndGetModelLikelihood, 5), 
+  CALLDEF(Take2ndAtNaOf1st, 7),
+  CALLDEF(countelements, 3), 
+  CALLDEF(countneighbours, 6), 
+  CALLDEF(getelements, 5), 
+  CALLDEF(getneighbours, 5), 
+  CALLDEF(set_boxcox, 2),
+  CALLDEF(get_boxcox, 1),
+  //  CALLDEF(BoxCox_inverse, 2), 
+  CALLDEF(BoxCox_trafo, 4),
+  CALLDEF(get_logli_residuals, 1),
+  CALLDEF(get_likeliinfo, 1),
+  CALLDEF(simple_residuals, 1), 
+  CALLDEF(get_linearpart, 2),
+  CALLDEF(vectordist, 2),
+  CALLDEF(maintainers_machine, 0),
+//  CALLDEF(),
   {NULL, NULL, 0}
 };
 
@@ -124,7 +134,14 @@ void R_init_RandomFields(DllInfo  *dll) {
 }
 
 
+#ifdef __GNUC__
+// https://gcc.gnu.org/onlinedocs/gcc/Diagnostic-Pragmas.html
+#pragma GCC diagnostic ignored "-Wcast-function-type"
+#endif
 void R_unload_RandomFields(DllInfo *info) {
   /* Release resources. */
 }
+#ifdef __GNUC__
+#pragma GCC diagnostic warning "-Wcast-function-type"
+#endif
 

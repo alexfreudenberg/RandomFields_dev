@@ -22,10 +22,21 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include <R_ext/Rdynload.h>
+#include "intrinsics.h"
 #include "RF.h"
 #include "xport_import.h"
 
 #define importfrom "RandomFieldsUtils"
+
+#if defined(__clang__)
+//# pragma clang diagnostic ignored "-Wcast-function-type"
+#endif
+
+#ifdef __GNUC__
+// https://gcc.gnu.org/onlinedocs/gcc/Diagnostic-Pragmas.html
+#pragma GCC diagnostic ignored "-Wcast-function-type"
+#endif
+
 
 #ifdef CALL
 #undef CALL
@@ -38,6 +49,13 @@ UTILSCALLS;
 void includeXport() {
   UTILSCALLS;
 } // export C
+
+#ifdef __GNUC__
+// https://gcc.gnu.org/onlinedocs/gcc/Diagnostic-Pragmas.html
+#pragma GCC diagnostic warning "-Wcast-function-type"
+#endif
+
+
 
 
 int 
@@ -57,10 +75,10 @@ bool parallel() {
 
 void globalparam_NULL(KEY_type *KT, bool copy_messages) {
   // printf("%d %d %d %d %d; %d %d %d \n",
-  //	 generalN, gaussN, krigeN, extremeN, fitN,
-  //	 messagesN, coordsN, prefixN);
+  // generalN, gaussN, krigeN, extremeN, fitN,
+  // messagesN, coordsN, prefixN);
   assert(generalN==20 && gaussN == 6 && krigeN == 5 && extremeN == 12
-  	 && fitN == 42 && messagesN == 28 && coordsN == 20 && prefixN == 25);
+  	 && fitN == 42 && messagesN == 27 && coordsN == 20 && prefixN == 25);
   messages_param m;
   if (!copy_messages)
     MEMCOPY(&m, &(KT->global.messages), sizeof(messages_param));

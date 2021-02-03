@@ -261,53 +261,6 @@ void includeCovModels() {
   Taylor(RF_NA, 2.0);
   TailTaylor(1, RF_NA, 1, 1);
 
-
-    pref_type pCauchyUnif1 = {5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
-    //                CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
-    IncludePrim("cauchyUnif1", PosDefType, 2, XONLY, SYMMETRIC, checkOK, rangeCauchyUnif1, pCauchyUnif1, 2, INFDIM, (ext_bool) false, NOT_MONOTONE);
-    kappanames("eps", REALSXP, "b", REALSXP);
-    addCov(cauchyUnif1);
-
-
-    pref_type pCauchyUnif2 = {5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
-    //                CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
-    IncludePrim("cauchyUnif2", PosDefType, 2, XONLY, SYMMETRIC, checkOK, rangeCauchyUnif2, pCauchyUnif2, 2, INFDIM, (ext_bool) false, NOT_MONOTONE);
-    kappanames("eps", REALSXP, "b", REALSXP);
-    addCov(cauchyUnif2);
-
-
-    pref_type pCauchyUnif3 = {5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
-    //                CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
-    IncludePrim("cauchyUnif3", PosDefType, 2, XONLY, SYMMETRIC, checkOK, rangeCauchyUnif3, pCauchyUnif3, 2, INFDIM, (ext_bool) false, NOT_MONOTONE);
-    kappanames("eps", REALSXP, "b", REALSXP);
-    addCov(cauchyUnif3);
-
-    pref_type platentCauchy1 = {5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
-    //                CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
-    IncludePrim("latentCauchy1", PosDefType, 2, XONLY, SYMMETRIC, checkOK, rangelatentCauchy1, pCauchyUnif3, 2, INFDIM, (ext_bool) false, NOT_MONOTONE);
-    kappanames("a", REALSXP, "b", REALSXP);
-    addCov(latentCauchy1);
-
-    pref_type platentCauchy2 = {5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
-    //                CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
-    IncludePrim("latentCauchy2", PosDefType, 2, XONLY, SYMMETRIC, checkOK, rangelatentCauchy2, platentCauchy2, 2, INFDIM, (ext_bool) false, NOT_MONOTONE);
-    kappanames("a", REALSXP, "b", REALSXP);
-    addCov(latentCauchy2);
-
-    pref_type platentCauchy3 = {5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
-    //                CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
-    IncludePrim("latentCauchy3", PosDefType, 2, XONLY, SYMMETRIC, checkOK, rangelatentCauchy3, platentCauchy3, 2, INFDIM, (ext_bool) false, NOT_MONOTONE);
-    kappanames("a", REALSXP, "b", REALSXP);
-    addCov(latentCauchy3);
-
-    pref_type platentCauchy4 = {5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
-    //                CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
-    IncludePrim("latentCauchy4", PosDefType, 3, XONLY, SYMMETRIC, checkOK, rangelatentCauchy4, platentCauchy4, 2, INFDIM, (ext_bool) false, NOT_MONOTONE);
-    kappanames("a", REALSXP, "b", REALSXP, "gamma", REALSXP);
-    addCov(latentCauchy4);
-
-  
-
   
  // todo : WARUM HABE ICH DIESES MODELL CODIERT, ABER NICHT ONLINE??     
   //  pref_type pctbm={2, 0, 0,  5, 0, 5, 5, 0, 0, 0, 0, 0, 0, 5};
@@ -318,9 +271,6 @@ void includeCovModels() {
   // addCov(Cauchytbm, DCauchytbm, InverseCauchy); // scale not correct, but
   // should be an approximation that is good enough
 
-
-
-  
   IncludePrim("circular",  TcfType, 0, XONLY, ISOTROPIC,
 	      checkOK, NULL, 2, (ext_bool) false, GNEITING_MON);
   addCov(circular, Dcircular, inverseOne);
@@ -585,21 +535,7 @@ void includeCovModels() {
   Taylor(-1.0, 2.0);
   TailTaylor(1, 0, 1.0, 2.0);
   
-  pref_type pgaussgauss = {5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
-  //                      CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
-  IncludePrim("gaussgauss", PosDefType, 1, XONLY, SYMMETRIC, checkOK, rangegaussgauss, pgaussgauss, 2, INFDIM, (ext_bool) false, NOT_MONOTONE);
-  kappanames("nu", REALSXP);
-  addCov(gaussgauss);
-  
-  pref_type pgaussGammalike = {5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
-  //                CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
-  IncludePrim("gaussGammalike", PosDefType, 1, XONLY, SYMMETRIC, checkOK,
-	      rangegaussGammalike, pgaussGammalike,
-	      2/*this is hopefully the parameter that controls the dim*/,
-	      INFDIM, (ext_bool) false, NOT_MONOTONE);
-  kappanames("m", INTSXP); // TODO ask or find version for int
-  addCov(gaussGammalike); 
-
+ 
 
   
   IncludePrim("genB", VariogramType, 2, XONLY, ISOTROPIC, 
@@ -788,7 +724,7 @@ void includeCovModels() {
 		 PREV_SUB_I,
 		 checkM, rangeM, pmatrix, false, PARAM_DEP, SUBMODEL_DEP,
 		 (ext_bool) SUBMODEL_DEP, NOT_MONOTONE);
-  nickname("matrix"); // NEVER change !! see Fitgauss
+  nickname(RM_MATRIX); // NEVER change !! see Fitgauss
   kappanames("M", REALSXP, "vdim", INTSXP); // vdim ist das interne!
   change_typeof(M_M, ShapeType);
   addCov(Matrix);
@@ -871,7 +807,7 @@ void includeCovModels() {
  pref_type pfnugget= { 1, 0, 0, 0, 0, 1, 1, 0, 0, 5, 0, 0, 0, 5};
   //                  CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
   NUGGET  = 
-    IncludeModel("nugget", TcfType, 0, 0, 2, NULL,
+    IncludeModel(RM_NUGGET, TcfType, 0, 0, 2, NULL,
 		 // XONLY, ISOTROPIC,
 		 PARAMDEP_D, PARAMDEP_I,
 		 check_nugget, range_nugget, pfnugget, 
@@ -1098,14 +1034,13 @@ void includeCovModels() {
 
 
   USER =
-    IncludeModel("U", ManifoldType, 0, 0, 16, kappaUser, 
+    IncludeModel(RM_USER, ManifoldType, 0, 0, 16, kappaUser, 
 		 PARAMDEP_D, PARAMDEP_I,
 		 checkUser, rangeUser, PREF_AUX, 
 		 true,// FREEVARIABLE vorhanden. Muss extra in SpecialRMmodel.R
 		 // definiert und nicht ueber generatemodels.R
 		 PARAM_DEP, INFDIM, (ext_bool) false, // per default.
 		 NOT_MONOTONE);
-  nickname("user");
   kappanames("type", INTSXP, "domain", INTSXP,  "isotropy", INTSXP,
 	     "vdim", INTSXP, "beta", REALSXP, "coordnames", INTSXP,
 	     "fctn", LANGSXP, "fst", LANGSXP, "snd", LANGSXP,

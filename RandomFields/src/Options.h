@@ -367,7 +367,7 @@ struct fit_param{
 	    RF_INF, RF_INF, RF_INF, RF_INF, RF_INF, RF_INF, RF_INF, RF_INF, \
 	    RF_INF, RF_INF, RF_INF, RF_INF},				\
     0.1, 1e-7, fit_pgtol[NM], fit_pgtol_recall[NM], /* */		\
-    fit_factr[NM], fit_factr_recall[NM], PSEUDO,			\
+    fit_factr[NM], fit_factr_recall[NM], PSEUDOVARIOGRAM,		\
     /* int: */								\
     50,  0 /* critical */,            /* 6 */				\
     5 /* ncrit */ , maxclique[NM],					\

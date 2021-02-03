@@ -366,7 +366,7 @@ void simulate(double VARIABLE_IS_NOT_USED *X, int *N, model *cov, double *v){
     nn,
     err = NOERROR,
     each = 0;
-  double *res,
+  double *res = v,
     realeach=0.0;
   simu_storage *simu = NULL;  
   finaldofct finalDo = DefList[SUBNR].FinalDo;
@@ -406,9 +406,9 @@ void simulate(double VARIABLE_IS_NOT_USED *X, int *N, model *cov, double *v){
       SPRINTF(format, "%.2ss%.2s%dd%.2ss", prozent, prozent, 3, prozent);
     } else each = 1;
   } else each = nn + 1;
-  res = v;
 
   sub->simu.pair = false;
+
   for (ni=1; ni<=nn; ni++, res += vdimtot) {
 #ifdef DO_PARALLEL
     //omp_set_num_threads(1);
@@ -445,11 +445,12 @@ void simulate(double VARIABLE_IS_NOT_USED *X, int *N, model *cov, double *v){
     }
   
     assert(cov->Sgen != NULL);
-   
+
+    //    printf("simulate ddsfff\n");
     DO(sub, cov->Sgen);
 
-    //    printf("ni=%d vdimtot=%d %ld sub=%ld\n", ni, vdimtot, res, sub->rf);
-    //if(false) for (int k=0; k<vdimtot; k++)  if (sub->rf[k] <= 0.0) APMI(sub);
+    //    printf("ni=%d vdimtot=%d %ld sub=%ld %e %e\n", ni, vdimtot, res, sub->rf, v[0], v[1]);
+    
 
     
 #ifdef DO_PARALLEL
@@ -459,7 +460,8 @@ void simulate(double VARIABLE_IS_NOT_USED *X, int *N, model *cov, double *v){
     if (global_utils->basic.cores>1) omp_set_num_threads(1); // !! wichtig,
     // auch fuer nachfolgende DO()!!
 #endif    
-    
+
+    assert(cov->rf == sub->rf);
     MEMCOPY(res, cov->rf, sizeof(double) * vdimtot);
     // for (int i=0; i<vdimtot; i++) res[i] = cov->rf[i];
   
@@ -492,6 +494,9 @@ void simulate(double VARIABLE_IS_NOT_USED *X, int *N, model *cov, double *v){
     if (simu != NULL) sub->simu.active = simu->active = false;
     XERR(err);
   }
+
+  // printf("simu done %e %e\n", v[0], v[1]);
+  
 }
 
 
@@ -554,6 +559,9 @@ int check_simulate(model *cov) {
 		       dom, iso, cov->vdim, frame)) == NOERROR) {
 	break;
       }
+
+     cov->base->use_external_boxcox = 0;
+     // APMI(cov);
      
       if (isProcess(sub)) {// muss als zweites stehen !!
 	break;
@@ -600,7 +608,7 @@ int check_simulate(model *cov) {
     if (subvdim > 1 && !vdim_close_together) cov->q[--len]=(double) subvdim;
     if (grid) {
       for (d=tsdim - 1; d>=0; d--) 
-	cov->q[--len] = gr[d][XLENGTH];
+	cov->q[--len] = gr[d][XLENGTH]; // OK
     } else {
       cov->q[--len] = Loctotalpoints(cov);
     }
@@ -653,7 +661,8 @@ int struct_simulate(model *cov, model VARIABLE_IS_NOT_USED  **newmodel){
    
   if (PL >= PL_DETAILS) { PRINTF("Checking Simulate\n");}
 
-  NEW_STORAGE(gen);    
+  NEW_STORAGE(gen);
+    
   if (!sub->initialised) {
     if (PL >= PL_DETAILS) { PRINTF("Struct Simulate C\n");}
    
@@ -1614,7 +1623,9 @@ int check_fctn_intern(model *cov, Types type, bool close,
     for (int k=firstdomain; k<=lastdomain; k++) {
       //printf("j=%d k=%d %d %d\n",j, k, firstdomain, lastdomain);
       // for (int f=0; f<=end_frame; f++) {
-      if ((err = CHECK(sub, dim, OWNXDIM(0),
+      if ((err = CHECK(sub, dim,
+		       isProcess(cov) ? LocxdimOZ(cov) + LocTime(cov)
+		       : OWNXDIM(0),		       
 		       type, 
 		       (domain_type) k, iso, SUBMODEL_DEP, frame))
 	  //sub!=next || isVariogram(sub) ? V ariogramType : Any Type))
@@ -1650,7 +1661,7 @@ int check_fctn_intern(model *cov, Types type, bool close,
 #define VDIMS								\
     for (int i=0; i<2; i++) if (cov->vdim[i] > 1) cov->q[d++] = cov->vdim[i]
 #define LOCS if (grid) {						\
-      for (int i=0; i<dim; i++) cov->q[d++] = xgr[i][XLENGTH];		\
+      for (int i=0; i<dim; i++) cov->q[d++] = xgr[i][XLENGTH];/*// OK */ \
     } else {								\
       cov->q[d++] = Loctotalpoints(cov);				\
     }      
@@ -1942,18 +1953,28 @@ void FctnIntern(model *cov, model *covVdim, model *genuine, bool ignore_y,
   // crash();
   
   // assert(cov->key == NULL);
-  bool kernel = isKernel(PREVSYSOF(genuine));
-  FINISH_START(cov, covVdim, !kernel && !ignore_y, ignore_y, 1, 0, 1, 0);
-  info[INFO_EXTRA_DATA_X] = !kernel && !ignore_y;
-  info[INFO_EXTRA_DATA_Y] = !ignore_y;
- 
+  bool callingKernel = isKernel(PREVSYSOF(genuine));
+  //
+  // PMI0(cov);
+  //PMI0(genuine);
+  //  printf("FI ign_x=%d ign_y=%d genuine.grid=%d\n",  !callingKernel && !ignore_y, ignore_y, Locgrid(genuine));
   
+  FINISH_START(cov, covVdim, !callingKernel && !ignore_y, ignore_y, 1, 0, 1, 0);
+  info[INFO_EXTRA_DATA_X] = !callingKernel && !ignore_y;
+  info[INFO_EXTRA_DATA_Y] = !ignore_y;
+
+  //  PMI0(genuine); 
+   
+  //  printf("yA %d %d %d igny=%d grid=%d %d totx=%d %d\n",
+  //	 yAvailable, extraData, callingKernel, ignore_y,
+  //	 grid, ggridY,  totX, totY);
+    
   assert(fctn != NULL);
   double 
     *cross = fctn->cross,
     *zero = ZERO(covVdim);
 
-  y = ygiven ? fctn->y : ZERO(cov);
+  y = yAvailable ? fctn->y : ZERO(cov);
   Types frame = genuine->frame;
   if (hasAnyEvaluationFrame(genuine)) genuine->frame = ShapeType;
 
@@ -1964,26 +1985,18 @@ void FctnIntern(model *cov, model *covVdim, model *genuine, bool ignore_y,
 	 (ISO(PREVSYSOF(genuine), 0) == ISO(SYSOF(genuine), 0)
 	  &&  isTrend(SYSTYPE(PREVSYSOF(genuine), 0) )
 	  ) 
-	 );
-
-
-  // printf("\n%d \n", totX);
-  
+	 );  
+ 
 #define FUNCTION FCTN(x, info, genuine, v)
 #define FUNCTION2 FCTN(x, info, genuine, cross); VDIM_LOOP(cross[u])
 #define FUNCTION_Y NONSTATCOV(x, y, info, genuine, v);
 #define FUNCTION2_Y NONSTATCOV(x, y, info, genuine, cross); VDIM_LOOP(cross[u])
    
   PERFORM_PREPARE;
-
-  //ygiven = 1 kernel=0 grid=0 0 kernel.genuine=0
-  // printf("ygiven = %d %d kernel=%d grid=%d %d kernel.genuine=%d\n", ygiven, ignore_y,  kernel, grid, gridY, isKernel(PREVSYSOF(genuine)));
-  // PMI0(genuine);
-  
   PERFORM(FUNCTION, FUNCTION2, FUNCTION_Y, FUNCTION2_Y);
   STANDARD_ENDE;
 
-  genuine->frame = frame; // ja nicht loeschen!!
+  genuine->frame = frame; // ja nicht loeschen!!  
 }
 
 
@@ -2047,7 +2060,7 @@ void kappapredict(int i, model VARIABLE_IS_NOT_USED *cov, int *nr, int *nc) {
 }
 
 void predict(double *N, int *idx, model *cov, double *v) {
-  // printf("predict\n");
+  //  printf("predict\n");
   /*
     N > 0 : dim(N) == 2 && N[0] = length(idx for x);
                            N[1] = length(idx for data)  
@@ -2079,7 +2092,7 @@ void predict(double *N, int *idx, model *cov, double *v) {
 
   if (n == 0) {
     if (idx[0] > LocSets(cov)) BUG;
-    // printf("idx=%d\n", idx[0]);
+    //    printf("predict idx=%d\n", idx[0]);
     cov->base->set = idx[0] - 1;// idx[0] has numbering of R
     assert(cov->base->set >= 0);
     if (SUBNR == GAUSSPROC) {

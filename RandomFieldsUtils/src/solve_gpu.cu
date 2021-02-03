@@ -10,7 +10,7 @@
 #include "errors_messages.h"
 #include "RandomFieldsUtils.h"
 #include "solve_gpu.h"
-//#include "Options_utils.h"
+#include "options.h"
 
 
 
@@ -428,7 +428,7 @@ void gpu_relmat_cublas(Uint* M, double* A, Uint snps, Uint individuals){
     //Type-cast matrix M to int8 and store the result in page-locked memory
     //Zero-pad matrix to get a row number that is a multiple of four
     #ifdef DO_PARALLEL
-   // #pragma omp parallel for num_threads(CORES)   
+    #pragma omp parallel for num_threads(CORES)   
     #endif
         for(int i = 0; i < n; i++){
             for(int j = 0; j < k_pad; j++){
@@ -471,7 +471,7 @@ void gpu_relmat_cublas(Uint* M, double* A, Uint snps, Uint individuals){
     
     //Convert result to double and store it in output matrix A
     #ifdef DO_PARALLEL
-//    #pragma omp parallel for num_threads(CORES)   
+    #pragma omp parallel for num_threads(CORES)   
     #endif
         for (int i = 0; i < n * m; i++) A[i] = (double) h_C[i];
     

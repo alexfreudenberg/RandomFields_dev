@@ -2176,7 +2176,7 @@ int initSteinST1(model *cov, gen_storage *s) {
   QVALUE3 = nu + dim; // factor
 
   if (HAS_SPECTRAL_FRAME(cov)) {
-    spec_properties *cs = &(s->spec);
+    spectral_storage *cs = &(s->Sspectral);
     cs->density = densitySteinST1;
     return search_metropolis(cov, s);
   }

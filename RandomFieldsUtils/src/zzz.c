@@ -27,7 +27,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define none 0
 
- 
+#if defined(__clang__)
+//# pragma clang diagnostic ignored "-Wcast-function-type"
+#endif
+
+#ifdef __GNUC__
+// https://gcc.gnu.org/onlinedocs/gcc/Diagnostic-Pragmas.html
+#pragma GCC diagnostic ignored "-Wcast-function-type"
+#endif
+
 static R_NativePrimitiveArgType 
     int_arg[] = { INTSXP },
     host_arg[] = { STRSXP, INTSXP};
@@ -47,43 +55,41 @@ static const R_CMethodDef cMethods[]  = {
 };
 
 
-
-#define CALLDEF_DO(name, n) {#name, (DL_FUNC) &name, n}
+#define CALLDEF(name, n) {#name, (DL_FUNC) &name, n}
 static R_CallMethodDef callMethods[]  = {
   // in die respectiven C-Dateien muss RandomFieldsUtils.h eingebunden sein
-  CALLDEF_DO(attachoptions, 0),
-  CALLDEF_DO(Chol, 1),
-  CALLDEF_DO(SolvePosDef, 3),
-  CALLDEF_DO(struve, 4),
-  CALLDEF_DO(besselk_simd, 2),
-  CALLDEF_DO(I0ML0, 1),
-  CALLDEF_DO(gaussr, 2),
-  CALLDEF_DO(WMr, 4),
-  CALLDEF_DO(logWMr, 4),
-  CALLDEF_DO(sortX, 4),
-  CALLDEF_DO(orderX, 4), 
-  CALLDEF_DO(getChar, 0),
-  CALLDEF_DO(DivByRow, 2),
-  CALLDEF_DO(colMaxs, 1),
-  CALLDEF_DO(quadratic, 2),
-  CALLDEF_DO(dotXV, 2),
-  CALLDEF_DO(rowMeansX, 2),
-  CALLDEF_DO(rowProd, 1),
-  CALLDEF_DO(dbinorm, 2),
-  CALLDEF_DO(chol2mv, 2),
-  CALLDEF_DO(tcholRHS, 2),
-  CALLDEF_DO(crossprodX, 3),
-  //  CALLDEF_DO(),
+  CALLDEF(attachoptions, 0),
+  CALLDEF(Chol, 1),
+  CALLDEF(SolvePosDef, 3),
+  CALLDEF(struve, 4),
+  CALLDEF(besselk_simd, 2),
+  CALLDEF(I0ML0, 1),
+  CALLDEF(gaussr, 2),
+  CALLDEF(WMr, 4),
+  CALLDEF(logWMr, 4),
+  CALLDEF(sortX, 4),
+  CALLDEF(orderX, 4), 
+  CALLDEF(getChar, 0),
+  CALLDEF(DivByRow, 2),
+  CALLDEF(colMaxs, 1),
+  CALLDEF(quadratic, 2),
+  CALLDEF(dotXV, 2),
+  CALLDEF(rowMeansX, 2),
+  CALLDEF(rowProd, 1),
+  CALLDEF(dbinorm, 2),
+  CALLDEF(chol2mv, 2),
+  CALLDEF(tcholRHS, 2),
+  CALLDEF(crossprodX, 3),
+  //  CALLDEF(),
   {NULL, NULL, 0}
 };
 
 
-
  
-#define EXTDEF_DO(name, n)  {#name, (DL_FUNC) &name, n}
+#define EXTDEF(name, n)  {#name, (DL_FUNC) &name, n}
 static const R_ExternalMethodDef extMethods[] = {
   // in die respectiven C-Dateien muss RandomFieldsUtils.h eingebunden sein
-  EXTDEF_DO(RFoptions, -1), 
+  EXTDEF(RFoptions, -1), 
   {NULL, NULL, 0} 
 };
 
@@ -149,12 +155,13 @@ void R_init_RandomFieldsUtils(DllInfo  *dll) {
 
 
 
+#ifdef __GNUC__
+// https://gcc.gnu.org/onlinedocs/gcc/Diagnostic-Pragmas.html
+#pragma GCC diagnostic ignored "-Wcast-function-type"
+#endif
 void R_unload_RandomFieldsUtils(DllInfo *info) {
-  // just to avoid warning from compiler on my computer
-#ifdef SCHLATHERS_MACHINE  
-  if (0) Rprintf("%ld\n", (unsigned long) info);
-#endif  
-  /* Release resources. */
 }
-
- 
+#ifdef __GNUC__
+#pragma GCC diagnostic warning "-Wcast-function-type"
+#endif
+  

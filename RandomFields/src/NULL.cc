@@ -349,10 +349,9 @@ void COV_DELETE_(model **Cov, model *save) {
 
 void COV_ALWAYS_NULL(model *cov) {
   //  printf("\n\n\n\nCOVALWAYSNULL %s %d\n", NAME(cov), cov->base==NULL); 
-  if (cov->base != NULL) cov->zaehler = cov->base->zaehler++;
-  else cov->zaehler=-1;
-  //  printf("base = %ld %s\n", cov->base, NAME(cov));
-
+  if (cov->base != NULL) cov->zaehler = ++(cov->base->zaehler);
+  else cov->zaehler=0;
+  
   cov->calling = NULL;
   cov->prevloc = cov->ownloc = NULL;
   cov->checked = false;
@@ -428,8 +427,8 @@ ALL_NULL(simu)
 void COV_NULL(model *cov, KEY_type *base) {
   //printf("\n\n\n\nCCOVNULL %s %d\n", NAME(cov), base==NULL); 
   MEMSET(cov, 0, sizeof(model));
-  if (base != NULL) cov->zaehler = base->zaehler++; else cov->zaehler=-1;
-  //printf("base = %ld %s\n", cov->base, NAME(cov));
+  if (base != NULL) cov->zaehler = ++(base->zaehler);// 0 never appears
+  else cov->zaehler=0; // 0 is reserved also for use_external_boxcox
 	 
   cov->mpp.moments = UNSET;
 
@@ -579,18 +578,6 @@ void sequ_DELETE(sequ_storage ** S){
     FREE(x->Inv22);
     FREE(x->res0);
     UNCONDFREE(*S);
-  }
-}
-
-
-ALL_NULL(spectral)
-void spectral_DELETE(spectral_storage **S) 
-{ 
-  spectral_storage *x = *S;
-  if (x!=NULL) {
-    // do NOT delete cov --- only pointer
-    // spectral_storage *x; x =  *((spectral_storage**)S);
-    UNCONDFREE(*S);   
   }
 }
 
@@ -953,29 +940,41 @@ void get_DELETE(get_storage **S){
 }
 
 
-void gen_NULL(gen_storage *x) {
-  int d;
+
+void spectral_NULL(spectral_storage *x) {
   if (x == NULL) return;
- 
+  MEMSET(x, 0, sizeof(spectral_storage));
+  x->phistep2d = x->phi2d = x->prop_factor = RF_NA;   
+  x->nmetro = UNSET;
+  x->sigma = (double) UNSET;
+  for (int d=0; d<MAXTBMSPDIM; d++) {
+    x->E[d] = x->sub_var_cum[d] = RF_NA;
+  }
+}
+
+/*void spectral_DELETE(spectral_storage **S) { 
+  spectral_storage *x = *S;
+  if (x!=NULL) {
+    // do NOT delete cov --- only pointer
+    // spectral_storage *x; x =  *((spectral_storage**)S);
+    UNCONDFREE(*S);   
+  }
+}
+*/
+
+
+void gen_NULL(gen_storage *x) {
+  if (x == NULL) return; 
   // for (d=0; d<MAXMPPDIM; d++) 
   //   x->window.min[d] = x->window.max[d] = x->window.centre[d] = RF_NA;
+  spectral_NULL(&(x->Sspectral));
   x->check = x->dosimulate = true;
-
-  x->Sspectral.phistep2d = x->Sspectral.phi2d = x->Sspectral.prop_factor
-    = RF_NA;
-  x->Sspectral.grid = false;
-
-  x->spec.nmetro = UNSET;
-  x->spec.sigma = (double) UNSET;
-  x->spec.density = NULL;
-  for (d=0; d<MAXTBMSPDIM; d++) {
-    x->spec.E[d] = x->spec.sub_var_cum[d] = RF_NA;
-  }
 }
 
 void gen_DELETE(gen_storage **S) {
   gen_storage *x = *S;
   if (x != NULL) {
+    //spectral_DELETE(&(x->Sspectral));
     UNCONDFREE(*S);
   }
 }

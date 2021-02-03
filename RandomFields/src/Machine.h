@@ -175,7 +175,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
   }
 
 
-#define PARAMALLOC(Cov, IDX, ROW, COL) {				\
+#define PARAMALLOC(Cov, IDX, ROW, COL) { 		\
     int _PARAMsize;							\
     switch(DefList[MODELNR(Cov)].kappatype[IDX]) {			\
     case REALSXP : _PARAMsize = sizeof(double); break;			\
@@ -184,7 +184,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
       if ((Cov)->kappasub[IDX]!=NULL && MODELNR((Cov)->kappasub[IDX])==DISTRIBUTION) { \
 	  ERR("argument value recognized as distribution family although it should not. Maybe the error is caused by a non-existing variable."); \
       } else BUG;							\
-    }									\
+    }	\
     assert((Cov)->px[IDX]==NULL);					\
     (Cov)->nrow[IDX] = ROW; (Cov)->ncol[IDX] = COL;			\
     if (((Cov)->px[IDX] =						\
@@ -247,9 +247,12 @@ void set_xdim_intern(system_type *sys, int i, int value);
 #define LocLocHasY(loc) ((loc)->totalpointsY != 0)
 #define LocLoctsdim(loc) ((loc)->timespacedim)
 #define LocLocspatialdim(loc) ((loc)->spatialdim)
-#define LocLoctime(loc) ((loc)->Time)
+#define LocLocspatialpoints(loc) ((loc)->spatialtotalpoints)
+#define LocLoctotalpoints(loc) ((loc)->totalpoints)
+#define LocLocTime(loc) ((loc)->Time)
 #define LocLocxdimOZ(loc) ((loc)->xdimOZ)
 #define LocLocDist(loc) ((loc)->distances)
+#define LocLocT(loc) ((loc)->T)
 //#define LocLoc(loc) ((loc)->)
 
 #define LocPSets(Loc) ((Loc)[0]->len)

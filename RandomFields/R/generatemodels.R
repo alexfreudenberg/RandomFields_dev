@@ -183,7 +183,7 @@ rfGenerateModels <- function(package="RandomFields", assigning,
     ex.sub <- length(subnames.notintern)>0
      
     ex.par <- length(paramnames)>0
-    ex.std <- ((nick != DOLLAR[2] && any(isVariogram(type))) ||
+    ex.std <- ((nick != RM_S[1] && any(isVariogram(type))) ||
                nick %in% c("RMball", "RMsum", "RMconstant",
                            "RMfixcov", "RMcovariate")
                || nick == RM_PLUS[1] || nick[1] == RM_MULT[1]) &&
@@ -210,7 +210,7 @@ rfGenerateModels <- function(package="RandomFields", assigning,
         paste(DOMAIN_NAMES[domains+1], collapse="; "), "\t",
         paste(type, collapse="/"), "\n", sep="")
     
-    if(nick == DOLLAR[2]){ 
+    if(nick == RM_S[1]){ 
       text.fct.head <-
         paste(nick, " <- function(phi, var, scale, Aniso, proj, anisoT)")      
     } else {
@@ -607,7 +607,7 @@ rfGenerateConstantsC <- function(RFpath, RCauto.file, c.source, package="none") 
 
  #   print(genuine)
  
-    define_char("list2RMmodel_Names", genuine) ##, RM_TREND
+    define_char("list2RMmodel_Names", genuine) ##, RM_SHAPE
     define_char("list2RMmodel_oldNames",
 		Try(RFgetModelNames(newnames=FALSE))) # , RM_INTERNALMIXED
  

@@ -455,7 +455,7 @@ int check2Xintern(model *cov, int vdim0, int vdim1, Types frame,
 	//	printf("here\n"); TREE0(cov); APMI(cov);
 	RETURN(10, CERRORWRONGDOM);
       }
-#ifdef xdebug
+#ifdef xdebug 
       printD(cov);//
 #endif
     }
@@ -1584,7 +1584,7 @@ int SetGatterNr(model *cov, errorstring_type ERRSTR) {
 
 
 #define PERR(X) { SPRINTF(ERRSTR, "'%.50s' : %.500s", param_name, X); return ERRORM;}
-#define PERRX(ERR, X) { errorstring_type msg_1; errorMSG(ERR, msg_1);	\
+#define PERRX(ERR, X) { errorstring_type msg_1; errorMSG(ERR,cov->base,msg_1); \
     SPRINTF(ERRSTR, "'%.50s' : %.500s (%.50s)", param_name, X, msg_1); return ERRORM;}
 
 int checkkappas(model *cov, bool errornull, errorstring_type ERRSTR){

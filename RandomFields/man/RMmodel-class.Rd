@@ -1,6 +1,7 @@
 \name{RMmodel-class}
 \docType{class}
 \alias{RMmodel-class}
+\alias{RFplot-class}
 \alias{show,RMmodel-method}
 \alias{print.RMmodel}
 \alias{plot,RMmodel,missing-method}
@@ -52,8 +53,8 @@
 
 \usage{
 RFplotModel(x, y, dim=1,
-           n.points=if (dim==1 || is.contour) 200 else 100,
-           fctn.type=NULL, MARGIN, fixed.MARGIN, maxchar=15, ...,
+ %          n.points=if (dim==1 || is.contour) 200 else 100,
+           fctn.type=NULL, MARGIN, fixed.MARGIN, ..., params,
            plotmethod=if (dim==1) "matplot" else "contour")
 
 \S4method{plot}{RMmodel,missing}(x, y, ...)
@@ -84,20 +85,15 @@ RFplotModel(x, y, dim=1,
   \item{fixed.MARGIN}{only for \code{class(x)==CLASS_CLIST} and if
     \code{dim > 2}; a vector of length \code{dim}-2 with distance values
     for the coordinates that are not displayed.}
-  \item{maxchar}{integer. Maximum number of characters to print the
-    model in the legend.
-  }
   \item{...}{arguments to be passed to methods; either graphical
     arguments for \command{\link[graphics]{par}}, or
     further models in case of class \code{CLASS_CLIST},
-    see Details. No \code{RFoptions} can be passed.
+    see Details. No \command{\link{RFoptions}} can be passed.
   }
+  \item{params}{in case \code{} is an \argModel }
   \item{dim}{must equal 1 or 2; only for \code{class(x)==CLASS_CLIST}; the
     covariance function and the variogram are plotted as a function of
     \eqn{\R^\code{dim}}{R^\code{dim}}.}
-  \item{n.points}{integer; only for \code{class(x)==CLASS_CLIST}; the
-    number of points at which the model is 
-    evaluated (in each dimension); defaults to 200.} 
   \item{fctn.type}{character; only for \code{class(x)==CLASS_CLIST}; must
     equal \code{NULL}, \code{"Cov"} or \code{"Variogram"}; controls
     whether the covariance (\code{fctn.type="Cov"}) or the
@@ -124,8 +120,8 @@ RFplotModel(x, y, dim=1,
 
 \section{Slots}{
  \describe{
- \item{\code{call}:}{language object; the function call by which the
- object was generated} 
+% \item{\code{call}:}{language object; the function call by which the
+% object was generated} 
  \item{\code{name}:}{character string; nickname of the model, name of
  the function by which the object was generated} 
  \item{\code{submodels}:}{list; contains submodels (if existent)} 
@@ -142,43 +138,46 @@ RFplotModel(x, y, dim=1,
 
 \section{Methods}{
  \describe{
- \item{+}{\code{signature(x = CLASS_CLIST)}: allows to sum up
- covariance models; internally calls \command{\link{RMplus}}.}
-\item{-}{\code{signature(x = CLASS_CLIST)}: allows to substract
- covariance models; internally calls \command{\link{R.minus}}.}
- \item{*}{\code{signature(x = CLASS_CLIST)}: allows to multiply
- covariance models; internally calls \command{\link{R.mult}}.}
-  \item{/}{\code{signature(x = CLASS_CLIST)}: allows to divide
- covariance models; internally calls \command{\link{R.div}}.}
- \item{c}{\code{signature(x = CLASS_CLIST)}: concatenates
- covariance functions or variogram models.}
- \item{plot}{\code{signature(x = CLASS_CLIST)}: gives a plot of the
- covariance function or of the variogram model; for more details see
- \command{\link{plot-method}}.}
- \item{points}{\code{signature(x = CLASS_CLIST)}: adds a covariance plot to
- an existing plot; for more details see
- \command{\link{plot-method}}.}
- \item{lines}{\code{signature(x = CLASS_CLIST)}: adds a covariance plot to
- an existing plot; for more details see
- \command{\link{plot-method}}.}
- \item{str}{\code{signature(x = CLASS_CLIST)}: as the usual
- \code{\link[utils]{str}}-method for S4 objects but only those
- entries of the 
- 'par.general'-slot are shown that contain values different from
- \code{'_no value given__no value given_'}.}
- \item{show}{\code{signature(x = CLASS_CLIST)}: returns the structure
- of \code{x}.}
- \item{print}{\code{signature(x = CLASS_CLIST)}: identical with
- \command{show}-method, additional argument is \code{max.level}.}
- \item{[}{\code{signature(x = CLASS_CLIST)}: enables accessing
- the slots via the \code{"["}-operator, e.g. \code{x["par.general"]}.}
- \item{[<-}{\code{signature(x = CLASS_CLIST)}: enables replacing
- the slots via the \code{"["}-operator.}
- 
-\item{\code{signature(x = CLASS_CLIST, y = "missing")}}{Generates
-  covariance function or variogram function plots in one or two dimensions.}
+   \item{+}{\code{signature(x = CLASS_CLIST)}: allows to sum up
+     covariance models; internally calls \command{\link{RMplus}}.}
+   \item{-}{\code{signature(x = CLASS_CLIST)}: allows to substract
+     covariance models; internally calls \command{\link{R.minus}}.}
+   \item{*}{\code{signature(x = CLASS_CLIST)}: allows to multiply
+     covariance models; internally calls \command{\link{R.mult}}.}
+   \item{/}{\code{signature(x = CLASS_CLIST)}: allows to divide
+     covariance models; internally calls \command{\link{R.div}}.}
+   \item{c}{\code{signature(x = CLASS_CLIST)}: concatenates
+     covariance functions or variogram models.}
+   \item{plot}{\code{signature(x = CLASS_CLIST)}: gives a plot of the
+     covariance function or of the variogram model; for more details see
+     \command{\link{plot-method}}.}
+   \item{points}{\code{signature(x = CLASS_CLIST)}: adds a covariance plot to
+     an existing plot; for more details see
+     \command{\link{plot-method}}.}
+   \item{lines}{\code{signature(x = CLASS_CLIST)}: adds a covariance plot to
+     an existing plot; for more details see
+     \command{\link{plot-method}}.}
+   \item{str}{\code{signature(x = CLASS_CLIST)}: as the usual
+     \code{\link[utils]{str}}-method for S4 objects but only those
+     entries of the 
+     'par.general'-slot are shown that contain values different from
+     \code{'_no value given__no value given_'}.}
+   \item{show}{\code{signature(x = CLASS_CLIST)}: returns the structure
+     of \code{x}.}
+   \item{print}{\code{signature(x = CLASS_CLIST)}: identical with
+     \command{show}-method, additional argument is \code{max.level}.}
+   \item{[}{\code{signature(x = CLASS_CLIST)}: enables accessing
+     the slots via the \code{"["}-operator, e.g. \code{x["par.general"]}.}
+   \item{[<-}{\code{signature(x = CLASS_CLIST)}: enables replacing
+     the slots via the \code{"["}-operator.}
+   
+   \item{\code{signature(x = CLASS_CLIST, y = "missing")}}{Generates
+     covariance function or variogram function plots in one or two dimensions.}
  }
 }
+
+\note{The S3-class \code{"RFplot"} appears in a few cases as a more
+  internal class for intermediate calculations with respect to plots.}
 
 \section{Details}{
   All the above arguments apply for all the  S3 and S4

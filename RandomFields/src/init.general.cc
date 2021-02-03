@@ -134,7 +134,6 @@ int currentRegister() {
   return p->currentRegister;
 }
 
-
 void set_currentRegister(int cR) {
   KEY_type *p = KEYT();
   if (p == NULL) BUG;
@@ -184,8 +183,8 @@ bool CheckListmodel(){
 
 #define ntypefcts 28
   const char *typefcts[ntypefcts] =
-    {"+", "*", "$", "$power", "fixcov",
-     "identity", "M", "matern", "tbm", "U",
+    {SYMBOL_PLUS, SYMBOL_MULT, SYMBOL_S, "$power", "fixcov",
+     "identity", "M", "matern", "tbm", RM_USER,
      "whittle", "nugget", "null", "shape", "trafo",
      "setparam", "p", "c", "Simulate", "direct", "nuggetIntern",
      "binaryprocess", "gauss.process", "Cov", "CovMatrix",
@@ -315,7 +314,14 @@ bool CheckListmodel(){
   printf("brownresnick ueberarbeiten. insb. warum dort TransformLoc aufgerufen wrid"); // OK
   printf("trafo in variogram.cc nach vorne ziehn, so dass Gitter bleiben wenn nur gestreckt, also statt grid_expand=True ein AVOID"); // OK
   printf("case !grid, proj<0, separable to be programmed"); // OK
-  printf(" "); // OK
+  printf(" Doku rfsimulateadvanced "); // OK
+  printf(" ength(err.model) > 1 in RFinterpolate R; xRMranef in RMmodelsSpecial.R und kriging.R"); // OK
+  printf("RFgui "); // OK
+  printf(" RMS: quasi projektmatrizen: blockmatrizen"); // OK
+ printf(" sequential: 'back' in Sequential fuer whittle (bei nu=markov field)exakt suchen und als Specific implementieren? -- pref umsetzen in whittle etc"); // OK
+ printf(" gausslikeli ruft covvario auf und x wird gegebenefalls immer wieder von neuem transformiert"); // OK
+ printf(" krigin variance"); // OK
+ printf(" "); // OK
   //  printf("done\n");
   return true;
 
@@ -421,13 +427,13 @@ void InitModelList() {
   pref_type pplus =  {5, 0, 0,  5, 0, 5, 5, 0, 0, 0, 0, 0, 0, 5};
   //                  CE CO CI TBM Sp di sq Tr av n mpp Hy spf any
   PLUS = 
-    IncludeModel("+", ManifoldType, 1, MAXSUB, 1, NULL,
+    IncludeModel(SYMBOL_PLUS, ManifoldType, 1, MAXSUB, 1, NULL,
 		 PREV_SUB_D, PREV_SUB_I,
 		 checkplus, rangeplus, pplus,  false,
 		 SUBMODEL_DEP, SUBMODEL_DEP,
 		 (ext_bool) SUBMODEL_DEP, MON_SUB_DEP);
   // Achtung in covmatrix_plus wird SELECT_SUBNR verwendet!
-  nickname("plus");
+  nickname(PLUS_NICK);
   kappanames("trend", INTSXP);
   addCov(plus, Dplus, DDplus);
   addCov(nonstat_plus);
@@ -442,10 +448,10 @@ void InitModelList() {
   pref_type pmal =  {5, 0, 0,  5, 0, 5, 5, 0, 0, 0, 0, 0, 4, 5};
   //                 CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
   MULT =
-    IncludeModel("*", ManifoldType, 1, MAXSUB, 0, NULL, PREV_SUB_D, PREV_SUB_I,
+    IncludeModel(SYMBOL_MULT, ManifoldType, 1, MAXSUB, 0, NULL, PREV_SUB_D, PREV_SUB_I,
 		 checkmal, NULL, pmal, false, SUBMODEL_DEP, SUBMODEL_DEP,
 		 (ext_bool) SUBMODEL_DEP, MON_SUB_DEP);
-  nickname("mult");
+  nickname(MULT_NICK);
   addCov(mal, Dmal);
   addCov(nonstat_mal);
   addlogCov(logmal, nonstat_logmal, NULL);
@@ -457,13 +463,13 @@ void InitModelList() {
 
   pref_type pS=  {5, 0, 0,  5, 5, 5, 5, 0, 0, 5, 0, 0, 1, 5};
   //              CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
-  FIRSTDOLLAR = IncludeModel("$",  ManifoldType, // to do: tcftype durch einen allgemeinen Type ersetzen, da auch Trend dem "$" folgen kann. Z.Z. nicht moeglich.
+  FIRSTDOLLAR = IncludeModel(SYMBOL_S,  ManifoldType, // to do: tcftype durch einen allgemeinen Type ersetzen, da auch Trend dem "$" folgen kann. Z.Z. nicht moeglich.
 			1, 1, 5, kappaS, // kappadollar,
 			     PREV_SUB_D, PREV_SUB_I, checkS, rangeS, pS,
 			false, SUBMODEL_DEP, SUBMODEL_DEP,
 			(ext_bool) SUBMODEL_DEP, MON_SUB_DEP);
   // do not change Order!!
-  nickname("S");
+  nickname(S_NICK);
   kappanames("var", REALSXP, "scale", REALSXP, "anisoT", REALSXP,
 	     "Aniso", REALSXP, "proj", INTSXP);
   change_typeof(DVAR, RandomOrShapeType);
@@ -518,7 +524,8 @@ void InitModelList() {
   
 
   ////////////////////////////////////////////////////////////
-  includeCovModels();  
+  includeCovModels();
+  //  includeAsymmetricModels();
   includeOtherModels();
   ////////////////////////////////////////////////////////////
 
@@ -560,7 +567,7 @@ void InitModelList() {
   AddVariant(TrendType, PREVMODEL_I);
 
   CONST =
-    IncludeModelR("const", MathDefType, 0, 0, 2, NULL, XONLY, PREVMODEL_I,
+    IncludeModelR(R_CONST, MathDefType, 0, 0, 2, NULL, XONLY, PREVMODEL_I,
 		 check_c, rangec, PREF_MATHDEF, 
 		 false, SCALAR, PREVMODEL_DEP, falsch, NOT_MONOTONE);
   kappanames(CONST_A_NAME, REALSXP, COVARIATE_NAME_NAME, STRSXP);
@@ -574,7 +581,7 @@ void InitModelList() {
   setptwise(pt_paramdep); 
 
   PROJ_MODEL = 
-  IncludeModel("p", MathDefType, 0, 0, 4, NULL, XONLY, PARAMDEP_I,
+  IncludeModel(R_P, MathDefType, 0, 0, 4, NULL, XONLY, PARAMDEP_I,
 	       checkproj, rangeproj, PREF_MATHDEF, 
 	       INTERN_SHOW,  SCALAR, INFDIM-1, falsch, NOT_MONOTONE);
   kappanames("proj",  INTSXP, "new", INTSXP, "factor",  REALSXP,
@@ -588,7 +595,7 @@ void InitModelList() {
   addTypeFct(Typeproj);
   
   BIND = 
-  IncludeModel("c", MathDefType, 0, 0, 18, NULL, PREV_SUB_D, PREV_SUB_I,
+  IncludeModel(R_C, MathDefType, 0, 0, 18, NULL, PREV_SUB_D, PREV_SUB_I,
 	       check_bind, rangeMath, PREF_TREND, 
 	       INTERN_SHOW, PARAM_DEP, 1, falsch, NOT_MONOTONE);
   kappanames("a", REALSXP, "b", REALSXP, "c", REALSXP, 

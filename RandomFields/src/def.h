@@ -28,10 +28,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef RFdef_H
 #define RFdef_H 1
 
+#include "intrinsics.h"
+#include "basic.h"
+#include <Basic_utils.h>
+
 
 //
-//
-//  1
+////  1
 //
 //
 // 1
@@ -44,14 +47,19 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
   #ifndef SCHLATHERS_MACHINE
     #define DO_PARALLEL 1
     #define CE_PARALLEL 1 // for circulant embedding
+//#define DO_TALLOC_SAVE 1
 // brownresnick, tbm
   #endif
 #else
    #ifdef DO_PARALLEL
      #undef DO_PARALLEL
    #endif
+//   #ifdef DO_TALLOC_SAVE 
+//    #undef DO_TALLOC_SAVE 
+//  #endif
 #endif
 
+#define DO_TALLOC_SAVE 1
 
 #ifdef DO_PARALLEL
 //#undef DO_PARALLEL
@@ -77,5 +85,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define LOCAL_ERRLOC_MSG char ERRMSG[LENERRMSG];
 #define LOCAL_ERRORSTRING
+
+
+
 
 #endif

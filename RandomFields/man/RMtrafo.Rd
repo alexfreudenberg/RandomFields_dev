@@ -15,8 +15,8 @@
 \usage{
 % to do: auch fuer die 'plane' transformationen
 RMtrafo(phi, new)
-RFearth2cartesian(coord, units=NULL, system="cartesian", grid=FALSE)
-RFearth2dist(coord, units=NULL, system="cartesian", grid=FALSE, ...)
+RFearth2cartesian(coords, units=NULL, system="cartesian", grid=FALSE)
+RFearth2dist(coords, units=NULL, system="cartesian", grid=FALSE, ...)
 }
 
 \arguments{
@@ -41,7 +41,7 @@ RFearth2dist(coord, units=NULL, system="cartesian", grid=FALSE, ...)
     
   }
   \item{phi}{optional submodel}
-  \item{coord}{matrix or vector of earth coordinates}
+  \item{coords}{matrix or vector of earth coordinates}
   \item{units}{"km" or "miles"; if not given and 
     \code{RFoptions()$general$units != ""}, the latter is used.
     Otherwise \code{"km"}.

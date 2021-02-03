@@ -27,7 +27,7 @@ Help <- function(which, ...) {
     m <- list()
     m[[paste0("messages.", w)]] <- value
     do.call(setRFoptions, m)
-    message("Hint: ", txt, " [This hint appears only once per session and can be fully suppressed by 'RFoptions(", w, "=FALSE)'.]")
+    message("Hint: ", txt, " [This hint appears only once per session and can be fully suppressed by 'RFoptions(", w, "=FALSE)'.]\n")
     Help("help")
   }
 }
@@ -81,7 +81,7 @@ Note <- function(which, ...) {
             if (opt == 1) " [This note appears usually only once per session and can be fully "
             else if (opt == 3) " [This message can be",
             if (opt %% 2 == 1)
-              paste0(" suppressed by 'RFoptions(", w, "=FALSE)'.]"))
+              paste0(" suppressed by 'RFoptions(", w, "=FALSE)'.]"), "\n")
   }
 }
 

@@ -22,6 +22,10 @@
 R.p <- function(proj, new, factor) iR.p(proj=proj, new=new, factor=factor)
 R.p <- copyProp(R.p, iR.p)
 
+#RMshape <- function(mean) iRMshape(mean=mean) ## for internal reasons,
+##   iRMshape needs a submodel and a parameter, user needs only one of them
+#RMhshape <- copyProp(RMshape, iRMshape)
+
 
 RRdistr <- function(name, nrow, ncol,  ## ddistr, pdistr, qdistr, rdistr,
 		    envir,  ...) {
@@ -43,7 +47,7 @@ RRdistr <- function(name, nrow, ncol,  ## ddistr, pdistr, qdistr, rdistr,
 			ddistr=ddistr, pdistr=pdistr, qdistr=qdistr,
 			rdistr=rdistr, envir=envir),
 		   list(...))
-    model <- new(CLASS_CLIST, name = RM_DISTR[1],
+    model <- new(CLASS_CLIST, name = RM_DISTR,
 		 submodels = submodels, 
 		 par.model = par.model, par.general = par.general)
     return(model) 
@@ -72,7 +76,7 @@ RRdistr <- function(name, nrow, ncol,  ## ddistr, pdistr, qdistr, rdistr,
           stop("type of parameter (function, constant) cannot be determined")
         par.model[[n[i]]] <-
           if (substr(deparse(subs[[i]]), 1, 1)=='R') eval(subs[[i]]) else
-              do.call(RM_DISTR[1], list(subs[[i]]))
+              do.call(RM_DISTR, list(subs[[i]]))
       }
     }
     if (any(num)) {
@@ -107,7 +111,7 @@ RRdistr <- function(name, nrow, ncol,  ## ddistr, pdistr, qdistr, rdistr,
   pm[['envir']] <- if (hasArg(envir)) envir else new.env()
   par.model <- c(pm, par.model)
     
-  model <- new(CLASS_CLIST, name = RM_DISTR[1], submodels = submodels, 
+  model <- new(CLASS_CLIST, name = RM_DISTR, submodels = submodels, 
                par.model = par.model, par.general = par.general)
   return(model) 
 }
@@ -210,7 +214,7 @@ RMuser <- function(type, domain, isotropy, vdim, beta,
 	par.general[['Aniso']] <-if (hasArg(Aniso)) Aniso else NO_DOLLAR_VALUE
 	par.general[['proj']] <-if (hasArg(proj)) proj else NO_DOLLAR_VALUE
 
-	model <- new(CLASS_CLIST, name = RM_USER[1], 
+	model <- new(CLASS_CLIST, name = RM_USER, 
 			submodels = submodels, 
 			par.model = par.model, par.general = par.general)
 	return(model) 
@@ -280,7 +284,7 @@ RMdeclare <- new(CLASS_RM,
 
 
 RMcovariate <- function(formula=NULL, data, x, y=NULL, z=NULL, T=NULL, grid,
-                        raw, addNA, factor) {
+                        raw, addNA, factor, extra_data) {
   if (!missing(factor)) {
     if (!missing(addNA) && addNA)
       stop("'addNA' and 'factor' may not be given at the same time.")
@@ -288,7 +292,7 @@ RMcovariate <- function(formula=NULL, data, x, y=NULL, z=NULL, T=NULL, grid,
     if (any(xor(isna[1], isna))) stop("If 'factor' has NAs then all of the values must be NAs")
   }
   if (missing(data)) {
-    if ("formula" %in% class(formula))
+    if ("formula" %in% class(formula) || !missing(extra_data))
       stop("data argument 'data' has not been given")
     data <- formula
     formula <- NULL
@@ -315,33 +319,31 @@ RMcovariate <- function(formula=NULL, data, x, y=NULL, z=NULL, T=NULL, grid,
   if (missing(x) && length(T)==0) {
     if (length(y)!=0 || length(T)!=0 || !missing(grid))
       stop("y, z, T, grid may only be given if 'x' is given")
-    ans <- Call(data=data, raw=raw, addNA=addNA)
+    ans <- Call(data=data, raw=raw, addNA=addNA, extra_data=extra_data)
   } else {
     PL <- getRFoptions(getoptions_="basic")$printlevel
     .Call(C_setlocalRFutils, NULL, 0)
     new <- C_UnifyXT(x=x, y=y, z=z, T=T, grid=grid)
     .Call(C_setlocalRFutils, NULL, PL)
-    ans <- Call(data=data, x=new, raw=raw, addNA=addNA)
+    ans <- Call(data=data, x=new, raw=raw, addNA=addNA, extra_data=extra_data)
   }
   ans
 }
 RMcovariate <- copyProp(RMcovariate, iRMcovariate)
  
-RMfixcov <- function(M, x, y=NULL, z=NULL, T=NULL, grid, var, proj, raw#, norm
-                     ) {
+RMfixcov <- function(M, x, y=NULL, z=NULL, T=NULL, grid, var, proj, raw,#, norm
+                     givenM) {
   Call <- iRMfixcov
   if (missing(x) && length(T)==0) {
     if (length(y)!=0 || length(T)!=0 || !missing(grid))
       stop("y, z, T, grid may only be given if 'x' is given")
-    Call(#norm=norm,
-         M=M, raw=raw, var=var, proj=proj)
+    Call(M=M, raw=raw, var=var, proj=proj, givenM=givenM)
   } else {
     PL <- getRFoptions(getoptions_="basic")$printlevel
     .Call(C_setlocalRFutils, NULL, 0)
     new <- C_UnifyXT(x, y, z, T, grid)
     .Call(C_setlocalRFutils, NULL, PL)
-    Call(#norm=norm,
-         M=M, x=new, raw=raw, var=var, proj=proj)
+    Call(M=M, x=new, raw=raw, var=var, proj=proj,  givenM=givenM)
   }
 }
 RMfixcov <- copyProp(RMfixcov, iRMfixcov)
@@ -452,32 +454,29 @@ R.c <- function(a, b, c, d, e, f, g, h, i, j, l, m, n, o, p, q, ncol, factor) {
 }
 RMpolynome <- copyProp(RMpolynome, iR.c)
 
-
+"
 xRMranef <- function(formula=NULL, data, x, y=NULL, z=NULL, T=NULL, grid,
-                    var, scale, Aniso, proj, raw, norm) {
-  if (hasArg("data") || is.numeric(formula) || is.data.frame(data) || 
-      is(x, "RFsp") || isSpObj(x)) {
+                     var, scale, Aniso, proj, raw, # norm
+                     ) {
+  if (hasArg('data') || is.numeric(formula) || is.data.frame(data) || 
+      is(x, 'RFsp') || isSpObj(x)) {
    formula <- RMcovariate(formula=formula, data=data, x=x, y=y, z=z, T=T,
-                           grid=grid, raw=raw, norm=norm, addNA = TRUE)
+                          grid=grid, raw=raw, # norm=norm,
+                          addNA = TRUE)
   } else {
     if (!isS4(formula) || !is(formula, CLASS_CLIST))
-      stop("'formula' is not a 'RMmodel' as expected")
+      stop('\'formula\' is not a \'RMmodel\' as expected')
      if (!missing(data) || !missing(x) || !is.null(y) ||
          !is.null(z) || !missing(grid) || !missing(raw) || !missing(norm))
-       stop("If 'formula' is an 'RMmodel' then only 'var', 'scale', 'Aniso', and 'proj' might be given") 
+       stop('If \'formula\' is an \'RMmodel\' then only \'var\', \'scale\', \'Aniso\', and \'proj\' might be given') 
   }
   if (missing(var)) {
-    if (getRFoptions(getoptions_="basic")$printlevel > 0)
-      message("Note that if 'var' is not given in 'RMranef', 'var' is set to 'NA' i.e., the variance is estimated'.")
+    if (getRFoptions(getoptions_='basic')$printlevel > 0)
+      message('Note that if \'var\' is not given in \'RMranef\', \'var\' is set to \'NA\' i.e., the variance is estimated.')
     var <- NA
   }
-  #RMraneffct(formula, var, scale, Aniso, proj)
-}
-
-  
-XXXRMprod <- function(phi, var, scale, Aniso, proj) {
-  #RMraneffct(phi, var, scale, Aniso, proj)
-}
+ }
+"
 
 RMtrendplus <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9,
                         add.na=FALSE, var, scale, Aniso, proj) {
@@ -538,7 +537,8 @@ RMtrendplus <- new(CLASS_RM,
 
 
 RMmodelplus <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9,
-                        trend, var, scale, Aniso, proj) {
+ #                       trend,
+                        var, scale, Aniso, proj) {
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('C0') && !is.null(subst <- substitute(C0))) 
@@ -561,9 +561,10 @@ RMmodelplus <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9,
     par.model[['C8']] <- CheckArg(C8, subst, TRUE)
    if (hasArg('C9') && !is.null(subst <- substitute(C9))) 
      par.model[['C9']] <- CheckArg(C9, subst, TRUE)
-  if (hasArg('trend') && !is.null(subst <- substitute(trend))) 
-     par.model[['trend']] <- CheckArg(trend, subst, TRUE)
-  
+#  if (hasArg('trend') && !is.null(subst <- substitute(trend))) 
+#     par.model[['trend']] <- CheckArg(trend, subst, TRUE)
+    par.model$trend <- FALSE
+
   if (hasArg('var') && !is.null(subst <- substitute(var))) 
     par.general[['var']] <- CheckArg(var, subst, TRUE)
   if (hasArg('scale') && !is.null(subst <- substitute(scale))) 

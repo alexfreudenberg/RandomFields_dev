@@ -115,7 +115,7 @@ ExtractNames <- function(Names, data, dont.add.data, model, RFopt, dots, Env) {
         is.x <- extractFromNames("coord", RFopt=RFopt, cn=data.names)
         if (any(data.names %in% default.link.coord)) {
           L <- min(length(data.names), length(default.link.coord))
-          if (!all(data.names[1:L] == default.link.data[1:L])) {
+          if (!all(data.names[1:L] == default.link.coord[1:L])) {
             link.coord <- nice.link.coord
             string <- char <- if (substr(coord.initial, 1, 1)=="X")  "C" else "X"
             setRFoptions(coords.dataframe_initial = string)
@@ -169,7 +169,7 @@ ExtractNames <- function(Names, data, dont.add.data, model, RFopt, dots, Env) {
       if (any(is.na(is.var))) { ## fiktive Namen vom User
         assign("c", function(...) as.character(as.list(match.call())[-1]),
                envir=Env) ## Umdefinition von c(...) --- warum?
-        used.varnames <- rawTry(leftSide, envir=Env)
+        used.varnames <- rawTry(leftSide)
         used.varnames <- if (rawError(used.varnames)) NULL else CM[2]
         is.var <- match(used.varnames, data.names)
         if (!all(is.na(is.var))) {
@@ -364,7 +364,7 @@ AddTransform <- function(M, model, params, orig.params, Names, nNA,
     fctn <- eval(parse(text=paste0(def.txt, estim.txt)), envir=NULL)
     fctn.env <- new.env(parent=baseenv())
     environment(fctn) <- fctn.env
-    CopyDotsTo(get("..dots..", env=Env), fctn.env)
+    CopyDotsTo(get("..dots..", envir=Env), fctn.env)
 
     params.fctn <- eval(parse(text=paste0(def.txt, return.txt)), envir=NULL)
     environment(params.fctn) <- fctn.env
@@ -501,7 +501,7 @@ Check.CtoR <- function(indices, MODEL_AUX, values) {
           d <- c(d, GetParam(p$submodels[[j]], n0))                
       }
       if (length(p$param) > 0) {
-        if (p$name %in% DOLLAR) name <- c(name, p$submodel[[1]]$name)
+        if (p$name %in% RM_S) name <- c(name, p$submodel[[1]]$name)
         p.name <- names(p$param)
         for (j in 1:length(p$param)) {
           d <- c(d, GetParam(p$param[[j]], c(name, p.name[j]))) 
@@ -511,7 +511,7 @@ Check.CtoR <- function(indices, MODEL_AUX, values) {
     }
 
     v <- values[indices[duplicated(indices)]]
-    link <- GetParam(internRFgetModelInfo(MODEL_AUX), NULL)
+    link <- GetParam(internRFgetModelInfo_register(MODEL_AUX), NULL)
     if (length(link) < 2) stop("Severe error.", CONTACT)
     stop("There is a forbidden link between ",            
          paste("'", sapply(link[1:2], function(x) paste(x,collapse="..")),
@@ -604,8 +604,7 @@ PrepareModel2 <- function(model, ...,
       if (is(model, "formula")) {
         m <- as.character(model)
         v <- if (length(m) == 3) m[2] else if (isFormula) Tv
-        model <- paste(v,"~RMplus(RMmodelplus(trend=FALSE, ",
-                       m[length(m)],"), ")
+        model <- paste(v,"~RMplus(RMmodelplus(", m[length(m)],"), ")
         if (isFormula) {
           if (length(Trend) == 3 && length(m) == 3 && !all(v == Tv))
             stop("dependent variables in the covariance model (",
@@ -629,7 +628,7 @@ PrepareModel2 <- function(model, ...,
       }
       
       else model <- RMplus(RMtrendplus(RMshape(trend), add.na=add.na),
-                           RMmodelplus(trend = FALSE, model))
+                           RMmodelplus(model))
     }
     
     return(PrepareModel2(model, params=params, 
@@ -662,6 +661,7 @@ PrepareModel2 <- function(model, ...,
         is.matrix(data1)) colnames(data1) <- data.names
   } else data1 <- NULL
 
+##  Print(DataNames)
  
   is.x <- DataNames$is.x
   link.coord <- DataNames$link.coord
@@ -761,7 +761,7 @@ PrepareModel2 <- function(model, ...,
           repetition <- FALSE 
           for (i in 1:n.params) {
             if (is(params[[i]], "formula")) {
-              value  <- rawTry(eval(as.expression(params[[i]][[2]]),envir=Env))
+              value  <- rawTry(eval(as.expression(params[[i]][[2]]), envir=Env))
               if (rawError(value)) { # error
                 if (last) {
                   stop("This situation should not appear. Please check whether your definitions are sound and/or contact ", AUTHOR)
@@ -847,6 +847,8 @@ PrepareModel2 <- function(model, ...,
       }
     }
   }
+
+##  Print("A", is.x)
 
   ## prepare environment for the use of x,y,z,T (or other column names
   ## for coordinates) as values to be replaced in the linear model part
@@ -985,6 +987,9 @@ PrepareModel2 <- function(model, ...,
   if (xdim != 0 && length(M$is.x) != 0 && length(M$is.x) != xdim) {
     stop("dimension mismatch", CONTACT)
   }
+
+  ##  Print(x, M$is.x, M$is.unclear, xdim, data.names, DataNames)
+  
   
   M$C_coords <- if (length(x) > 0) trafo.to.C_UnifyXT(x)
                 else if (length(M$is.x) > 0) {
@@ -1041,7 +1046,7 @@ detect.covariates <- function(S, unclear, EnvTest) {
     m <- unclear[idx]
     if (length(m) == 0) next
     for (i in m) assign(i, list(get(i, envir=EnvTest))) ## disable values
-    try <- Try(eval(parse(text=s),envir=Env))
+    try <- Try(eval(parse(text=S),envir=EnvTest))
     for (i in m) assign(i, get(i, envir=EnvTest)[[1]]) ## restore
     new.unclear <- c(if (is.numeric(try)) unclear[idx]
                      else if (length(unclear) > 1) 
@@ -1061,7 +1066,7 @@ covariate.names <- function(m) {
 parseModel <- function(model, Env, EnvDummies, add.na=NULL, 
                        unclear=NULL, EnvTest=NULL) {
                                         #
-  ##  Print("parse", model, ls(envir=Env), is.list(model),  is(model, CLASS_CLIST), isS4(model))
+  ##  Print("parse", model, is.list(model),  is(model, CLASS_CLIST), isS4(model))
  
   if (!isS4(model) && is(model, CLASS_CLIST)) {
     ans <- covariate.names(model)
@@ -1111,7 +1116,7 @@ parseModel <- function(model, Env, EnvDummies, add.na=NULL,
     isS4(x) && is(x, CLASS_CLIST) ## kostet Aufrufe 
   })
   
-  trendfct <- paste0(RM_TREND[1], "(")
+  trendfct <- paste0(RM_SHAPE, "(")
   isRMTrend <- sapply(summands, FUN=function(s)
     substr(s, 1, length(trendfct)) == trendfct)
 
@@ -1122,7 +1127,7 @@ parseModel <- function(model, Env, EnvDummies, add.na=NULL,
   for (k in 1:length(summands)) {   ## ksotest Aufrufe 
     m <- m + 1;
     S <- summands[[k]]
-    ##    Print(k, S, ls(envir=Env), Env, .GlobalEnv)
+    ##    Print(k, S)
     C <- eval(parse(text=S), envir=Env) ## could be a function of the data col
 
     ## Print(S, C, is.factor(C))
@@ -1297,7 +1302,7 @@ buildCovList <- function(model, Env, EnvDummies, add.na, unclear, EnvTest) {
   }
 
   li <- c(list(name), PD$P)
-  if (length(PD$D) > 0) li <- c(DOLLAR[1], PD$D, list(li))
+  if (length(PD$D) > 0) li <- c(RM_S[2], PD$D, list(li))
 
   return(list(model=li, unclear=unclear))
 }

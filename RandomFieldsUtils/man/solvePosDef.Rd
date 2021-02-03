@@ -98,6 +98,14 @@ print(system.time(z <- solvex(M, b)))
 print(range(b - M \%*\% z))
 stopifnot(all(abs((b - M \%*\% z)) < 2e-11))
 
+## Using exactly the algorithm used in R
+RFoptions(pivot=PIVOT_NONE_R) ## (default)
+print(system.time(z <- solvex(M, b)))
+print(range(b - M \%*\% z))
+stopifnot(b - M \%*\% z == 0)
+
+
+
 ## Pivoting is 35% slower here:
 RFoptions(pivot=PIVOT_DO) 
 print(system.time(z <- solvex(M, b)))

@@ -6,7 +6,7 @@
   teaching classes 
 }
 \usage{
-RFgui(data, x, y, same.algorithm = TRUE, ev, bin = NULL, xcov, ycov,
+RFgui(data, x, y, same.algorithm = TRUE, ev, xcov, ycov,
       sim_only1dim=FALSE, wait = 0, ...)
 }
 \arguments{
@@ -24,9 +24,6 @@ RFgui(data, x, y, same.algorithm = TRUE, ev, bin = NULL, xcov, ycov,
  disadvantage is that some models are simulated only (very) approximatively.}
  \item{ev}{instead of the data, the empirical variogram itself might be
    passed}
- \item{bin}{only considered if \code{data} is given. See
-   \command{\link{RFvariogram}} for details.
- }
  \item{xcov}{ \code{\link[base]{seq}}uence of the
    locations where the covariance function is plotted}
  \item{ycov}{Only for anisotropic models. \code{\link[base]{seq}}uence of the
@@ -85,7 +82,7 @@ RFgui(data, x, y, same.algorithm = TRUE, ev, bin = NULL, xcov, ycov,
 \examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-RFgui()
+\dontrun{RFgui()} ## it seems that support of tcl/tk has ended...
 \dontshow{FinalizeExample()}
 }
 

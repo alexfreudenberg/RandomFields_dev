@@ -602,7 +602,7 @@ double densityMatern(double *x, model *cov) {
 
 int initMatern(model *cov, gen_storage *s) {
   if (HAS_SPECTRAL_FRAME(cov)) {
-    spec_properties *cs = &(s->spec);
+    spectral_storage *cs = &(s->Sspectral);
     if (OWNLOGDIM(0) <= 2) RETURN_NOERROR;
     cs->density = densityMatern;
     return search_metropolis(cov, s);
@@ -715,7 +715,7 @@ double densityWhittle(double *x, model *cov) {
 int initWhittle(model *cov, gen_storage *s) {
   if (HAS_SPECTRAL_FRAME(cov)) {
     if (PisNULL(WM_NU)) {
-      spec_properties *cs = &(s->spec);
+      spectral_storage *cs = &(s->Sspectral);
       if (OWNLOGDIM(0) <= 2) RETURN_NOERROR;
       cs->density = densityWhittle; 
       int err=search_metropolis(cov, s);

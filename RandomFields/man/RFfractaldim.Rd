@@ -6,7 +6,7 @@
 }
 \usage{
 RFfractaldim(x, y = NULL, z = NULL, data, grid, 
- bin=NULL,
+ bins=NULL,
  vario.n=5,
  sort=TRUE,
  fft.m = c(65, 86), ## in % of range of l.lambda
@@ -16,7 +16,7 @@ RFfractaldim(x, y = NULL, z = NULL, data, grid,
  method=c("variogram", "fft"), % "box", "range", 
  mode = if (interactive ()) c("plot", "interactive") else "nographics", %ok
  pch=16, cex=0.2, cex.main=0.85,
- printlevel = RFoptions()$basic$printlevel,
+ printlevel = RFopt$basic$printlevel,
  height=3.5,
  ...)
 }
@@ -26,7 +26,7 @@ RFfractaldim(x, y = NULL, z = NULL, data, grid,
  \item{y,z}{\argYz}
  \item{data}{the values measured; it can also be an \pkg{sp} object}
  \item{grid}{\argGrid}
- \item{bin}{sequence of bin boundaries for the empirical variogram}
+ \item{bins}{sequence of bin boundaries for the empirical variogram}
  \item{vario.n}{first \code{vario.n} values of the empirical variogram
  are used for the regression fit that are not \code{NA}.}
  \item{sort}{If \code{TRUE} then the coordinates are permuted

@@ -10,6 +10,7 @@
 \alias{[<-,RMmodelFit,ANY,ANY,ANY-method}
 \alias{show,RMmodelFit-method}
 \alias{print,RMmodelFit-method}
+\alias{plot,RMmodelFit,missing-method}
 \alias{anova,RMmodelFit-method}
 \alias{summary,RMmodelFit-method}
 \alias{print.RMmodelFit}

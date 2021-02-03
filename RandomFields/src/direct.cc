@@ -1,4 +1,4 @@
-/*
+#/*
  Authors
  Martin Schlather, schlather@math.uni-mannheim.de
 
@@ -42,6 +42,7 @@ int check_directGauss(model *cov) {
     err; // taken[MAX DIM],
 
   FRAME_ASSERT_GAUSS_INTERFACE;
+  RESERVE_BOXCOX;
 
      
   if ((err = checkkappas(cov, false)) != NOERROR) RETURN_ERR(err);

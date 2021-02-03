@@ -56,7 +56,7 @@ void calculate_means(int method, int vdim, int nbin, int totaln,
        
   
   switch(method){
-  case PSEUDO: case VARIOGRAM:
+  case PSEUDOVARIOGRAM: case VARIOGRAM:
     LOOP(res[i + sdSqidx] = 0.25 * ( res[i + sdSqidx] / (n - 1.0) -
    		      res[i + evidx] * res[i + evidx] / (n * (n - 1.0)));
 	 res[i + evidx] /= (2.0 * n)
@@ -330,7 +330,7 @@ SEXP empirical(SEXP  X, SEXP Dim,
     //assert(method == VARIOGRAM);
 
     switch(method){
-    case PSEUDO:     // pseudo variogram
+    case PSEUDOVARIOGRAM:     // pseudo variogram
       FOR(assert(Head+Row < nDta && Tail + Col < nDta);
 	  double x2 = values[Head + Row] - values[Tail + Col]; x2 *= x2);
       break;
@@ -421,7 +421,7 @@ SEXP empirical(SEXP  X, SEXP Dim,
     }
     
     switch(method){
-    case PSEUDO:
+    case PSEUDOVARIOGRAM:
       // pseudo variogram
       FORARB(assert(Head+Row < nDta && Tail + Col < nDta);
 	     double x2 = values[Head + Row] - values[Tail + Col]; x2 *= x2);
@@ -553,11 +553,11 @@ SEXP empvarioXT(SEXP Xsexp, SEXP Tsexp,
   // (2,4] : Matheron true alpha: alpha - 2.0
   if (alpha <= 0.0) method = COVARIANCE;
   else {
-    if (alpha > PSEUDO) {
+    if (alpha > PSEUDOVARIOGRAM) {
       if (vdim > 1) {
 	if (alpha == VARIOGRAM) method = VARIOGRAM;
 	else ERR("cross madograms cannot be calculated");
-      } else if (alpha < VARIOGRAM) alpha -= PSEUDO;
+      } else if (alpha < VARIOGRAM) alpha -= PSEUDOVARIOGRAM;
     }
     if (method != VARIOGRAM) {
       if (alpha > 2.0) ERR("'alpha' out ouf range");
@@ -774,7 +774,7 @@ SEXP empvarioXT(SEXP Xsexp, SEXP Tsexp,
     // checks which method shoud be used (gets inserted above)
 
     switch(method) {
-  case PSEUDO:
+  case PSEUDOVARIOGRAM:
     // pseudo variogram
     FORXT(assert(rep+Row < nDta && rv + Col < nDta);
     double x2 = values[rep + Row] - values[rv + Col]; x2 *= x2);
@@ -909,7 +909,7 @@ SEXP empvarioXT(SEXP Xsexp, SEXP Tsexp,
 
      
     switch(method) {
-    case PSEUDO:
+    case PSEUDOVARIOGRAM:
       // pseudo variogram
       FORARBXT(//printf("%ld+%ld < %d;  %ld+%ld < %d; %d %d\n",Head, Row, nDta, Tail, Col, nDta, totalpointsvdim, endHead);
 	       assert(Head+Row < nDta && Tail + Col < nDta);

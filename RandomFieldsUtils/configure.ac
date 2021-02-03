@@ -11,19 +11,23 @@ AC_CHECK_PROG(LSCPU, [lscpu], yes, no)
 
 if test "x${LSCPU}" == xyes; then
   INFO_CPU=`lscpu | grep Flags | tr "[[:upper:]]" "[[:lower:]]"`
-else
+##   AC_MSG_NOTICE([lspcu yes $INFO_CPU])
+ else
   AC_CHECK_PROG(SYSCTL, [sysctl], yes, no)
   if test  "x${SYSCTL}" == xyes; then
+##    AC_MSG_NOTICE([lsystl yes])
     INFO_CPU=`sysctl -a 2> /dev/null | grep machdep.cpu.features | tr "[[:upper:]]" "[[:lower:]]"`
   fi
 fi
 
 
-AC_MSG_CHECKING([which SIMD flags can be recognized])
+
+AC_MSG_CHECKING([which SIMD flags can be recognized  cccc])
 FX=""
 ## sysctl -a | grep "cpu.features:" # for OS X
 for SET in sse2 ssse3 avx2; do 
   AUTOCPPFLAGS="-m$SET"
+##  AC_MSG_NOTICE([flag $AUTOCPPFLAGS])
   info=`echo "${INFO_CPU}" | grep " $SET "`
   if test "${info}" != ""; then
      AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]])], [ FX="$FX $AUTOCPPFLAGS" ], [ ])
@@ -32,7 +36,7 @@ done
 
 AUTOCPPFLAGS="$FX"
  
-## AUTOCPPFLAGS="" ## to be deleted if the above does not cause any problems
+##AUTOCPPFLAGS="" ## to be deleted if the above does not cause any problems
 if test "$AUTOCPPFLAGS" != "" ; then
   AC_MSG_RESULT([$AUTOCPPFLAGS])
 else

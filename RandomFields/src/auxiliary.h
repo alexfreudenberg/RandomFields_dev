@@ -25,8 +25,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef AUXILIARY_H
 #define AUXILIARY_H 1
 
-#include "auxiliary2.h"
-
 bool is_diag(double *aniso, int dim);
 
 double getMinimalAbsEigenValue(double *Aniso, int dim);
@@ -85,6 +83,8 @@ SEXP Mat_t(double* V, int row, int col);
 double mod(double x, double modulus);
 
 int CeilIndex(double x, double *cum, int size);
+
+
 
 #endif /* AUXILIARY_H */
 

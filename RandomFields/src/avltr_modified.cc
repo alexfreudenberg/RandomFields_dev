@@ -26,7 +26,6 @@
    This file has been file avltr.cc in libavl. 
    The #include "avltr.h" has been changed to "avltr_modified.h".
    Further
-       #include "basic.h" is added,
        fprint  has been replaced by error,
        exit has been outcommented
        print has been replaced by Rprint.
@@ -43,7 +42,6 @@
 #endif
 #include <stdio.h>
 #include <stddef.h>
-#include "basic.h"
  
 //#include "avltr.h"
 #include "avltr_modified.h"
@@ -177,7 +175,16 @@ avltr_destroy (avltr_tree *tree, avl_node_func free_func)
 void
 avltr_free (avltr_tree *tree)
 {
+#ifdef __GNUC__
+// https://gcc.gnu.org/onlinedocs/gcc/Diagnostic-Pragmas.html
+#pragma GCC diagnostic ignored "-Wcast-function-type"
+#endif
   avltr_destroy (tree, (avl_node_func) free);
+#ifdef __GNUC__
+// https://gcc.gnu.org/onlinedocs/gcc/Diagnostic-Pragmas.html
+#pragma GCC diagnostic warning "-Wcast-function-type"
+#endif
+  
 }
 
 /* Return the number of nodes in TREE. */

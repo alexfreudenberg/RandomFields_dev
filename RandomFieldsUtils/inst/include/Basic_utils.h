@@ -21,7 +21,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 
-
 #ifndef basic_rfutils_h
 #define basic_rfutils_h 1
 #ifndef __cplusplus
@@ -33,10 +32,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "AutoRandomFieldsUtils.h"
 
 
-#ifndef DO_PARALLEL_ALREADY_CONSIDERED
+#ifdef DO_PARALLEL_ALREADY_CONSIDERED
+#else
   // 1
   #ifdef _OPENMP
-    #ifndef SCHLATHERS_MACHINE
+    #ifdef SCHLATHERS_MACHINE
+    #else
       #define DO_PARALLEL 1
     #endif
   #else
@@ -46,9 +47,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
   #endif
 #endif // DO_PARALLEL_ALREADY_CONSIDERED
 
+
 #ifdef DO_PARALLEL
 // none
 #endif
+
 
 #ifdef USEGPU
 #define GPUavailable true
@@ -232,6 +235,5 @@ typedef int64_t Long;
 #define HELPINFO(M) if (GLOBAL.basic.helpinfo) { PRINTF("%s\n(Note that you can unable this information by 'RFoptions(helpinfo=FALSE)'.)\n", M); } // OK
 
 #define UTILSINFO(M) if (GLOBAL_UTILS->basic.helpinfo) { PRINTF("%s\n(Note that you can unable this information by 'RFoptions(helpinfo=FALSE)'.)\n", M); } // OK
-
 
 #endif
