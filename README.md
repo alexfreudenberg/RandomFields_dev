@@ -11,3 +11,4 @@ How to get fast R:
 * To take effect in every R instance enter the two lines below and add them to your `$R_HOME/R/etc/Renviron.site` without `export`:
 `export MKL_INTERFACE_LAYER=GNU,LP64` 
 `export MKL_THREADING_LAYER=GNU` 
+* See https://github.com/Debian/intel-mkl/blob/master/debian/README.Debian
