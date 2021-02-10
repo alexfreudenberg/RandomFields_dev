@@ -38,6 +38,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 
+
 double *ToRealI(SEXP X, bool *create) {
   KEY_type *KT = KEYT();
   if (TYPEOF(X) == REALSXP) { 
@@ -479,23 +480,89 @@ SEXP dbinorm(SEXP X, SEXP Sigma) { // 12'41
 
 
 
-SEXP quadratic(SEXP x, SEXP A) {
+
+SEXP test(SEXP AA, SEXP CC, SEXP X) {
+  int nrow = nrows(AA),
+    ncol = ncols(AA),
+    dim = length(X),
+    k = MIN(ncol / 2, nrow),
+    m = MAX(ncol, nrow);
+  
+  double
+    eps = 1e-14,
+    *A = REAL(AA),
+    *C = REAL(CC),
+    *x = REAL(X),    
+    z[2],
+    *a[2] = {(double*) MALLOC(m * m * sizeof(double)),
+	       (double*) MALLOC(m * m * sizeof(double))};
+
+  if (ncols(CC) != nrows(CC) ||  ncols(CC) != ncol) BUG;
+  if (length(X) != nrow) BUG;
+
+  for (int i=0; i<=17; i++) {
+    for (int j=0; j<=1; j++) {
+      SetLaMode(j == 0 ? LA_INTERN : LA_R);
+      switch(i) {
+      case 1: z[j] = XkCXtl(A, C, nrow, ncol, nrow / 3, nrow / 4); break;
+      case 2: XCXt(A, C, a[j], nrow, ncol); break;
+      case 3: AtA(A, nrow, ncol, a[j]); break;
+      case 4: xA(x, A, nrow, ncol, a[j]); break;
+      case 5: xA_noomp(x, A, nrow, ncol, a[j]); break;
+	//    case : xA(x1, x2,  A, nrow, ncol, a[j]1,  a[j]2); break;
+      case 6: z[j] = xAx(x, C, nrow); break;
+      case 7: Ax(A, C, nrow, ncol, a[j]); break;// C genuegend lang. Reicht.
+      //    case 8: Ax(A, x, x2, nrow, ncol, a[j]1,  a[j]2); break;
+      case 8: z[j] =xUy(x, C, A, dim); break; // A genuegend lang. Reicht.
+      case 9: z[j] =xUxz(x, C, dim, a[j]); break;
+      case 10: z[j] =x_UxPz(x, C, A, dim); break; // A genuegend lang. Reicht.
+      case 11: z[j] =xUx(x, C, dim); break;
+      case 12: matmult(A, C, a[j], nrow, ncol, k); break;
+      case 13: matmulttransposed(A, C, a[j], ncol, nrow, k); break;
+	//case : matmulttransposedInt(int *A, int *B, int *c, ncol, ncol, k); break; 
+      case 14: matmult_2ndtransp(A, C, a[j], nrow, ncol, k); break;
+      case 15: matmult_2ndtransp(A, C, a[j], nrow, ncol); break;
+      case 16: matmult_tt(A, C, a[j], ncol, nrow, k); break;
+      case 17: z[j]=  scalar(A, C, ncol); break;	
+      default: BUG;
+      }
+
+      int size = 0;
+      switch(i) {
+      case 1: case 6: case 8: case 9:case 10: case 11: case 17:
+	if (FABS(z[0] - z[1])> eps) { PRINTF("i=%d", i); BUG; }
+	break;
+      case 2:  size = ncol * ncol;
+	break;
+      case 3: case 15: size = nrow * nrow;
+	break;
+      case 4 : case 5: size = ncol;
+	break;
+      case 7 : size = nrow;
+	break;
+      case 12: case 13: case 14: case 16: size = nrow * k;
+	break;
+      default: BUG;
+      }
+      for (int p=0; p<size; p++)
+	if (FABS(a[0][p] - a[1][p]) > eps)  { PRINTF("i=%d, %d", i, p); BUG; }
+    }
+  }
+
+ FREE(a[0]);
+ FREE(a[1]);
+  
+  return R_NilValue;
+}
+
+
+
+SEXP quadratic(SEXP A, SEXP x) {
   SEXP ans;
   int len = length(x);
-  double alpha = 1.0,
-    beta = 0.0;
-  int incx = 1L;
-  double *y = (double*)  MALLOC(len * sizeof(double));
   if (len != nrows(A) || len != ncols(A)) ERR("'x' and 'A' do not match.");
   PROTECT(ans = allocVector(REALSXP, 1));
-  if (USE_OWN_ALG) xAx(REAL(x), REAL(A), len, REAL(ans));
-  else {
-    // z = A^top x
-    F77_NAME(dgemv)("T", &len, &len, &alpha, REAL(A), &len, REAL(x), &incx,
-		    &beta, y, &incx);
-    // z^top x
-    REAL(ans)[0] = F77_NAME(ddot)(&len, REAL(x), &incx, y, &incx);
-  }
+  REAL(ans)[0] = xAx(REAL(x), REAL(A), len);
   UNPROTECT(1);
   return ans;
 }
@@ -513,7 +580,7 @@ SEXP dotXV(SEXP M, SEXP V) {
 
   // bringt nix
   //#ifdef DO_PARALLEL
-  //#pragma omp parallel for num_threads(CORES)
+  //#pragma omp parallel for num_threads(CORES) 
   //#endif  
   for (int i=0; i<c; i++) {
     //  printf("i=%d\n", i);

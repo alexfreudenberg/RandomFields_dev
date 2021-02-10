@@ -32,14 +32,6 @@ solvex(a, b=NULL, logdeterminant=FALSE)
   \item{logdeterminant}{logical.
     whether the logarithm of the determinant should also be returned
   }
- % \item{sparse}{logical or \code{NA}.
-%    If \code{NA} the function determines whether a sparse
-%    matrix algorithm of the package \pkg{spam} should be used.
-%  }
-%  \item{method}{integer vector.
-%    If the sparse matrix algorithm is not used, \code{method}
-%    determines the alternative algorithm. See Details.
-%  }  
 }
 \value{
   If \code{logdeterminant=FALSE} the function returns a vector or a matrix,
@@ -65,11 +57,12 @@ If it fails, the eigen value decomposition is tried.
 }
 
 \references{
-  See \link[spam]{chol.spam} of the package \pkg{spam}
+ % See \link[spam]{chol.spam} of the package \pkg{spam}
+ See \code{chol.spam} of the package \pkg{spam}.
 }
-\seealso{
-  \link[spam]{chol.spam} in the package \pkg{spam}
-}
+%\seealso{
+%  \link[spam]{chol.spam} in the package \pkg{spam}
+%}
 \me
 \keyword{math}
 \examples{
@@ -88,30 +81,27 @@ b0 <- matrix(nr=n, runif(n * 5))
 b <- M \%*\% b0 + runif(n)
 
 ## standard with 'solve'
-print(system.time(z <- solve(M, b)))
+print(system.time(z <- zR <- solve(M, b)))
 print(range(b - M \%*\% z))
 stopifnot(all(abs((b - M \%*\% z)) < 2e-11))
 
-## Without pivoting:
-RFoptions(pivot=PIVOT_NONE) ## (default)
+## using exactly the algorithm used in R
+RFoptions(pivot=PIVOT_NONE, la_mode=LA_R) ## (default)
+print(system.time(z <- solvex(M, b)))
+print(range(b - M \%*\% z))
+stopifnot(all(z == zR))
+
+## Without pivoting, internal code:
+RFoptions(pivot=PIVOT_NONE, la_mode=LA_INTERN) ## (default)
 print(system.time(z <- solvex(M, b)))
 print(range(b - M \%*\% z))
 stopifnot(all(abs((b - M \%*\% z)) < 2e-11))
 
-## Using exactly the algorithm used in R
-RFoptions(pivot=PIVOT_NONE_R) ## (default)
-print(system.time(z <- solvex(M, b)))
-print(range(b - M \%*\% z))
-stopifnot(b - M \%*\% z == 0)
-
-
-
-## Pivoting is 35% slower here:
-RFoptions(pivot=PIVOT_DO) 
+## Pivoting is slower here:
+RFoptions(pivot=PIVOT_DO, la_mode=LA_INTERN) 
 print(system.time(z <- solvex(M, b)))
 print(range(b - M \%*\% z))
 stopifnot(all(abs((b - M \%*\% z)) < 2e-11))
-
 
 
 ## SECOND EXAMPLE: low rank matrix
@@ -119,20 +109,23 @@ M <- x \%*\% t(x) + rev(x) \%*\% t(rev(x)) + y \%*\% t(y)
 b1 <- M \%*\% b0
 
 ## Without pivoting, it does not work
-RFoptions(pivot=PIVOT_NONE) 
-#try(solve(M, b1))
-#try(solvex(M, b1))
+RFoptions(pivot=PIVOT_NONE, la_mode=LA_R)
+\dontrun{try(solve(M, b1))}
+RFoptions(pivot=PIVOT_NONE, la_mode=LA_INTERN)
+\dontrun{try(solvex(M, b1))}
 
 ## Pivoting works -- the precision however is reduced :
-RFoptions(pivot=PIVOT_DO) 
+RFoptions(pivot=PIVOT_DO, la_mode=LA_INTERN) 
 print(system.time(z1 <- solvex(M, b1)))
 print(range(b1 - M \%*\% z1))
 stopifnot(all(abs((b1 - M \%*\% z1)) < 2e-6))
 
 ## Pivoting fails, when the equation system is not solvable:
 b2 <- M + runif(n)
-#try(solvex(M, b2))
+\dontrun{try(solvex(M, b2))}
 
+
+RFoptions(pivot = PIVOT_AUTO, la_mode = LA_AUTO)
 
 }
 

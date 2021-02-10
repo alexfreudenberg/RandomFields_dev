@@ -17,13 +17,13 @@ cpus()
   integer.
 
   \describe{
-    \item{cores}{returns the number of cores on linux systems and
+    \item{cores}{returns the number of physical cores on linux systems and
       \code{NA} otherwise}
     \item{cores1}{returns the number of cores on linux systems and
       \code{1} otherwise}
     \item{threads}{returns the number of threads (two if cores allow for
     hyperthreading)}
-    \item{cpus}{number of cpus. i.e. the product \code{cores() * threads()}
+    \item{cpus}{number of logical cores. i.e. the product \code{cores() * threads()}
     }
   }
 }

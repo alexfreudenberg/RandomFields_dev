@@ -28,7 +28,7 @@ typedef enum InversionMethod {
   LU, // 6 currently not propagated
   NoFurtherInversionMethod, // 7, local values
   GPUcholesky,		    // 8
-  Rcholesky,
+  Rcholesky,                // 9
   direct_formula,           // 10
   Diagonal // 10, always last one!
 } InversionMethod;

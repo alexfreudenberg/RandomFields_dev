@@ -31,8 +31,6 @@ GetMessage <-function() .Call("attachoptions")
 
 .onDetach <- function(lib) {
 ## do not use the following commmands in .onDetach!
-#  RFoptions(storing=FALSE) ## delete everything
-#  .C("detachRFoptionsRandomFields")
 }
 
 .onUnload <- function(lib, pkg){

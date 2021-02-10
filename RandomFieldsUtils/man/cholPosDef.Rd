@@ -56,7 +56,6 @@ Else the Cholesky decomposition is tried.
 
 }
 
-% \references{ See \link[spam]{chol.spam} of the package \pkg{spam} }
 
 \references{
   Harbrecht, H., Peters, M., Schneider, R. (2012)
@@ -64,34 +63,13 @@ Else the Cholesky decomposition is tried.
   \emph{Appl. Num. Math.} \bold{62}, 428--440.
 }
 
-\seealso{
+%\seealso{
 %  \link{chol2mv}, \link{tcholRHS}
-  \link[spam]{chol.spam} in the package \pkg{spam}
-}
+%  \link[spam]{chol.spam} in the package \pkg{spam}
+%}
 \me
 \keyword{math}
 \examples{
-
-if (FALSE) {
-## This examples shows that 'cholx' can be much faster
-## than 'chol'
-
-## creating a covariance matrix for a temporal process
-covmatrix <- function(model, x) {
-  x <- as.matrix(dist(x))
-  return(eval(substitute(model)))
-}
-
-size <- 600
-x <- runif(size, 0, size / 10)
-M <- covmatrix((1 - x) * (x < 1) , x) ## Askey's model of covariance
-b <- seq(0, 1, len=size)
-system.time(C2 <- chol(M))
-system.time(C1 <- cholx(M))
-range(C2 - C1)
-stopifnot(all(abs(C2 - C1) < 10^{-9}))
-}
-
 
 
 ##########################
@@ -119,20 +97,22 @@ y <- runif(n)
 M <- x \%*\% t(x) + rev(x) \%*\% t(rev(x)) + y \%*\% t(y)
 
 ## do pivoting
-RFoptions(pivot = PIVOT_DO)
+RFoptions(pivot = PIVOT_DO, la_mode=LA_INTERN)
 print(system.time(C <- cholx(M)))
 print(range(crossprod(C) - M))
 str(C)
 
 ## use the same pivoted decomposition as in the previous decomposition
 M2 <- M +  n * diag(1:n)
-RFoptions(pivot = PIVOT_IDX,
+RFoptions(pivot = PIVOT_IDX, la_mode=LA_INTERN,
           pivot_idx = attr(C, "pivot_idx"),
           pivot_actual_size = attr(C, "pivot_actual_size"))
 print(system.time(C2 <- cholx(M2)))
 print(range(crossprod(C2) - M2))
 range((crossprod(C2) - M2) / M2)
 str(C2)
+
+RFoptions(pivot = PIVOT_AUTO, la_mode = LA_AUTO)
 
 \dontshow{RFoptions(pivot_idx = integer(0))}
 

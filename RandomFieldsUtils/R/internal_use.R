@@ -13,6 +13,8 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
                           read.rd.files=TRUE, local = FALSE,
                           libpath = NULL, single.runs = FALSE,
                           reset, catcherror=TRUE) {
+
+##  print("A")
   .exclude <- exclude
   .ask <- ask
   .echo <- echo
@@ -122,6 +124,7 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
   .allwarnings <- list()
   .tryerror <- paste0("\"try-", "error\"");
   for (.idx in .include) {
+##    Print(.idx)
     if (is.character(.include.name) && !(.fct.list[.idx] %in% .include.name))
       next
     tryCatch(repeat dev.off(), error = function(e) e)
@@ -142,6 +145,7 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
       command <- paste("R < ", file.in, ">>", file.out)
     } else {
       ##s topifnot(RFoptions()$basic$print <=2)
+      ##     Print(.fct.list[.idx], package)
       if (catcherror)
         .time <- system.time(.res <- try(do.call(utils::example, 
                                                  list(.fct.list[.idx], ask=.ask,
@@ -151,8 +155,8 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
         .time <- system.time(.res <- do.call(utils::example, 
                                                  list(.fct.list[.idx], ask=.ask,
                                                       package=package,
-                                                    echo=.echo, local=.local)))
-      w <- warnings()
+                                                      echo=.echo, local=.local)))
+       w <- warnings()
       .allwarnings <- c(.allwarnings, list(c("Help page ", .idx)), w)
       if (length(w) > 0) print(w) ## ok
       if (is(.res, CLASS_TRYERROR) || is(.res, .tryerror) ||

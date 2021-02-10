@@ -30,7 +30,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "kleinkram.h"
 #include "zzz_RandomFieldsUtils.h"
 #include "xport_import.h"
+
+#ifdef TIME_AVAILABLE
 #include <time.h>
+#endif
 
 #define PLverbose 2
 
@@ -38,7 +41,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 const char *basic[basicN] =
   { "printlevel","cPrintlevel", "seed", "cores", "skipchecks",
     "asList", "verbose", "kahanCorrection", "helpinfo", "warn_unknown_option",
-    "useGPU", "warn_parallel"};
+    "la_mode", "warn_parallel"};
 
 const char * solve[solveN] = 
   { "use_spam", "spam_tol", "spam_min_p", "svdtol", "eigen2zero",
@@ -58,7 +61,7 @@ int allN[prefixN] = {basicN, solveN};
 
 utilsparam GLOBAL = { // OK
   basic_START,
-  solve_START
+  { solve_START }
 };
 
 
@@ -76,61 +79,6 @@ int doPosDef(double *M0, int size, bool posdef,
 	     double *rhs0, int rhs_cols, double *result,
 	     double *logdet, int calculate, solve_storage *Pt,
 	     solve_param *sp);
-
-
-#define FASTER 1.3 // 1.3 as for typical application of likelihood,
-// the determinant calculation in RandomFieldsUtils is for free. Somehow a
-// balance
-int own_chol_up_to(int size, int maxtime) {
-  if (size <= 0) return true;
-  Long delta[2];
-  solve_param sp;						       
-  MEMCOPY(&sp, &(GLOBAL.solve), sizeof(solve_param)); 
-  sp.Methods[0] = Cholesky;					     
-  sp.Methods[1] = NoFurtherInversionMethod;
-  int zaehler = 0;
-  double old_quotient = RF_NAN;
-  // basic assumption is that R implementation's getting faster
-  // for larger matrices
-  while (true) {
-    int size1 = size + 1,
-    sizesq = size * size;
-    double *M = (double*) CALLOC(sizesq, sizeof(double));
-    for (int j=0; j<=1; j++) {
-      for (int i=0; i<sizesq; i+=size1) M[i] = 1.0;
-      M[1] = M[size] = 1e-5;
-      sp.pivot = j == 0 ? PIVOT_NONE : PIVOT_NONE_R;
-      clock_t start = clock();
-      doPosDef(M, size, true, NULL, 0, NULL, NULL, MATRIXSQRT, NULL, &sp);   
-      delta[j] = (Long) clock() - start; 
-      if (delta[j] < 0) delta[j] += MAXINT; // manual: 32bit repres. of clock
-      //
-      if (j==0) MEMSET(M, 0, sizesq * sizeof(double));
-    }
-    FREE(M);
-    if (PL > 0)
-      PRINTF("Cholesky decomposition for a %d x %d matrix needs %ld and %ld [mu s] on R and facile code, respectively.\n", size, size, delta[1], delta[0]);
-    if (delta[0] > maxtime || delta[1] > maxtime ||
-	delta[0] >= FASTER * delta[1]) break;
-    old_quotient = (double) delta[0] / delta[1];
-    size *= 2;
-  }
-  double new_quotient = (double) delta[0] / delta[1];
-  if (new_quotient < FASTER) return MAXINT;
-  if (!R_FINITE(old_quotient)) {
-   int compare = own_chol_up_to(size / 2, 0);
-   return compare == MAXINT ? size : compare;
-  }
-  double x0 = 0.5 * size * (1.0 + (FASTER - old_quotient) /
-			    (new_quotient - old_quotient)); //lin interpol
-  assert(x0 >= 0.5 * size && x0 <= size);
-  int compare = own_chol_up_to((int) x0, 0);
-  //  printf("%f %f %f %f %d %d\n", x0,FASTER,  old_quotient, new_quotient, size, compare);
-  return (int) (compare == MAXINT ?  x0 : 0.5 * size);
-}
-int own_chol_up_to() {
-  return own_chol_up_to(256, 50000);
-}
 
 
 void setoptions(int i, int j, SEXP el, char name[LEN_OPTIONNAME], 
@@ -166,9 +114,7 @@ void setoptions(int i, int j, SEXP el, char name[LEN_OPTIONNAME],
 	PRINTF("The system does not allow for OpenMP: the value 1 is kept for 'cores'.");
       }      
 #endif
-      if (!isList && GLOBAL.solve.pivot == PIVOT_NONE_AUTO)
-	GLOBAL.solve.pivotMaxTakeOwn = own_chol_up_to();
-
+      SetLaMode();
       CORES = gp->cores;
       break;
     case 4: gp->skipchecks = LOGI;    break;
@@ -181,16 +127,27 @@ void setoptions(int i, int j, SEXP el, char name[LEN_OPTIONNAME],
     case 8: gp->helpinfo = LOGI; break;
     case BASIC_WARN_OPTION: gp->warn_unknown_option = INT;
 	break;
-    case 10:
+    case 10: {
+      int neu;
+      if (TYPEOF(el) == STRSXP)
+	neu = GetName(el, name, LA_NAMES, LA_LAST + 1, gp->la_usr);
+      else {
+	neu = POS0INT;
+	if (neu > LA_LAST) ERR("wrong value for 'la_mode'");
+      }				  
 #ifdef USEGPU
-      gp->useGPU = LOGI; 
 #else
-      if (LOGI) ERR1("In order to '.20s', install the package from github.",
-		     basic[BASIC_USEGPU]);
+      if (neu > LA_GPU)
+	ERR1("In order to use '.20s', install the package with apropriate compiler options.",
+	     LA_NAMES[LA_GPU]);
 #endif
+      SetLaMode((la_modes) neu);  // koennen noch fehler auftreten
+      //      printf("simu ende\n");
+     gp->la_usr = (la_modes) neu;
+    }
       break;
      
-    case 11 : gp->warn_parallel = LOGI;       break;
+    case 11 : gp->warn_parallel = LOGI;  break;
 
     default: BUG;
     }}
@@ -234,14 +191,16 @@ void setoptions(int i, int j, SEXP el, char name[LEN_OPTIONNAME],
        break;      
     case 11: so->max_svd = POS0INT; break;    
       //    case 11: so->tmp_delete = LOGI; break;    
-    case 12: so->pivot = POS0INT;
-      if (GLOBAL.basic.useGPU && so->pivot != PIVOT_NONE) {
-	so->pivot = PIVOT_NONE;
-	ERR("'pivot' must be PIVOT_NONE if 'useGPU=TRUE'");
+    case 12: {
+      int neu;
+      if (TYPEOF(el) == STRSXP)
+	neu = GetName(el, name, PIVOT_NAMES, PIVOT_LAST + 1, so->pivot_mode);
+      else {
+	neu = POS0INT;
+	if (neu > PIVOT_LAST) ERR("wrong value for 'privot'");
       }
-      if (!isList && so->pivot == PIVOT_NONE_AUTO)
-	GLOBAL.solve.pivotMaxTakeOwn = own_chol_up_to();
-     if (so->pivot > PIVOTLAST) so->pivot = PIVOT_UNDEFINED;
+      so->pivot_mode = (pivot_modes) neu;
+    }
       break;    
     case 13: if (!isList) {
       int len = length(el);
@@ -269,8 +228,7 @@ void setoptions(int i, int j, SEXP el, char name[LEN_OPTIONNAME],
     
   default: BUG;
   }
-
-    }
+}
 
 
 void getoptions(SEXP sublist, int i,
@@ -291,7 +249,7 @@ void getoptions(SEXP sublist, int i,
     ADD(ScalarLogical(p->kahanCorrection));   
     ADD(ScalarLogical(p->helpinfo));    
     ADD(ScalarInteger(p->warn_unknown_option));    
-    ADD(ScalarLogical(p->useGPU));
+    ADD(ScalarString(mkChar(LA_NAMES[p->la_usr])));
     ADD(ScalarLogical(p->warn_parallel));
 
   }
@@ -315,7 +273,7 @@ void getoptions(SEXP sublist, int i,
     ADD(ScalarInteger(p->pivotsparse));    
     ADD(ScalarInteger(p->max_chol));    
     ADD(ScalarInteger(p->max_svd)); 
-    ADD(ScalarInteger(p->pivot));
+    ADD(ScalarString(mkChar(PIVOT_NAMES[p->pivot_mode])));
     //if (true)
     SET_VECTOR_ELT(sublist, k++, Int(p->pivot_idx, p->pivot_idx_n));
     //  else ADD(ScalarInteger(NA_INTEGER));
@@ -353,4 +311,116 @@ void deloptions(bool VARIABLE_IS_NOT_USED local) {
 #endif  
   utilsparam *options = &GLOBAL;
   FREE(options->solve.pivot_idx);
+}
+
+
+
+#define FASTER 1.3 // 1.3 as for typical application of likelihood,
+// the determinant calculation in RandomFieldsUtils is for free. Somehow a
+// balance
+int own_chol_up_to(int size, int maxtime) {
+#ifdef TIME_AVAILABLE
+  if (size <= 0) return true;
+  Long delta[2];
+  solve_param sp;
+  solve_storage pt;
+  MEMCOPY(&sp, &(GLOBAL.solve), sizeof(solve_param)); 
+  sp.Methods[0] = Cholesky;					     
+  sp.Methods[1] = NoFurtherInversionMethod;
+  sp.pivot_mode = PIVOT_NONE;	  
+  sp.sparse = False;	  
+  double old_quotient = RF_NAN;
+  // basic assumption is that R implementation's getting faster
+  // for larger matrices
+  while (true) {
+    int size1 = size + 1,
+      sizesq = size * size,
+      loops = size > 64 ? 1 : 16384 / ((size + 8) * (size+8));
+    double *M = (double*) MALLOC(sizesq * sizeof(double));
+    for (int j=0; j<=1; j++) {
+      SetLaMode(j == 0 ? LA_INTERN : LA_R);
+      clock_t start = clock();
+      for (int k=0; k<loops; k++) {      
+	MEMSET(M, 0, sizesq * sizeof(double));
+	for (int i=0; i<sizesq; i+=size1) M[i] = 1.0;
+	M[1] = M[size] = 1e-5;
+	doPosDef(M, size, true, NULL, 0, NULL, NULL, MATRIXSQRT, NULL, &sp);   
+      }
+      delta[j] = (Long) clock() - start; 
+      if (delta[j] < 0) delta[j] += MAXINT; // manual: 32bit repres. of clock
+    }
+    FREE(M);
+    if (PL > 2)
+      PRINTF("Cholesky decomposition for a %d x %d matrix needs %ld and %ld [mu s] on R and facile code on %d cores (#%d), respectively.\n", size, size, delta[1], delta[0], CORES, loops);
+    if (delta[0] > maxtime || delta[1] > maxtime ||
+	delta[0] >= FASTER * delta[1]) break;
+    old_quotient = (double) delta[0] / delta[1];
+    size *= 2;
+  }
+  double new_quotient = (double) delta[0] / delta[1];
+  if (new_quotient < FASTER) return MAXINT;
+  if (size <= 0) return(0);
+  if (!R_FINITE(old_quotient)) {
+    int compare = own_chol_up_to(size / 2, 0);
+   return compare == MAXINT ? size : compare;
+  }
+  double x0 = 0.5 * size * (1.0 + (FASTER - old_quotient) /
+			    (new_quotient - old_quotient)); //lin interpol
+  assert(x0 >= 0.5 * size && x0 <= size);
+   int compare = own_chol_up_to((int) x0, 0);
+  //  printf("%f %f %f %f %d %d\n", x0,FASTER,  old_quotient, new_quotient, size, compare);
+  return (int) (compare == MAXINT ?  x0 : 0.5 * size);
+#else 
+  ERR("option 'LA_AUTO' is available only on linux systems");
+  return 0;
+#endif
+}
+int own_chol_up_to() {
+  own_chol_up_to(256, 0); //warm up for some BLAS implementatioan
+  //  CORES = GL OBAL.basic.cores = 4;
+  //  own_chol_up_to(256, 50000);
+  //  own_chol_up_to(8, 50000);
+  return own_chol_up_to(256, 50000);
+}
+
+
+  
+void SetLaMode(la_modes usr_mode) {
+  //  printf("stlamode=%d\n", usr_mode);
+  utilsparam *global = &GLOBAL; 
+  la_modes la_mode = usr_mode;
+  global->solve.tinysize = global->basic.LaMaxTakeOwn = -1;
+#define TINY_SIZE_MAX 3  
+  if (la_mode == LA_INTERN) {
+    global->solve.tinysize = TINY_SIZE_MAX;
+    global->basic.LaMaxTakeOwn = MAXINT;
+  } else if (la_mode == LA_AUTO) {  
+    la_mode = GPUavailable ? LA_GPU : LA_R;
+#if defined TIME_AVAILABLE
+#  ifdef SCHLATHERS_MACHINE
+#else    
+    int PLalt = PL;
+    PL = 0;
+#  endif  
+    global->basic.LaMaxTakeOwn = own_chol_up_to();
+    global->solve.tinysize = MIN(TINY_SIZE_MAX, global->basic.LaMaxTakeOwn);
+    if (PL > 0 || true)
+      PRINTF("Limit size for facile Cholesky algorithm  = %d\n",
+	     global->basic.LaMaxTakeOwn);
+#  ifdef SCHLATHERS_MACHINE
+#else   
+    PL = PLalt;
+#  endif
+#endif
+  }
+  
+  if ((la_mode == LA_GPU || la_mode == LA_R) &&
+      global->solve.pivot_mode > PIVOT_AUTO)
+    ERR("Pivotized Cholesky decomposition has not been implemented yet for GPU and the LAPACK library");
+  
+  global->basic.la_mode = la_mode;
+}
+void SetLaMode() {
+  utilsparam *global = &GLOBAL; 
+   SetLaMode(global->basic.la_usr);
 }

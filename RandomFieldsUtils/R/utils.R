@@ -85,9 +85,26 @@ get.lscpu <- function(pattern) {
 }
 
 
-cpus <- function() get.lscpu("CPU\\(s\\):")
-threads <- function() get.lscpu("Thread")
-cores <- function() cpus() / threads()
+cpus <- function() {
+  if(Sys.info()["sysname"] == "Windows")
+    as.numeric(system("WMIC CPU Get NumberOfLogicalProcessors"))
+  else if(Sys.info()["sysname"] == "Linux")  get.lscpu("CPU\\(s\\):")
+  else NA
+}
+
+threads <- function() {
+  if(Sys.info()["sysname"] == "Windows") cpus() / cores()
+  else if(Sys.info()["sysname"] == "Linux") get.lscpu("Thread")
+  else NA
+}
+
+cores <- function() {
+  if(Sys.info()["sysname"] == "Windows")
+    as.numeric(system("WMIC CPU Get NumberOfCores"))
+  else if(Sys.info()["sysname"] == "Linux") cpus() / threads()
+  else NA
+}
+
 cores1 <- function() {
   c <- cores()
   return(if (is.na(c)) 1 else c)
@@ -262,7 +279,7 @@ colMax <- function(x) .Call(C_colMaxs, x)
 rowMeansx <- function(x, weight=NULL) .Call(C_rowMeansX, x, weight)
 rowProd <- function(x) .Call(C_rowProd, x)
 SelfDivByRow <- function(x, v) .Call(C_DivByRow, x, v)
-quadratic <- function(x, v) .Call(C_quadratic, v, x)
+quadratic <- function(x, v) .Call(C_quadratic, x, v)
 dotXV <- function(x, w) .Call(C_dotXV, x, w)
 
 dbinorm <- function(x, S) .Call(C_dbinorm, x, S)

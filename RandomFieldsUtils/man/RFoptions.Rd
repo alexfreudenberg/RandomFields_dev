@@ -1,11 +1,13 @@
 \name{RFoptions}
 \alias{RFoptions}
-\alias{PIVOT_UNDEFINED}
 \alias{PIVOT_NONE}
-\alias{PIVOT_NONE_R}
 \alias{PIVOT_AUTO}
 \alias{PIVOT_DO}
 \alias{PIVOT_IDX}
+\alias{LA_AUTO}
+\alias{LA_INTERN}
+\alias{LA_R}
+\alias{LA_GPU}
 %\alias{PIVOT_IDXBACK}
 \alias{PIVOTSPARSE_MMD}
 \alias{PIVOTSPARSE_RCM}
@@ -85,14 +87,7 @@
       Default: 1 \cr % [also  do].\cr
     }
 
-    \item{\code{useGPU}}{
-      In case the package has been compiled with nvcc, the user can
-      switch between CPU und GPU implemenation whenever both are
-      available, e.g. for \command{\link{solvex}}
-      
-      Default: \code{TRUE} if compiled with nvcc and \code{FALSE} otherwise.
-    }
-
+  
     \item{\code{helpinfo}}{logical. If \code{TRUE} then
       additional information is printed for more efficient programming
       in R.
@@ -100,13 +95,34 @@
       Default: \code{TRUE}
     }
 
-    \item{\code{kahanCorrection}}{
+    \item{\code{kahanCorrection}}{obsolete.
       logical. If \code{TRUE}, the Kahan summation algorithm is used for
       calculating scalar products.
       
       Default: false
     }
    
+   \item{\code{la_mode}}{determines
+      \describe{
+	\item{LA_AUTO, \code{"auto"}}{
+	  If a graphic card is recognized, \code{LA_GPU} is used.
+	  In all other cases the default is primarily \code{LA_R}.
+	  Only on linux systems, the package peforms a simple speed test and
+	  takes \code{LA_INTERN} if it is faster than {LA_R}; the time,
+	  hence the choice, depends also on the number of cores used.}
+  	\item{LA_INTERN, \code{"intern"}}{mostly own algorithms, often
+	  based on SIMD/AVX. This option is of
+	  interest only if no advanced BLAS/LAPACK
+	  has been compiled into R}
+  	\item{LA_R, \code{"R"}}{BLAS/LAPACK implementation used by R}
+ 	\item{LA_GPU, \code{"GPU"}}{
+	  This option is available when the package has been compiled with nvcc.
+	}
+      }
+	
+      Default: \code{LA_AUTO}
+    }
+
     \item{\code{printlevel}}{If \code{printlevel}\eqn{\le0}{<=0}
       there is not any output on the screen. The
       higher the number the more tracing information is given.
@@ -128,8 +144,13 @@
     \item{\code{seed}}{integer (currently only used by the package
       RandomFields). 
       If \code{NULL} or \code{NA}
-      \command{\link[base]{set.seed}} is \bold{not} called.
-      Otherwise, \code{\link[base]{set.seed}(seed)} is set
+   %   \command{\link[base]{set.seed}}
+       \command{set.seed}
+      is \bold{not} called.
+      Otherwise,
+  %    \code{\link[base]{set.seed}(seed)}
+      \code{set.seed(seed)}
+      is set
       before any simulations are performed.
       
       If the argument is set locally, i.e., within a function,
@@ -230,6 +251,7 @@
       
       Default: \code{1e-12}
     }
+
     \item{\code{max_chol}}{integer. Maximum number of rows of a matrix in
       a Cholesky decomposition
       
@@ -240,24 +262,26 @@
       
       Default: \eqn{10000}
     }
-    
+
+    \item{\code{pivot_partialdet}}{logical. If \code{TRUE} then in case
+      of low-rank matrices the determinant is calculated only in the part
+      with positive eigenvalues}
+      
     \item{\code{pivot}}{Type of pivoting for the Cholesky
       decomposition. Possible values are 
       \describe{
-	\item{PIVOT_NONE}{No pivoting.}
-	\item{PIVOT_NONE_R}{No pivoting, using C implementation of
-	  \command{\link[base]{chol}}.}
-	\item{PIVOT_AUTO}{If the  matrix has a size greater than
+	\item{PIVOT_NONE, \code{"none"}}{No pivoting.}
+	\item{PIVOT_AUTO, \code{"auto"}}{If the  matrix has a size greater than
 	  3x3 and Choleskey fails without pivoting, privoting
 	  is done. For matrices of size less than 4x4, no pivoting and
 	  no checks are performed. See also \code{PIVOT_DO}}
- 	\item{PIVOT_DO}{Do always pivoting.
+ 	\item{PIVOT_DO, \code{"do"}}{Do always pivoting.
 	  NOTE: privoted Cholesky decomposition yields only very approximately
 	  an upper triangular matrix L, but still L^t L = M holds true.
 %	  The information about the pivoting sequence are attributed to
 %	  the result.
 	}
- 	\item{PIVOT_IDX}{uses the same pivoting as in the previous
+ 	\item{PIVOT_IDX, \code{"idx"}}{uses the same pivoting as in the previous
 	  pivoted decomposition. This option becomes relevant only when
 	  simulations with different parameters or different models shall be
 	  performed with the same seed so that also the pivoting must be
@@ -270,8 +294,8 @@
 %	\code{RFoptions()$solve$pivot_idx}.}
       }
 
-      Default: \code{PIVOT_NONE} or \code{PIVOT_NONE_R} depending on a
-    small speed test when loading the package.
+      Default: \code{PIVOT_NONE} 
+      
     }
     
     \item{\code{pivot_actual_size}}{integer.
@@ -457,17 +481,21 @@
 \me
 
 \examples{
+%   library(RandomFieldsUtils)
+n <- 10
+M <- matrix(1, ncol=n, nrow=n)
 
-if (FALSE) {
-  n <- 500
-  M <- matrix(rnorm(n * n), nc=n)
-  M <- M \%*\% t(M)
-  system.time(chol(M))
-  system.time(cholesky(M))
-  RFoptions(cores = 2)
-  system.time(cholesky(M))
+\dontrun{
+try(chol(M)) ## error, as M is not strictly positive definite
+try(cholx(M)) ## also fails
 }
 
+%cholx(M) ## works
+
+RFoptions(la_mode=LA_INTERN, pivot=PIVOT_AUTO)
+cholx(M) ## works
+
+RFoptions(la_mode=LA_AUTO, pivot=PIVOT_AUTO)
 }
 
 \keyword{spatial}

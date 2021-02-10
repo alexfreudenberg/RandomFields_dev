@@ -100,7 +100,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #endif // SCHLATHERS_MACHINE
 
 
-
+// #define RANDOMFIELDS_DEBUGGING 1
 
 #ifdef RANDOMFIELDS_DEBUGGING
 #undef MALLOC

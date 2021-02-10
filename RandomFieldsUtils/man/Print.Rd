@@ -21,12 +21,8 @@ Print(..., digits = 6, empty.lines = 2)
 \keyword{print}
 
 \examples{
-
-if (FALSE) {
   a <- 4
   b <- list(c=5, g=7)
   m <- matrix(1:4, nc=2)
   Print(a, b, m)
-}
-
 }

@@ -3,23 +3,21 @@
 
 
 
-
-#define PIVOT_NONE 0  
-#define PIVOT_NONE_AUTO 1
-#define PIVOT_NONE_OWN_LAST PIVOT_NONE_AUTO
-#define PIVOT_NONE_R 2
-#define PIVOT_NONE_LAST PIVOT_NONE_R
-#define PIVOT_AUTO 3
-#define PIVOT_AVOIDLAST PIVOT_AUTO 
-#define PIVOT_DO 4
-#define PIVOT_IDX 5    // IDX isn't returned by RFoptions
-#define PIVOT_UNDEFINED 6
-#define PIVOTLAST PIVOT_UNDEFINED
+// Reihenfolge nie aendern!!
+typedef enum la_modes {LA_AUTO, LA_INTERN, LA_R, LA_GPU} la_modes;
+#define LA_LAST LA_GPU
+// Reihenfolge nie aendern!!
+typedef enum pivot_modes {PIVOT_NONE, PIVOT_AUTO, PIVOT_DO, PIVOT_IDX,
+			  PIVOT_UNDEFINED} pivot_modes;
+#define PIVOT_LAST PIVOT_UNDEFINED
 
 #define PIVOTSPARSE_MMD 1 // for spam
 #define PIVOTSPARSE_RCM 2 // for spam
 
 
-  
+extern const char *LA_NAMES[LA_LAST + 1], *PIVOT_NAMES[PIVOT_LAST + 1];
+
+
 
 #endif
+  

@@ -414,8 +414,6 @@ double D4WM(double x,  double nu, double factor) {
   
   if (x > LOW_MATERN && nu < RF_INF) {
     if (x == RF_INF) return 0.0;
-    static double nuOld=RF_INF;
-    static double gamma;
     if (nuThres!=KT->nuOld) {
       KT->nuAlt = nuThres;
       KT->gamma = gammafn(nuThres);

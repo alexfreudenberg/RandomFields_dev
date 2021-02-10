@@ -33,9 +33,7 @@ A vector of \code{length(x)} is returned; \code{nu} is recycled;
  }
 
 \me
-\seealso{  
- For more details see \command{\link[RandomFields]{RMgauss}}.
-}
+%\seealso{   For more details see \command{\link[RandomFields]{RMgauss}}.}
 
 
 \keyword{spatial}

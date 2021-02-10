@@ -22,11 +22,20 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //#include <R_ext/Lapack.h>
 //#include "def.h" // never change this line
 
+#include <R_ext/Lapack.h>
+#include <R_ext/Linpack.h>
 #include "RandomFieldsUtils.h"
 #include "General_utils.h" 
 #include "zzz_RandomFieldsUtils.h"
 #include "kleinkram.h"
 #include "xport_import.h"
+
+#define USE_OWN_ALGXX(SCALAR_LEN, PARALLEL)				\
+  (PARALLEL < 8 || GLOBAL.basic.LaMaxTakeOwn >= SCALAR_LEN) // OK
+#define USE_OWN_ALG(SCALAR_LEN, PARALLEL) true
+
+#define USE_OWN_SCALAR_PROD true
+
 
 
 
@@ -66,15 +75,27 @@ void strcopyN(char *dest, const char *src, int n) {
 
 void AtA(double *a, int nrow, int ncol, double *C) {
   // C =  A^T %*% A
+  if (USE_OWN_ALG(nrow, ncol)) {   
 #ifdef DO_PARALLEL
 #pragma omp parallel for num_threads(CORES) if (MULTIMINSIZE(ncol)) schedule(dynamic, 20)
 #endif  
-  for (int i=0; i<ncol; i++) {
-    double 
-      *A = a + i * nrow,
-      *B = A;
-    for (int j=i; j<ncol; j++, B+=nrow) {
+    for (int i=0; i<ncol; i++) {
+      double 
+	*A = a + i * nrow,
+	*B = A;
+      for (int j=i; j<ncol; j++, B+=nrow) {
       C[i * ncol + j] = C[i + ncol * j] = SCALAR(A, B, nrow);
+      }
+    }
+  } else {
+    double alpha = 1.0,
+      beta = 0.0;
+    MEMSET(C, 0, ncol * ncol *sizeof(double));
+    F77_NAME(dsyrk)("U","T", &ncol, &nrow, &alpha, a, &nrow, &beta, C, &ncol);
+    for (int i=1; i<ncol; i++) {
+      for (int j=0; j<i; j++) {
+	C[i + ncol * j] = C[i * ncol + j];
+      }
     }
   }
 }
@@ -116,15 +137,30 @@ void xA(double *x1, double *x2,  double*A, int nrow, int ncol, double *y1,
       y2[i] = SCALAR(x2, a, nrow);
     }
   }	
-}
+}  
+  
 
-void xAx(double *x, double*A, int nrow,  double *y) {
-  double sum = 0.0;
+double xAx(double *x, double*A, int nrow) {
+	if (USE_OWN_SCALAR_PROD) {
+    double sum = 0.0;
 #ifdef DO_PARALLEL
 #pragma omp parallel for num_threads(CORES) reduction(+:sum) if (MULTIMINSIZE(nrow) && MULTIMINSIZE(nrow))
 #endif  
-  for (int i=0; i<nrow; i++) sum += x[i] * SCALAR(x, A + i * nrow, nrow);
-  *y = sum;
+    for (int i=0; i<nrow; i++) sum += x[i] * SCALAR(x, A + i * nrow, nrow);
+    return sum;
+  } else {
+   double alpha = 1.0,
+      beta = 0.0;
+    int incx = 1L;
+    double *y = (double*)  MALLOC(nrow * sizeof(double));
+    // z = x^\top A
+    F77_NAME(dgemv)("T", &nrow, &nrow, &alpha, A, &nrow, x, &incx,
+		    &beta, y, &incx);
+    // z^top x
+    alpha = F77_NAME(ddot)(&nrow, x, &incx, y, &incx);    
+    FREE(y);
+    return alpha;
+  }
 }
 
 void Ax(double *A, double*x, int nrow, int ncol, double *y) {
@@ -389,7 +425,7 @@ void matmult_2ndtransp(double *a, double *B, double *c, int l, int m, int n) {
 
 
 void matmult_2ndtransp(double *a, double *B, double *c, int l, int m) {
-// multiplying A and t(B) with dim(A)=(l, m) and dim(B)=(n, m),
+// multiplying A and t(B) with dim(A)=(l, m) and dim(B)=(l, m),
 // saving result in C
   int lm = l  * m;
 #ifdef DO_PARALLEL
@@ -731,11 +767,8 @@ SEXP String(int *V, const char * List[], int n, int endvalue) {
   for (k=0; k<n; k++) {
     if (V[k] == endvalue) break;
   }
-  //  printf("k=%d, n=%d\n", k, n);
   PROTECT(str = allocVector(STRSXP, k)); 
   for (int i=0; i<k; i++) {
-    //  printf("V[%d]=%d\n", i, V[i]);
-    //    printf("%.50s\n", List[V[i]]);
     SET_STRING_ELT(str, i, mkChar(List[V[i]]));
   }
   UNPROTECT(1);
@@ -743,7 +776,6 @@ SEXP String(int *V, const char * List[], int n, int endvalue) {
 }
 
 double Real(SEXP p, char *name, int idx) {
-  //  {printf("%.50s type=%d \n", name,TYPEOF(p));}
   if (p != R_NilValue) {
     assert(idx < length(p));
     switch (TYPEOF(p)) {
@@ -779,9 +811,9 @@ void Real(SEXP el,  char *name, double *vec, int maxn) {
 
 
 int Integer(SEXP p, char *name, int idx, bool nulltoNA) {
+  //printf("integer %s %d %d len=%d\n",  name, idx, nulltoNA, length(p));
   if (p != R_NilValue) {
     assert(idx < length(p));
-    // printf("typeof = %d %d idx=%d len=%d\n", TYPEOF(p), REALSXP, idx, length(p));
     switch(TYPEOF(p)) {
     case INTSXP : 
       return INTEGER(p)[idx]; 
@@ -793,7 +825,6 @@ int Integer(SEXP p, char *name, int idx, bool nulltoNA) {
       }
       int intvalue;
       intvalue = (int) value;
-      //      printf("%10g %d %10e\n ", value, intvalue, value-intvalue);
       if (value == intvalue) return intvalue;      
       else {
 	RFERROR2("%.50s: integer value expected. Got %10e.", name, value);
@@ -804,6 +835,7 @@ int Integer(SEXP p, char *name, int idx, bool nulltoNA) {
     default : {}
     }
   } else if (nulltoNA) return NA_INTEGER;
+  
   RFERROR2("%.50s: incorrect type. Got '%.50s'.",
 	   name, R_TYPE_NAME(TYPEOF(p)));
   return NA_INTEGER; // compiler warning vermeiden
@@ -901,7 +933,6 @@ void String(SEXP el, char *name, char names[][MAXCHAR], int maxlen) {
     RFERROR1("number of variable names exceeds %d. Take abbreviations?", maxlen);
   }
   type = TYPEOF(el);
-  //  printf("type=%d %d %d %d\n", TYPEOF(el), INTSXP, REALSXP, LGLSXP);
   if (type == CHARSXP) {
     for (int i=0; i<l; i++) {
       names[i][0] = CHAR(el)[i];
@@ -920,9 +951,8 @@ void String(SEXP el, char *name, char names[][MAXCHAR], int maxlen) {
 }
 
 
-double NonNegInteger(SEXP el, char *name) {
+int NonNegInteger(SEXP el, char *name) {
   int num;
-
   num = INT;
   if (num<0) {
     num=0; 
@@ -951,7 +981,7 @@ double NonPosReal(SEXP el, char *name) {
   return num;
 }
 
-double PositiveInteger(SEXP el, char *name) {
+int PositiveInteger(SEXP el, char *name) {
   int num;
   num = INT;
    if (num<=0) {
@@ -1140,78 +1170,3 @@ double lonmod(double x, double modulus) {
     y = x + modulus + halfmodulus;
   return Mod(y, modulus) - halfmodulus;
 }
-
-
-/*
-
-
-
-
-double intpow(double x, int p) {
-  //int p0 = p;
-  // double x0 = x;
-
-  double res = 1.0;
-  if (p < 0) {
-    p = -p;
-    x = 1.0 / x;
-  } 
-  while (p != 0) {
-    //    printf("  ... %10e %d : %10e\n" , x, p, res);
-  if (p % 2 == 1) res *= x;
-    x *= x;
-    p /= 2;
-  }
-  return res;
-}
-
-
-
-void distInt(int *X, int*N, int *Genes, double *dist) {
-    int i,j, k, di, diff, *x, *y, ve, ho, endfor,
-	n = *N,
-	nP1 = n + 1,
-	genes = *Genes;
- 
-  x = y = X;
-  for (j=0, i=0;  j<n;  i += nP1, j++, y += genes) {
-    dist[i] = 0.0;
-    endfor = i + (n - j);
-    for (ve = i + 1, ho = i + n, x = y + genes; 
-         ve < endfor; 
-	 ve++, ho += n) {
-      for (di=0.0, k=0; k<genes; k++, x++) {
-	diff = *x - y[k];
-	di += diff * diff;
-      }
-      dist[ve] = dist[ho] = SQRT((double) di);
-    }
-  }
-}
-
-
-void vectordist(double *v, int *Dim, double *Dist, int *diag){
-  int d, dim, dr;
-  double *v1, *v2, *end;
-  bool notdiag = (*diag==0);
-  dim = Dim[0];
-  end = v + Dim[1] * dim; 
-
-//  print("%d %d %10g %10g\n", dim , Dim[0], v, end);
-
-  for (dr=0, v1=v; v1<end; v1+=dim) { // loop is one to large??
-    v2 = v1;
-    if (notdiag) {
-       v2 += dim;
-    }
-    for (; v2<end; ) {
-      for (d=0; d<dim; v2++) {
-	Dist[dr++] = v1[d++] - *v2;
-      }
-    }
-  }
-} 
-
-
-
- */

@@ -13,8 +13,10 @@ export(cholx, cholPosDef, Print, solvex, solvePosDef, chol2mv, tcholRHS,
        # besselKx,
        RFoptions, confirm,
        checkExamples,
-       dbinorm)
-exportPattern("^PIVOT_")
+       dbinorm,
+       LA_AUTO, LA_INTERN, LA_R, LA_GPU,
+       PIVOT_NONE, PIVOT_AUTO, PIVOT_DO, PIVOT_IDX
+       )
 
 useDynLib(RandomFieldsUtils, .registration = TRUE, .fixes = "C_")
 #useDynLib(spam)

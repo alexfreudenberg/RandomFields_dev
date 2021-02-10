@@ -87,6 +87,8 @@ extern "C" {
   DECLARE1(double, D3Gauss, double, x)
   DECLARE1(double, D4Gauss, double, x)
   DECLARE1(double, logGauss, double, x)
+  DECLARE0(int, cores1)
+  DECLARE0(int, cpus)
   
   DECLARE1(void, getUtilsParam, utilsparam **, up)
   DECLARE10(void, attachRFoptions, const char **, prefixlist, int, N, 
@@ -104,6 +106,7 @@ extern "C" {
   DECLARE4(double, scalarX, double *, x, double *, y, int, len, int, n)
   //  DECLARE4(int, scalarInt, int *, x, int *, y, int, len, int, n)
   DECLARE2(double, detPosDef, double *, M, int, size) // destroys M!
+  DECLARE3(double, detPosDefsp, double *, M, int, size, solve_param *, sp)
   DECLARE8(int, XCinvXdet,double*, M, int, size, double *,X, int, X_cols,
 	  double *, XCinvX, double *, det, bool, log, solve_storage, *PT)
   DECLARE10(int, XCinvYdet,double*, M, int, size, bool, posdef,
@@ -226,7 +229,7 @@ install.packages("RandomFieldsUtils_0.5.21.tar.gz", configure.args="CXX_FLAGS=-m
     HINT && MISS_AVX ?					\
     "\n\n   install.packages(\""#PKG"\", configure.args=\"CXX_FLAGS='-mavx "#OMP"'\")"\
     : "",								\
-    HINT && MISS_ANY_SIMD ? "\n\nAlternatively consider installing '"#PKG"'\nfrom https://github.com/schlather/"#PKG", i.e.,\n   install.packages(\"devtools\")\n   library(devtools)\n   devtools::install_github(\"schlather/"#PKG"/pkg\")" : "",\
+    true || HINT && MISS_ANY_SIMD ? "\n\nAlternatively,\n    install.packages(\""#PKG"\", configure.args=\"USE_AVX='yes'\") \nOr, consider installing '"#PKG"'\nfrom https://github.com/schlather/"#PKG", i.e.,\n   install.packages(\"devtools\")\n   library(devtools)\n   devtools::install_github(\"schlather/"#PKG"/pkg\")" : "",\
     HINT && !HAS_PARALLEL ? "\n\nFor OMP alone try\n   install.packages(\""#PKG"\", configure.args=\"CXX_FLAGS='"#OMP"'\")" : ""
 #endif
 
@@ -239,12 +242,12 @@ install.packages("RandomFieldsUtils_0.5.21.tar.gz", configure.args="CXX_FLAGS=-m
 		    -Xpreprocessor -fopenmp -pthread' LIB_FLAGS='-lomp -pthread)
 #  endif
 #elif defined DO_PARALLEL
+#  define AttachMessage(PKG, HINT)			\
+     AttachMessageX(PKG, HINT, and 'RandomFieldsUtils', )
+#else
 #  define AttachMessage(PKG, HINT)				\
      AttachMessageX(PKG, HINT, and 'RandomFieldsUtils',		\
 	            -Xpreprocessor -fopenmp -pthread' LIB_FLAGS='-lomp -pthread)
-#else
-#  define AttachMessage(PKG, HINT)			\
-     AttachMessageX(PKG, HINT, and 'RandomFieldsUtils', )
 #endif
   
 #define ReturnAttachMessage(PKG,HINT) 	\

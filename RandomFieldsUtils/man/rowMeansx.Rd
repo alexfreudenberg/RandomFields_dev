@@ -41,7 +41,7 @@ crossprodx(x,y,mode=-1)
 }
 
 \details{
-  \code{quadratic(v,x)} calculates the quadratic form \eqn{v^\top x v};
+  \code{quadratic(x, v)} calculates the quadratic form \eqn{v^\top x v};
   The matrix \code{x} must be squared.
 }
 

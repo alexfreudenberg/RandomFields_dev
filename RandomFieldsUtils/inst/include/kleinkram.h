@@ -25,6 +25,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 
+// by 3.2.2021: xAx:: BLAS lohnt noch nicht
+//              A^t A: BLAS lohnt sich ab aA = k x n, k >=8, n > MAXOWN
+
 #ifndef kleinkram_rfutils_h
 #define kleinkram_rfutils_h 1
 
@@ -33,9 +36,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <R.h>
 #include <Rinternals.h>
 #include "Basic_utils.h" //#include <Basic_utils.h>
-
-#define USE_OWN_ALG (GLOBAL.solve.pivotMaxTakeOwn == MAXINT)
-
 
 
 #define LAST_R_TYPE_NAME 32
@@ -102,10 +102,10 @@ void Integer(SEXP el, char *name, int *vec, int maxn) ;
 void Integer2(SEXP el, char *name, int *vec) ;
 bool Logical(SEXP p, char *name, int idx);
 char Char(SEXP el, char *name) ;
-double NonNegInteger(SEXP el, char *name) ;
+int NonNegInteger(SEXP el, char *name) ;
 double NonNegReal(SEXP el, char *name) ;
 double NonPosReal(SEXP el, char *name) ;
-double PositiveInteger(SEXP el, char *name) ;
+int PositiveInteger(SEXP el, char *name) ;
 double PositiveReal(SEXP el, char *name) ;
 void String(SEXP el, char *name, char names[][MAXCHAR], int maxlen);
 
@@ -133,7 +133,7 @@ void xA(double *x, double*A, int nrow, int ncol, double *y);
 void xA_noomp(double *x, double*A, int nrow, int ncol, double *y);
 void xA(double *x1, double *x2,  double*A, int nrow, int ncol, double *y1,
 	double *y2);
-void xAx(double *x, double*A, int nrow,  double *y);
+double xAx(double *x, double*A, int nrow);
 void Ax(double *A, double*x, int nrow, int ncol, double *y);
 void Ax(double *A, double*x1, double*x2, int nrow, int ncol, double *y1,
 	double *y2);
@@ -162,7 +162,7 @@ int GetName(SEXP el, char *name, const char * List[], int n,
 	    int defaultvalue) ;
 
 
-#define SCALAR_PROD_OLD(A, B, N, ANS) {			\
+#define TYPE_INDEP_SCALAR_PROD(A, B, N, ANS) {			\
     int  k_ =0,				\
     end_ = N - 4;				\
   ANS = 0.0;					\
@@ -187,11 +187,5 @@ double ownround(double x);
 #define Mod(Z, modulus) ((Z) - FLOOR((Z) / (modulus)) * (modulus))
 double lonmod(double x, double modulus); 
 
-
-
-/*
-extern "C" void vectordist(double *v, int *dim, double *dist, int *diag); 
-bool is_diag(double *aniso, int dim);
-*/ 
 
 #endif

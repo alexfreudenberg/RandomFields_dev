@@ -160,11 +160,7 @@ void loadoptions() {
 		  getoptions,
 		  deloptions,
 		  0, true);
-  int save = CORES;
-  GLOBAL.solve.pivot = PIVOT_NONE_AUTO; // OK
-  GLOBAL.solve.pivotMaxTakeOwn = own_chol_up_to();
-  if (PL > 0) PRINTF("limit size for simple Cholesky algorithm  = %d\n",
-		     GLOBAL.solve.pivotMaxTakeOwn);
+  SetLaMode();
 }
 
 

@@ -87,8 +87,7 @@ The function values are rather precise even for large values of \code{nu}.
 
 \seealso{
   \command{\link{nonstwm}}
-  
- For more details see also \command{\link[RandomFields]{RMmatern}}.
+  % For more details see also \command{\link[RandomFields]{RMmatern}}.
 }
 
 

@@ -56,8 +56,7 @@ nonstwm(x, y, nu, log=FALSE,
 
 \seealso{
  \command{\link{matern}}.
-  
- For more details see \command{\link[RandomFields]{RMnonstwm}}.
+  % For more details see \command{\link[RandomFields]{RMnonstwm}}.
 }
 
 \examples{
