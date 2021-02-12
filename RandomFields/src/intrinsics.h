@@ -73,38 +73,8 @@ until version 0.1.x there was a distinction between 32 Bit machines and 64 bit m
 
 */
 
-#ifdef AVX512
-//#include <immintrin.h>
-#endif
+#include <immintrin.h>
 
-
-#if defined AVX || defined AVX2
-#include <x86intrin.h>
-#endif
-
-#ifdef SSE
-//#include <xmmintrin.h>
-#endif
-
-#ifdef SSE2
-#include <emmintrin.h>
-#endif
-
-#ifdef SSE3
-//#include <pmmintrin.h>
-#endif
-
-#ifdef SSSE3
-#include <tmmintrin.h>
-#endif
-
-#ifdef SSE4A
-//#include <ammintrin.h>
-#endif
-
-#ifdef SSE412
-//#include <smmintrin.h>
-#endif
 
 
 #if defined AVX

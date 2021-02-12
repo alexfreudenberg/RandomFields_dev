@@ -321,6 +321,7 @@ bool CheckListmodel(){
  printf(" sequential: 'back' in Sequential fuer whittle (bei nu=markov field)exakt suchen und als Specific implementieren? -- pref umsetzen in whittle etc"); // OK
  printf(" gausslikeli ruft covvario auf und x wird gegebenefalls immer wieder von neuem transformiert"); // OK
  printf(" krigin variance"); // OK
+ printf(" USE_OWN_ALG + GAUSS * Chol -> Ux + test in utils.cc ausprobieren; http://www.netlib.org/blas/"); // OK
  printf(" "); // OK
   //  printf("done\n");
   return true;

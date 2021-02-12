@@ -327,7 +327,7 @@ struct distr_param{
 #define MAXCLIQUE(locmaxn) (((locmaxn) * 3) / 5)
 
 #define FLAT_UNDETERMINED -1
-#define fitN 42
+#define fitN 43
 #define FIT_BC_LB 10
 #define FIT_BC_UB 11
 #define FIT_MAXNEIGHBOUR 19
@@ -353,7 +353,8 @@ struct fit_param{
   usr_bool estimate_variance;
   bool  use_naturalscaling, onlyuser, 
    reoptimise, ratiotest_approx,
-    split_refined, cross_refit, suggesting_bounds, return_hessian;      // 8
+    split_refined, cross_refit, suggesting_bounds, return_hessian,
+    standardizedL;      // 8
   char lengthshortname; // 1..255
 };
 #define fit_START\
@@ -376,7 +377,7 @@ struct fit_param{
     0, 0, 0 /* UNSET algorithm */, 0, fit_split[NM], 1, 0, /*  */	\
     /* usr_bool */ Nan,							\
 	  /* bool */ false, false, fit_reoptimise[NM],  /* 5 */ \
-    fit_ratiotest_approx[NM], true, fit_cross_refit[NM], false, true,	\
+    fit_ratiotest_approx[NM], true, fit_cross_refit[NM], false, true, false, \
     12 // fit
 
 #define empvarioN 9
@@ -446,7 +447,7 @@ struct internal_param{
 #define NOTE_WITHOUT_HINT 2
 #define NOTE_WITH_HINT 3
 
-#define messagesN 27
+#define messagesN 28
 extern const char * messages[messagesN];
 #define MESSAGES_NEWANISO 2
 #define MESSAGES_ONGRID 8
@@ -465,7 +466,7 @@ struct messages_param{
     warn_raw_covariates, help_addNA, help_help;
   usr_bool warn_mathdef  // obsolete?!
     ;//   
-  int  note_detection, note_coordinates, warn_seed;
+  int  note_detection, note_coordinates, warn_seed, vec_len;
 };
 #define messages_START			\
   {true, true, true, false, true,		\
@@ -475,7 +476,7 @@ struct messages_param{
       true, true, true, \
       true, true, true,				\
       Nan,					\
-      NOTE_WITH_HINT, NOTE_WITH_HINT, NOTE_WITH_HINT}
+      NOTE_WITH_HINT, NOTE_WITH_HINT, NOTE_WITH_HINT, 10}
 
 
 #define coordsN 20

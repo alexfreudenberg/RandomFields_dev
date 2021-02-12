@@ -381,10 +381,11 @@ void GetEu2Dinv(model *cov, double *x, int dim,
   }
   for (d=0; d<dimsq; d+=dimP1)  Eu2Dinv[d] += 1.0; // D + E
 
-  solve_storage *PT =  NULL;
-  if (z !=NULL) PT->result = z;
-  int err = Ext_XCinvXdet(Eu2Dinv, dim, y, 1, newxsq, det, false, PT);
-  if (z != NULL) PT->result = NULL;
+  solve_storage Pt;
+  Ext_solve_NULL(&Pt);
+  if (z !=NULL) Pt.result = z;
+  int err = Ext_XCinvXdet(Eu2Dinv, dim, y, 1, newxsq, det, false, &Pt);
+  if (z != NULL) Pt.result = NULL;
   if (err != NOERROR) ERR("error occuredin 'GetEu2Dinv'");
   *newx = SQRT(*newxsq);
 }

@@ -241,6 +241,8 @@ data.columns <- function(data, model=NULL, xdim=0, x=NULL,
 
     for (i in components) {
       if (length(M[[i]]) > 0) {
+        nn <- min(length(M$data.names[M[[i]]]), RFopt$messages$vec_len)
+        reduced <- nn < length(M$data.names[M[[i]]])
         if (i == "is.unclear")
           Note("detection", "the model does not use '",
                paste(M[[i]], collapse="', '"), "'.")
@@ -251,7 +253,8 @@ data.columns <- function(data, model=NULL, xdim=0, x=NULL,
                           "is.covariate"="covariate",
                           stop(CONTACT)),
                    S(M[[i]]),  ": '",
-                   paste(M$data.names[M[[i]]], collapse="', '"), "'.")
+                   paste(M$data.names[M[[i]]][1:nn], collapse="', '"), "'.",
+                   if (reduced) "..")
       }
     }
   } else { ## model not given
@@ -292,7 +295,7 @@ data.columns <- function(data, model=NULL, xdim=0, x=NULL,
       }
       data.info <-  "1stsafe"      
       if (n != length(is.var)) {
-        if (length(is.var) < 20) {
+        if (length(is.var) < RFopt$messages$vec_len) {
           Note("detection", "The column",S(is.var), " ",
                if (length(cn) == 0) paste(is.var, collapse=",")
                else paste("'", cn[is.var],"'", sep="",collapse=", "),

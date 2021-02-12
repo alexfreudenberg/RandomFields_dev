@@ -31,7 +31,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #ifdef __GNUC__
 // https://gcc.gnu.org/onlinedocs/gcc/Diagnostic-Pragmas.html
-#pragma GCC diagnostic ignored "-Wcast-function-type"
+// GCC diagnostic ignored "-Wcast-function-type"
 #endif
 
 #define none 0
@@ -71,7 +71,7 @@ static const R_CMethodDef cMethods[]  = {
   {NULL, NULL, 0, none}
 };
 
-SEXP vectordist(SEXP V, SEXP diag);
+//SEXP vectordist(SEXP V, SEXP diag);
 
 
 #define CALLDEF(name, n) {#name, (DL_FUNC) &name, n}
@@ -119,7 +119,7 @@ static R_CallMethodDef callMethods[]  = {
   CALLDEF(get_likeliinfo, 1),
   CALLDEF(simple_residuals, 1), 
   CALLDEF(get_linearpart, 2),
-  CALLDEF(vectordist, 2),
+  //  CALLDEF(vectordist, 2),
   CALLDEF(maintainers_machine, 0),
 //  CALLDEF(),
   {NULL, NULL, 0}
@@ -136,12 +136,12 @@ void R_init_RandomFields(DllInfo  *dll) {
 
 #ifdef __GNUC__
 // https://gcc.gnu.org/onlinedocs/gcc/Diagnostic-Pragmas.html
-#pragma GCC diagnostic ignored "-Wcast-function-type"
+// GCC diagnostic ignored "-Wcast-function-type"
 #endif
 void R_unload_RandomFields(DllInfo *info) {
   /* Release resources. */
 }
 #ifdef __GNUC__
-#pragma GCC diagnostic warning "-Wcast-function-type"
+// GCC diagnostic warning "-Wcast-function-type"
 #endif
 

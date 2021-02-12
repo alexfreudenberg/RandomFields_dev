@@ -74,11 +74,9 @@ bool parallel() {
 
 
 void globalparam_NULL(KEY_type *KT, bool copy_messages) {
-  // printf("%d %d %d %d %d; %d %d %d \n",
-  // generalN, gaussN, krigeN, extremeN, fitN,
-  // messagesN, coordsN, prefixN);
+  //  printf("%d %d %d %d %d; %d %d \n", generalN, gaussN, krigeN, extremeN, fitN, coordsN, prefixN);
   assert(generalN==20 && gaussN == 6 && krigeN == 5 && extremeN == 12
-  	 && fitN == 42 && messagesN == 27 && coordsN == 20 && prefixN == 25);
+  	 && fitN == 43 && coordsN == 20 && prefixN == 25);
   messages_param m;
   if (!copy_messages)
     MEMCOPY(&m, &(KT->global.messages), sizeof(messages_param));
@@ -223,7 +221,7 @@ void loadoptions() { // no print commands!!!
   utilsparam *global_utils = GLOBAL_UTILS;
   global_utils->solve.max_chol = DIRECT_ORIG_MAXVAR;
   global_utils->solve.max_svd = 6555;
-  global_utils->solve.pivot = PIVOT_AUTO;
+  global_utils->solve.pivot_mode = PIVOT_AUTO;
   global_utils->solve.pivot_check = Nan;
   global_utils->basic.warn_unknown_option = WARN_UNKNOWN_OPTION_NONE1;
   Ext_attachRFoptions(prefixlist, prefixN, all, allN,

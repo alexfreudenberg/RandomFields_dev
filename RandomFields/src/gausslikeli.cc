@@ -1076,8 +1076,7 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, INFO, model *cov,
   model *calling = cov->calling;
   //*sub = cov->key == NULL ? cov->sub[0] : cov->key;  
   assert(calling != NULL && DefList[CALLINGNR].cov == likelihood);
-getStorage(L ,   likelihood);
-  assert(L != NULL);
+  getStorage(L ,   likelihood);
   listoftype *datasets = L->datasets;
   assert(!L->ignore_trend);
   likelihood_facts *facts = &(L->facts);
@@ -1095,9 +1094,16 @@ getStorage(L ,   likelihood);
     vdim = VDIM0,
     betatot = L->cum_n_betas[L->fixedtrends],    
     betaSq = betatot * betatot;
+  bool standardized = PARAM0INT(calling, LIKELIHOOD_STANDARDIZED_L);
+
+  
   // PMI(cov);
   //  if (VDIM1 != 1) BUG;
+  getStorage(Ssolve, solve);
   CHOLESKY_ONLY;
+  Sparam.pivot_partialdet = standardized;
+  Sparam.det_as_log = true;
+  assert(cov->Ssolve != NULL);
 
   *v = 0.0;
   for (i=0; i<betaSq; L->XtX[i++] = 0.0);
@@ -1182,8 +1188,7 @@ getStorage(L ,   likelihood);
     endfor = repet / atonce;
     XYcols = betatot + atonce;
 
-    // printf("%10g\n", L->X[set][0]); BUG; 
-
+    // printf("%10g\n", L->X[set][0]); BUG;
     for (int r=0; r<endfor; r++) {
       if (L->data_nas[set]) {
 	double *datacur = Xdata + r * totptsvdim;
@@ -1192,11 +1197,11 @@ getStorage(L ,   likelihood);
 	SqMatrixcopyNA(Ccur, L->C, datacur, totptsvdim);
 	dataWithoutNA = Xcur + notnas * betatot;
       }
- 
-      variables += notnas * atonce;
-      MEMCOPY(L->CinvXY, Xcur, notnas * XYcols * sizeof(double));
-      assert(cov->Ssolve != NULL);
 
+      ///      printf("notnas = %d %d\n", notnas, atonce);
+      
+      MEMCOPY(L->CinvXY, Xcur, notnas * XYcols * sizeof(double));
+  
       //      BUG;
       // kosten vom aufruf : 2 / 1
       // biwm2 3 / 8
@@ -1206,12 +1211,19 @@ getStorage(L ,   likelihood);
       Exterr = Ext_solvePosDefSp(Ccur, notnas, 
 				 true, // except for negative definite function
 				 L->CinvXY, XYcols, 
-				 &logdet, cov->Ssolve, &Sparam);
+				 &logdet, Ssolve, &Sparam);
       if (Exterr != NOERROR)
-	GERR2("In RandomFieldsUtils: %.200s (error = %d)", cov->Ssolve->err_msg,
+	GERR2("In RandomFieldsUtils: %.200s (error = %d)", Ssolve->err_msg,
 	      Exterr);
+      if (!R_FINITE(logdet) && ! Sparam.pivot_partialdet) {
+	WARN2(" low-rank covariance matrix detected. Consider setting '%.20s=TRUE' in '%.20s' .", DefList[LIKELIHOOD_CALL].kappanames[LIKELIHOOD_STANDARDIZED_L], DefList[LIKELIHOOD_CALL].nick); // OK
+      }
 
+	
+      //printf("logdet %8.8f %d\n", logdet, atonce);
       
+      variables += atonce * (standardized && Ssolve->actual_pivot == PIVOT_DO
+			     ? Ssolve->actual_size : notnas);
       logdettot += logdet * atonce;
       double *CinvY = L->CinvXY + betatot * notnas;
       int end_i = notnas * atonce;
@@ -1267,17 +1279,15 @@ getStorage(L ,   likelihood);
    
     MEMCOPY(beta, L->XCY, sizeof(double) * all_betatot);
     assert(!L->betas_separate || sets == 1);
-    assert(cov->Ssolve != NULL);
-
     //    for (int h=0; h<betatot * betatot; h++) printf("%10g ", L->XtX[h]);
     //    printf("\n>> %d %d %10g\n",  betatot, L->betas_separate, beta[0]);
 
     Exterr = Ext_solvePosDefSp(L->XtX, betatot, true, beta, 
 			       L->betas_separate ? repet : 1,
 			       NULL, 
-			       cov->Ssolve, &Sparam);
+			       Ssolve, &Sparam);
     if (Exterr != NOERROR)
-      GERR2("In RandomFieldsUtils: %.200s (error = %d)", cov->Ssolve->err_msg,
+      GERR2("In RandomFieldsUtils: %.200s (error = %d)", Ssolve->err_msg,
 	    Exterr);
     
     //   printf("%.50s AC %10g %10g %10g %10g %d done\n", NAME(cov), beta[0], beta[1], beta[2], beta[3], all_betatot); BUG;
@@ -1290,12 +1300,16 @@ getStorage(L ,   likelihood);
     else for (i=0; i<betatot; i++) *(L->where_fixed[i]) = beta[i];
   }
 
+
   *v = -0.5 * (logdettot + variables * LOG(TWOPI));
 
-  //  printf(">> v =%10g %10g #=%d 2pi^=%10g sq=%10g %10g %d\n", *v, 0.5 *logdettot, variables , -0.5 * variables * LOG(TWOPI), YCinvY, proj, facts->globalvariance); 
+  //printf(">> v =%10g %10g #=%d 2pi^=%10g sq=%10g %10g %d\n", *v, 0.5 *logdettot, variables , -0.5 * variables * LOG(TWOPI), YCinvY, proj, facts->globalvariance); 
  
-  double delta;
+   double delta;
   delta = YCinvY - proj;
+
+  //printf("v =%f det=%f pi:%f %d\n", -0.5 * delta, -0.5 * logdettot,  -0.5 * variables * LOG(TWOPI), variables);
+
   if (facts->globalvariance) {
     //   printf("%10g delta=%10g %d %10g \n", *v, delta, variables, 0.5 * variables * LOG(delta)); BUG;
     
@@ -1306,6 +1320,9 @@ getStorage(L ,   likelihood);
     //    printf("delta = %10g, %10g YCY=%10g proj=%10g\n", delta, -0.5 * delta, YCinvY,proj);
     *v -= 0.5 * delta;
   }
+
+ 
+  L->total_genuine_n = variables;
   //  printf("*v=%10g %10g %d\n", *v, P(GAUSS_BOXCOX)[0], facts->globalvariance);
   
   if (R_FINITE(P(GAUSS_BOXCOX)[0])) {
@@ -1347,7 +1364,10 @@ getStorage(L ,   likelihood);
  ErrorHandling:
   cov->base->set = 0;
 
-  if (err != NOERROR) XERR(err);
+  if (err != NOERROR) {
+    //    printf("XXXXX\n");
+    XERR(err);
+  }
    
 }
 

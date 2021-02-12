@@ -290,7 +290,7 @@ void COV_DELETE_WITHOUTSUB(model **Cov, model *save) {
   mle_DELETE(&(cov->Smle));
   model_DELETE(&(cov->Smodel), save);
   trend_DELETE(&(cov->Strend));
-  gen_DELETE(&(cov->Sgen));  
+  gen_DELETE(&(cov->Sgen));
  
   simu_storage *simu = &(cov->simu);
   simu->active = simu->pair = false;

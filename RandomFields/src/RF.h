@@ -29,6 +29,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // ACHTUNG : REIHENFOLGE WICHTIG. def.h zuerst; obige defines immer oben
 #include "def.h"
 #include "init.h"
+
+
 #include <inttypes.h>
 typedef unsigned int Uint;
 typedef uint64_t  Ulong;
@@ -820,7 +822,9 @@ struct likelihood_storage {
     nas_fixed[MAX_LIN_COMP], // # of additional NAs in a fixed effect
     nas_random[MAX_LIN_COMP],// # of additional NAs in a random effect
     nas_boxcox,
-    nas_boxcox_mu; 
+    nas_boxcox_mu,
+    total_genuine_n
+    ; 
   bool dettrend_has_nas, fixedtrend_has_nas, random_has_nas, 
     data_has_nas,
     betas_separate, ignore_trend;
@@ -1784,7 +1788,7 @@ void lognonstat2statcov(double *x, double *y, int*info, model *cov, double *v,
   }
 
 #define COND_NEW_STORAGE(new, WHAT) CONDCOV_NEW_STORAGE(cov, new, WHAT)
-#define SOLVE_STORAGE EXT_NEW_STORAGE(solve)
+// #define SOLVE_STORAGE EXT_NEW_STORAGE(solve)
 
 #define ALLCCOV_NEW(cov, Snew, Z, SIZE, WHAT)				\
   assert((cov)->Snew != NULL);						\

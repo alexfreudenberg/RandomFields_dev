@@ -766,7 +766,8 @@ void loc_set(SEXP ylist, location_type **Loc){
     
     location_type *loc = Loc[i];
     assert(loc->rawidx==NULL);
-    assert(loc->totalpointsY == 0 && loc->Y == NULL || loc->grY == NULL);
+    assert(loc->totalpointsY == 0 && loc->Y == NULL && loc->grY != NULL &&
+	   loc->grY[0] == NULL);
    
     //    printf("hier %d\n", length(VECTOR_ELT(set, XLIST_T)));
     if ((Err = partial_loc_set_y(loc, REAL(y), spatialpointsy, 

@@ -1126,10 +1126,19 @@ UnifyData <- function(model, x, y=NULL, z=NULL, T=NULL,  grid=NULL, data,
   
   if (PL > PL_SUBIMPORTANT ||
       (PL >= PL_IMPORTANT && info$data.info != "safe")) {
-    Note("detection", "Using columns ", paste(info$is.var, collapse=","),
+    nn <- min(length(info$is.var), RFopt$messages$vec_len)
+    reduced <- nn < length(info$is.var)
+    nnRep <- min(length(repetitions), RFopt$messages$vec_len)
+    reducedRep <- nn < length(repetitions)
+     
+    Note("detection", "Using columns ", paste(info$is.var[1:nn], collapse=","),
+         if (reduced) "...",
          " as data columns",
-         if (any(repetitions) > 1 && length(data) < 20)
-           paste("with", paste(repetitions, collapse=",") , "repetitions"),
+         if (any(repetitions) > 1)
+           paste("with", paste(repetitions[1:nnRep], collapse=",") ,
+                  if (reducedRep) "...",
+                 "repetitions"),
+           
          ".")
   }
  

@@ -777,23 +777,97 @@ double GetPriors(model *cov) {
     : i <= LIKELIHOOD_LAST ? 1 : -1;
 }
 
+   
 
+    
+double empirDet(model *cov) {
+  model *process = cov->key == NULL ? cov->sub[0] : cov->key;
+  GETSTORAGE(L ,  process,   likelihood); 
+  int vdim = VDIM0,
+    vdimSq = vdim * vdim,
+    vdimP1 = vdim + 1,
+    sets = LocSets(cov),      
+    *nij = (int *) CALLOC(vdimSq, sizeof(int));
+  double *mu = (double *) CALLOC(vdim, sizeof(double)),
+    *C = (double *) CALLOC(vdimSq, sizeof(double));
+  listoftype *datasets = L->datasets;
+  for (int set = 0; set < sets; set++) {
+    cov->base->set = set;
+    int 
+      ncol =  NCOL_OUT_OF(datasets),   
+      nrow = NROW_OUT_OF(datasets), 
+      totptsvdim = nrow * vdim,
+      repet = ncol / vdim;
+    double  *data = SET_OUT_OF(datasets);
+    for (int r=0; r < repet; r++, data += totptsvdim) {
+      for (int i=0; i<vdim; i++) {
+	double sum =0,
+	  *di = data + nrow * i;
+	for (int k=0; k<nrow; k++) if (R_FINITE(di[k])) sum += di[k];
+	mu[i] += sum;	    
+	for (int j=i; j<vdim; j++) {
+	  int nn =0,
+	    idx = i * vdim + j;
+	  double *dj = data + nrow * j;
+	  sum =0.0;
+	  for (int k=0; k<nrow; k++)  {
+	    double z = di[k] * dj[k];
+	    if (R_FINITE(z)) {
+	      nn++;
+	      sum += z;
+	    }
+	  }
+	  nij[idx] += nn;
+	  C[idx] += sum;	    
+	}
+      }
+    }
+  }
+  for (int k=0; k<vdim; k++) mu[k] /= (double) MAX(1L, nij[k * vdimP1]);
+  for (int i=0; i<vdim; i++) {
+    for (int j=i; j<vdim; j++) {
+      int idx = i * vdim + j;
+      C[j * vdim + i] = C[idx] =  C[idx] / MAX(1L, nij[idx]) - mu[i] * mu[j];
+    }
+  }
+  
+  solve_param Sparam;						       
+  MEMCOPY(&Sparam, &(cov->base->global_utils.solve), sizeof(solve_param));
+  Sparam.Methods[0] = Cholesky;	   
+  Sparam.Methods[1] = NoFurtherInversionMethod;
+  Sparam.pivot_partialdet = true;
+  Sparam.det_as_log = true;
+  double det = Ext_detPosDefsp(C, vdim, &Sparam);
+  
+  //  printf("%d %f %f\n%f %f\nmu=%f %f\n %d %d\n %d %d\nempir logdet = %f; det=%f", vdim, C[0], C[1], C[2], C[3], mu[0], mu[1], nij[0], nij[1], nij[2], nij[3], det, EXP(det));
+
+  FREE(nij);
+  FREE(mu);
+  FREE(C);
+
+  
+  return det;
+}
+
+//static int zaehl = 0;
+//static double mean=0.0,
+//  mean2 = 0.0;
+
+  
 void likelihood(double VARIABLE_IS_NOT_USED *x, int *info,
 		model *cov, double *v) {
   model *process = cov->key == NULL ? cov->sub[0] : cov->key;
+  GETSTORAGE(L ,  process,   likelihood); 
   if (v == NULL) {
-    // likelihood_storage *L = process->Slikelihood;
-    GETSTORAGE(L ,  process,   likelihood); 
-    assert(L != NULL);
-    int //betas = L->cum_n_betas[L->fixedtrends],
-      vdim = process->vdim[0];
     likelihood_facts *facts = &(L->facts);
     listoftype *datasets = L->datasets;
-    int
-      store = cov->base->set,
-      betatot = L->cum_n_betas[L->fixedtrends],
-      all_betatot = betatot;
-    cov->base->set = 0;
+    // likelihood_storage *L = process->Slikelihood;
+     int //betas = L->cum_n_betas[L->fixedtrends],
+       vdim = process->vdim[0],
+       store = cov->base->set,
+       betatot = L->cum_n_betas[L->fixedtrends],
+       all_betatot = betatot;
+     cov->base->set = 0;
     if (L->betas_separate)
       all_betatot *= NCOL_OUT_OF(datasets) / vdim;
     cov->q[0] = 1 + facts->globalvariance + all_betatot;
@@ -808,10 +882,24 @@ void likelihood(double VARIABLE_IS_NOT_USED *x, int *info,
   assert(process->key == NULL);
   if (isProcess(process->sub[0]))//besser: EmptySubOK(MODELNR(process->sub[0])))
     ERR("processes as priors not allowed yet");
-  *v += GetPriors(process->sub[0]); 
- }
+  *v += GetPriors(process->sub[0]);
 
- int check_likelihood_linear(model *cov) {
+  if (P0INT(LIKELIHOOD_STANDARDIZED_L)) {
+    int vdim =process->vdim[0],
+      tot = L->total_genuine_n;
+    *v += 0.5 * tot * (empirDet(cov) / vdim + 1.0 +
+		       LOG(2 * M_PI)) +
+      0.5 * vdim;
+    
+    //    zaehl ++;
+    //    mean += 0.5 * empirDet(cov) * tot / vdim - 0.5 * tot / vdim * LOG(1000);
+    //    mean2 += *v;
+    //    printf("\ntot=%d logdet=%f e=%f %f m=%f %f pi=%f n/2=%f\n", tot,  0.5 * tot / vdim * LOG(1000),	   empirDet(cov),	   0.5 * empirDet(cov) * tot / vdim - 0.5 * tot / vdim * LOG(1000),	   mean / zaehl,	   mean2 / zaehl,	   LOG(2 * M_PI) * 0.5 * tot, 0.5 * tot)      ; // see private/normedllikeilhood.pdf
+    *v /=  SQRT(vdim); // see private/normedllikeilhood.pdf
+  }
+}
+
+int check_likelihood_linear(model *cov) {
   assert(cov->prevloc != NULL);
   bool distances = LocDist(cov); // ehem Prev
   model *sub = cov->key == NULL ? cov->sub[0] : cov->key;
@@ -874,6 +962,7 @@ int check_likelihood(model *cov) {
   // for each independent repetition within a data set is a feature
   // that has been implemented, but currently it is not used
   kdefault(cov, LIKELIHOOD_IGNORETREND, false);
+  kdefault(cov, LIKELIHOOD_STANDARDIZED_L, global->fit.standardizedL);
   if (PisNULL(LIKELIHOOD_DATA)) BUG;
   for (int set = 0; set<sets; set++) {
     cov->base->set = set;
@@ -943,6 +1032,7 @@ void range_likelihood(model VARIABLE_IS_NOT_USED *cov, range_type* range){
   booleanRange(LIKELIHOOD_NA_VAR);
   booleanRange(LIKELIHOOD_BETASSEPARATE);
   booleanRange(LIKELIHOOD_IGNORETREND);
+  booleanRange(LIKELIHOOD_STANDARDIZED_L);
 }
 
 

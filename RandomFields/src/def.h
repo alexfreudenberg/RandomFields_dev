@@ -28,10 +28,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef RFdef_H
 #define RFdef_H 1
 
+
 #include "intrinsics.h"
 #include "basic.h"
-#include <Basic_utils.h>
-
 
 //
 ////  1
@@ -41,10 +40,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 
+#include <Basic_utils.h>
 #define DO_PARALLEL_ALREADY_CONSIDERED 1 // verhindert dass in  Basic_utils.h
 //                                          entsprechend gesetzt wird
 #ifdef _OPENMP
-  #ifndef SCHLATHERS_MACHINE
+  #ifdef SCHLATHERS_MACHINE
+  #else
     #define DO_PARALLEL 1
     #define CE_PARALLEL 1 // for circulant embedding
 //#define DO_TALLOC_SAVE 1

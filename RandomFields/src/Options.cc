@@ -422,7 +422,7 @@ const char * fit[fitN] =
    "pgtol", "pgtol_recall",  "factr",
    "factr_recall" ,
    "addNAlintrend", "emp_alpha", "suggesting_bounds", "trace",
-   "sub_optimiser", "return_hessian"
+   "sub_optimiser", "return_hessian", "standardizedL"
   };
 
 
@@ -461,7 +461,9 @@ const char * messages[messagesN] =  {
   
   "warn_seed", "warn_modus_operandi", // 17.11.20 to be deleted in near future
   "warn_singlevariab", "help_mle", "note_detection",
-  "warn_raw_covariates", "help_addNA", "help_help", "warn_ambiguous"};
+  "warn_raw_covariates", "help_addNA", "help_help", "warn_ambiguous",
+  "vec_len" // name in str()
+};
 
 const char *coords[coordsN] =
   { "xyz_notation", "coord_system", "new_coordunits", "coordunits", "varunits",
@@ -952,7 +954,8 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
 	GetName(el, name, OPTIMISER_NAMES, nOptimiser, 0); //
       break;
     case 41: ef->return_hessian = LOGI; break;
-     default:  BUG;
+    case 42: ef->standardizedL = LOGI; break;
+    default:  BUG;
       }}
   break;
   case 15: { // empvario
@@ -1170,6 +1173,7 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
       case 24: wp->help_addNA = LOGI; break;
       case 25: wp->help_help = LOGI; break;
       case 26: wp->warn_ambiguous = LOGI;       break;
+      case 27: wp->vec_len = POSINT;       break;
     default: BUG; 
       }
     } else {
@@ -1576,6 +1580,7 @@ void getoptions(SEXP sublist, int i, bool local) {
 	? ScalarString(mkChar(OPTIMISER_NAMES[p->suboptimiser])) 
 	: R_NilValue);
     ADD(ScalarLogical(p->return_hessian));
+    ADD(ScalarLogical(p->standardizedL));
    }  
    break;
    
@@ -1674,6 +1679,7 @@ void getoptions(SEXP sublist, int i, bool local) {
     ADD(ScalarLogical(p->help_addNA));
     ADD(ScalarLogical(p->help_help));
     AddScalarLogInt(p->warn_ambiguous);
+    AddScalarLogInt(p->vec_len);
   }
    break;
 

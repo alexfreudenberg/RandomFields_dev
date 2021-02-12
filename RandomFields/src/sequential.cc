@@ -541,7 +541,7 @@ void sequentialpart(double *res, Long totpnts, int spatialpnts,
   MuT += totpnts - truelybackpnts;
   double *rp = res + totpnts;
   for (int n=0; n<ntime; n++, rp += spatialpnts) {    
-    for (int i=0; i<spatialpnts; i++) G[i] =GAUSS_RANDOM(1.0);
+    for (int i=0; i<spatialpnts; i++) G[i] = GAUSS_RANDOM(1.0);
 #ifdef DO_PARALLEL
 #pragma omp parallel for num_threads(CORES) if (spatialpnts > 5 * CORES)
 #endif

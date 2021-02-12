@@ -558,11 +558,14 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 	    index1 = vdim * k + l;
 	    if(l>=k) { 
 	      index2=index1;
-	      Sign=1;
+	      Sign= -1; // 10.2.21
 	      notposdef += k==l && FABS(c[index2][twoi_plus1]) > tolIm;
 	      //	      c[index2][twoi_plus1].r = 0.0; ?!!!
 	    }  // obtain lower triangular bit of c as well with
-	    else{ index2= vdim * l + k; Sign=-1;}  // (-1) times imaginary part of upper triangular bit
+	    else{
+	      index2= vdim * l + k;
+	      Sign= +1;// 10.2.21
+	    }  // (-1) times imaginary part of upper triangular bit
 
 	    R[index1].r = c[index2][twoi];
 	    R[index1].i = Sign*c[index2][twoi_plus1];

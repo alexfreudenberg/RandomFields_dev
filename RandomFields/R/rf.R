@@ -76,27 +76,6 @@ boxcoxIntern <- function(data, boxcox, vdim=1, inverse=FALSE, ignore.na=FALSE) {
   return(Data)
 }
 
-RFlinearpart <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
-                         params,  distances, dim, set=0, ...) {
-  Reg <- MODEL_USER  
-  RFopt <- internalRFoptions(...)
-  if (!hasArg("COPY")) on.exit(optionsDelete(RFopt, register=Reg))
-
-  new <- UnifyXT(x, y, z, T, grid=grid, distances=distances, dim=dim)
-
-  if (isS4(model) || !is(model, CLASS_CLIST)) {
-    pm <- PrepareModel2(if (hasArg("trend")) list(...)$trend else model,
-                        params=params, x=new, ...)
-    new <- pm$C_coords
-    model <- pm$model
-  }
-  if (model[[1]] != "linearpart") model <- list("linearpart", model)
- 
-  rfInit(model=model, x=new, reg=Reg, RFopt=RFopt)
-  .Call(C_get_linearpart, Reg, as.integer(set))
-}
-
-
 
 setvector <- function(model, preceding, len, factor) {
   if (model[[1]] == SYMBOL_PLUS) {
@@ -268,6 +247,7 @@ ReplaceC <- function(model) {
 initRFlikelihood <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
                              data, params, distances, dim, likelihood,
                              estimate_variance = NA, ignore.trend=FALSE,
+                             standardizedL = FALSE,
                              RFopt, Reg, ...) {
   ## if changed see also initpredict()
 
@@ -280,9 +260,11 @@ initRFlikelihood <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
 
   model <- ReplaceC(Z$model); ## multivariates c() aufdroeseln
   
-  model <- list("loglikelihood", model, data = Z$data,
+  model <- list("loglikelihood",
+                model, data = Z$data,
                 estimate_variance=estimate_variance,
                 betas_separate = FALSE,
+                standardizedL = standardizedL,
                 ignore_trend=ignore.trend)
 
   rfInit(model=model, x=Z$C_coords, reg=Reg, RFopt=RFopt)
@@ -294,12 +276,14 @@ initRFlikelihood <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
 rflikelihood <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
                          data, params, distances, dim, likelihood,
                          estimate_variance = NA,
+                         standardizedL = FALSE,
                          Reg, RFopt,
                          ...) {
   initRFlikelihood(model=model, x=x, y = y, z = z, T=T, grid=grid,
                    data=data, params=params,
                    distances=distances, dim=dim, likelihood=likelihood,
                    estimate_variance = estimate_variance,
+                   standardizedL = standardizedL,
                    RFopt = RFopt,
                    Reg = Reg, ...)
 
@@ -320,6 +304,7 @@ rflikelihood <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
 RFlikelihood <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
                          data, params, distances, dim, likelihood,
                          estimate_variance = NA,
+                         standardizedL = FALSE,
                          ...) {
   RFopt <- if (missing(likelihood)) internalRFoptions(...)
            else internalRFoptions(likelihood=likelihood, ...)
@@ -330,9 +315,31 @@ RFlikelihood <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
                data=data, params=params, distances=distances, dim=dim,
                likelihood = likelihood,
                estimate_variance = estimate_variance,
+               standardizedL = standardizedL,
                Reg = Reg, RFopt=RFopt,  ...)
 }
-  
+
+
+RFlinearpart <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
+                         params,  distances, dim, set=0, ...) {
+  Reg <- MODEL_USER  
+  RFopt <- internalRFoptions(...)
+  if (!hasArg("COPY")) on.exit(optionsDelete(RFopt, register=Reg))
+
+  new <- UnifyXT(x, y, z, T, grid=grid, distances=distances, dim=dim)
+
+  if (isS4(model) || !is(model, CLASS_CLIST)) {
+    pm <- PrepareModel2(if (hasArg("trend")) list(...)$trend else model,
+                        params=params, x=new, ...)
+    new <- pm$C_coords
+    model <- pm$model
+  }
+  if (model[[1]] != "linearpart") model <- list("linearpart", model)
+ 
+  rfInit(model=model, x=new, reg=Reg, RFopt=RFopt)
+  .Call(C_get_linearpart, Reg, as.integer(set))
+}
+
 
 rfInit <- function(model, x, reg, RFopt, NAOK=TRUE) {
   ##  Print("rfinti", model, x, trafo.to.C_UnifyXT(x))

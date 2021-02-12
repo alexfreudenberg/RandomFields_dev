@@ -1034,6 +1034,8 @@ PrepareModel2 <- function(model, ...,
 
   if (any(M$add.na)) Help("addNA")
 
+  if (RFopt$basic$printlevel >= PL_FCTN_SUBDETAILS) Print(ls(envir=Env))
+
   ##  Print(M, data,DataNames, return_transform && sum(genuine.formulae) )
   
   M

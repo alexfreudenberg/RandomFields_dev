@@ -731,13 +731,14 @@ void includeOtherModels() {
 
 
   LIKELIHOOD_CALL =
-  IncludeModel("loglikelihood", InterfaceType, 1, 1, 4, kappalikelihood, 
+  IncludeModel("loglikelihood", InterfaceType, 1, 1, 5, kappalikelihood, 
 	       XONLY, PARAMDEP_I, check_likelihood, range_likelihood,PREF_AUX, 
 	       INTERN_SHOW, SUBMODEL_DEP, SUBMODEL_DEP, (ext_bool)SUBMODEL_DEP,
 	       MON_MISMATCH);
   // same kappa as predict!
   kappanames("data", LISTOF +  REALSXP, "estimate_variance", INTSXP,
-	     "betas_separate", INTSXP, "ignore_trend", INTSXP);
+	     "betas_separate", INTSXP, "ignore_trend", INTSXP,
+	     "standardizedL", INTSXP);
   addCov(likelihood);
   RandomShape(struct_likelihood); 
   setDI(NULL, allowedIdist, setUnreducedOrDist);
@@ -752,7 +753,7 @@ void includeOtherModels() {
   RandomShape(struct_linearpart); 
  
   PREDICT_CALL =
-    IncludeModel("predict", InterfaceType, 2, 2, 5, kappapredict, 
+    IncludeModel("predict", InterfaceType, 2, 2, 6, kappapredict, 
 		 XONLY, PARAMDEP_I,check_predict, range_predict, PREF_AUX, 
 		 true, SUBMODEL_DEP, SUBMODEL_DEP, (ext_bool) SUBMODEL_DEP,
 		 MON_MISMATCH);
@@ -761,6 +762,7 @@ void includeOtherModels() {
   // same kappa as likelihood!! 
   kappanames("data", LISTOF + REALSXP, "estimate_variance", INTSXP,
 	     "betas_separate", INTSXP, "ignore_trend", INTSXP,
+	     "standardized", INTSXP,
 	     "given", VECSXP
 	     //	     , INTERNAL_PARAM, INTSXP, INTERNAL_PARAM, INTSXP
 	     );

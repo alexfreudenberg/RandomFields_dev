@@ -3785,7 +3785,7 @@ iRFcovmatrix <- new(CLASS_RM,
 
 
 
-iRFloglikelihood <- function(phi, data, estimate_variance, betas_separate, ignore_trend) {
+iRFloglikelihood <- function(phi, data, estimate_variance, betas_separate, ignore_trend, standardizedL) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -3797,6 +3797,8 @@ iRFloglikelihood <- function(phi, data, estimate_variance, betas_separate, ignor
 	par.model[['betas_separate']] <- CheckArg(betas_separate, subst, FALSE)
   if (hasArg('ignore_trend') && !is.null(subst <- substitute(ignore_trend))) 
 	par.model[['ignore_trend']] <- CheckArg(ignore_trend, subst, FALSE)
+  if (hasArg('standardizedL') && !is.null(subst <- substitute(standardizedL))) 
+	par.model[['standardizedL']] <- CheckArg(standardizedL, subst, FALSE)
   
   model <- methods::new(CLASS_CLIST, name = 'RFloglikelihood', 
   		submodels = submodels, 
