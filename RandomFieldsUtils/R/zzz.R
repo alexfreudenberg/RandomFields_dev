@@ -16,11 +16,17 @@
 ##
 ## You should have received a copy of the GNU General Public License
 ## along with this program; if not, write to the Free Software
-## Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
+## Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+
+##.C <- function(...) { cat("\ndebugging version: "); x <- ...elt(1); print(if (is.list(x)) x[1] else x); base::.Call(C_DebugCall); z <- base::.C(...);  cat("\nend call: ");  base::.Call(C_DebugCall); z}
+
+##.Call <- function(...) { cat("\ndebugging version: "); x <- ...elt(1); print(if (is.list(x)) x[1] else x); base::.Call(C_DebugCall); z <- base::.Call(...); cat("\nend call: "); base::.Call(C_DebugCall); z}
+
 
 
 .onLoad <- function(lib, pkg) {
-  .C("loadoptions")
+  base::.C("loadoptions")
 }
 
 GetMessage <-function() .Call("attachoptions")
@@ -35,5 +41,5 @@ GetMessage <-function() .Call("attachoptions")
 
 .onUnload <- function(lib, pkg){
 #   RFoptions(storing=FALSE) ## delete everything
-  .C("detachoptions")
+  base::.C("detachoptions")
 }

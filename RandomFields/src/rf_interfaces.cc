@@ -117,7 +117,7 @@ KEY_type *K T  = co v->b ase;
   PutRN Gstate();
   
   if (err > NOERROR) {
-    XERR(err);
+    XE RR(err);
   }
 }
 
@@ -352,8 +352,8 @@ int alloc_fctn(model *cov, int xdim, int rowscols) {
 #define SIMU_ENV 2
 
 void simulate(double VARIABLE_IS_NOT_USED *X, int *N, model *cov, double *v){
-  globalparam *global = &(cov->base->global);
-  utilsparam *global_utils = &(cov->base->global_utils);
+  option_type *global = &(cov->base->global);
+  utilsoption_type *global_utils = &(cov->base->global_utils);
   assert(!P0INT(SIMU_CHECKONLY));
   model *sub = cov->key == NULL ? cov->sub[0] : cov->key;
   errorloc_type errorloc_save;
@@ -492,7 +492,7 @@ void simulate(double VARIABLE_IS_NOT_USED *X, int *N, model *cov, double *v){
    
   if (err > NOERROR) {
     if (simu != NULL) sub->simu.active = simu->active = false;
-    XERR(err);
+    OnErrorStop(err, cov);
   }
 
   // printf("simu done %e %e\n", v[0], v[1]);
@@ -501,8 +501,8 @@ void simulate(double VARIABLE_IS_NOT_USED *X, int *N, model *cov, double *v){
 
 
 int check_simulate(model *cov) {
-  globalparam *global = &(cov->base->global);
-  utilsparam *global_utils = &(cov->base->global_utils);
+  option_type *global = &(cov->base->global);
+  utilsoption_type *global_utils = &(cov->base->global_utils);
  model *sub = cov->key == NULL ? cov->sub[0] : cov->key;
   int j, d, 
     err = NOERROR,
@@ -831,13 +831,13 @@ double empirDet(model *cov) {
     }
   }
   
-  solve_param Sparam;						       
-  MEMCOPY(&Sparam, &(cov->base->global_utils.solve), sizeof(solve_param));
-  Sparam.Methods[0] = Cholesky;	   
-  Sparam.Methods[1] = NoFurtherInversionMethod;
-  Sparam.pivot_partialdet = true;
-  Sparam.det_as_log = true;
-  double det = Ext_detPosDefsp(C, vdim, &Sparam);
+  solve_options Soptions;						       
+  MEMCOPY(&Soptions, &(cov->base->global_utils.solve), sizeof(solve_options));
+  Soptions.Methods[0] = Cholesky;	   
+  Soptions.Methods[1] = NoFurtherInversionMethod;
+  Soptions.pivot_partialdet = true;
+  Soptions.det_as_log = true;
+  double det = Ext_detPosDefsp(C, vdim, &Soptions);
   
   //  printf("%d %f %f\n%f %f\nmu=%f %f\n %d %d\n %d %d\nempir logdet = %f; det=%f", vdim, C[0], C[1], C[2], C[3], mu[0], mu[1], nij[0], nij[1], nij[2], nij[3], det, EXP(det));
 
@@ -889,13 +889,14 @@ void likelihood(double VARIABLE_IS_NOT_USED *x, int *info,
       tot = L->total_genuine_n;
     *v += 0.5 * tot * (empirDet(cov) / vdim + 1.0 +
 		       LOG(2 * M_PI)) +
-      0.5 * vdim;
+      0.5 *
+      vdim;
     
     //    zaehl ++;
     //    mean += 0.5 * empirDet(cov) * tot / vdim - 0.5 * tot / vdim * LOG(1000);
     //    mean2 += *v;
     //    printf("\ntot=%d logdet=%f e=%f %f m=%f %f pi=%f n/2=%f\n", tot,  0.5 * tot / vdim * LOG(1000),	   empirDet(cov),	   0.5 * empirDet(cov) * tot / vdim - 0.5 * tot / vdim * LOG(1000),	   mean / zaehl,	   mean2 / zaehl,	   LOG(2 * M_PI) * 0.5 * tot, 0.5 * tot)      ; // see private/normedllikeilhood.pdf
-    *v /=  SQRT(vdim); // see private/normedllikeilhood.pdf
+    *v /=  SQRT(2); // see private/normedllikeilhood.pdf
   }
 }
 
@@ -951,7 +952,7 @@ int check_likelihood_linear(model *cov) {
 
 
 int check_likelihood(model *cov) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   int err,
     sets = LocSets(cov);
   if ((err = check_likelihood_linear(cov))) RETURN_ERR(err);
@@ -1337,7 +1338,6 @@ int check_dummy(model *cov) {
       start = 1,
       end = nTF;
     domain_type
-      prevdom = PREVDOM(0),
       nextdom = DOM(C->systems[0], 0);
     isotropy_type iso  = OWNISO(0);
       //CoordinateSystemOf(PREVISO(0));
@@ -1787,7 +1787,7 @@ isotropy_type which_system[nr_coord_sys] =
 
 int check_cov_intern(model *cov, Types type, bool close,
 		     usekernel_type kernel) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   model *sub = cov->key == NULL ? cov->sub[0] : cov->key;
 
 
@@ -1814,7 +1814,7 @@ int check_cov_intern(model *cov, Types type, bool close,
 }
 
 int check_cov(model *cov) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   return check_cov_intern(cov, PosDefType, global->general.vdim_close_together,
 			  LocHasY(cov) ? forceKernel : noKernel);
 }
@@ -1926,7 +1926,7 @@ void Pseudomadogram(double VARIABLE_IS_NOT_USED *x, INFO, model *cov,
 
 
 int check_pseudomado(model *cov) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   kdefault(cov, PSEUDO_ALPHA, 2.0);
   double alpha = P0(PSEUDO_ALPHA);
   return check_cov_intern(cov,
@@ -1949,7 +1949,7 @@ void range_pseudomado(model VARIABLE_IS_NOT_USED *cov, range_type* range){
 
 
 int check_pseudovario(model *cov) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   kdefault(cov, PSEUDO_ALPHA, 2.0);
   return check_cov_intern(cov, VariogramType,
 			  global->general.vdim_close_together,
@@ -1974,7 +1974,7 @@ void Variogram(double VARIABLE_IS_NOT_USED *x, INFO, model *cov, double *v){
 
 
 int check_vario(model *cov) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
 //  printf("lochasy = %d\n",  LocHasY(cov) );
   return check_cov_intern(cov, VariogramType,
 			  global->general.vdim_close_together,
@@ -2028,7 +2028,7 @@ void Fctn(double VARIABLE_IS_NOT_USED *x, INFO, model *cov, double *v) {
 void FctnIntern(model *cov, model *covVdim, model *genuine, bool ignore_y,
 		double *v){
   assert(cov != NULL);
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   if (v==NULL) return; // EvaluateModel needs information about size
   //                      of result array
   //  PMI0(cov); // PMI0(genuine->calling);  PMI0(genuine);
@@ -2094,7 +2094,7 @@ void FctnExtern(model *cov, model *genuine, bool ignore_y, double *v){
   Types frame = cov->frame;
   int dim =  Loctsdim(cov);
   if (alloc_fctn(cov, dim, cov->vdim[0] * cov->vdim[1]) != NOERROR)
-    XERR(ERRORMEMORYALLOCATION);
+    OnErrorStop(ERRORMEMORYALLOCATION, cov);
   cov->frame = LikelihoodType; // dummy, just to please next function
   FctnIntern(cov, cov, genuine, ignore_y, v);
   cov->frame = frame;
@@ -2104,7 +2104,7 @@ void FctnExtern(model *cov, model *genuine, bool ignore_y, double *v){
  
 int check_fctn_intern(model *cov) {
   assert(COVNR == SHAPE_FCT_PROC || COVNR == PROD_PROC || COVNR == FCTNFCTN);
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
 #define nTypesTF 2  
   Types T[nTypesTF] = {TrendType, ShapeType},
     F[nTypesTF] = {TrendType, LikelihoodType};

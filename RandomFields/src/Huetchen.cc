@@ -78,7 +78,7 @@ int alloc_pgs(model *cov) { // all what is necessary for dompp
       (pgs->start = (int*) CALLOC(dimP1, sizeof(int))) == NULL ||
       (pgs->delta = (int*) CALLOC(dimP1, sizeof(int))) == NULL ||
       (pgs->nx = (int*) CALLOC(dimP1, sizeof(int))) == NULL ||
-      (pgs->own_grid_cumsum=(int*) CALLOC(dimP1, sizeof(double))) == NULL ||
+      (pgs->own_grid_cumsum=(int*) CALLOC(dimP1, sizeof(int))) == NULL ||
  
       (pgs->xstart = (double*) CALLOC(dimP1, sizeof(double))) == NULL ||
        (pgs->x = (double*) CALLOC(dimP1, sizeof(double))) == NULL ||
@@ -143,7 +143,7 @@ void logZhou(double *x, int *info, model *cov, double *v, double *Sign) {
 }
 
 int check_Zhou(model *cov) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   ASSERT_ONESYSTEM;
   ASSERT_UNREDUCED;
  model *shape = cov->sub[PGS_FCT],
@@ -180,7 +180,7 @@ int check_Zhou(model *cov) {
   if ((err = CHECK(shape, dim, dim, ShapeType, XONLY, CARTESIAN_COORD,
 		   SCALAR, cov->frame)) != NOERROR) {
     if (P0INT(ZHOU_ISOTROPIC)) BUG;
-    XERR(err);
+    OnErrorStop(err, cov);
     RETURN_ERR(err);
   }
 
@@ -613,7 +613,7 @@ int DrawCathegory(int size, double *single,
 
  
 void do_pgs_maxstable(model *cov, gen_storage *S) {// = pointshapetype
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   pgs_storage *pgs = NULL;
   model *shape = NULL,
     *pts = NULL;
@@ -1237,7 +1237,7 @@ void logmcmc_pgs(double *x, int *info, model *cov, double *v, double *Sign) {
   //  printf("x = %10g %10g log=%10g\n", *x, cov->q[0], *v, *Sign);
 }
 int check_mcmc_pgs(model *cov) { // = pointshapetype
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   model *shape = cov->sub[PGS_FCT],
     *pts = cov->sub[PGS_LOC];
   int err, 
@@ -1282,7 +1282,7 @@ int check_mcmc_pgs(model *cov) { // = pointshapetype
   if ((err = CHECK(shape, dim, dim, ShapeType, XONLY, CARTESIAN_COORD,
 		   SCALAR, frame)) != NOERROR) {
     if (P0INT(ZHOU_ISOTROPIC)) BUG;
-    XERR(err);
+    OnErrorStop(err, cov);
     RETURN_ERR(err);
   }
   // if (err2 != NOERROR) SERR("isotropic shape function expected.");
@@ -1395,7 +1395,7 @@ int calculate_mass_gauss(model *cov) { // = pointshapetype
 
   */  
 
-getStorage(pgs ,   pgs); 
+  getStorage(pgs ,   pgs); 
   model *shape = cov->sub[PGS_FCT],
     *pts = cov->sub[PGS_LOC];
   double zx, zy, 
@@ -1411,7 +1411,7 @@ getStorage(pgs ,   pgs);
   coord_type gr = Locxgr(cov);
  
   if (grid) {
-    Zero(shape, v);
+    AtZero(shape, v);
     v[0] *= intpow(0.5, dim);
     INVERSENONSTAT_D(v, shape, x, y); 
     if (ISNAN(x[0]) || x[0] > y[0]) 
@@ -1497,7 +1497,7 @@ getStorage(pgs ,   pgs);
     **xgr = pgs->xgr, // in
     *v = pgs->v;    
   bool grid = Loc(cov)->grid;
-  coord_type gr = Locxgr(cov);
+  //  coord_type gr = Locxgr(cov);
   DEFAULT_INFO(info);
 
 
@@ -1655,7 +1655,7 @@ int check_Ballani(model *cov){
 		   isNormedProcess(shape) ? NormedProcessType : cov->frame)
        ) != NOERROR) {
     if (P0INT(ZHOU_ISOTROPIC)) BUG;
-    XERR(err);
+    OnErrorStop(err, cov);
     RETURN_ERR(err);
   }
 
@@ -1779,7 +1779,7 @@ int init_Ballani(model *cov, gen_storage *S){
 
 
 void do_Ballani(model *cov, gen_storage *S) {// = pointshapetype
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   assert(hasPoissonGaussFrame(cov));  
   do_pgs_gauss(cov, S);
 

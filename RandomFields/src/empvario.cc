@@ -47,7 +47,8 @@
 void calculate_means(int method, int vdim, int nbin, int totaln,
 		     double *sumhead, double *sumtail, double *res) {
   //  printf("calc mean method = %d\n", method);
-  int nbinvdim = nbin * (1.0 - vdim),
+  int
+    //nbinvdim = nbin * (1.0 - vdim),
     nidx = totaln * EV_N,
     evidx = totaln * EV_EV,
     sdSqidx = totaln * EV_SDSQ;
@@ -112,13 +113,24 @@ SEXP empirical(SEXP  X, SEXP Dim,
  */
 {
   //printf("entering empvari.c");
-  int dim = INTEGER(Dim)[0],
+  int halfnbin, gridpoints[MAXVARIODIM], dimM1, low, cur, up,
+    dim = INTEGER(Dim)[0],
     repet = INTEGER(Repet)[0],
     grid = INTEGER(Grid)[0],
     lx = grid ? 3 : nrows(X),
     nbin = INTEGER(Nbin)[0],
-    vdim = INTEGER(Vdim)[0];
+    vdim = INTEGER(Vdim)[0],
+    totaln = nbin * vdim * vdim,
+    nidx = totaln * EV_N,
+    evidx = totaln * EV_EV,
+    sdSqidx = totaln * EV_SDSQ,
+    method = ALPHAPSEUDOMADOGRAM,
+    lD = nrows(Values),
+    nDta = length(Values),
+    err = NOERROR;
   double 
+    * xx[MAXVARIODIM], // maxdist[MAXVARIODIM],// dd, 
+    * BinSq = NULL,
     *x = REAL(X),
     *values = REAL(Values),
     *bin = REAL(Bin),
@@ -126,23 +138,9 @@ SEXP empirical(SEXP  X, SEXP Dim,
     *sumhead = NULL,
     *sumtail = NULL,
     alpha = REAL(Alpha)[0];
-  int totaln = nbin * vdim * vdim,
-    nidx = totaln * EV_N,
-    evidx = totaln * EV_EV,
-    sdSqidx = totaln * EV_SDSQ,
-    method = ALPHAPSEUDOMADOGRAM;
-  int halfnbin, gridpoints[MAXVARIODIM], dimM1, 
-    low, cur, up,
-    err = NOERROR;
-  Long totalpointsrepetvdim, totalpointsvdim,
+   Long totalpointsrepetvdim, totalpointsvdim,
     totalpoints = NA_INTEGER;  
-  double  * xx[MAXVARIODIM], // maxdist[MAXVARIODIM],// dd, 
-    * BinSq = NULL,
-    alphahalf = 0.5 * alpha;
-  int
-    lD = nrows(Values),
-    nDta = length(Values);
-  
+   
   bool dist_notgiven = !LOGICAL(Distgiven)[0];
   SEXP Res;
   // res contains the variogram (etc), variance of the variogram,
@@ -236,8 +234,8 @@ SEXP empirical(SEXP  X, SEXP Dim,
     // loop through all pair of points, except (head, tail) for head=tail, 
     // which is treated separately at the end, if necessary (not relevant for 
     // variogram itself, but for function E and V)
-
-    int mod = totalpoints > 1000 ? totalpoints / 100 : totalpoints;
+    
+    //  int mod = totalpoints > 1000 ? totalpoints / 100 : totalpoints;
     //    printf("total %ld\n", totalpoints);
 
     /*

@@ -642,7 +642,6 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
 
   ##  str(model, max=2)
   ## Print("--|+++++--------GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG")
-  str(list(...));#ddddd
   if (length(list(...)) > 15) stop("")
    
   if (!missing(model) && is(model, CLASS_FITLIST)) {
@@ -670,7 +669,7 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
   }
   
   RFopt <- RFoptOld[[2]]
-
+ 
   if (exists(".Random.seed") && !is.na(RFopt$basic$seed)) {
     .old.seed <- .Random.seed; on.exit(set.seed(.old.seed), add = TRUE) }
 
@@ -737,9 +736,10 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
 
     ## ACHTUNG! KRIGING ruft auf rfInit("Simulate") auf !! Abgleich
     ##          gegebenenfalls notwendig
+    envir <- if (hasArg("parent")) list(...)$parent else .GlobalEnv
     rfInit(model=list("Simulate",
                       setseed=eval(parse(text="quote(set.seed(seed=seed))")),
-                      env=.GlobalEnv, model), x=x, reg=reg, RFopt=RFopt)
+                      env=envir, model), x=x, reg=reg, RFopt=RFopt)
     if (n < 1) return(NULL)
     res <- rfDoSimulate(n=n, reg=reg, spConform=FALSE)
 

@@ -76,7 +76,6 @@ void listcpy(listoftype **To, listoftype *p, bool force_allocating) {
 
 void addModel(model **pcov, int covnr, model *calling, bool nullOK) {
   model *cov;
-  int i;
   cov = (model*) MALLOC(sizeof(model));
   //  set_nr(OWN, covnr); printf("D %s\n", DefList[covnr].name);
   COV_NULL(cov, calling == NULL ? NULL : calling->base);
@@ -544,7 +543,6 @@ location_type **loc_set(SEXP xlist){
 
     //    printf("oength=%d %d\n", length(set),  XLIST_RAWXIDX);
     int lenSet = length(set);
-    SEXP comp;
     if (lenSet > XLIST_RAWXIDX) {
       SEXP RawIdx = VECTOR_ELT(set, XLIST_RAWXIDX);
       int len = length(RawIdx),
@@ -608,7 +606,6 @@ int empty_loc_set(model *cov, int dim, Long totalpoints, Long totalpointsy) {
   loc->totalpoints = loc->spatialtotalpoints = totalpoints;
   loc->totalpointsY = loc->spatialtotalpointsY = totalpointsy;
  
-  int Err = NOERROR;
   Ulong totalBytes = (Ulong) sizeof(double) * totalpoints  * loc->xdimOZ;
   if ((loc->x=(double*) MALLOC(totalBytes)) == NULL)
     return ERRORMEMORYALLOCATION; 
@@ -843,7 +840,7 @@ void MultiDimRange(int set, model *cov, double *natscale) {
     GERR("not enough memory when determining natural scaling.");
 
   if (cov->full_derivs < 0) { err=ERRORNOTDEFINED; goto ErrorHandling; }
-  Zero(cov, dummy);
+  AtZero(cov, dummy);
   threshold = rel_threshold * dummy[0];
   //
   int cumi;
@@ -952,7 +949,7 @@ void MultiDimRange(int set, model *cov, double *natscale) {
   FREE(dummy);
   FREE(x);
   cov->base->set = store;
-  if (err != NOERROR) XERR(err);
+   OnErrorStop(err, cov);
 }
 
 void MultiDimRange(int *model_nr, int *set, double *natscale) { 
@@ -963,7 +960,7 @@ void MultiDimRange(int *model_nr, int *set, double *natscale) {
 void GetNaturalScaling(model *cov, double *natscale)
 { // called also by R 
 
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   // values of naturalscaling:
   //#define NATSCALE_EXACT 1   
   //#define NATSCALE_APPROX 2
@@ -972,7 +969,7 @@ void GetNaturalScaling(model *cov, double *natscale)
   defn *C = DefList + COVNR; // nicht gatternr
   *natscale = 0.0;
 
-  if (C->maxsub!=0) XERR(ERRORFAILED); 
+  if (C->maxsub!=0) OnErrorStop(ERRORFAILED, cov);
  
   if (!equalsIsotropic(DEFISO(0))  || 
       !equalsIsotropic(OWNISO(0)) || 
@@ -995,9 +992,9 @@ void GetNaturalScaling(model *cov, double *natscale)
   }
     
   if (global->general.naturalscaling != NATSCALE_ORNUMERIC)
-    XERR(ERRORRESCALING); 
+     OnErrorStop(ERRORRESCALING, cov);
 
-  if ((C->cov)==nugget)  XERR(ERRORRESCALING); 
+  if ((C->cov)==nugget) OnErrorStop(ERRORRESCALING, cov);
   if ( ! HaveSameSystems(PREV, OWN))
     ERR("coordinate system changes not allowed");
      
@@ -1485,7 +1482,7 @@ double GetDiameter(location_type *loc, double *min, double *max,
 	radiusSq +=  work * work;
       }
     } else { // caniso != NULL
-      j = (bool*) MALLOC( (origdim + 1) * sizeof(double));
+      j = (bool*) MALLOC( (origdim + 1) * sizeof(bool));
       dummy = (double*) MALLOC(origdim * sizeof(double));
       sx = (double*) MALLOC(spatialdim * sizeof(double));
       
@@ -2358,9 +2355,7 @@ int get_single_range(model *cov, model *min, model *max,
 		     model *pmin, model *pmax, 
 		     model *openmin, model *openmax) {
   defn *C = DefList + COVNR; // nicht gatternr
-  int
-    err = NOERROR,
-    kappas = C->kappas ;
+  int kappas = C->kappas ;
   range_type range;
   SEXPTYPE *type = C->kappatype;
   rangefct getrange = C->range;
@@ -2737,3 +2732,89 @@ void set_system_domain(system_type *sys, domain_type dom) {
   for (int j=0; j<=last; j++) set_dom(sys, j, dom);
 }
 
+#define areIdxDiff(data) {				\
+  /* printf */							\
+  if (false) {   SEXP Ans1;						\
+    PROTECT(Ans1 = allocVector(LGLSXP, 1));				\
+    LOGICAL(Ans1)[0] = true;					\
+    UNPROTECT(1);							\
+    return Ans1;\
+  }									\
+KEY_type *KT = KEYT();							\
+    assert((KT->n_##data##_idx == 0) xor (KT->data##_idx != NULL));	\
+    int n = length(Idx),						\
+      *idx = INTEGER(Idx);						\
+    bool different = n != KT->n_##data##_idx;				\
+    for (int i=0; i<n && !different; i++) different = KT->data##_idx[i] != idx[i]; \
+    if (different) {							\
+      FREE( KT->data##_idx);						\
+      KT->n_##data##_idx = n;						\
+      if (n > 0) {							\
+	int bytes  = n * sizeof(int);					\
+	KT->data_idx = (int*) MALLOC(bytes);				\
+	MEMCOPY(KT->data_idx, idx, bytes);				\
+      }									\
+    }									\
+    SEXP Ans;								\
+    PROTECT(Ans = allocVector(LGLSXP, 1));				\
+    LOGICAL(Ans)[0] = different;					\
+    UNPROTECT(1);							\
+    return Ans;								\
+  }
+
+SEXP areDataIdxDifferentFromFormer(SEXP Idx) areIdxDiff(data)
+SEXP areCoordIdxDifferentFromFormer(SEXP Idx) areIdxDiff(coord) 
+  
+//     printf("n=%d==%d %d\n", n,  KT->n_##data##_names, different);	
+// 
+#define areNamesDiff(data)  {  \
+     if (false)  {   SEXP Ans1;						\
+    PROTECT(Ans1 = allocVector(LGLSXP, 1));				\
+    LOGICAL(Ans1)[0] = true;					\
+    UNPROTECT(1);							\
+    return Ans1;}							\
+									\
+    KEY_type *KT = KEYT(); assert(KT != NULL);				\
+    /*   printf("enter"#data" %d %d\n", KT->n_##data##_names, KT->data##_names != NULL); */ \
+     assert((KT->n_##data##_names == 0) xor (KT->data##_names != NULL)); \
+    int n = length(Names);						\
+    bool different = n != KT->n_##data##_names;	\
+    if (!false) for (int i=0; i<n && !different; i++)			\
+      different=STRCMP(KT->data##_names[i], (char*) CHAR(STRING_ELT(Names,i))); \
+    if (different) {							\
+      if (!false)							\
+	for (int i=0; i<KT->n_##data##_names; i++) FREE(KT->data##_names[i]); \
+      if (!false) FREE(KT->data##_names);				\
+      KT->n_##data##_names = n;						\
+      if (!false)							\
+	if (n > 0) {							\
+	  KT->data##_names = (char**) MALLOC(n * sizeof(char*));	\
+	  for (int i=0; i<n; i++){					\
+	  int nch = STRLEN((char*) CHAR(STRING_ELT(Names, i)));		\
+	  KT->data##_names[i] = (char *) MALLOC(sizeof(char) * (nch+1)); \
+	  STRCPY(KT->data##_names[i], (char*) CHAR(STRING_ELT(Names, i))); \
+	  /*  printf("nch=%d %s %s %d\n",nch, (char*) CHAR(STRING_ELT(Names, i)),  KT->data##_names[i], KT->n_##data##_names); */  \
+	  }								\
+	   }								\
+	    }								\
+	     SEXP Ans;							\
+	     PROTECT(Ans = allocVector(LGLSXP, 1));			\
+	     LOGICAL(Ans)[0] = different;				\
+	     UNPROTECT(1);						\
+	     /* printf("leave %d %d", KT->n_##data##_names, KT->data##_names != NULL); */  \
+return Ans;								\
+  }
+
+SEXP areDataNamesDifferentFromFormer(SEXP Names) areNamesDiff(data)
+SEXP areCoordNamesDifferentFromFormer(SEXP Names) areNamesDiff(coord)
+
+
+SEXP DebugCall() {
+    return R_NilValue;
+   KEY_type *KT = KEYT();						
+  assert((KT->n_data_names == 0) xor (KT->data_names != NULL)); 
+  assert((KT->n_coord_names == 0) xor (KT->coord_names != NULL));
+  assert((KT->n_data_idx == 0) xor (KT->data_idx != NULL));	
+  assert((KT->n_coord_idx == 0) xor (KT->coord_idx != NULL));
+  return R_NilValue;
+}

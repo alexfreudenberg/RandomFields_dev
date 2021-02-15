@@ -403,7 +403,7 @@ SEXP fftVario3DX(SEXP Coord,
 	} // y
       } //x	
   
-      tolerance = GLOBAL.empvario.tol * segmentbase[3];  // to do. Warum?
+      tolerance = OPTIONS.empvario.tol * segmentbase[3];  // to do. Warum?
       for(i=0; i < totalbins ;i++){
 	if (FABS(emp_vario[i]) < tolerance) emp_vario[i] = 0.0; 
       }

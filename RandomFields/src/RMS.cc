@@ -142,7 +142,7 @@ void logSstat(double *x, int *info, model *cov, double *v, double *Sign){
 
   if (nproj > 0) {
     int *proj = PPROJ; 
-    TALLOC_GLOBAL_X1(z, nproj);
+    TALLOC_OPTIONS_X1(z, nproj);
     if (scale == NULL || scale[0] > 0.0) {
       if (scale == NULL)  for (i=0; i<nproj; i++) z[i] = x[proj[i]];
       else {
@@ -171,7 +171,7 @@ void logSstat(double *x, int *info, model *cov, double *v, double *Sign){
   } else {
     int xdimown = OWNTOTALXDIM;
     double *xz;
-    TALLOC_GLOBAL_X1(z, xdimown);
+    TALLOC_OPTIONS_X1(z, xdimown);
     if (aniso!=NULL) {
       xA(x, aniso, cov->nrow[DANISO], cov->ncol[DANISO], z);
       xz = z;
@@ -242,8 +242,8 @@ void nonstat_logS(double *x, double *y, int *info,
   
   if (nproj > 0) {
     int *proj = PPROJ;
-    TALLOC_GLOBAL_X1(z1, nproj);
-    TALLOC_GLOBAL_X2(z2, nproj);
+    TALLOC_OPTIONS_X1(z1, nproj);
+    TALLOC_OPTIONS_X2(z2, nproj);
     if (scale==NULL || scale[0] > 0.0) {
       double invscale = scale==NULL ? 1.0 :  1.0 / scale[0];
       for (i=0; i<nproj; i++) {
@@ -259,14 +259,14 @@ void nonstat_logS(double *x, double *y, int *info,
     }
   } else if (Aniso != NULL) {
     dimz =  Aniso->vdim[0];
-    TALLOC_GLOBAL_X1(z1, dimz);
-    TALLOC_GLOBAL_X2(z2, dimz);
+    TALLOC_OPTIONS_X1(z1, dimz);
+    TALLOC_OPTIONS_X2(z2, dimz);
     FCTN(x, info, Aniso, z1);
     FCTN(y, infoY, Aniso, z2);
   } else if (Scale != NULL && !isnowRandom(Scale)) {// see also code below variance
     double s;    
-    TALLOC_GLOBAL_X1(z1, dimz);
-    TALLOC_GLOBAL_X2(z2, dimz);     
+    TALLOC_OPTIONS_X1(z1, dimz);
+    TALLOC_OPTIONS_X2(z2, dimz);     
     FCTN(x, info, Scale, &s1);
     FCTN(y, infoY, Scale, &s2);
     
@@ -292,8 +292,8 @@ void nonstat_logS(double *x, double *y, int *info,
     dimz = cov->ncol[DANISO];
     assert(xdimown == cov->nrow[DANISO]);
     double *xz1, *xz2;
-    TALLOC_GLOBAL_X1(z1, dimz);
-    TALLOC_GLOBAL_X2(z2, dimz);
+    TALLOC_OPTIONS_X1(z1, dimz);
+    TALLOC_OPTIONS_X2(z2, dimz);
     if (aniso != NULL) {
       xA(x, y, aniso, xdimown, dimz, z1, z2);
       xz1 = z1;
@@ -380,7 +380,7 @@ void covmatrixS(model *cov, bool ignore_y, double *v) {
   }
  
   if (cov->Spgs == NULL && alloc_fctn(cov, dim, vdim * vdim) != NOERROR)
-    XERR(ERRORMEMORYALLOCATION);
+    OnErrorStop(ERRORMEMORYALLOCATION,cov);
 
   int L = OWNLASTSYSTEM; if (L != LASTSYSTEM(PREVSYSOF(next))) BUG;
   for (int s=0; s<=L; s++) {
@@ -602,8 +602,8 @@ void nablahessS(double *x, int *info, model *cov, double *v, bool nabla){
   TALLOC_DOUBLE(z0);
   TALLOC_DOUBLE(w0);
   if (aniso != NULL) {  
-    TALLOC_GLOBAL_X1(z0, xdimown);
-    TALLOC_GLOBAL_X2(w0, xdimown);
+    TALLOC_OPTIONS_X1(z0, xdimown);
+    TALLOC_OPTIONS_X2(w0, xdimown);
     xA(x, aniso, xdimown, xdimown, z0);
     xy = z0;
     vw = w0;
@@ -614,7 +614,7 @@ void nablahessS(double *x, int *info, model *cov, double *v, bool nabla){
 
   TALLOC_DOUBLE(y0);
   if (scale != NULL) {
-    TALLOC_GLOBAL_X3(y0, xdimown);
+    TALLOC_OPTIONS_X3(y0, xdimown);
     assert(scale[0] > 0.0);
     double spinvscale = 1.0 / scale[0];
     var *= spinvscale;
@@ -781,7 +781,8 @@ void inversenonstatS(double *x, model *cov, double *left, double*right,
       if (redo && S->pid == pid) {
 	MEMCOPY(save_aniso, P(DANISO), bytes);
 	MEMCOPY(inv_aniso, P(DANISO), bytes);
-	if (Ext_invertMatrix(inv_aniso, nrow) != NOERROR) XERR(ERRORANISO_INV);
+	if (Ext_invertMatrix(inv_aniso, nrow) != NOERROR)
+	  OnErrorStop(ERRORANISO_INV, cov);
 	S->busy = false;
 	S->done = true;
       }
@@ -803,7 +804,8 @@ void inversenonstatS(double *x, model *cov, double *left, double*right,
 
   if (Aniso != NULL) {
     if (aniso != NULL) BUG;
-    if (DefList[MODELNR(Aniso)].inverse == inverseErr) XERR(ERRORANISO_INV);
+    if (DefList[MODELNR(Aniso)].inverse == inverseErr)
+      OnErrorStop(ERRORANISO_INV,cov);
     int 
       nrow = Aniso->vdim[0],
       ncol = Aniso->vdim[1],
@@ -822,7 +824,7 @@ void inversenonstatS(double *x, model *cov, double *left, double*right,
 
   if (Scale != NULL && !isnowRandom(Scale)) {
     double dummy;
-    Zero(Scale, &dummy);
+    AtZero(Scale, &dummy);
     s *= dummy;
   } else {
     if (scale != NULL) s *= scale[0];
@@ -976,7 +978,7 @@ int TaylorS(model *cov) {
 }
 
 int checkS(model *cov) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   //  printf("checkS!!\n");
 
   // hier kommt unerwartet  ein scale == nan rein ?!!
@@ -1769,7 +1771,7 @@ int addPGSLocal(model **Key, // struct of shape
 		  model *shape,// shape itself
 		  model *local_pts,
 		  int dim, int vdim, Types frame) {
-  globalparam *global = &((*Key)->base->global);
+  option_type *global = &((*Key)->base->global);
   // SEE ALSO addPGS in extremes.cc
   /// random coin und smith
 
@@ -1799,9 +1801,7 @@ int addPGSLocal(model **Key, // struct of shape
     
      if (i > 0) {
       errorMSG(err,shape->base, msg[i-1]);
-      //     XERR(err);  // eigentlich muss das hier weg
     }
-    //    if (i > 0) XERR(err); assert(i ==0);
      if (*Key != NULL) COV_DELETE(Key, shape);
     assert(shape->calling != NULL);
     addModel(Key, pgs[i], shape->calling);
@@ -2328,7 +2328,6 @@ int structSproc(model *cov, model **newmodel) {
 	FREE(xx);
 	ERR("memory allocation error when expanding Aniso definition");
       }
-      int bytes = newtsdim * sizeof(double);
       double
 	*x = xx, 
 	*xnew = Locx(cov);
@@ -2543,7 +2542,7 @@ int initSproc(model *cov, gen_storage *s){
   model *key = cov->key;
   location_type *prevloc = LocPrev(cov);
   int 
-    prevdim = prevloc->timespacedim,
+    //   prevdim = prevloc->timespacedim,
     prevtotalpts = prevloc->totalpoints,
     owntotalpts =  Loctotalpoints(cov);
 
@@ -2621,7 +2620,7 @@ void doSproc(model *cov, gen_storage *s){
     if (Var != NULL) {
       if (isnowRandom(Var) || Var->randomkappa) {
 	if (isProcess(Var)) {
-	  XERR(ERRORNOTPROGRAMMEDYET);
+	  OnErrorStop(ERRORNOTPROGRAMMEDYET, cov);
 	} else {
 	  DORANDOM(Var, P(DVAR));
  	}

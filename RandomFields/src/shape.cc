@@ -92,7 +92,7 @@ int get_index(double *x, bool ignore_y, model *cov) {
   //        (lohnt ab gewisser Groesse nur!)
   //        Am besten hierarchisch, damit nicht ewig ein Kaestchen gesucht
   //        werden muss, das nicht leer ist.
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   assert(cov->Scovariate != NULL);
   assert(!P0INT(COVARIATE_RAW));					
   location_type **Loc = P0INT(COVARIATE_RAW) || PisNULL(COVARIATE_X)	
@@ -177,7 +177,7 @@ int get_index(double *x, bool ignore_y, model *cov) {
 
 
 int check_fix_covariate(model *cov,  location_type ***Locations){
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   int err = NOERROR;
   cov->base->set = 0;
   bool globalXT = PisNULL(COVARIATE_X) &&
@@ -344,7 +344,7 @@ void covariate(double *x, int *info, model *cov, double *v){
   }
  
   assert(isnowTrend(cov));
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   getStorage(S ,   covariate);
   if (PisNULL(COVARIATE_C)) ERR1("argument '%.20s' not given.",
 				 KNAME(FIXCOV_M));
@@ -354,8 +354,8 @@ void covariate(double *x, int *info, model *cov, double *v){
   int  nr, ntot = 0,
     idx = info[INFO_IDX_X],
     nrow = LNROW(COVARIATE_C),
-    set = cov->base->set,
-    dim = OWNXDIM(0); // vdim within covariate, not VDIM!
+    set = cov->base->set;
+  //   dim = OWNXDIM(0); // vdim within covariate, not VDIM!
   assert(idx != NA_INTEGER);
 
   if (S->merged_x) { // bei bedingter simulation muessen x udn y
@@ -579,7 +579,7 @@ int checkcovariate(model *cov){
      
   cov->mpp.maxheights[0] = RF_NA;
 
-  if (cov->ptwise_definite == pt_paramdep) {
+  if (cov->ptwise_definite == pt_optionsdep) {
     if (vdim > 1) {
       cov->ptwise_definite = pt_unknown;
     } else {
@@ -631,13 +631,12 @@ void kappa_fix(int i, model VARIABLE_IS_NOT_USED *cov,
 }
 
 void nonstat_fix(double *x, double *y, int *info, model *cov, double *v){
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   raw_type rawConcerns = cov->base->rawConcerns;
   assert(rawConcerns != unsetConcerns && rawConcerns != neverGlobalXT);
   GET_LOC_COVARIATE;
   int 
     matrix = UNSET,
-    dim = OWNTOTALXDIM,    
     vdim = VDIM0,
      nrx = info[INFO_IDX_X],
     nry = info[INFO_IDX_Y];
@@ -786,7 +785,7 @@ Types Typefix(Types required, model *cov, isotropy_type requ_iso){
 int checkfix(model *cov){
   // ACHTUNG TO DO: given coords fuer givenM zu uebergeben wird
   // vermutlich noch nicht funktionieren.
-  utilsparam *global_utils = &(cov->base->global_utils);
+  utilsoption_type *global_utils = &(cov->base->global_utils);
   assert(cov != NULL);
   int 
     vdim = UNSET, 

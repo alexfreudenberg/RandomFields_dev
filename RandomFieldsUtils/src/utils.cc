@@ -523,7 +523,7 @@ SEXP test(SEXP AA, SEXP CC, SEXP X) {
       case 14: matmult_2ndtransp(A, C, a[j], nrow, ncol, k); break;
       case 15: matmult_2ndtransp(A, C, a[j], nrow, ncol); break;
       case 16: matmult_tt(A, C, a[j], ncol, nrow, k); break;
-      case 17: z[j]=  scalar(A, C, ncol); break;	
+	//     case 17: z[j]=  scalar(A, C, ncol); break;	
       default: BUG;
       }
 
@@ -613,3 +613,13 @@ SEXP dotXV(SEXP M, SEXP V) {
  
 
 
+
+SEXP DebugCall() {
+  //  return R_NilValue;
+  //   KEY_type *KT = KEYT();						
+  //  assert((KT->n_data_names == 0) xor (KT->data_names != NULL)); 
+  //  assert((KT->n_coord_names == 0) xor (KT->coord_names != NULL));
+  //  assert((KT->n_data_idx == 0) xor (KT->data_idx != NULL));	
+  //  assert((KT->n_coord_idx == 0) xor (KT->coord_idx != NULL));
+  return R_NilValue;
+}

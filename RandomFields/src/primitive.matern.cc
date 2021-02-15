@@ -555,7 +555,7 @@ void inversenonstatMatern(double *x, model *cov, double *left, double*right) {
   if (nufct == NULL) InverseMatern(x, cov, &inv);
   else {
     double nu;
-    Zero(nufct, &nu); // just arbitrarily fixed reference point
+    AtZero(nufct, &nu); // just arbitrarily fixed reference point
     inv = RF_NA;
     if (*x == 0.05) inv = SQRT2 * SQRT(nu) /  ScaleWM(nu);
   }
@@ -690,7 +690,7 @@ void inversenonstatWhittle(double *x, model *cov, double *left, double*right) {
   if (nufct == NULL) InverseWhittle(x, cov, &inv);
   else {
     double nu;
-    Zero(nufct, &nu); // just arbitrarily fixed reference point
+    AtZero(nufct, &nu); // just arbitrarily fixed reference point
     inv = RF_NA;
     if (*x == 0.05) inv = 1.0 /  ScaleWM(nu);
   }

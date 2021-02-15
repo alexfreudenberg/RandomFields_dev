@@ -28,14 +28,14 @@
 ## NOTE:
 ## "definitions" in the man page is called here "symbol"
 
-CopyDotsTo <- function(dots, Env, first=FALSE) {
-  assign("..dots..", dots, envir=Env)
+CopyDotsTo <- function(dots, envir, first=FALSE) {
+  assign("..dots..", dots, envir=envir)
   if (length(dots)>0) {
     if (first && any(0 != sapply(dots, function(x) length(oldClass(x)))))
       stop("arguments in '...' may not have a class")
     txt <-  paste(names(dots), "<- ",
                   "..dots..[[", 1:length(dots), "]]", collapse=";")
-    eval(parse(text = txt), envir=Env)
+    eval(parse(text = txt), envir=envir)
   }
 }
   
@@ -54,7 +54,7 @@ CheckDots <- function(dots, Names, txt) {
 
   
 
-ExtractNames <- function(Names, data, dont.add.data, model, RFopt, dots, Env) {
+ExtractNames <- function(Names, data, dont.add.data, model, RFopt, dots, envir) {
   coord.opt <- RFopt$coords
   link.coord <-link.data <- data.names <- character(0)
   data.trafo <- NULL
@@ -141,7 +141,7 @@ ExtractNames <- function(Names, data, dont.add.data, model, RFopt, dots, Env) {
     ## !! folllowing assignment also needed in PrepareModel !!
     DN <- data.names
     ##  Print(data, DN)
-    for (i in DN) assign(i, i, envir=Env) ## will allow formalae on left hand side
+    for (i in DN) assign(i, i, envir=envir) ## will allow formalae on left hand side
   }
   
   if (any(Names %in% c(data.names, link.data, link.coord)))
@@ -154,21 +154,21 @@ ExtractNames <- function(Names, data, dont.add.data, model, RFopt, dots, Env) {
     if (length(CM) == 3) { ## data.varnames given by left hand side of formula
       leftSide <- parse(text=CM[2])
       
-      used.varnames <- eval(leftSide, envir=Env) # indeed used ones
+      used.varnames <- eval(leftSide, envir=envir) # indeed used ones
         is.var <- match(used.varnames, DN)## geordnet !!!
       if (length(is.var) == 0 && length(link.data) > 0) {
-        rm(list=data.names, envir=Env)
+        rm(list=data.names, envir=envir)
         DN <- link.data
         ## entweder ueber colnames oder D*, nicht gemischt
-        for (i in DN) assign(i, i, envir=Env)
-        used.varnames <- eval(leftSide, envir=Env)
+        for (i in DN) assign(i, i, envir=envir)
+        used.varnames <- eval(leftSide, envir=envir)
         is.var <- match(used.varnames, DN)
         if (length(is.var) > 0) data.names <- DN
       }
       
       if (any(is.na(is.var))) { ## fiktive Namen vom User
         assign("c", function(...) as.character(as.list(match.call())[-1]),
-               envir=Env) ## Umdefinition von c(...) --- warum?
+               envir=envir) ## Umdefinition von c(...) --- warum?
         used.varnames <- rawTry(leftSide)
         used.varnames <- if (rawError(used.varnames)) NULL else CM[2]
         is.var <- match(used.varnames, data.names)
@@ -177,7 +177,7 @@ ExtractNames <- function(Names, data, dont.add.data, model, RFopt, dots, Env) {
           ## von User oder wegen Formeln von User, kann erst bei UnifyData abgefangen werden
           data.trafo <- leftSide
         }
-        rm("c", envir=Env)
+        rm("c", envir=envir)
         setRFoptions(coords.varnames = used.varnames) ## 16.12.20 noetig?
       }
       vdim <- length(is.var)
@@ -216,7 +216,7 @@ AddTransform <- function(M, model, params, orig.params, Names, nNA,
                          revOrdering,
                          symbols, formulae, genuine.formulae, 
                          factor,
-                         xdim,  MODEL_AUX, add.na, Env, EnvDummies) {
+                         xdim,  MODEL_AUX, add.na, envir, envirDummies) {
   ##  Print("Entering AddTrafo")
   
   ## not that the number of formulae could have been reduced, due to
@@ -231,10 +231,10 @@ AddTransform <- function(M, model, params, orig.params, Names, nNA,
     ## fctn values all set to NaN
     params[[i]][if (any(is.nan(params[[i]]))) TRUE
                 else is.na(params[[i]])] <- values[(cumNA[i] +1) : cumNA[i+1]]
-    assign(Names[i], params[[i]], envir=Env)
+    assign(Names[i], params[[i]], envir=envir)
   }
   
-  M300 <- parseModel(model=model, Env=Env, EnvDummies = EnvDummies,
+  M300 <- parseModel(model=model, envir=envir, envirDummies = envirDummies,
                      add.na=add.na)$model
   
   ## prepare model to determine the indexing between R and C
@@ -325,7 +325,7 @@ AddTransform <- function(M, model, params, orig.params, Names, nNA,
     
     mock <- which(formulae & !genuine.formulae)
 
-#    Print("NACH MOCK", ls(envir = Env))
+#    Print("NACH MOCK", ls(envir = envir))
     
     G2text <- character(n.genuine.formulae) # for each formula a text
     for (i in OneTo(n.genuine.formulae))
@@ -364,7 +364,7 @@ AddTransform <- function(M, model, params, orig.params, Names, nNA,
     fctn <- eval(parse(text=paste0(def.txt, estim.txt)), envir=NULL)
     fctn.env <- new.env(parent=baseenv())
     environment(fctn) <- fctn.env
-    CopyDotsTo(get("..dots..", envir=Env), fctn.env)
+    CopyDotsTo(get("..dots..", envir=envir), fctn.env)
 
     params.fctn <- eval(parse(text=paste0(def.txt, return.txt)), envir=NULL)
     environment(params.fctn) <- fctn.env
@@ -546,12 +546,16 @@ PrepareModel2 <- function(model, ...,
                           ## add.na == 2: all linear functions get additional NA
                           return_transform = FALSE,
                           xdim = 0,
-                          Env = new.env(parent=.GlobalEnv), ## nur im
+                          parent = .GlobalEnv,
+                          envir = new.env(parent=parent), ## nur im
                           ##                       rekursiven Aufruf verwendet
-                          EnvDummies = new.env(parent=Env),
+                          envirDummies = new.env(parent=envir),
                           dont.add.data = TRUE ## false needed only in of covariates in kriging
                           ) {
 
+  
+
+ 
   ##  Print("enering prep", model, missing( params), data, missing(x), if (!missing(x)) x)
   
  # stopifnot(Zaehler <- Zaehler + 1 < 2)
@@ -566,12 +570,13 @@ PrepareModel2 <- function(model, ...,
   default.max.number.coord <- RFopt$coords$max_coord
   dummy.matrix.fill <- Inf
   if (length(xdim) == 0) xdim <- 0
-
+ if (RFopt$basic$printlevel >= PL_FCTN_SUBDETAILS) Print(ls(envir=parent))
+  
   ## before parseModel is evaluated since columns might be added
   ## in case of kriging and "..." give
 
   dots <- list(...)
-  CopyDotsTo(dots, Env, first = TRUE)
+  CopyDotsTo(dots, envir, first = TRUE)
   if (!missing(model)) {
     if (is(model, CLASS_FITLIST)) {
       Help("mle")
@@ -613,16 +618,16 @@ PrepareModel2 <- function(model, ...,
                  paste(Tv, collapse=", "), ".")
           model <- eval(parse(text=paste(model, trend, ")")))
         } else {
-          assign("..trend..", RMshape(trend), envir=Env)
-          assign("..trend..", RMshape(trend), envir=EnvDummies)
+          assign("..trend..", RMshape(trend), envir=envir)
+          assign("..trend..", RMshape(trend), envir=envirDummies)
           model <- eval(parse(text=paste(model,"RMtrendplus(add.na=",
                                          add.na, ", ..trend..))")))
         }
       }
       
       else if (isFormula) {
-        assign("..model..", model, envir=Env)
-        assign("..model..", model, envir=EnvDummies)  
+        assign("..model..", model, envir=envir)
+        assign("..model..", model, envir=envirDummies)  
         model  <- eval(parse(text=paste(Tv, "~RMplus(..model.., ", trend, ")")))
         model  <- eval(parse(text=paste(Tv, "~RMplus(", trend, ",..model..)")))
       }
@@ -637,8 +642,8 @@ PrepareModel2 <- function(model, ...,
                           add.na = FALSE,
                          return_transform = return_transform,
                          xdim = xdim,
-                         Env = Env,
-                         EnvDummies = EnvDummies
+                         envir = envir,
+                         envirDummies = envirDummies
                          ))
   }
   
@@ -652,7 +657,7 @@ PrepareModel2 <- function(model, ...,
   ##  options(warn
   Names <- if ( length(params) > 0) names(params) else NULL
   DataNames <- ExtractNames(Names=Names, data=data, dont.add.data=dont.add.data,
-                            model=model, RFopt=RFopt, dots=dots, Env=Env)
+                            model=model, RFopt=RFopt, dots=dots, envir=envir)
   data.names <- DataNames$data.names
 
   if (!missing(data) && length(data) > 0) {
@@ -724,10 +729,10 @@ PrepareModel2 <- function(model, ...,
                           "' does not match the model definition.")
           }
         } else {
-          assign(n, further.model[[n]], envir=Env)
+          assign(n, further.model[[n]], envir=envir)
           params[[n]] <- further.model[[n]]
         }
-        assign(n, params[[n]], envir=Env)
+        assign(n, params[[n]], envir=envir)
       }
       if (n.params != length(formulae))
         stop(FurtherModels, "additional variables may not be defined.\n  Here ",
@@ -738,17 +743,17 @@ PrepareModel2 <- function(model, ...,
     nNA <- rep(0, n.params)
     for (i in 1:n.params) {
       if (symbols[i]) {
-        assign(Names[i], params[[i]], envir=Env)
+        assign(Names[i], params[[i]], envir=envir)
         nNA[i] <- sum(is.na(params[[i]]))
         if (any(is.nan(params[[i]])))
           stop("only NAs are allowed to indicate parameters to be estimated")
       }
     }
 
-    ##  Print(nNA, formulae, symbols, ls(envir=Env)) 
+    ##  Print(nNA, formulae, symbols, ls(envir=envir)) 
   
     if ((n.formulae <- sum(formulae)) > 0) {
-      ## identify genuine.formulae and #variables to be estimated; prepare Env
+      ## identify genuine.formulae and #variables to be estimated; prepare envir
       ## 18.12.20: third cathegory: 
       ##
       ## params ist unveraendert orig.params, ausser !missing(further.model)
@@ -761,13 +766,13 @@ PrepareModel2 <- function(model, ...,
           repetition <- FALSE 
           for (i in 1:n.params) {
             if (is(params[[i]], "formula")) {
-              value  <- rawTry(eval(as.expression(params[[i]][[2]]), envir=Env))
+              value  <- rawTry(eval(as.expression(params[[i]][[2]]), envir=envir))
               if (rawError(value)) { # error
                 if (last) {
                   stop("This situation should not appear. Please check whether your definitions are sound and/or contact ", AUTHOR)
                   value <- NaN 
                   params[[i]] <- value
-                  assign(Names[i], value, envir=Env)
+                  assign(Names[i], value, envir=envir)
                   nNA[i] <- 1
                   revOrdering[i] <- zaehler <- zaehler + 1 # andere Konstruktion
                   ##geht nicht, da unten formeln zu nicht-Forelm erklaert werden
@@ -787,7 +792,7 @@ PrepareModel2 <- function(model, ...,
                   nNA[i] <- length(value)
                 }
                 params[[i]] <- value
-                assign(Names[i], value, envir=Env)              
+                assign(Names[i], value, envir=envir)              
                 repetition <- !last
               } ## not try-error
             } ## is.formula
@@ -808,7 +813,7 @@ PrepareModel2 <- function(model, ...,
     ## all are previously found indication of coords are ignored!
     i <- 1
     len <- length(link.coord)
-    while(i <= len && !exists(link.coord[i], envir = Env, inherits=FALSE))
+    while(i <= len && !exists(link.coord[i], envir = envir, inherits=FALSE))
       i <- i + 1
     if (i <= len) {
       is.x <- NULL ## delete previous knowledge about coordinates
@@ -821,13 +826,13 @@ PrepareModel2 <- function(model, ...,
         if (!exists(link.coord[k], inherits=FALSE)) { ## should be end of list
           end <- k + step[k] ## different coord system name start from one again
           k <- k + 1 ## but is there a gap ?
-          while(k<end && !exists(link.coord[k], envir = Env, inherits=FALSE))
+          while(k<end && !exists(link.coord[k], envir = envir, inherits=FALSE))
             k <- k+1
           if (k<end) stop("The definitions of all coordinates must be given.")
           next
         }
-        value <- get(link.coord[k], envir=Env)
-##        Print(ls(envir=Env), value, link.coord, k, link.coord[k])
+        value <- get(link.coord[k], envir=envir)
+##        Print(ls(envir=envir), value, link.coord, k, link.coord[k])
         if (!is.character(value) || length(value) != 1)
           stop("value of '", link.coord[k],
                "' is neither a column name nor an abstract reference",
@@ -856,15 +861,15 @@ PrepareModel2 <- function(model, ...,
     for (k in 1:length(is.x)) {
       n <- data.names[is.x[k]]
       value <- do.call(iR_P, list(proj=k, name=n))
-      assign(n, value, envir=Env)
-      if (length(link.names) > 0) assign(link.names[k], value, envir=Env)
+      assign(n, value, envir=envir)
+      if (length(link.names) > 0) assign(link.names[k], value, envir=envir)
     }
   } else if (length(link.coord) > 0){ ## is.x == NULL, just take the link.coord
     wechsel <- c(0, wechsel) ## change in coordinates system names
     for (w in 2:length(wechsel)) {
       sockel <- wechsel[w-1]
       for (k in (sockel+1):wechsel[w])
-        assign(link.coord[k], envir=Env, ## noch nicht
+        assign(link.coord[k], envir=envir, ## noch nicht
                ## sauber, da eigentlich noch new=EARTH_COORD gesetzt werden muesste
                ## fuer link.coord = lon/lat
                do.call(iR_P, list(proj=k-sockel, name=link.coord[k])))
@@ -872,8 +877,8 @@ PrepareModel2 <- function(model, ...,
   }
 
   factor <- DataNames$factor
-  is.covariate <- EnvTest <- NULL
-  assign("c", cbind, envir=Env) ## cbind multivariate covariates
+  is.covariate <- envirTest <- NULL
+  assign("c", cbind, envir=envir) ## cbind multivariate covariates
   is.undetectable <- which(data.names == VOID)
   is.unclear <- (1:length(data.names))[-c(is.x, DataNames$is.var,
                                           is.undetectable)]
@@ -885,19 +890,19 @@ PrepareModel2 <- function(model, ...,
   if (length(dn) > 0) {
     unidn <- unique(dn)
     simple <-  length(dn) == length(unidn)
-    CopyDotsTo(dots, Env, first = TRUE)
+    CopyDotsTo(dots, envir, first = TRUE)
     
     covariates <- data1[, is.unclear, drop=FALSE]
     for (i in unidn) {## covariate
       d <- data1[ , if (simple) i else which(i == dn), drop=FALSE]
       d <- if (is.factor(d[[1]])) d[[1]] else as.matrix(d)
 
-      if (dont.add.data) assign(i, envir=Env, d)
+      if (dont.add.data) assign(i, envir=envir, d)
 
-      else if (exists(i, envir=Env, inherits=FALSE)) { ## koennte sein,
+      else if (exists(i, envir=envir, inherits=FALSE)) { ## koennte sein,
         ##                                  Nutzer hat mehr
         is.covariate <- c(is.covariate, i) ## string zeilen eingegeben
-        dot.covariate <- get(i, envir=Env)      
+        dot.covariate <- get(i, envir=envir)      
         ## in kriging the given and the new coordinates may contain
         ## covariates, even in the covariance model (non-stat variance!)
         ## so the data must be jointly passed to RMcovariate
@@ -906,7 +911,7 @@ PrepareModel2 <- function(model, ...,
         if (is.factor(d) && !is.character(dot.covariate)) {
           if (!is.factor(dot.covariate))
             stop("a component cannot be a factor in one part and not a factor in the other")
-          assign(paste0(i, "..factor.."), d, envir=Env)
+          assign(paste0(i, "..factor.."), d, envir=envir)
         } else if (is.numeric(dot.covariate)) {
           dot.covariate <- as.matrix(dot.covariate)
           
@@ -918,13 +923,13 @@ PrepareModel2 <- function(model, ...,
             dot.covariate <- do.call(rbind, c(list(dot.covariate),
                                           as.list(rep(dummy.matrix.fill, -L))))
           colnames(d) <- rep("..", ncol(d))
-          assign(i, envir=Env, cbind(dot.covariate, d))
+          assign(i, envir=envir, cbind(dot.covariate, d))
         } else if (!is.character(dot.covariate))
           stop("unexpected value in creating the model", CONTACT)
       }
     }
-    for (i in data.names) assign(i, i, envir=EnvDummies)
-    for (i in link.coord) assign(i, i, envir=EnvDummies)
+    for (i in data.names) assign(i, i, envir=envirDummies)
+    for (i in link.coord) assign(i, i, envir=envirDummies)
 
     ## erst jetzt !! factor muss vorher noch gespeichert werden
     is.unclear <- setdiff(is.unclear, which(factor))#da factor sicher covariate
@@ -933,24 +938,24 @@ PrepareModel2 <- function(model, ...,
     ##                                                     sen alle erkannt sein
     if (length(is.unclear) > 0) { ## jetzt ohne factors und
       ##                                       nur bei dont.add.data
-      EnvTest <- new.env(parent=.GlobalEnv)
+      envirTest <- new.env(parent=.Globalenvir)
       for (i in is.unclear) {
         n <-data.names[i]
-        m <- get(n, envir=Env)
-        assign(n, envir=EnvTest, m[min(2, nrow(m)), , drop=FALSE]) # to get
+        m <- get(n, envir=envir)
+        assign(n, envir=envirTest, m[min(2, nrow(m)), , drop=FALSE]) # to get
         ## testing fast
       }
     }
   }
 
-#  if (length(ls(envir=Env)) >= 15)
-#    Print(ls(envir=Env), get("Z1", envir=Env), dots, data1, data, dn, is.unclear, data.names, is.x, DataNames$is.var)
-  ##stopifnot(length(ls(envir=Env)) < 15)
+#  if (length(ls(envir=envir)) >= 15)
+#    Print(ls(envir=envir), get("Z1", envir=envir), dots, data1, data, dn, is.unclear, data.names, is.x, DataNames$is.var)
+  ##stopifnot(length(ls(envir=envir)) < 15)
  
   ## Prepare the identity operator (might have been used by the user)
-  assign("I", envir=Env, new(CLASS_RM, # 1 x isRM model aufgerufen
+  assign("I", envir=envir, new(CLASS_RM, # 1 x isRM model aufgerufen
                 .Data = function(x)
-                  eval(parse(text=deparse(substitute(x))), envir = Env),
+                  eval(parse(text=deparse(substitute(x))), envir = envir),
                 type = c('of manifold type'),
                 isotropy = c('submodel dependent'),
                 domain = c('submodel dependent'),
@@ -966,8 +971,8 @@ PrepareModel2 <- function(model, ...,
   unclear.names <- data.names[is.unclear]
 
   
-  M <- parseModel(model=model, Env=Env, EnvDummies = EnvDummies, add.na=add.na,
-                  unclear=unclear.names, EnvTest=EnvTest)
+  M <- parseModel(model=model, envir=envir, envirDummies = envirDummies, add.na=add.na,
+                  unclear=unclear.names, envirTest=envirTest)
   class(M$model) <- CLASS_CLIST
 
   M$is.x <- is.x
@@ -1015,7 +1020,7 @@ PrepareModel2 <- function(model, ...,
                       xdim=xdim, 
                       MODEL_AUX=MODEL_AUX,
                       add.na=add.na,
-                      Env=Env, EnvDummies = EnvDummies)
+                      envir=envir, envirDummies = envirDummies)
   } else if (DataNames$vdim != 0) M$vdim <- DataNames$vdim
   else {
     model.vdim <- integer(1)
@@ -1034,26 +1039,25 @@ PrepareModel2 <- function(model, ...,
 
   if (any(M$add.na)) Help("addNA")
 
-  if (RFopt$basic$printlevel >= PL_FCTN_SUBDETAILS) Print(ls(envir=Env))
-
-  ##  Print(M, data,DataNames, return_transform && sum(genuine.formulae) )
+  ##
+  Print(M, data,DataNames, return_transform && sum(genuine.formulae) ); 
   
   M
 }
 
-detect.covariates <- function(S, unclear, EnvTest) {
+detect.covariates <- function(S, unclear, envirTest) {
   idx <- 1:((length(unclear) + 1) / 2)
   new.unclear <- NULL
   for (j in 0:1) { #
     m <- unclear[idx]
     if (length(m) == 0) next
-    for (i in m) assign(i, list(get(i, envir=EnvTest))) ## disable values
-    try <- Try(eval(parse(text=S),envir=EnvTest))
-    for (i in m) assign(i, get(i, envir=EnvTest)[[1]]) ## restore
+    for (i in m) assign(i, list(get(i, envir=envirTest))) ## disable values
+    try <- Try(eval(parse(text=S),envir=envirTest))
+    for (i in m) assign(i, get(i, envir=envirTest)[[1]]) ## restore
     new.unclear <- c(if (is.numeric(try)) unclear[idx]
                      else if (length(unclear) > 1) 
                        detect.covariates(S=S, unclear=unclear[idx],
-                                         EnvTest=EnvTest),
+                                         envirTest=envirTest),
                      new.unclear)
     idx <- -idx
   }
@@ -1065,8 +1069,8 @@ covariate.names <- function(m) {
   unique(unlist(lapply(m, function(x) if (is.list(x)) covariate.names(x))))
 }
 
-parseModel <- function(model, Env, EnvDummies, add.na=NULL, 
-                       unclear=NULL, EnvTest=NULL) {
+parseModel <- function(model, envir, envirDummies, add.na=NULL, 
+                       unclear=NULL, envirTest=NULL) {
                                         #
   ##  Print("parse", model, is.list(model),  is(model, CLASS_CLIST), isS4(model))
  
@@ -1079,8 +1083,8 @@ parseModel <- function(model, Env, EnvDummies, add.na=NULL,
  
   
   if (isS4(model) && is(model, CLASS_CLIST))
-    return(buildCovList(model, Env=Env, EnvDummies=EnvDummies,
-                        add.na=add.na, unclear=unclear, EnvTest=EnvTest))
+    return(buildCovList(model, envir=envir, envirDummies=envirDummies,
+                        add.na=add.na, unclear=unclear, envirTest=envirTest))
   
   if (!is(model, "formula")) stop("Malformed model expression -- maybe you have used a wrong or obsolete definition, or just used an incorrect option name or incorrect ordering of the arguments. See ?RMmodel for the model definition. Check manual for further information (RMmodel, RFsimulate)")
 
@@ -1108,13 +1112,13 @@ parseModel <- function(model, Env, EnvDummies, add.na=NULL,
   summands <- lapply(summands, removeParenthesis)
   
   isGenuineCovModel <- sapply(summands, FUN=function(s) { # pos def
-    x <- Try(eval(parse(text=s),envir=EnvDummies))    
+    x <- Try(eval(parse(text=s),envir=envirDummies))    
     isS4(x) && is(x, CLASS_CLIST) ## kostet Aufrufe 
   })
  
   isFormalCovModel <- sapply(summands, FUN=function(s) { # parts using data or
     ##                                                     reference to coord
-    x <- Try(eval(parse(text=s),envir=Env))
+    x <- Try(eval(parse(text=s),envir=envir))
     isS4(x) && is(x, CLASS_CLIST) ## kostet Aufrufe 
   })
   
@@ -1130,7 +1134,7 @@ parseModel <- function(model, Env, EnvDummies, add.na=NULL,
     m <- m + 1;
     S <- summands[[k]]
     ##    Print(k, S)
-    C <- eval(parse(text=S), envir=Env) ## could be a function of the data col
+    C <- eval(parse(text=S), envir=envir) ## could be a function of the data col
 
     ## Print(S, C, is.factor(C))
     
@@ -1141,9 +1145,9 @@ parseModel <- function(model, Env, EnvDummies, add.na=NULL,
       if (length(lev) == 1)
         stop("number of factors is >=2 -- a constant is modelled through '~1'")
       S2 <- paste0(S, "..factor..")
-      if (extra <- exists(S2, envir=Env, inherits=FALSE)) {#factor may not
+      if (extra <- exists(S2, envir=envir, inherits=FALSE)) {#factor may not
         ##                                         be part of a formula!
-        C2 <- eval(parse(text=S2), envir=Env)
+        C2 <- eval(parse(text=S2), envir=envir)
         lev2 <- levels(C2)
         if (length(lev2) != length(lev))
           ## it is assumed that the factors match. No control!!
@@ -1180,8 +1184,8 @@ parseModel <- function(model, Env, EnvDummies, add.na=NULL,
                   
     } else {
       if (isFormalCovModel[k]) { 
-        P  <- buildCovList(C, Env=Env, EnvDummies=EnvDummies, add.na=add.na[k], 
-                           unclear=unclear, EnvTest=EnvTest)
+        P  <- buildCovList(C, envir=envir, envirDummies=envirDummies, add.na=add.na[k], 
+                           unclear=unclear, envirTest=envirTest)
         model <- P$model
         if (abs(add.na[k]) > 1) {
           tL <- if ((model[[1]] %in% RM_MULT)) model[-1] else list(model) 
@@ -1194,6 +1198,7 @@ parseModel <- function(model, Env, EnvDummies, add.na=NULL,
             model <- c(SYMBOL_MULT, tL, list(const))
           }
         }
+        Print(P, model)
       } else { ## pure numbers (might be within matrix)
         if (length(C) > 1) {
           swaps <- 0 
@@ -1240,7 +1245,7 @@ parseModel <- function(model, Env, EnvDummies, add.na=NULL,
           }
 
           if (length(unclear) > 0)
-            unclear <- detect.covariates(S=S, EnvTest=EnvTest,
+            unclear <- detect.covariates(S=S, envirTest=envirTest,
                                          unclear=setdiff(unclear, rownames(C)))
         } else { ## a simple constant, could be a spatial constant mean
           model <- list(R_CONST)
@@ -1260,7 +1265,7 @@ parseModel <- function(model, Env, EnvDummies, add.na=NULL,
 }
 
 
-buildCovList <- function(model, Env, EnvDummies, add.na, unclear, EnvTest) {
+buildCovList <- function(model, envir, envirDummies, add.na, unclear, envirTest) {
   ## Print("bCL", model)
   ## solves user defined model to a list by using
   ## in particular the models in RMmodels.R and the definition in
@@ -1292,12 +1297,12 @@ buildCovList <- function(model, Env, EnvDummies, add.na, unclear, EnvTest) {
     P <- PD[[j]] 
     for (i in OneTo(length(P))) {
       X <- if (is(P[[i]], "formula")) 
-             parseModel(P[[i]], Env=Env, EnvDummies=EnvDummies,
+             parseModel(P[[i]], envir=envir, envirDummies=envirDummies,
                         add.na = add.na, unclear=unclear,
-                        EnvTest=EnvTest)
-           else buildCovList(P[[i]], Env=Env, EnvDummies=EnvDummies,
+                        envirTest=envirTest)
+           else buildCovList(P[[i]], envir=envir, envirDummies=envirDummies,
                              add.na=add.na,unclear=unclear,
-                             EnvTest=EnvTest)
+                             envirTest=envirTest)
       PD[[j]][[i]] <- X$model
       unclear <- X$unclear
     }

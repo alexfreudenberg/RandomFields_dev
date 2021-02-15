@@ -136,7 +136,7 @@ int fastfourier(double *data, int *m, int dim,  bool inverse,
 
 
 int init_circ_embed(model *cov, gen_storage VARIABLE_IS_NOT_USED  *S){
-   globalparam *global = &(cov->base->global);
+   option_type *global = &(cov->base->global);
  int err=NOERROR;
   if (!Locgrid(cov)) SERR("circ embed requires a grid");
 
@@ -883,13 +883,13 @@ void kappa_ce(int i, model *cov, int *nr, int *nc){
 
 
 int check_ce_basic(model *cov) { 
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   // auf co/stein ebene !
   //  model *next=cov->sub[0];
   //  location_type *loc = Loc(cov);
   int i, //err,
     dim = ANYDIM; // taken[MAX DIM],
-  ce_param *gp  = &(global->ce); // ok
+  ce_options *gp  = &(global->ce); // ok
   
   FRAME_ASSERT_GAUSS_INTERFACE;
   ASSERT_CARTESIAN;
@@ -936,16 +936,11 @@ int check_ce(model *cov) {
   
   if (cov->key != NULL) {
     if ((err = CHECK_PASSFRAME(cov->key, GaussMethodType)) != NOERROR) {
-       //PMI(cov->key); XERR(err);
-       //printf("specific ok\n");
-       // crash();
        RETURN_ERR(err);
      }
   } else {
     if ((err = CHECK(next, dim, dim, PosDefType, XONLY, CARTESIAN_COORD,
 		     SUBMODEL_DEP, GaussMethodType)) != NOERROR) {
-      //      APMI(cov);
-      //    XERR(err); APMI(cov);
       if ((err = CHECK(next, dim, dim, VariogramType, XONLY, SYMMETRIC, 
 		       SUBMODEL_DEP, GaussMethodType)) != NOERROR) {
 	RETURN_ERR(err);
@@ -1049,7 +1044,7 @@ void range_ce(model VARIABLE_IS_NOT_USED *cov, int k, int i, int j,
  
 
 void do_circ_embed(model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   //printf("start do\n");
   assert(cov != NULL);
   assert(Locgrid(cov));
@@ -1070,7 +1065,7 @@ getStorage(s ,   ce);
   
   complex *gauss1 = s->gauss1, *gauss2 = s->gauss2;
 
-  if (s->stop) XERR(ERRORNOTINITIALIZED);
+  if (s->stop) OnErrorStop(ERRORNOTINITIALIZED, cov);
  
   /* 
      implemented here only for rotationsinvariant covariance functions
@@ -1667,7 +1662,7 @@ int struct_ce_local(model *cov, model VARIABLE_IS_NOT_USED **newmodel) {
 
 
 void do_circ_embed_cutoff(model *cov, gen_storage *S) {  
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   double   *res = cov->rf;
   model *key = cov->key,
      *sub = key;

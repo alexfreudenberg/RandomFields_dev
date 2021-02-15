@@ -62,7 +62,7 @@ int
 PL = 1,
   CORES = INITCORES; //  return;  TO DO: replace by KEYT->global_utils
 
-utilsparam *GLOBAL_UTILS;
+utilsoption_type *OPTIONS_UTILS;
 KEY_type *PIDKEY[PIDMODULUS];
 int parentpid=0;
 bool parallel() {
@@ -73,56 +73,74 @@ bool parallel() {
 }
 
 
-void globalparam_NULL(KEY_type *KT, bool copy_messages) {
+void option_NULL(KEY_type *KT, bool keep_messages) {
   //  printf("%d %d %d %d %d; %d %d \n", generalN, gaussN, krigeN, extremeN, fitN, coordsN, prefixN);
   assert(generalN==20 && gaussN == 6 && krigeN == 5 && extremeN == 12
   	 && fitN == 43 && coordsN == 20 && prefixN == 25);
-  messages_param m;
-  if (!copy_messages)
-    MEMCOPY(&m, &(KT->global.messages), sizeof(messages_param));
+  //assert(MAXDATANAMES == 5 && MAX_COORDNAMES == 4); // increase list in Options.h
+  messages_options m;
+  if (keep_messages) // unklar wieso dies gebraucht wurde 14.2.21
+    MEMCOPY(&m, &(KT->global.messages), sizeof(messages_options));
 
-  MEMCOPY(&(KT->global), &GLOBAL, sizeof(globalparam));
+  MEMCOPY(&(KT->global), &OPTIONS, sizeof(option_type));
   // pointer auf NULL setzten
-  if (!copy_messages)
-    MEMCOPY(&(KT->global.messages), &m, sizeof(messages_param));
+  if (keep_messages)
+    MEMCOPY(&(KT->global.messages), &m, sizeof(messages_options));
     
-  Ext_utilsparam_NULL(&(KT->global_utils));
+  Ext_utilsoption_NULL(&(KT->global_utils));
 }
 
-void globalparam_NULL(KEY_type *KT) {
-  globalparam_NULL(KT, true);
-}
 
-void globalparam_DELETE(KEY_type *KT) {
+void option_DELETE(KEY_type *KT) {
    // pointer loeschen
-  Ext_utilsparam_DELETE(&(KT->global_utils));
+  Ext_utilsoption_DELETE(&(KT->global_utils));
 }
+
+
+
+  
 
 
 void KEY_type_NULL(KEY_type *KT) {
   // JA NICHT UEBER MEMSET, DA PIDs NICHT UEBERSCHRIEBEN WERDEN DUERFEN
-  KT->currentRegister = KT->set = 0;
+ // ******************************************************************
+  KT->currentRegister = KT->set = KT->n_data_idx = KT->n_data_names =
+    KT->n_coord_idx = KT->n_coord_names = 0;
   KT->naok_range = KT->stored_init = false;
   KT->rawConcerns = unsetConcerns;
   MEMSET(KT->PREF_FAILURE, 0, 90 * Nothing);
   KT->next = NULL;
   KT->error_causing_cov = NULL; // only a pointer, never free it.
   KT->zerox = NULL;
+  KT->data_names = KT->coord_names = NULL;
+  KT->data_idx =  KT->coord_idx = NULL;
   STRCPY(KT->error_location, "<unkown location>");
-  globalparam_NULL(KT);
-}
+  option_NULL(KT, false);
+  //   printf("n=%d null=%d\n",  KT->n_coord_names,KT->coord_names!= NULL);
+ }
 
 void KEY_type_DELETE(KEY_type **S) {
   KEY_type *KT = *S;
   model **key = KT->KEY;
-  globalparam_DELETE(KT);
+  option_DELETE(KT);
   FREE(KT->zerox);
-  
+    
   for (int nr=0; nr<=MODEL_MAX; nr++)
     if (key[nr]!=NULL) COV_DELETE(key + nr, NULL);
+
+  FREE(KT->data_idx);
+  for (int i=0; i<KT->n_data_names; i++) FREE(KT->data_names[i]);
+  FREE(KT->data_names);
+
+  FREE(KT->coord_idx);
+  for (int i=0; i<KT->n_coord_names; i++) FREE(KT->coord_names[i]);
+  FREE(KT->coord_names);
   
   UNCONDFREE(*S);
 }
+
+
+ 
 
 
 KEY_type *KEYT() {  
@@ -145,7 +163,7 @@ KEY_type *KEYT() {
     neu->ok = true;
     if (PIDKEY[mypid % PIDMODULUS] != neu) BUG;
     KEY_type_NULL(neu);    
-    if (GLOBAL_UTILS->basic.warn_parallel && mypid == parentpid) {
+    if (OPTIONS_UTILS->basic.warn_parallel && mypid == parentpid) {
       PRINTF("Do not forget to run 'RFoptions(storing=FALSE)' after each call of a parallel command (e.g. from packages 'parallel') that calls a function in 'RandomFields'. (OMP within RandomFields is not affected.) This message can be suppressed by 'RFoptions(warn_parallel=FALSE)'."); // ok
     }
    return neu;
@@ -184,14 +202,14 @@ KEY_type *KEYT() {
 
 SEXP copyoptions() {
   KEY_type *KT = KEYT();
-  globalparam_NULL(KT, false);
+  option_NULL(KT, true);
   return R_NilValue;
 }
 
 SEXP setlocalRFutils(SEXP seed, SEXP printlevel) {
   KEY_type *KT = KEYT();
   assert(KT != NULL);
-  utilsparam *global_utils = &(KT->global_utils);
+  utilsoption_type *global_utils = &(KT->global_utils);
   assert(global_utils != NULL);
   if (length(seed) > 0)
     global_utils->basic.seed = Integer(seed, (char *) "seed", 0);
@@ -204,7 +222,7 @@ SEXP setlocalRFutils(SEXP seed, SEXP printlevel) {
 }
 
 void finalizeoptions() {
-  utilsparam *global_utils = GLOBAL_UTILS;
+  utilsoption_type *global_utils = OPTIONS_UTILS;
   PL = global_utils->basic.Cprintlevel - PLoffset;
   CORES = global_utils->basic.cores;
 }
@@ -217,13 +235,13 @@ void loadoptions() { // no print commands!!!
   for (int i=0; i<PIDMODULUS; i++) PIDKEY[i] = NULL; 
   includeXport();
   Ext_pid(&parentpid);
-   Ext_getUtilsParam(&GLOBAL_UTILS);
-  utilsparam *global_utils = GLOBAL_UTILS;
+  Ext_getUtilsParam(&OPTIONS_UTILS);
+  utilsoption_type *global_utils = OPTIONS_UTILS;
   global_utils->solve.max_chol = DIRECT_ORIG_MAXVAR;
   global_utils->solve.max_svd = 6555;
   global_utils->solve.pivot_mode = PIVOT_AUTO;
   global_utils->solve.pivot_check = Nan;
-  global_utils->basic.warn_unknown_option = WARN_UNKNOWN_OPTION_NONE1;
+  // global_utils->basic.warn_unknown_option = WARN_UNKNOWN_OPTION_NONE1;
   Ext_attachRFoptions(prefixlist, prefixN, all, allN,
   		      setoptions, finalizeoptions, getoptions, NULL,
   		      PLoffset, true);
@@ -247,13 +265,13 @@ SEXP attachoptions() { // no print commands!!!
 }
 
 
-globalparam *WhichOptionList(bool local) {  
+option_type *WhichOptionList(bool local) {  
   if (local) {
     KEY_type *KT = KEYT();
     if (KT == NULL) BUG;
     return &(KT->global);
   }
-  return &GLOBAL;
+  return &OPTIONS;
 }
 
 void PIDKEY_DELETE() {

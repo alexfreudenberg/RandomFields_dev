@@ -48,7 +48,7 @@ void kappa_Angle(int i, model *cov, int *nr, int *nc){
 }
 
 void AngleMatrix(model *cov, double *A) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   double c, s, 
      *diag = P(ANGLE_DIAG);
   if (global->coords.anglemode == radians) {
@@ -374,7 +374,7 @@ void Mathmult(double *x, int *info, model *cov, double *v){
 
 #define IS_IS 1
 void MathIs(double *x, int *info, model *cov, double *v){
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   int i,								
     variables = DefList[COVNR].kappas; 		
   double w[3];							
@@ -533,12 +533,9 @@ Types Typebind(Types required, model *cov,
   //  printf("ok\n");
   
   defn *C = DefList + COVNR;
-  int i,
-    kappas = C->kappas;
 
   if (!PisNULL(0)) {
     double p0 = P0(0);
-    //    printf("%d\n", !ISNA(p0) && p0 < 0 && isPosDef(required));
     if (!ISNA(p0) && p0 < 0 && isPosDef(required)) return BadType;
   }
   return required;
@@ -573,7 +570,7 @@ int check_c(model *cov){
   cov->ptwise_definite = p > 0.0 ? pt_posdef : p < 0.0 ? pt_negdef : pt_zero;
   if (tcf) MEMCOPY(cov->pref, PREF_ALL, sizeof(pref_shorttype));
 
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   global->messages.warn_mathdef = global->messages.warn_mathdef == False ? False
     : isNegDef(PREVTYPE(0)) ? True : Nan;
 

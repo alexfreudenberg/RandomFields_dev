@@ -31,7 +31,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "xport_import.h"
 
 #define USE_OWN_ALGXX(SCALAR_LEN, PARALLEL)				\
-  (PARALLEL < 8 || GLOBAL.basic.LaMaxTakeOwn >= SCALAR_LEN) // OK
+  (PARALLEL < 8 || OPTIONS.basic.LaMaxTakeIntern >= SCALAR_LEN) // OK
 #define USE_OWN_ALG(SCALAR_LEN, PARALLEL) true
 
 #define USE_OWN_SCALAR_PROD true
@@ -940,7 +940,6 @@ void String(SEXP el, char *name, char names[][MAXCHAR], int maxlen) {
     }
   } else if (type == STRSXP) {
     for (int i=0; i<l; i++) {
-      //print("%d %d\n", i, l);
       strcopyN(names[i], CHAR(STRING_ELT(el, i)), MAXCHAR);
     }
   } else goto ErrorHandling;
@@ -1023,7 +1022,6 @@ int Match(char *name, name_type List, int n) {
   int Nr;
   Nr=0;
   ln=STRLEN(name);
-  //  print("Match %d %d %.50s %.50s %d\n", Nr, n, name, List[Nr], ln);
 
   while ( Nr < n  && STRNCMP(name, List[Nr], ln)) {
     Nr++;
@@ -1059,16 +1057,13 @@ int Match(char *name, const char * List[], int n) {
   int Nr;
   Nr=0;
   ln=STRLEN(name);
-  //    print("Matchx %d %d %.50s %.50s %d\n", Nr, n, name, List[Nr], ln);
 
   while ( Nr < n  && STRNCMP(name, List[Nr], ln)) {
-    //     print("       %d %d %.50s %.50s %d\n", Nr, n, name, List[Nr], ln);
     //   printf("%.50s\n", List[Nr]);
     Nr++;
   }
   if (Nr < n) { 
     if (ln==STRLEN(List[Nr])) {// exactmatching -- take first -- changed 1/7/07
-      //      print(" found  X    %d %d %.50s %.50s %d\n", Nr, n, name, List[Nr], ln);
       return Nr;
     }
     // a matching function is found. Are there other functions that match?
@@ -1089,8 +1084,6 @@ int Match(char *name, const char * List[], int n) {
     if (multiplematching) {return MULTIPLEMATCHING;}
   } else return NOMATCHING;
 
-  //    print(" found      %d %d %.50s %.50s %d\n", Nr, n, name, List[Nr], ln);
- 
   return Nr;
 }
 

@@ -62,7 +62,6 @@ int checkplusmal(model *cov) {
     possibilities = 1 + (int) CanHaveBothTrendAndCov(cov);
   bool plus = isPlus(cov),
     fullXdim = hasLikelihoodFrame(cov),
-    top = istop(cov),
     *conform = cov->Splus == NULL ? NULL : cov->Splus->conform;;
   Types covtype = OWNTYPE(0),
     frame = fullXdim ? EvaluationType : cov->frame; // see also below exception:
@@ -703,7 +702,7 @@ int initplus(model *cov, gen_storage *s){
 	assert(sub != NULL);
 	if (sub->pref[Nothing] > PREF_NONE) { // to do ??
 	  // for spectral plus only
-	  Zero(sub, var_cum + i);
+	  AtZero(sub, var_cum + i);
 	  if (i>0) var_cum[i] += var_cum[i-1];
 	}
 	NEW_COV_STORAGE(cov->sub[i], gen);
@@ -1029,7 +1028,7 @@ Types Typemal(Types required, model *cov, isotropy_type required_iso){
 
 
 int structmal(model *cov, model VARIABLE_IS_NOT_USED **newmodel){
-  int m, err;  
+  //  int m, err;  
   switch(cov->frame) {
   case EvaluationType :  RETURN_NOERROR; // VariogramType vor 11.1.19
   case GaussMethodType : RETURN_ERR(ERRORFAILED);
@@ -1055,8 +1054,7 @@ int initmal(model *cov, gen_storage *s){
   for (int i=0; i<maxv; i++)cov->mpp.maxheights[i] = RF_NA;
 
   if (hasGaussMethodFrame(cov)) {
-    spectral_storage *cs = &(s->Sspectral);
- 
+    // spectral_storage *cs = &(s->Sspectral); 
     if (VDIM0 == 1) {
       for (int i=0; i<nsub; i++) {
 	model *sub = !MODELKEYS_GIVEN
@@ -1206,7 +1204,7 @@ void rangempplus(model VARIABLE_IS_NOT_USED *cov, range_type *range){
 }
 
 int struct_mppplus(model *cov, model **newmodel){
-  int m,
+  int 
     //nsub = cov->nsub,
     err = NOERROR;
   
@@ -1601,7 +1599,7 @@ void doplusproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
 
 #define MULTPROC_COPIES 0
 int checkmultproc(model *cov) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   int err;
   kdefault(cov, MULTPROC_COPIES, global->special.multcopies);
   if ((err = checkplusmalproc(cov)) != NOERROR) {
@@ -1637,7 +1635,7 @@ int initmultproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
 
 
 void domultproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   double *res = cov->rf;
   assert(VDIM0 == VDIM1);
   int idx,

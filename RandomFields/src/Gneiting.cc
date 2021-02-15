@@ -98,7 +98,7 @@ void ave(double *h, int *info, model *cov, double *v) {
 
 
 int checkave(model *cov) {
-  utilsparam *global_utils = &(cov->base->global_utils);
+  utilsoption_type *global_utils = &(cov->base->global_utils);
    ASSERT_UNREDUCED;
  model *next = cov->sub[0];
   bool
@@ -631,7 +631,6 @@ void kappa_stp(int i, model *cov, int *nr, int *nc){
 void stp(double *x,  double *y, int *info, model *cov, double *v) {
   int d, j, k, err,
     dim =  OWNLOGDIM(0),
-    xdim = OWNXDIM(0),
     dimsq = dim * dim;
   double h[StpMaxDim], 
     Mh[StpMaxDim], hSx[StpMaxDim],
@@ -1003,7 +1002,7 @@ void nsst(double *x, int *info, model *cov, double *v) {
   model *subphi = cov->sub[0];
   model *subpsi = cov->sub[1];
   double v1, v2, psi, y;
-  Zero(subpsi, &v1);
+  AtZero(subpsi, &v1);
   COV(x + 1, info, subpsi, &v2);
   psi = SQRT(1.0 + v1 - v2);  // C0 : C(0) oder 0 // Cx : C(x) oder -gamma(x)
   y = x[0] / psi;
@@ -1015,7 +1014,7 @@ void Dnsst(double *x, int *info, model *cov, double *v) {
   model *subphi = cov->sub[0];
   model *subpsi = cov->sub[1];
   double v1, v2, psi, y;
-  Zero(subpsi, &v1);
+  AtZero(subpsi, &v1);
   COV(x + 1, info, subpsi, &v2);
   psi = SQRT(1.0 + v1 - v2);  // C0 : C(0) oder 0 // Cx : C(x) oder -gamma(x)
   y = x[0] / psi;
@@ -1027,7 +1026,7 @@ void TBM2nsst(double *x, int*info, model *cov, double *v) {
   model *subphi = cov->sub[0];
   model *subpsi = cov->sub[1];
   double v1, v2, psi, y;
-  Zero(subpsi, &v1);
+  AtZero(subpsi, &v1);
   COV(x + 1, info, subpsi, &v2);
   psi = SQRT(1.0 + v1 - v2);  // C0 : C(0) oder 0 // Cx : C(x) oder -gamma(x)
   y = x[0] / psi;
@@ -1161,7 +1160,7 @@ void gennsst(double *x, int *info, model *cov, double *v) {
   if (isnowVariogram(subpsi)) {
     TALLOC_X1(z, hdimSq);
     double *p = PARAM(subphi, GENNSST_INTERN_A);
-    Zero( subpsi, z);
+    AtZero( subpsi, z);
     for (int i=0; i<hdimSq; i++) p[i] = z[i] - p[i];
     END_TALLOC_X1;
   } else if (!equalsnowNegDef(subpsi)) BUG;
@@ -1183,7 +1182,7 @@ void nonstatgennsst(double *x,double *y, int*info, model *cov, double *v) {
   NONSTATCOV(x + hdim, y + hdim, info, subpsi, PARAM(subphi, GENNSST_INTERN_A));
   if (isnowVariogram(subpsi)) {
     double  *p = PARAM(subphi, GENNSST_INTERN_A);
-    Zero(subpsi, z);
+    AtZero(subpsi, z);
     for (int i=0; i<hdimSq; i++) p[i] = z[i] - p[i];
   } else if (!equalsnowNegDef(subpsi)) BUG;
   

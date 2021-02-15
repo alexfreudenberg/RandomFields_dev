@@ -107,7 +107,7 @@ void binary(double *x, int *info, model *cov, double *v) {
     t = P0(BINARY_P),
     p = pnorm(t, 0, 1.0, true, false);
   
-  Zero(info, next, &var);
+  AtZero(info, next, &var);
   COV(x, info, next, &r);
   
   if (t == 0.0) {
@@ -166,8 +166,7 @@ int checkbinary(model *cov) {
   
   model
     *next = cov->sub[0];
-  double v;
-  int 
+   int 
     vdim = VDIM0,
     err = NOERROR;
   if (VDIM0 != VDIM1) BUG;
@@ -211,7 +210,7 @@ void MaStein(double *x, int *info, model *cov, double *v) {
     nu = P0(MASTEIN_NU),
     delta = P0(MASTEIN_DELTA);
 
-  Zero(info, next, &v1);
+  AtZero(info, next, &v1);
   COV(x + 1, info, next, &v2);
   nuG = nu + v1 - v2;
   if (nuG >= (double) MASTEIN_MAXNU) {
@@ -933,7 +932,7 @@ void rangema1(model VARIABLE_IS_NOT_USED *cov, range_type *range){
 void ma2(double *x, int *info, model *cov, double *v){
   model *next = cov->sub[0];  
   double z, z0;
-  Zero(info, next, &z0);
+  AtZero(info, next, &z0);
   COV(x, info, next, &z);
   z = z0 - z;
   if (z == 0) *v = 1.0; else *v = (1.0 - EXP(-z)) / z;  
@@ -1110,7 +1109,6 @@ void nonstatM(double *x, double *y, int *info, model *cov, double *v){
     else M(cov, P(M_M), z,  P(M_M), v);
   } else {
     int
-      dim = OWNXDIM(0),
       total = nrow * ncol;
     TALLOC_X2(M1, total);
     TALLOC_X3(M2, total);
@@ -1450,7 +1448,7 @@ int initMproc(model *cov, gen_storage *S){
 
 
 void doMproc(model *cov, gen_storage *S){
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   // assert(cov->key != NULL);
   //  printf("mvdim=%d\n", M_VDIM);
   //  PMI0(cov)
@@ -1623,9 +1621,9 @@ int TaylorScatter(model *cov) {
 }
 
 int checkScatter(model *cov) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   model *next = cov->sub[0];
-  mpp_param *gp = &(global->mpp);
+  mpp_options *gp = &(global->mpp);
   int d, nr, err,
     dim = OWNTOTALXDIM,
     vdim = VDIM0 * VDIM1;
@@ -1842,7 +1840,7 @@ void nonstatSchur(double *x, double *y, int *info, model *cov, double *v){
 // #define ASS if (COVNR == 94) assert(cov->SlocalCE == NULL)
 
 int checkSchur(model *cov) {
- utilsparam *global_utils = &(cov->base->global_utils);
+ utilsoption_type *global_utils = &(cov->base->global_utils);
   model *next = cov->sub[0];
   double *C = NULL,
     *M=P(SCHUR_M),
@@ -2051,30 +2049,29 @@ Types TypeId(Types required, model *cov, isotropy_type required_iso) {
 #define EXP_N 0
 #define EXP_STANDARDISED 1
 void Exp(double *x, int* info, model *cov, double *v, int n, bool standardize){
-  double v0, 
-    s = 0.0, 
-    w = 1.0;
   model *next = cov->sub[0];
-  int k,
+  int 
     vdim = VDIM0,
     vdimq = vdim * vdim;
-
   COV(x, info, next, v);
   if (vdim == 1) {
-    for (k=0; k<=n; k++) {
+    double
+      s = 0.0, 
+      w = 1.0;
+    for (int k=0; k<=n; k++) {
       s += w;
       w *= *v / (double) (k+1);
     }    
     *v = EXP(*v) - s;
     if (standardize) {
+      double v0;
       Exp(ZERO(cov), info, cov, &v0, n, false);
       *v /= v0;
     }
   } else {
-    int i;
     BUG;
     // fehlt die multiplication von links und rechts mit C(0)^{-1/2}
-    for (i=0; i<vdimq; i++) v[i] = EXP(v[i]); 
+    for (int i=0; i<vdimq; i++) v[i] = EXP(v[i]); 
   }
 }
 
@@ -2086,22 +2083,23 @@ void Exp(double *x, int *info, model *cov, double *v){
 void nonstatExp(double *x, double *y, int *info, model *cov, double *v, int n, 
 		bool standardised){
   model *next = cov->sub[0];
-  double v0, 
-    s = 0.0, 
-    w = 1.0;
   int k,
     vdim = VDIM0,
     vdimq = vdim * vdim;
 
   NONSTATCOV(x, y, info, next, v);
   if (vdim == 1) {
-    for (k=0; k<=n; k++) {
+    double 
+      s = 0.0, 
+      w = 1.0;
+   for (k=0; k<=n; k++) {
       s += w;
       w *= *v / (double) (k+1);
     }    
     *v = EXP(*v) - s;
     if (standardised) {
-      double *zero = ZERO(cov);
+      double v0,
+	*zero = ZERO(cov);
       nonstatExp(zero, zero, info, cov, &v0, n, false);
        *v /= v0;
     }
@@ -2232,7 +2230,7 @@ void Pow(double *x, int *info, model *cov, double *v){
     COV(x, info, next, v);
     *v = POW(*v, alpha);
   } else {
-    Zero(info, next, &v0);
+    AtZero(info, next, &v0);
     COV(x, info, next, &v1);
     *v = POW(v0, alpha) - POW(v0 - v1, alpha);
   }
@@ -2245,7 +2243,7 @@ void DPow(double *x, int* info, model *cov, double *v){
 
   Abl1(x, info, next, v);
   if (alpha == 1.0) return;
-  Zero(info, next, &v0);
+  AtZero(info, next, &v0);
   if (isnowShape(cov)) {
     *v *= - alpha * POW(v0, alpha -1.0);
   } else {  
@@ -2268,11 +2266,11 @@ void DDPow(double *x, int *info, model *cov, double *v){
     COV(x, info, next, &v0);
     *v *= alpha *  POW(v0, alpha - 2.0) * ((alpha - 1.0) * D + v0 * (*v));
   } else {
-    Zero(info, next, &v0);
+    AtZero(info, next, &v0);
     COV(x, info, next, &v1);
     gamma =  v0 - v1;
     *v *= - alpha *  POW(gamma, alpha-2.0) * ((alpha - 1.0) * D + gamma * (*v));
- } // Achtung  "-" , da covarianzfunktion angenommen
+  } // Achtung  "-" , da covarianzfunktion angenommen
 }
 
 void InversePow(double *x, model *cov, double *v) {
@@ -2286,7 +2284,7 @@ void InversePow(double *x, model *cov, double *v) {
     INVERSE(&y, next, v);
   } else {
     double v0;
-    Zero(next, &v0);
+    AtZero(next, &v0);
     double v0alpha = POW(v0, alpha);
     if (v0alpha <= y) {*v = 0.0; return;}
     y = v0 - POW(v0alpha  - y, 1.0 / alpha);
@@ -2304,7 +2302,7 @@ void inversenonstatPow(double *x, model *cov, double *left, double*right) {
     INVERSENONSTAT(&y, next, left, right);
   } else {
     double v0;
-    Zero(next, &v0);
+    AtZero(next, &v0);
     double v0alpha = POW(v0, alpha);
     if (v0alpha <= y) {
       int dim = PREVTOTALXDIM;
@@ -2488,14 +2486,14 @@ void qam(double *x, int *info, model *cov, double *v) {
 }
 
 int checkqam(model *cov) {
- utilsparam *global_utils = &(cov->base->global_utils);
+ utilsoption_type *global_utils = &(cov->base->global_utils);
   model *next = cov->sub[0],
     *sub;
   int i, err, 
     nsub = cov->nsub,
     nsubM1 = nsub - 1;
   double v, sum;
-      
+  
   if ((err = checkkappas(cov)) != NOERROR) RETURN_ERR(err);
   
   //  cov->monotone = NORMAL_MIXTURE;
@@ -2519,7 +2517,7 @@ int checkqam(model *cov) {
     //    if ((err = CHECK(sub, cov->tsdim, cov->tsdim, PosDefType,
     //		       OWNDOM(0), OWNISO(0),  SCALAR, EvaluationType)) != NOERROR)
     //RETURN_ERR(err);
-    Zero(sub, &v);
+    AtZero(sub, &v);
     if (v != 1.0) SERR("unit variance required");
     setbackward(cov, sub);
   } 
@@ -2604,7 +2602,7 @@ void rangemqam(model *cov, range_type *range){
 /////////////// NATSC
 
 void natsc(double *x, int *info, model *cov, double *v){
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   model *next = cov->sub[0];
   double invscale, y;
 
@@ -2615,7 +2613,7 @@ void natsc(double *x, int *info, model *cov, double *v){
 }
 
 void Dnatsc(double *x, int *info, model *cov, double *v){
-   globalparam *global = &(cov->base->global);
+   option_type *global = &(cov->base->global);
  model *next = cov->sub[0];
   int i,
     vdim = VDIM0,
@@ -2631,7 +2629,7 @@ void Dnatsc(double *x, int *info, model *cov, double *v){
 }
 
 void DDnatsc(double *x, int *info, model *cov, double *v){
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   model *next = cov->sub[0];
   int i,
     vdim = VDIM0,
@@ -2648,7 +2646,7 @@ void DDnatsc(double *x, int *info, model *cov, double *v){
 }
 
 void Inversenatsc(double *x, model *cov, double *v) {
-globalparam *global = &(cov->base->global);
+option_type *global = &(cov->base->global);
   model *next = cov->sub[0];
   double invscale, modelinv;
   assert(DefList[NEXTNR].inverse != NULL);
@@ -2658,7 +2656,7 @@ globalparam *global = &(cov->base->global);
 }
 
 int checknatsc(model *cov) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   model *next = cov->sub[0];
   int err;
 
@@ -2716,7 +2714,7 @@ void donatsc(model *cov, gen_storage *s){
 }
 
 void spectralnatsc(model *cov, gen_storage *S, double *e) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   //getStorage(s ,   //  spectral); 
   model *next = cov->sub[0];
   int d,
@@ -2745,7 +2743,7 @@ void ieinitnatsc(model *cov, localfactstype *li) {
 }
 
 void tbm2natsc(double *x, int* info, model *cov, double *v){
-   globalparam *global = &(cov->base->global);
+   option_type *global = &(cov->base->global);
  model *next = cov->sub[0];
   double invscale, y;
 
@@ -3152,7 +3150,7 @@ int checktrafoproc(model *cov) { // auch fuer Trendproc
 
 
 int structtrafoproc(model *cov, model VARIABLE_IS_NOT_USED **newmodel){
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   model *sub = cov->sub[0];
   int err,
     n = OWNSYSTEMS;
@@ -3258,7 +3256,6 @@ void dotrafoproc(model *cov, gen_storage *s){
 void nonstat_prod(double *x, double *y, int *info, model *cov, double *v){  
   model *next = cov->sub[0];
   int
-    dim = OWNXDIM(0),
     rows = next->vdim[0],
     cols = next->vdim[1],
     vdimsq = rows * cols;
@@ -3355,7 +3352,7 @@ void doprodproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
 void nonstatsum(double *x, double *y, int *info, model *cov, double *v){  
   model *next = cov->sub[0];
   int
-    dim = OWNXDIM(0),
+    //    dim = OWNXDIM(0),
     rows = next->vdim[0],
     cols = next->vdim[1],
     vdimsq = rows * cols;
@@ -3396,8 +3393,7 @@ void variogram2cov(double *x, double *y, int *info, model *cov, double *v){
   model *next = cov->sub[0];
   int vdim = VDIM0,
     vdimSq = vdim * vdim,
-    dim = OWNLOGDIM(0),
-   bytes = dim * sizeof(double);
+    dim = OWNLOGDIM(0);
   assert(cov->Scovariate != NULL && cov->Scovariate->x);
   double 
     *c = P(VAR2COV_C),
@@ -3440,7 +3436,7 @@ void variogram2cov(double *x, double *y, int *info, model *cov, double *v){
 
 
 int checkvariogram2cov(model *cov) {
- utilsparam *global_utils = &(cov->base->global_utils);
+ utilsoption_type *global_utils = &(cov->base->global_utils);
   model *next = cov->sub[0];
   int err,
     dim = ANYOWNDIM; // ANOWNTOTALDIM
@@ -3750,7 +3746,6 @@ void nonstatblend(double *x, double *y, int *info, model *cov, double *v){
   double bx, by,
 		      *thres =  P(BLEND_THRES);
   int i, j,
-		      dim = OWNXDIM(0),
     n_thresholds = cov->nrow[BLEND_THRES],
     vdim = multi->vdim[0];
   
@@ -3770,7 +3765,7 @@ void nonstatblend(double *x, double *y, int *info, model *cov, double *v){
 }
 
 int checkblend(model *cov){
-  utilsparam *global_utils = &(cov->base->global_utils);
+  utilsoption_type *global_utils = &(cov->base->global_utils);
  ASSERT_ONESYSTEM;
   model *blend = cov->sub[BLEND_BLEND],
     *multi = cov->sub[BLEND_MULTI];
@@ -3900,7 +3895,7 @@ getStorage(s ,   bubble);
 
 
 int checkbubble(model *cov){
-  utilsparam *global_utils = &(cov->base->global_utils);
+  utilsoption_type *global_utils = &(cov->base->global_utils);
  //  PMI0(cov);
   
   ASSERT_ONESYSTEM;

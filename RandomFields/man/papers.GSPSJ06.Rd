@@ -40,8 +40,8 @@ stabletest <- function(alpha, theta, size=512) {
   RFcov(dist=0, model=model, dim=2)
   r <- RFgetModelInfo(modelname="RMcutoff", level=3)$storage$R_theor
   x <- seq(0, r, by= r / (size - 1)) * theta
-  err <- try(RFsimulate(x, x, model=RPcirculant(model), n=0))
-  return(if (class(err) == "try-error") NA else r)
+  err <- try(RFsimulate(x, x, model=RPcirculant(model), n=0))%## OK
+  return(if (class(err) == "try-error") NA else r)%## OK
 }
 
 alphas <- seq(1.52, 2.0, 0.02) 

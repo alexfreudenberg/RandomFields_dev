@@ -60,8 +60,8 @@ struct solve_storage {
     *w2, // eigen, svd, LU, QR, pivot
     *U, // eigen, svd, pivot
     *D, // eigen, svd, cholesky, spam, pivot
-    *w3, // spam, QR, svd
-    *lnz, // spam
+    *w3, // spam, QR, svd, eigen
+    *lnz, // spam, svd
     *result,  // sqrtPosDefFree
     *to_be_deleted; 
 } solve_storage;

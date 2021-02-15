@@ -160,7 +160,7 @@ plot(z3,z2)
 %## Illustrating the warning.
 %a1 <- new("RFpointsDataFrame")
 %str(a1)
-%try(a2 <- new("RFsp")) ## ERROR
+%try(a2 <- new("RFsp")) ## ERROR%## OK
 \dontshow{FinalizeExample()}}
 
 \keyword{classes}

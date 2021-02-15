@@ -994,17 +994,24 @@ typedef
 struct KEY_type KEY_type;
 struct KEY_type {
   KEY_type *next;
-  globalparam global;
-  utilsparam global_utils;
+  option_type global;
+  utilsoption_type global_utils;
   errorloc_type error_location;
 
   model *KEY[MODEL_MAX + 1];
   int pid, currentRegister, visitingpid, nzero, zaehler, set,
-    use_external_boxcox;
+    use_external_boxcox,
+    n_data_idx,
+    n_data_names,
+    *data_idx,
+    n_coord_idx,
+    n_coord_names,
+    *coord_idx;
   bool ok, stored_init,
     naok_range; // default =false;
   raw_type rawConcerns;
-  char PREF_FAILURE[90 * Nothing];
+  char PREF_FAILURE[90 * Nothing],
+    **data_names,**coord_names;
   double *zerox;
   model *error_causing_cov;
 };
@@ -1457,8 +1464,6 @@ struct model {
 };
 
 
-void KEY_type_NULL(KEY_type  *x);
-void KEY_type_DELETE(KEY_type **S);
 void LOC_DELETE(location_type ***Loc); // OK
 void LOC_SINGLE_NULL(location_type *loc, int len, int dim);
 //location_type **LOCLIST_CREATE(int n, int dim);
@@ -1897,20 +1902,20 @@ BUG
 
 #define TALLOC_NEW(Snew, Z, SIZE, WHAT, STANDARD)		\
   TALLOCCOV_NEW(cov, Snew, Z, SIZE, WHAT, STANDARD)
-// ACHTUNG!!! NIE TALLOC_GLOBAL_XX1 OHNE TALLOC_DOUBLE ABZUANENDERN !!
+// ACHTUNG!!! NIE TALLOC_OPTIONS_XX1 OHNE TALLOC_DOUBLE ABZUANENDERN !!
 #ifdef DO_TALLOC_SAVE
-#define TALLOC_GLOBAL_X1(Z, SIZE) TALLOCCOV_G_NEW(cov, Z, SIZE, XSIZE) 
-#define TALLOC_GLOBAL_X2(Z, SIZE) TALLOCCOV_G_NEW(cov, Z, SIZE, XSIZE) 
-#define TALLOC_GLOBAL_X3(Z, SIZE) TALLOCCOV_G_NEW(cov, Z, SIZE, XSIZE)
-#define TALLOC_GATTER_GLOBAL(Z,SIZE) TALLOCCOV_G_NEW(cov, Z, SIZE, XSIZE)
+#define TALLOC_OPTIONS_X1(Z, SIZE) TALLOCCOV_G_NEW(cov, Z, SIZE, XSIZE) 
+#define TALLOC_OPTIONS_X2(Z, SIZE) TALLOCCOV_G_NEW(cov, Z, SIZE, XSIZE) 
+#define TALLOC_OPTIONS_X3(Z, SIZE) TALLOCCOV_G_NEW(cov, Z, SIZE, XSIZE)
+#define TALLOC_GATTER_OPTIONS(Z,SIZE) TALLOCCOV_G_NEW(cov, Z, SIZE, XSIZE)
 #else
-#define TALLOC_GATTER_GLOBAL(Z,SIZE) TALLOCCOV_G_NEW(cov,Sgatter,Z,SIZE,Z,XSIZE)
+#define TALLOC_GATTER_OPTIONS(Z,SIZE) TALLOCCOV_G_NEW(cov,Sgatter,Z,SIZE,Z,XSIZE)
 // !!! ACHTUNG ! bei Verwendung von TALLOC auf Sextra basierend, darf
 // bis zu END_TALLOC kein cov stehen, oder es muss sichergestellt werden
 // dass die Fkt mit argument 'cov' nicht auch noch TALLOC aufruft!!
-#define TALLOC_GLOBAL_X1(Z, SIZE) TALLOCCOV_G_NEW(cov, Sextra, Z,SIZE,a1,XSIZE) 
-#define TALLOC_GLOBAL_X2(Z, SIZE) TALLOCCOV_G_NEW(cov, Sextra, Z,SIZE,a2,XSIZE) 
-#define TALLOC_GLOBAL_X3(Z, SIZE) TALLOCCOV_G_NEW(cov, Sextra, Z, SIZE,a3,XSIZE)
+#define TALLOC_OPTIONS_X1(Z, SIZE) TALLOCCOV_G_NEW(cov, Sextra, Z,SIZE,a1,XSIZE) 
+#define TALLOC_OPTIONS_X2(Z, SIZE) TALLOCCOV_G_NEW(cov, Sextra, Z,SIZE,a2,XSIZE) 
+#define TALLOC_OPTIONS_X3(Z, SIZE) TALLOCCOV_G_NEW(cov, Sextra, Z, SIZE,a3,XSIZE)
 #endif
 // !!! ACHTUNG ! bei Verwendung von TALLOC auf Sextra basierend, darf
 // bis zu END_TALLOC kein cov stehen, oder es muss sichergestellt werden
@@ -2180,8 +2185,8 @@ bool parallel();
 
 // if (L == NULL) ERR("register not initialised as likelihood method");
 
-void Zero(model *cov, double *v);
-void Zero(int *info, model *cov, double *v);
+void AtZero(model *cov, double *v);
+void AtZero(int *info, model *cov, double *v);
 
 #define UNKNOWN_NUMBER_GRIDPTS -1
 

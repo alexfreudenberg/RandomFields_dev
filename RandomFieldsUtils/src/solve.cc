@@ -72,7 +72,7 @@ const char * InversionNames[nr_InversionMethods] = {
 //  double *A_= A, *B_= B;				
 // i_ = N,					
 
-#define KAHAN GLOBAL.basic.kahanCorrection
+#define KAHAN OPTIONS.basic.kahanCorrection
 
 #define CMALLOC(WHICH, N, TYPE)	{					\
     int _N_ = N;							\
@@ -399,7 +399,7 @@ void chol2inv(double *MPT, int size) {
 int doPosDef(double *M0, int size, bool posdef,
 	     double *rhs0, int rhs_cols, double *result,
 	     double *logdet, int calculate, solve_storage *Pt,
-	     solve_param *sp
+	     solve_options *sp
 	     ){
   // it is ok to have
   // ==15170== Syscall param sched_setaffinity(mask) points to unaddressable byte(s)
@@ -443,7 +443,6 @@ int doPosDef(double *M0, int size, bool posdef,
   */
 
   //  printf("entering\n");
-  
   // http://www.nag.com/numeric/fl/nagdoc_fl23/xhtml/F01/f01intro.xml#
   assert(sp != NULL);
   assert(NA_LOGICAL == INT_MIN && NA_LOGICAL == NA_INTEGER); // nur zur sicherheit, wegen usr_bool
@@ -461,7 +460,7 @@ int doPosDef(double *M0, int size, bool posdef,
 
   // !MATRIXSQRT &&  rhs_cols > 0
   // assert(rhs != RESULT);
-  la_modes la_mode = GLOBAL.basic.la_mode; 
+  la_modes la_mode = OPTIONS.basic.la_mode; 
   if (size <= sp->tinysize) {
     if (Pt != NULL) {
       Pt->method = direct_formula;
@@ -736,8 +735,8 @@ int doPosDef(double *M0, int size, bool posdef,
   proposed_pivot = sp->pivot_mode;
   for (int m=0; m<SOLVE_METHODS && (m==0 || Meth[m] != Meth[m-1]); m++) {
     pt->method = Meth[m];
-    //    printf("m=%d %d %d size=%d %d la_mode=%d\n", m, pt->method, Cholesky ,size , GLOBAL.basic.LaMaxTakeOwn, la_mode); 
-    if (pt->method == Cholesky && size > GLOBAL.basic.LaMaxTakeOwn) {
+    //    printf("m=%d %d %d size=%d %d la_mode=%d\n", m, pt->method, Cholesky ,size , OPTIONS.basic.LaMaxTakeIntern, la_mode); 
+    if (pt->method == Cholesky && size > OPTIONS.basic.LaMaxTakeIntern) {
        pt->method = calculate == DETERMINANT ? LU :  Rcholesky;
     }
     if (pt->method < 0) break;
@@ -765,7 +764,7 @@ int doPosDef(double *M0, int size, bool posdef,
       if (!posdef) CERR("Cholesky needs positive definite matrix");
 #ifdef USEGPU
       if (proposed_pivot > PIVOT_AUTO)
-	ERR("cholesky decomposition on GPU does not allow for pivoting");
+	GERR("cholesky decomposition on GPU does not allow for pivoting");
       pt->actual_pivot = PIVOT_NONE;
       {
 	double LD,
@@ -822,7 +821,7 @@ int doPosDef(double *M0, int size, bool posdef,
 	// F77_CALL(dpotri)("U", &sz, REAL(ans), &sz, &info FCONE);
       } else BUG;
       if (err != NOERROR) {
-	CERR1("Cholesky decompostion failed (err=%d).", err);
+	CERR1("Cholesky decompostion failed (err=%d). Consider 'RFoptions(la_mode=\"intern\", pivot=PIVOT_AUTO)'", err);
       }
       break;
     }
@@ -842,6 +841,8 @@ int doPosDef(double *M0, int size, bool posdef,
 	CERR2("Matrix  is too large for Cholesky decomposition. Maximum ist currently a %d x %d matrix. Increase 'max_chol' in 'RFoption' if necessary.",
 	      sp->max_chol, sp->max_chol);
       }
+
+      ///printf("size = %d %d %d\n", size, rhs_cols, size > rhs_cols ? size : rhs_cols);
       
       CMALLOC(D, size > rhs_cols ? size : rhs_cols, double);
       for (int i=0; i<size; i++) D[i] = MPT[sizeP1 * i];
@@ -861,15 +862,17 @@ int doPosDef(double *M0, int size, bool posdef,
 	    double sclr = SCALAR(A, A, i);
 	    if (A[i] <= sclr) {
 	      if (proposed_pivot == PIVOT_NONE)
-		C_GERR2("Got %10e as %d-th eigenvalue. Try with 'RFoptions(pivot=PIVOT_DO)'.",
+		C_GERR2("Got %10e as %d-th eigenvalue.",
 			A[i] - sclr, i, 
-			ERR_CHOL)
+			ERR_CHOL
+			)
 		else C_GERR2("Got %10e as %d-th eigenvalue.",
 			     A[i] - sclr, i, Pivot_Cholesky);
 	      break;
 	    }
 	    A[i] = SQRT(A[i] - sclr);
-	    
+
+  
 	    //	  double invsum = 1.0 / A[i];
 	    double sum = A[i];
 #ifdef DO_PARALLEL
@@ -1122,7 +1125,7 @@ int doPosDef(double *M0, int size, bool posdef,
 
 	    if (rhs_cols == 0) {
  	      if (actual_size < size) 
-		GERR("Matrix not definite. Try 'solve(M , diag(nrow(M)))' instead or add a small positive constant to the diagonal.")
+		GERR("Matrix not definite. Try ")
 	      
 #ifdef DO_PARALLEL
 #pragma omp parallel for num_threads(CORES) if (size > 60) schedule(dynamic, 20)
@@ -1209,9 +1212,14 @@ int doPosDef(double *M0, int size, bool posdef,
 		  double *pM = MPT + pii * size;
 		  p_RESULT[i] = 0.0;
 		  if (FABS((p_rhs[pii] - SCALAR(pM, p_RESULT, i))) > eps) {
-		    if (Pt == NULL) solve_DELETE(&pt);		   
-		    ERR1("Equation system not solvable (difference %10e). Try increasing 'pivot_relerror' in 'RFoptions' to get an approximate solution.",
+		    if (Pt == NULL) solve_DELETE(&pt);
+#ifdef DO_PARALLEL
+		    RFERROR("Equation system not solvable");
+#else		    
+		    GERR1("Equation system not solvable (difference %10e). Try increasing 'pivot_relerror' in 'RFoptions' to get an approximate solution.",
 			 p_rhs[pii] - SCALAR(pM, p_RESULT, i));
+#endif
+		    
 		  }
 		}
 	      }
@@ -1241,9 +1249,15 @@ int doPosDef(double *M0, int size, bool posdef,
       
       if (err != NOERROR) {	
 	if (pt->actual_pivot == PIVOT_NONE)
-	  CERR1("Probably matrix not positive definite: %.300s\nTry more flexible options in 'RFoptions' ('pivot = PIVOT_AUTO or 'pivot = PIVOT_DO'').\n", ErrStr)
+	  CERR2("Probably matrix not positive definite: %.300s. Consider 'RFoptions(%.80s)'.\n",
+		ErrStr,
+		calculate != SOLVE || rhs_cols > 0  ?
+		"'pivot=PIVOT_AUTO)' or 'RFoptions(pivot=PIVOT_DO"
+		: "solve_method=\"eigen\", solve.pseudoinverse=TRUE") // OK
+
+	    
 	  else // pt->actual_pivot == PIVOT_DO  or  PIVOT_IDX
-	    CERR1("Likely, the matrix is not positive semi definite: %.300s\n", ErrStr)
+	    CERR1("Likely, the matrix is not positive semi definite: %.300s. Consider 'RFoptions(solve_method=\"svn\"\n", ErrStr)
 	      }
 
       if (PL >=  PL_DETAILSUSER) {
@@ -1251,13 +1265,13 @@ int doPosDef(double *M0, int size, bool posdef,
       }
     }
       break;
-    case QR : {// QR returns transposed of the inverse !!
+    case QR : {// QR returns transposed of the inverse !! 
       if (rhs_cols > 0 || logdet != NULL || calculate != SOLVE) {
 	err = ERRORFAILED;
 	continue;
       }
 
-      err = ERRORNOTPROGRAMMEDYET; /// to do: clarify transposed !
+        err = ERRORNOTPROGRAMMEDYET; /// to do: clarify transposed !
       continue;
 
       CMALLOC(w2, size, double);
@@ -1266,6 +1280,7 @@ int doPosDef(double *M0, int size, bool posdef,
       F77_CALL(dgeqrf)(&size, &size, // QR
 		       MPT, &size, // aijmax, &irank, inc, w2, 
 		       w3, w2, &size, &err);     
+      assert(false); // code zur invertierung fehlt hier!
       
       if (err != NOERROR) {	
 	CERR1("'dgeqrf' failed with err=%d.", err);
@@ -1291,12 +1306,14 @@ int doPosDef(double *M0, int size, bool posdef,
       CMALLOC(U, sizeSq, double);
       CMALLOC(D, size, double); 
       CMALLOC(xja, 2 * size, int);
-      
+      CMALLOC(w3, size, double);
+ 
       for (int i=0; i<=1; i++) {
 	double dummy = 0.0,
 	  abstol = 0.0;
 	int dummy_nr;
 
+	//	printf("%f %f %f %f\n", MPT[0],  MPT[1],  MPT[2],  MPT[3]);
 	F77_CALL(dsyevr)("V", "A", "U", &size, // Eigen
 			 MPT, &size, &dummy, &dummy, &k, &k, 
 			 &abstol,// or DLAMCH
@@ -1306,6 +1323,7 @@ int doPosDef(double *M0, int size, bool posdef,
 			 pt_iwork, &lintwork,
 			 &err
 			 );
+	//	printf("eigen %d %f %f;  %e %e %e %e\n", err, D[0], D[1], U[0], U[1], U[2], U[3]);
 	if (i==1 || err != NOERROR || ISNAN(D[0])) break;
 	lw2 = (int) optimal_work;
 	lintwork = (int) optimal_intwork;
@@ -1322,15 +1340,15 @@ int doPosDef(double *M0, int size, bool posdef,
 	break;
       }
       
-      for (int i=0; i<size; i++) if (D[i] < -eigen2zero) {
-	  const char *advice[2]={"",
-				 " Consider increasing the value of 'eigen2value'."};
+      for (int i=0; i<size; i++)
+	if (D[i] < -eigen2zero) {
+	  const char
+	    *advice[2]={"", " Consider increasing the value of 'eigen2value'."};
 	  double min  = D[i];
 	  for (int j=i+1; j<size; j++) if (D[j] < min) min = D[j];
-	  //print("negative eigen values!!!! %10g\n", D[i]);
 	  GERR3("Negative eigenvalues found (less than -eigen2zero=%10e). Smallest one equals %10e. %.50s", -eigen2zero, min, advice[min > -eigen2zero * 100]);
-	    
-	} //else print("%10g ", D[i]);
+	  
+	} 
       
       if (calculate == MATRIXSQRT) {
 	for (int j=0; j<size; j++) {
@@ -1345,24 +1363,47 @@ int doPosDef(double *M0, int size, bool posdef,
 	  *logdet = cumProd(D, size, sp->det_as_log);
 	  if (calculate == DETERMINANT) return NOERROR;
 	}
-	for (int j=0; j<size; j++) D[j] = D[j] < eigen2zero ? 0.0 : 1.0 / D[j];
+
+	//	printf("Hiere EIGGEN\n");
+	bool pseudoInverse = false;
+	for (int j=0; j<size; j++) {
+	  pseudoInverse |= D[j] < eigen2zero;
+	  w3[j] = D[j] < eigen2zero ? 0.0 : 1.0 / D[j];
+	}
+	
 	if (rhs_cols > 0) {
 	  int tot = size * rhs_cols;
 	  CMALLOC(w2, tot, double);	
 	  matmulttransposed(U, RHS, w2, size, size, rhs_cols);
-	  for (k=0; k<tot; )
-	    for (int i=0; i<size; i++) w2[k++] *= D[i];
+	  if (pseudoInverse) {
+	    for (k=0; k<tot; ) {
+	      for (int i=0; i<size; i++) {
+		double cmp = w2[k];
+		w2[k] *= w3[i];
+		if (FABS(w2[k] * D[i] - cmp) > eigen2zero) {
+		  GERR("singular matrix problem does not have a solution");
+		}
+		k++;
+	      }
+	    }
+	  } else {
+	    for (k=0; k<tot; )
+	      for (int i=0; i<size; i++) w2[k++] *= w3[i];
+	  }
 	  matmult(U, w2, RESULT, size, size, rhs_cols);
 	} else {
+	  if (pseudoInverse && !sp->pseudoinverse)
+	    GERR("Singular matrix: inverse does not exist. Consider 'RFoption(solve.pseudoinverse=TRUE)'");
 	  int j;
 	  CMALLOC(w2, sizeSq, double);
 	  for (k=0, j=0; j<size; j++) {
-	    double dummy = D[j];
+	    double dummy = w3[j];
 	    for (int i=0; i<size; i++, k++) w2[k] = U[k] * dummy;
 	  }
 	  matmult_2ndtransp(w2, U, RESULT, size, size, size); // V * U^T
 	}
       }
+
       if (PL >=  PL_DETAILSUSER) {
 	PRINTF("eigen value decomposition successful\n");
       }
@@ -1382,6 +1423,7 @@ int doPosDef(double *M0, int size, bool posdef,
       CMALLOC(U, sizeSq, double);
       CMALLOC(D, size, double); 
       CMALLOC(iwork, size8, int);
+      CMALLOC(lnz, size, double);
 
       for (int i=0; i<=1; i++) {
 	F77_CALL(dgesdd)("A", &size, &size, // SVD
@@ -1446,21 +1488,40 @@ int doPosDef(double *M0, int size, bool posdef,
 	  if (calculate == DETERMINANT) return NOERROR;
 	}
  	
-        for (int j=0; j<size; j++) 
-	  D[j] = FABS(D[j]) < eigen2zero ? 0.0 : 1.0 / D[j];
-
+  	bool pseudoInverse = false;
+	for (int j=0; j<size; j++) {
+	  bool small = FABS(D[j]) < eigen2zero;
+	  pseudoInverse |= small;
+	  lnz[j] = small ? 0.0 : 1.0 / D[j];
+	}
+	
 	if (rhs_cols > 0) {
 	  int tot = size * rhs_cols;
 	  CMALLOC(w2, tot, double);	
 	  matmulttransposed(U, RHS, w2, size, size, rhs_cols);
+	  if (pseudoInverse) {
+	    for (k=0; k<tot; ) {
+	      for (int i=0; i<size; i++) {
+		double cmp = w2[k];
+		w2[k] *= lnz[i];
+		if (FABS(w2[k] * D[i] - cmp) > eigen2zero) {
+		  GERR("singular matrix problem does not have a solution.");
+		}
+		k++;
+	      }
+	    }
+	  } else {
 	  for (k=0; k<tot; )
-	    for (int i=0; i<size; i++) w2[k++] *= D[i];
+	    for (int i=0; i<size; i++) w2[k++] *= lnz[i];
+	  }
 	  matmulttransposed(w3, w2, RESULT, size, size, rhs_cols);
 	} else {
 	  // calculate inverse of covariance matrix
+	  if (pseudoInverse && !sp->pseudoinverse)
+	    GERR("Singular matrix: inverse does not exist. Consider 'RFoption(solve.pseudoinverse=TRUE)'");
 	  int j;	  
 	  for (k=0, j=0; j<size; j++) {
-	    double dummy = D[j];
+	    double dummy = lnz[j];
 	    for (int i=0; i<size; i++) U[k++] *= dummy;
 	  }
 	  matmult_tt(U, w3, RESULT, size, size, size); // V * U^T
@@ -1717,7 +1778,7 @@ int doPosDef(double *M0, int size, bool posdef,
     case NoInversionMethod: GERR("no inversion method given.");
     case NoFurtherInversionMethod:
       STRCPY(ErrStr, WHICH_ERRORSTRING);
-      GERR1("%.150s (All specified matrix inversion methods have failed.)",
+      GERR1("%.300s (All specified matrix inversion methods have failed.)",
 	    ErrStr);
     case direct_formula: case Diagonal: 
       GERR("strange method appeared: please contact author.");
@@ -1735,7 +1796,7 @@ int doPosDef(double *M0, int size, bool posdef,
     Pt->sparse = sparse;
   }
   
-  //   if (GLOBAL.basic.Cprintlevel > 1)
+  //   if (OPTIONS.basic.Cprintlevel > 1)
   //     PRINTF("error: %d:\n", err, ERRORSTRING);  
 
   //  if (err != NOERROR) { printf("Err = %s %s %d\n",  ErrStr, WHICH_ERRORSTRING ,err); exit(0);}
@@ -1746,7 +1807,7 @@ int doPosDef(double *M0, int size, bool posdef,
 
  
 SEXP doPosDef(SEXP M, SEXP rhs, SEXP logdet, int calculate,
-	      solve_storage *Pt, solve_param *Sp){
+	      solve_storage *Pt, solve_options *Sp){
   // rhs_cols == 0 iff RHS = NULL
   int 
     rhs_rows, rhs_cols,
@@ -1851,7 +1912,7 @@ SEXP doPosDef(SEXP M, SEXP rhs, SEXP logdet, int calculate,
       break;
     default:  STRCPY(msg, "<unknown error>");
     }
-    RFERROR2("'%.50s': %.50s.\n", methname[calculate], msg);    
+    RFERROR2("'%.200s': %.200s.\n", methname[calculate], msg);    
   }
 
   return res;
@@ -1860,7 +1921,7 @@ SEXP doPosDef(SEXP M, SEXP rhs, SEXP logdet, int calculate,
 
 SEXP SolvePosDef(SEXP M, SEXP rhs, SEXP logdet){
    // rhs_cols == 0 iff RHS = NULL
-  return doPosDef(M, rhs, logdet, SOLVE, NULL, &(GLOBAL.solve));
+  return doPosDef(M, rhs, logdet, SOLVE, NULL, &(OPTIONS.solve));
 }
 
 
@@ -1874,13 +1935,13 @@ int solvePosDef(double *M, int size, bool posdef,
 		  logdet, 
 		  SOLVE, // calculate
 		  PT, // storage
-		  &(GLOBAL.solve));
+		  &(OPTIONS.solve));
 }
 
 
 int solvePosDefSp(double *M, int size, bool posdef, 
 		  double *rhs, int rhs_cols,  double *logdet, 
-		  solve_storage *PT,  solve_param * sp) {  
+		  solve_storage *PT,  solve_options * sp) {  
   if ((rhs == NULL) xor (rhs_cols==0)) BUG; 
   return doPosDef(M, size, posdef, rhs, rhs_cols, NULL, logdet, SOLVE,
 		  PT, sp);
@@ -1899,8 +1960,8 @@ int XCinvYdet(double *M, int size, bool posdef, double *X, double *Y, int cols,
   else result= (double *) MALLOC(sizeof(double) * size * cols);  
   if (result == NULL) return ERRORMEMORYALLOCATION;
   double *res = result;
-  solve_param sp;
-  MEMCOPY(&sp, &(GLOBAL.solve), sizeof(solve_param));
+  solve_options sp;
+  MEMCOPY(&sp, &(OPTIONS.solve), sizeof(solve_options));
   sp.det_as_log = log;
   int err =  doPosDef(M,// no PROTECT( needed
 		      size, posdef, Y, cols, result, det, SOLVE, PT, &sp);
@@ -1917,7 +1978,7 @@ int XCinvXdet(double *M, int size, double *X, int X_cols,
 }
 
 
-double detPosDefsp(double *M, int size, solve_param *sp) {
+double detPosDefsp(double *M, int size, solve_options *sp) {
   double det;
    int err= doPosDef(M, size, true, NULL, 0, NULL, &det,// no PROTECT( needed
 		     DETERMINANT, NULL, sp);
@@ -1929,8 +1990,8 @@ double detPosDefsp(double *M, int size, solve_param *sp) {
 double detPosDef(double *M, int size) {
   //never log of det --always small sizes!!
   //not that M will be destroyed!!
-  solve_param sp;
-  MEMCOPY(&sp, &(GLOBAL.solve), sizeof(solve_param));
+  solve_options sp;
+  MEMCOPY(&sp, &(OPTIONS.solve), sizeof(solve_options));
   sp.det_as_log = false;
   return detPosDefsp(M, size, &sp);
 }
@@ -1943,22 +2004,17 @@ int invertMatrix(double *M, int size) {
 
 
 SEXP Chol(SEXP M) {
-  solve_param sp;
-  MEMCOPY(&sp, &(GLOBAL.solve), sizeof(solve_param));
+  solve_options sp;
+  MEMCOPY(&sp, &(OPTIONS.solve), sizeof(solve_options));
   sp.Methods[0] = sp.Methods[1] = Cholesky;
-  //    printf("chol\n");
-  //sp.spam_tol = 1e-10;
-  //  printf("A\n");
-  //  printf("%e\n", sp.spam_tol);
   sp.sparse = False; // currently does not work, waiting for Reinhard
-  // sp.pivot = PIVOT_NONE;
   solve_storage Pt;
   solve_NULL(&Pt);
   SEXP Ans;
   PROTECT(Ans = doPosDef(M, R_NilValue, R_NilValue, MATRIXSQRT, &Pt, &sp));
 
   if (Pt.actual_pivot == PIVOT_DO || Pt.actual_pivot ==  PIVOT_IDX) {    
-    // NEVER: FREE(GLOBAL.solve.pivot_idx); See Pivot_Cholesky:
+    // NEVER: FREE(OPTIONS.solve.pivot_idx); See Pivot_Cholesky:
     SEXP Idx, Info1, Info3;
     PROTECT(Idx = allocVector(INTSXP, Pt.pivot_idx_n));
     MEMCOPY(INTEGER(Idx), Pt.pivot_idx, sizeof(int) * Pt.pivot_idx_n);
@@ -1983,13 +2039,13 @@ SEXP Chol(SEXP M) {
 
 
 
-int chol(double *M, int size, solve_param *sp) {
+int chol(double *M, int size, solve_options *sp) {
   return doPosDef(M, size, true, NULL, 0, NULL, NULL, MATRIXSQRT, NULL, sp);   
 }
 
 int chol(double *M, int size) {
-  solve_param sp;
-  MEMCOPY(&sp, &(GLOBAL.solve), sizeof(solve_param));
+  solve_options sp;
+  MEMCOPY(&sp, &(OPTIONS.solve), sizeof(solve_options));
   sp.Methods[0] = sp.Methods[1] = Cholesky;
   sp.sparse = False; // currently does not work, waiting for Reinhard
   return chol(M, size, &sp);   
@@ -2026,10 +2082,10 @@ bool is_positive_definite(double *C, int dim) { // bool not allowed in C
 int sqrtPosDefFree(double *M,  // in out
 		   int size,  
 		   solve_storage *pt,     // in out
-		   solve_param *sp
+		   solve_options *sp
 		   ){
   int err, sizeSq = size * size;
-  if (sp == NULL) sp = &(GLOBAL.solve);
+  if (sp == NULL) sp = &(OPTIONS.solve);
   InversionMethod *Meth = sp->Methods;
   double *res = NULL;
   bool extra_alloc = Meth[0] == NoInversionMethod ||

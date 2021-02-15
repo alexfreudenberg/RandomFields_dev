@@ -87,7 +87,6 @@ void CovarianceT(model *cov, int base_i_row, double *v) {
   // ignore_y=true : swap of x and y!
 }
 void Pseudomadogram(model *cov, double alpha, double *v) {
-  model *calling = cov->calling;
   bool ignore_y = false;
   CovVario(cov, false, true, NA_INTEGER, ignore_y, v);
   if (alpha < 2.0) {
@@ -103,7 +102,7 @@ void Pseudomadogram(model *cov, double alpha, double *v) {
 
 void CovVario(model *Cov, bool is_cov, bool pseudo, int select, bool ignore_y,
 	      double *v) {
-  globalparam *global = &(Cov->base->global);
+  option_type *global = &(Cov->base->global);
   // note: here, only a vector is return (in the univatiate case),
   //       not a matrix. So, distances do not make sense.
   // if callingKernel and y not given then y:=0
@@ -294,7 +293,7 @@ void CovarianceMatrix(model *Cov, bool ignore_y, double *v) {
   // NOTE: if LocHasY & !ignore_y then LocY is taken and not LocX
 
 #define  StartCovarianceMatrix(TOTX, TOTY)			\
-  globalparam *global = &(Cov->base->global);			\
+  option_type *global = &(Cov->base->global);			\
   STANDARDSTART(!ignore_y, ignore_y, TOTX, TOTY, 0);		\
   bool dist = LocDist(cov);  /* LocxdimOZ(cov) == 1 nicht notwendig! */ \
   Long totM1 = totX - 1;					\
@@ -465,7 +464,7 @@ void CovarianceMatrix(model *Cov, bool ignore_y, double *v) {
 
  ErrorHandling: 
   STANDARD_ENDE;
-  if (err!=NOERROR) XERR(err); 
+  OnErrorStop(err, cov);
    
 } // CovarianzMatrix
 
@@ -551,7 +550,7 @@ void CovarianceMatrix(model *Cov, bool ignore_y, int *idx, int Nidx,
 
  ErrorHandling: 
   STANDARD_ENDE;
-  if (err!=NOERROR) XERR(err); 
+   OnErrorStop(err, cov);
    
 } // CovarianzMatrix
 
@@ -641,7 +640,7 @@ void CovarianceMatrixCols(model *Cov, bool ignore_y, int row, double *v) {
   //assert(false);
   
   STANDARD_ENDE;
-  if (err!=NOERROR) XERR(err); 
+  OnErrorStop(err, cov);
   
   //  int i,j,k;
   //  for (k=i=0; i<totX*totX; i+=totX) {
@@ -670,7 +669,7 @@ void InverseCovMatrix(model *cov, double *v, double *det) {// currently unused
 
 /*
 #define STANDARDINTERN					\
-  if (reg < 0 || reg > MODEL_MAX) XERR(ERRORREGISTER);	\
+  if (reg < 0 || reg > MODEL_MAX) XE RR(ERRORREGISTER);	\
    assert(currentNrCov != UNSET);		\
    model *cov = KEY()[reg];				\
   if (cov == NULL) { ERR("register not initialised") }	\
@@ -689,8 +688,6 @@ void InverseCovMatrix(model *cov, double *v, double *det) {// currently unused
   model VARIABLE_IS_NOT_USED *truecov =  !equalsnowInterface(cov)	? \
     cov : cov->key == NULL ? cov->sub[0] : cov->key;			\
   if (equalsnowGaussMethod(truecov)) truecov = truecov->sub[0]
-
-//  if (cov->pref[Nothing] == PREF_NONE) { PMI(cov); XERR(ERRORINVALIDMODEL) }
 
 
 SEXP CovLocNonGrid(SEXP reg, SEXP x, SEXP Y, SEXP result) { 

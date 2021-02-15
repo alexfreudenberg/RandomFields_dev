@@ -43,13 +43,13 @@ int ccw(double **P, int i, int j, int k) {
 }
 
 int cmpl(const void *a, const void *b) {
-	double v; 
-	v = (*(double**)a)[0] - (*(double**)b)[0];
-	if (v>0) return 1;
-	if (v<0) return -1;
-	v = (*(double**)b)[1] - (*(double**)a)[1];
-	if (v>0) return 1;
-	if (v<0) return -1;
+	double c; 
+	c = (*(double**)a)[0] - (*(double**)b)[0];
+	if (c>0) return 1;
+	if (c<0) return -1;
+	c = (*(double**)b)[1] - (*(double**)a)[1];
+	if (c>0) return 1;
+	if (c<0) return -1;
 	return 0;
 }
 

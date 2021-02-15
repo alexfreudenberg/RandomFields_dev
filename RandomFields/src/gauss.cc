@@ -45,7 +45,7 @@ void GetInternalMeanI(double *x, int *info, model *cov, int vdim, double *v,
 
   if (COVNR == CONST) { // extra algorithm, as it stays simple whatever
     //   algorithm/definition of the mean for nonstatary fields is used
-    Zero(info, cov, v);
+    AtZero(info, cov, v);
     for (int i=0; i<vdim; i++) mean[i] += v[i];
     return;
   }
@@ -88,7 +88,7 @@ void GetInternalMean(model *sub, int vdim, double *mean){
 
 
 void location_rules(model *cov, pref_type pref) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
 
   // 1. rules that depend on the the locations and the user's preferences only,
   // but not on the covariance model#
@@ -101,9 +101,9 @@ void location_rules(model *cov, pref_type pref) {
   int i;
 
   Methods Standard[Nothing] = {
-     CircEmbed, CircEmbedIntrinsic, CircEmbedCutoff, SpectralTBM, TBM,
-     Direct, Specific, Sequential, Shapefctproc, Average, Nugget, RandomCoin,
-     Hyperplane
+			       CircEmbed, CircEmbedIntrinsic, CircEmbedCutoff, SpectralTBM, TBM,
+			       Direct, Specific, Sequential, Shapefctproc, Average, Nugget, RandomCoin,
+			       Hyperplane
   };
   for (i=0; i<Nothing; i++) {
     pref[Standard[i]] = Nothing - i; 
@@ -114,7 +114,7 @@ void location_rules(model *cov, pref_type pref) {
   }
 
   if (exactness == True) {
-   pref[TBM] = pref[SpectralTBM] = pref[Average] = pref[RandomCoin] = 
+    pref[TBM] = pref[SpectralTBM] = pref[Average] = pref[RandomCoin] = 
       pref[Sequential] = pref[Hyperplane] = LOC_PREF_NONE - 2;
   }
 
@@ -132,7 +132,7 @@ void location_rules(model *cov, pref_type pref) {
     }
   } else {
     if (exactness == True){
-       pref[CircEmbed] = pref[CircEmbedIntrinsic] = pref[CircEmbedCutoff] = -3;
+      pref[CircEmbed] = pref[CircEmbedIntrinsic] = pref[CircEmbedCutoff] = -3;
     } else {
       pref[CircEmbed] -= PREF_PENALTY;
       pref[CircEmbedIntrinsic] = -3; 
@@ -145,8 +145,8 @@ void location_rules(model *cov, pref_type pref) {
 void mixed_rules(model *cov, pref_type locpref, 
 		 pref_type pref, int *order) {
   
-  globalparam *global = &(cov->base->global);
-  utilsparam *global_utils = &(cov->base->global_utils);
+  option_type *global = &(cov->base->global);
+  utilsoption_type *global_utils = &(cov->base->global_utils);
   assert(COVNR == GAUSSPROC);
  
  
@@ -205,9 +205,9 @@ void mixed_rules(model *cov, pref_type locpref,
 
   if (!isCartesian(OWNISO(0))) {
     pref[CircEmbedIntrinsic] = pref[CircEmbed] = pref[CircEmbedCutoff] =
-				    LOC_PREF_NONE - 7;
+      LOC_PREF_NONE - 7;
     if (isAnySpherical(OWNISO(0)) && OWNTOTALXDIM < 3)
-     pref[Sequential] = LOC_PREF_NONE - 8;
+      pref[Sequential] = LOC_PREF_NONE - 8;
   } else {
     double factor = (double) (vdimtot - best_dirct) / (max_variab - best_dirct);
     factor = MIN(1, factor); // < 0  ist ok
@@ -217,7 +217,7 @@ void mixed_rules(model *cov, pref_type locpref,
     if (pref[Sequential] > PREF_NONE && LocLocTime(loc)) {      
       Long  
 	timelength =
-             (int) (loc->grid ? loc->xgr[loc->timespacedim -1] : loc->T)[XLENGTH],
+	(int) (loc->grid ? loc->xgr[loc->timespacedim -1] : loc->T)[XLENGTH],
 	back = global->sequ.back;
       double
 	quot = (double) timelength / back;
@@ -242,13 +242,13 @@ bool NAequal(double X, double Y) {
 }
 
 int kappaBoxCoxParam(model *cov, int BC) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   int
     vdim = VDIM0,
     vdim_2 = vdim * 2,
     vdimMax = MIN(vdim, MAXBOXCOXVDIM);					
   // printf("********* %s BC=%d %d %d %d\n", NAME(cov), BC, cov->base->use_external_boxcox,cov->zaehler, PisNULL(BC));
-   if (PisNULL(BC)) {
+  if (PisNULL(BC)) {
     PALLOC(BC, 2, vdim);
     if (cov->base->use_external_boxcox == cov->zaehler) {
       if (global->gauss.loggauss) {					
@@ -318,7 +318,7 @@ void kappaGProc(int i, model *cov, int *nr, int *nc){
 
 int checkgaussprocess(model *cov) {
   //  printf("\nGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG\n");
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   
   ASSERT_ONESYSTEM;
   model 
@@ -328,7 +328,7 @@ int checkgaussprocess(model *cov) {
   int err,
     xdim = OWNXDIM(0), // could differ from logicaldim in case of distances!
     dim = OWNLOGDIM(0);
-  gauss_param *gp  = &(global->gauss);  
+  gauss_options *gp  = &(global->gauss);  
 
   assert((Loc(cov)->distances && xdim==1) || xdim == dim);
 
@@ -446,7 +446,7 @@ void rangegaussprocess(model VARIABLE_IS_NOT_USED *cov, int k, int i, int j,
 
 
 int gauss_init_settings(model *cov) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   model 
     *next = cov->sub[cov->sub[0] == NULL],
     *sub = cov->key == NULL ? next : cov->key;
@@ -481,7 +481,7 @@ int gauss_init_settings(model *cov) {
   assert(next->checked);
  
   if (isXonly(PREVSYSOF(next))) {
-    Zero(next, variance);
+    AtZero(next, variance);
   } else {
     assert(isKernel(PREVSYSOF(next)));
     for (v=0; v<vdimSq; variance[v++] = 0.0); // just a dummy
@@ -914,7 +914,7 @@ int init_gaussprocess(model *cov, gen_storage *s) {
    
 
 void do_gaussprocess(model *cov, gen_storage *s) {
-   globalparam *global = &(cov->base->global);
+   option_type *global = &(cov->base->global);
  assert(s != NULL);
   // reopened by internal_dogauss
   errorloc_type errorloc_save;
@@ -967,17 +967,26 @@ int checkbinaryprocess(model *cov) {
     *key = cov->key,
     *next = cov->sub[0],
     *sub = key != NULL ? key : next;
-  double v;
   int err = NOERROR;
   if (PisNULL(BINARY_THRESHOLD)) kdefault(cov, BINARY_THRESHOLD, 0);
+  assert(next != NULL);
 
   if (key == NULL && !isProcess(next)) {
+    int i,
+      vdimSq = VDIM0 * VDIM1,
+      vdimP1 = VDIM0 + 1;
     if ((err = checkgaussprocess(cov)) != NOERROR) {
       RETURN_ERR(err);
     }
-   Zero(sub, &v);
-   if (v != 1.0) SERR("binaryian requires a correlation function as submodel.");
- } else {
+    double *v = NULL; 
+    if ((v = (double*) MALLOC(sizeof(double) * vdimSq)) == NULL)
+      RETURN_ERR(ERRORMEMORYALLOCATION);
+    AtZero(sub, v);
+    for (i=0; i<vdimSq; i+=vdimP1) if (v[i] != 1.0) break;
+    FREE(v);
+    if (i < vdimSq)
+      SERR1("'%.50s' requires a correlation function as submodel.", NICK(cov));
+  } else {
     if ((err = CHECK_PASSTF(sub, ProcessType, SUBMODEL_DEP,
 			    hasAnyEvaluationFrame(cov) ? cov->frame :
 			    NormedProcessType
@@ -1057,7 +1066,7 @@ int init_binaryprocess( model *cov, gen_storage *s) {
 	    NICK(cov));
     if (cov->mpp.moments >= 1)  {
       model *sub0 = NEXTNR==GAUSSPROC ? next->sub[0]: next;
-      Zero(sub0, variance);
+      AtZero(sub0, variance);
     }
     nmP1 = cov->mpp.moments + 1;
     for (pi=v=w=0; w<vdimSq; w+=vdimP1, v++, pi = (pi + 1) % npi ) { 
@@ -1147,7 +1156,7 @@ void rangebinaryprocess(model *cov, int k, int i, int j,
 
 
 int checkchisqprocess(model *cov) {
-  DEFAULT_INFO(info);
+  //  DEFAULT_INFO(info);
   ASSERT_ONESYSTEM;
   model
     *key = cov->key,
@@ -1186,7 +1195,7 @@ int checkchisqprocess(model *cov) {
     model *sub = next;
     while (sub != NULL && isnowProcess(sub)) sub=sub->sub[0];
     if (sub == NULL) BUG;
-    Zero(next, v); // ok
+    AtZero(next, v); // ok
 
     int w,
       vdimP1 = vdim + 1;
@@ -1236,7 +1245,7 @@ int struct_chisqprocess(model *cov,
 }
 
 int init_chisqprocess(model *cov, gen_storage *s) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   double // sigma,
     mean, m2, 
     variance;

@@ -39,23 +39,19 @@ bool debugging = true;
 #define SEQU_BACK (COMMON_GAUSS + 1)
 #define SEQU_INIT (COMMON_GAUSS + 2)
 
-static inline double scalar(double *A, double *B, Long C) {
- double  sum=0.0;			    
- for (Long i=0; i<C; i++) sum += A[i] * B[i];
- return sum;
-}
+
 //#define SCALAR_PROD(A,B,C) scalar(A,B,C)
 #define SCALAR_PROD(A,B,C) Ext_scalarX(A,B,C, SCALAR_AVX)
  
 
 
 int check_sequential(model *cov) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
 #define nsel 4
   model *next=cov->sub[0];
   int err,
     dim = ANYDIM; // taken[MAX DIM],
-  sequ_param *gp  = &(global->sequ);
+  sequ_options *gp  = &(global->sequ);
 
   if (!Locgrid(cov) && !LocTime(cov)) 
     SERR1("'%.50s' only possible if at least one direction is a grid", NICK(cov));
@@ -69,7 +65,7 @@ int check_sequential(model *cov) {
   if ((err = CHECK(next, dim, dim, PosDefType, XONLY, 
 		   SymmetricOf(OWNISO(0)), // todo : eigentlich sollte coordinate of reichen; aber unten alg durchschauen.
 		   SUBMODEL_DEP, GaussMethodType)) != NOERROR) {
-    RETURN_ERR(err);
+     RETURN_ERR(err);
   }
   
   if (next->pref[Sequential] == PREF_NONE) RETURN_ERR(ERRORPREFNONE);
@@ -113,7 +109,7 @@ void range_sequential(model VARIABLE_IS_NOT_USED *cov, int k, int i, int j,
 // start mit S_22; dann nur zeilenweise + Einschwingen
 
 int init_sequential(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   model *next = cov->sub[0];
   location_type *loc = Loc(cov);
   if (loc->distances) RETURN_ERR(ERRORFAILED);
@@ -396,9 +392,11 @@ int init_sequential(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   for (Long l=0, z=0; z<spatialpnts; z++) { // C21:s
     int i = z * totpnts;
     for (int k=0, j=0; k<back; k++) { // Inv sb
+#ifdef remove_bottom_zeros  
       double m=RF_NEGINF;
+#endif  
       for (int n=0; n<spatialpnts; n++, j+=totpnts, l++) { // Inv sb
-	double dummy = 0.0;
+	//	double dummy = 0.0;
 	// for (k=0; k<totpnts; k++) dummy += COV21[i + k] * Inv22[j + k];
 	//	MuT[l++] = dummy;
 	MuT[l] = SCALAR_PROD(COV21 + i, Inv22 + j, totpnts);

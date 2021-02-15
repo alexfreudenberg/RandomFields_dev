@@ -81,7 +81,7 @@ void INFO_TRACE_RETURNX(const char *where, int *info, model *cov) {
 
 
 void kdefault(model *cov, int i, double v) {
-  utilsparam *global_utils = &(cov->base->global_utils);
+  utilsoption_type *global_utils = &(cov->base->global_utils);
 
   defn *C = DefList + COVNR; // nicht gatternr
   if (PisNULL(i)) {
@@ -272,16 +272,16 @@ void setbackward(model *cov, model *sub) {
     }
     if (C->ptwise_definite == pt_submodeldep) {
       cov->ptwise_definite = sub->ptwise_definite;
-      // assert((cov->ptwise_definite != pt_paramdep &&  // to do !
+      // assert((cov->ptwise_definite != pt_optionsdep &&  // to do !
       //	      cov->ptwise_definite != pt_submodeldep &&
       //	      cov->ptwise_definite != pt_undefined));
     } 
   } else {
     if (cov->ptwise_definite != sub->ptwise_definite) {
-       // assert((cov->ptwise_definite != pt_paramdep && // to do !
+       // assert((cov->ptwise_definite != pt_optionsdep && // to do !
        //     cov->ptwise_definite != pt_submodeldep &&
        ///     cov->ptwise_definite != pt_undefined &&
-       //     sub->ptwise_definite != pt_paramdep &&
+       //     sub->ptwise_definite != pt_optionsdep &&
        //     sub->ptwise_definite != pt_submodeldep &&
        //     sub->ptwise_definite != pt_undefined));
       if (cov->ptwise_definite ==pt_mismatch ||
@@ -521,7 +521,7 @@ void stat2_Intern(double *x, model *cov, double **Z) {
   DEFAULT_INFO(info);
 
    if (trafo) {
-    TALLOC_GATTER_GLOBAL(z1, GATTERTOTALXDIM);
+    TALLOC_GATTER_OPTIONS(z1, GATTERTOTALXDIM);
     DefList[trafonr].cov(x, info, cov, z1); // Trafo-FCTN() call
     x = z1;
   }
@@ -694,10 +694,10 @@ void nonstat2(double *x, double *y, int *info, model *cov, double *v) {
   if (cov->calling != NULL && nr != UNSET) {
     //    printf("earth trafo:\n");
     int
-      prevdim = PREVXDIM(0),
+      //      prevdim = PREVXDIM(0),
       xdim = GATTERTOTALXDIM;
-    TALLOC_GATTER_GLOBAL(z1, xdim);
-    TALLOC_GATTER_GLOBAL(z2, xdim);
+    TALLOC_GATTER_OPTIONS(z1, xdim);
+    TALLOC_GATTER_OPTIONS(z2, xdim);
     DefList[nr].cov(x, info, cov, z1);  // Trafo-FCTN() call 
     DefList[nr].cov(y, info, cov, z2); // Trafo-FCTN() call 
     x = z1;
@@ -728,8 +728,8 @@ void nonstat_log2(double *x, double *y, int *info, model *cov,
   int nr = TRAFONR;
   if (cov->calling != NULL && nr != UNSET) {
     int xdim = GATTERTOTALXDIM;
-    TALLOC_GATTER_GLOBAL(z1, xdim);
-    TALLOC_GATTER_GLOBAL(z2, xdim);
+    TALLOC_GATTER_OPTIONS(z1, xdim);
+    TALLOC_GATTER_OPTIONS(z2, xdim);
     DefList[nr].cov(x, info, cov, z1); // Trafo-FCTN() call 
     DefList[nr].cov(y, info, cov, z2); // Trafo-FCTN() call 
     x = z1;

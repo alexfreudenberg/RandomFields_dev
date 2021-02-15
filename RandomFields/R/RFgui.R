@@ -36,8 +36,8 @@ RFgui <- function(data, x, y,
     return(NULL)
   }
   wait <- as.integer(wait)
-  Env <- if (wait >= 0) environment() else .GlobalEnv
-  assign("RFgui.model", NULL, envir=Env)
+  envir <- if (wait >= 0) environment() else .GlobalEnv
+  assign("RFgui.model", NULL, envir=envir)
   if (exists(".RFgui.exit", .GlobalEnv)) rm(".RFgui.exit", envir=.GlobalEnv)
  
   circ.trials <- 1
@@ -56,16 +56,16 @@ RFgui <- function(data, x, y,
   rfgui.intern(x=x, y=y, same.alg=same.algorithm,
                           ev=ev, xcov=xcov, ycov=ycov,
                           data=data, sim_only1dim=sim_only1dim, 
-                          parent.ev = Env, RFopt=RFopt,
+                          parent.ev = envir, RFopt=RFopt,
                           ...)
  
   if (wait >= 0) {
-    while (!exists(".RFgui.exit", envir=Env))
+    while (!exists(".RFgui.exit", envir=envir))
       RandomFieldsUtils::sleep.micro(wait)
-    res <- get("RFgui.model", envir=Env)
+    res <- get("RFgui.model", envir=envir)
     if (is.null(res)) return(res) 
     if (internalRFoptions(getoptions_="general")$spConform) {
-      RFvariogram(COPY=FALSE, model=res, 0, get(".RFgui.y", envir=Env)) # OK
+      RFvariogram(COPY=FALSE, model=res, 0, get(".RFgui.y", envir=envir)) # OK
       res <- list2RMmodel(GetModel(RFvariogram))
     } else {
       class(res) <- CLASS_CLIST

@@ -43,21 +43,6 @@ bool parallel() {
   return mypid != parentpid;
 }
 
-void globalparam_NULL(KEY_type VARIABLE_IS_NOT_USED *KT,
-		      bool VARIABLE_IS_NOT_USED copy_messages) {
-  // lokale Version noch nicht verwendet
-}
-
-void globalparam_NULL(KEY_type *KT) {
-  globalparam_NULL(KT, true);
-}
-
-void globalparam_DELETE(KEY_type *KT) {
-   // pointer loeschen
-  utilsparam_DELETE(&(KT->global_utils));
-}
-
-
 
 void KEY_type_NULL(KEY_type *KT) {
   // ACHTUNG!! setzt nur die uninteressanten zurueck. Hier also gar ncihts.
@@ -68,12 +53,12 @@ void KEY_type_NULL(KEY_type *KT) {
   KT->ToRealDummy = NULL;
   KT->ToRealN = 0;
   KT->nu2old = KT->nuOld = KT->nu1old = KT->nuAlt = -RF_INF;
-  globalparam_NULL(KT);
+  // option_type_NULL(KT, false)
 }
 
 void KEY_type_DELETE(KEY_type **S) {
   KEY_type *KT = *S;
-  globalparam_DELETE(KT);
+  //option_type_DELETE(KT);
   FREE(KT->ToIntDummy);
   FREE(KT->ToRealDummy);
   UNCONDFREE(*S);
@@ -104,7 +89,7 @@ KEY_type *KEYT() {
     neu->ok = true;
     if (PIDKEY[mypid % PIDMODULUS] != neu) BUG;
     KEY_type_NULL(neu);    
-    if (GLOBAL.basic.warn_parallel && mypid == parentpid) {
+    if (OPTIONS.basic.warn_parallel && mypid == parentpid) {
       PRINTF("Do not forget to run 'RFoptions(storing=FALSE)' after each call of a parallel command (e.g. from packages 'parallel') that calls a function in 'RandomFields'. (OMP within RandomFields is not affected.) This message can be suppressed by 'RFoptions(warn_parallel=FALSE)'.\n"); // ok
     }
    return neu;
@@ -152,6 +137,7 @@ void deloptions(bool local);
 
 
 void loadoptions() {
+  for (int i=0; i<PIDMODULUS; i++) PIDKEY[i] = NULL; 
   pid(&parentpid);
   attachRFoptions(prefixlist, prefixN,
 		  all, allN,
@@ -160,6 +146,7 @@ void loadoptions() {
 		  getoptions,
 		  deloptions,
 		  0, true);
+  //finalizeoptions();
   SetLaMode();
 }
 

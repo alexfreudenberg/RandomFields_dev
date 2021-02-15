@@ -345,6 +345,7 @@ double searchInverse(isofct fct, double start, double *value,
 
 double searchInverse(covfct fct, model *cov, 
 		     double start, double value, double releps) {
+  if (VDIM0 != 1) BUG;
   DEFAULT_INFO(info);
   double v;
   fct(&start, info, cov, &v);
@@ -364,6 +365,7 @@ double searchInverse(covfct fct, model *cov,
 
 double searchInverse(covfct fct, model *cov, 
 		     double start, double min, double value, double releps) {
+  if (VDIM0 != 1) BUG;
   DEFAULT_INFO(info);
   double v;
   assert(start > min);

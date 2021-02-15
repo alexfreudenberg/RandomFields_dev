@@ -1685,6 +1685,8 @@ The user can use the registers 0..9.
       
       Default: \code{FALSE}.
     }
+    \item{\code{parent}}{environment, that should be used to solve the
+    model definition}
   }
 %\bold{General comments}\cr
 %Most of the above arguments determine the basic settings of a

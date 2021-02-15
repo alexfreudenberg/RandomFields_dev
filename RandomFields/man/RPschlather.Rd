@@ -82,7 +82,7 @@ plot(z2, type="l")
 all.equal(z1, z2) # true
 
 ## Note that the following definition is incorrect
-try(RFsimulate(model=RPschlather(RMgauss(var=2)), x=x))
+try(RFsimulate(model=RPschlather(RMgauss(var=2)), x=x))%## OK
 
 
 ## check whether the marginal distribution (Gumbel) is indeed correct:

@@ -49,7 +49,7 @@ bool equal(model *cov, int i, int j, double *X, int dim) {
 
 
 bool HasAniso(model *cov, bool checkzonal) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   assert(isAnyNugget(cov));
   cov = cov->calling;
   if (cov == NULL) return false;
@@ -73,7 +73,7 @@ bool HasAniso(model *cov, bool checkzonal) {
   //  printf("ans = %d\n",ans);
   
   if (ans && checkzonal) {
-    location_type *loc=LocPrev(cov);
+    // location_type *loc=LocPrev(cov);
     if (global->general.duplicated_loc != DUPLICATEDLOC_REPEATED
 	//	&& (loc->grid || !global->general.duplicated_loc)
 	) { // guarantees
@@ -97,7 +97,7 @@ bool HasAniso(model *cov, bool checkzonal) {
 
 
 bool SpatialNugget(model *cov) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   /* 
      What the definition of in the user interface says;
      * if !glo bal->general.duplicated_loc : only SpatialNugget allowed
@@ -163,7 +163,7 @@ double same = (*x <= P0(NUGGET_TOL)) ? 1.0 : 0.0;
 void nonstat_nugget(double *x, double *y, int *info, model *cov, double *v) {
   // printf("nonstat: spatial nugget effect %d %d\n", cov->Snugget->spatialnugget, cov->Snugget->simuspatialnugget);
   int i, endfor,
-    dim = OWNXDIM(0),
+    //  dim = OWNXDIM(0),
     vdim   = VDIM0,
     vdimsq = vdim * vdim;
   double same = (*x == 0.0 && y == NULL) ||
@@ -211,10 +211,10 @@ void inversenonstat_nugget(double VARIABLE_IS_NOT_USED *x, model *cov,
 }
 
 int check_nugget(model *cov) {
- globalparam *global = &(cov->base->global);
+ option_type *global = &(cov->base->global);
 #define nsel 4
   int  err ; // taken[MAX DIM],
-  nugget_param *gp  = &(global->nugget);
+  nugget_options *gp  = &(global->nugget);
 
   assert(equalsNugget(COVNR));
   if (!hasAnyEvaluationFrame(cov) && !hasAnyProcessFrame(cov)) ILLEGAL_FRAME;

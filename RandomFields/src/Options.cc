@@ -47,7 +47,7 @@ const char * OPTIM_VAR_NAMES[nOptimVar] =
 void ResetWarnings(int * allwarnings, int *local) {
   if (parallel() && !local) 
      ERR("Warnings may not be reset from a parallel process.");        
-  messages_param *w = local ? KEYT() : &(GLO BAL.messages);
+  messages_options *w = local ? KEYT() : &(GLO BAL.messages);
   w->warn_oldstyle = w->help_newstyle = w->warn_Aniso = 
     w->help_normal_mode = w->warn_mode =
     w->warn_on_grid = w->note_no_fit = w->note_aspect_ratio = 
@@ -116,7 +116,7 @@ double
 const char *f_opt[nr_modes] = {"optim", "optim", "optim", "optim", "optim", "optim", "optim"}; // to do optimx
 
 
-globalparam GLOBAL = {
+option_type OPTIONS = {
   general_START,
   gauss_START,
   krige_START, 
@@ -151,7 +151,7 @@ void SetDefaultOutputModeValues(output_modes mode, bool local){
   if (!local && parallel())
     ERR("global options may be set only by RFoptions()");
   
-  general_param *gp = &(GLOBAL.general);
+  general_options *gp = &(OPTIONS.general);
   if (local) {
     KEY_type * KT = KEYT();
     gp = &(KT->global.general);
@@ -180,8 +180,8 @@ void SetDefaultModeValues(int old, int m, bool local){
   if (!local && parallel())
     ERR("global options may be set only by RFoptions()");
   KEY_type * KT = KEYT();
-  utilsparam *global_utils = local ? &(KT->global_utils) : GLOBAL_UTILS;
-  globalparam *global = local ? &(KT->global) : &GLOBAL;
+  utilsoption_type *global_utils = local ? &(KT->global_utils) : OPTIONS_UTILS;
+  option_type *global = local ? &(KT->global) : &OPTIONS;
   
 			      
   global_utils->basic.skipchecks = skipchecks[m];
@@ -214,7 +214,7 @@ void SetDefaultModeValues(int old, int m, bool local){
   global->fit.locsplitn[NEIGHB_MIN] = MINCLIQUE(maxclique[m]);
   global->fit.locsplitn[NEIGHB_MED] = MEDCLIQUE(maxclique[m]);
   global->fit.locsplitn[NEIGHB_MAX] = MAXCLIQUE(maxclique[m]);
-  fit_param *f = &(global->fit);
+  fit_options *f = &(global->fit);
   f->split = fit_split[m];
   f->reoptimise = fit_reoptimise[m];
   f->ratiotest_approx = fit_ratiotest_approx[m];
@@ -233,7 +233,7 @@ void SetDefaultModeValues(int old, int m, bool local){
 
   //  printf("optimiser %d %s\n", f->optimiser,  OPTIMISER_NAMES[f->optimiser]);
 
-  messages_param *w = &(global->messages);
+  messages_options *w = &(global->messages);
   if (m < normal) {
     w->warn_Aniso = w->note_ambiguous =  w->warn_ambiguous = 
       w->warn_on_grid = w->note_aspect_ratio = w->help_color_palette = false;
@@ -280,7 +280,7 @@ SEXP UNITS(char units[MAXCOORDNAMES][MAXUNITSCHAR]) {
 }
 
 
-void CE_set(SEXP el, int j, char *name, ce_param *cp, bool isList) {
+void CE_set(SEXP el, int j, char *name, ce_options *cp, bool isList) {
   switch(j) {
   case 0: cp->force = LOGI; break;
   case 1:
@@ -388,7 +388,7 @@ const char * mpp[mppN] = {"n_estim_E", // n to determine E by simulation
                          };
 
 const char * hyper[hyperN] = {"superpos", "maxlines", "mar_distr",
-			      "mar_param"};
+			      "mar_options"};
 
 const char * extreme[extremeN] = 
   {"max_gauss", "maxpoints", "xi",
@@ -505,12 +505,12 @@ void setoptions(int i, int j, SEXP el, char name[LEN_OPTIONNAME], bool isList,
   if (!local && parallel())
     ERR("'RFoptions' may not be set from a parallel process.")
 
-  globalparam *options = WhichOptionList(local);
-  //bool isList = options == &GLOBAL;
+  option_type *options = WhichOptionList(local);
+  //bool isList = options == &OPTIONS;
   
   switch(i) {
   case 0: {// general
-    general_param *gp;
+    general_options *gp;
     gp = &(options->general);
     switch(j) {
     case GENERAL_MODUS: {
@@ -541,7 +541,6 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
       } else if (gp->storing) {	  
 	  // delete all keys
 	if (local) {
-	  KEY_type *KT = KEYT();
 	  for (int nr=0; nr<=MODEL_MAX; nr++) {
 	    model **key = KEY() + nr;
 	    if (*key != NULL) COV_DELETE(key, NULL);
@@ -600,7 +599,7 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
     }}
     break;
   case 1: { // gauss
-    gauss_param *gp;
+    gauss_options *gp;
     gp = &(options->gauss);
     switch(j) {
     case 0: gp->paired = LOGI; break;
@@ -642,7 +641,7 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
     }}
     break;
   case 2: { // krige
-    krige_param *kp;
+    krige_options *kp;
     kp = &(options->krige);
     switch(j) { 
     case 0: kp->ret_variance = LOGI; break;
@@ -672,7 +671,7 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
     CE_set(el, j, name, &(options->ce), isList); 
     break;
   case 4: { //direct
-    direct_param *dp;
+    direct_options *dp;
     dp = &(options->direct);
     switch(j) {
     case DIRECT_MAXVAR_PARAM : {
@@ -691,12 +690,12 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
 	}	
       }
       dp->maxvariables = mv;
-      solve_param *sp;
+      solve_options *sp;
       if (local) {
 	KEY_type *KT = KEYT();
 	if (KT == NULL) BUG;
 	sp = &(KT->global_utils.solve);
-      } else sp = &(GLOBAL_UTILS->solve);
+      } else sp = &(OPTIONS_UTILS->solve);
       sp->max_chol= MAX(mv, DIRECT_ORIG_MAXVAR);
     }
      break;
@@ -704,7 +703,7 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
     }}
     break;
   case 5:  {// pnugget, 
-    nugget_param *np;
+    nugget_options *np;
     np = &(options->nugget) ;
     switch(j) {
     case 0: np->tol = POS0NUM; break;
@@ -712,7 +711,7 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
     }}
     break;
   case 6: {//sequ,
-    sequ_param *sp;
+    sequ_options *sp;
     sp = &(options->sequ) ;
     switch(j) {
     case 0: sp->back = INT; if (sp->back < 1) sp->back=1;   break;
@@ -721,7 +720,7 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
     }}
     break;
   case 7: { // spectral,
-    spectral_param *sp;
+    spectral_options *sp;
     sp = &(options->spectral) ;
     switch(j) {
     case 0: Integer(el, name, sp->lines, MAXTBMSPDIM); break;
@@ -737,7 +736,7 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
     }}
     break;
   case 8: {// TBM
-    tbm_param *tp;
+    tbm_options *tp;
     tp = &(options->tbm) ;
     switch(j) {
     case 0: tp->tbmdim = INT; break;
@@ -772,7 +771,7 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
     }}
     break;
   case 9: {//  mpp, 
-    mpp_param *mp;
+    mpp_options *mp;
     mp = &(options->mpp);
     switch(j) {
     case 0: mp->n_estim_E = POS0INT; break;
@@ -792,18 +791,18 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
    }}
     break;
   case 10: {//hyper, 
-    hyper_param *hp;
+    hyper_options *hp;
     hp = &(options->hyper);
     switch(j) {
     case 0: hp->superpos = POS0INT;  break;
     case 1: hp->maxlines = POS0INT;  break;
     case 2: hp->mar_distr = INT; break;
-    case 3: hp->mar_param = NUM; break;
+    case 3: hp->mar_options = NUM; break;
     default:  BUG;
     }}
     break;
   case 11: {//		 extreme
-    extremes_param *ep;
+    extremes_options *ep;
     ep = &(options->extreme);
     switch(j) {
     case 0: ep->standardmax = POS0NUM; break;
@@ -829,7 +828,7 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
     }}
     break;
   case 12 : { // br
-    br_param *ep;
+    br_options *ep;
     ep = &(options->br);
     switch(j) {
     case 0: ep->BRmaxmem = POSINT; break;
@@ -843,7 +842,7 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
     }}
     break;
   case 13 : {// distr
-    distr_param *ep;
+    distr_options *ep;
     ep = &(options->distr);
     switch(j) { 
     case 0: ep->safety=POSNUM; break;
@@ -859,7 +858,7 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
     }}
     break;
   case 14: { // fit
-    fit_param *ef;
+    fit_options *ef;
     ef = &(options->fit);
     switch(j) {
     case 0: ef->bin_dist_factor = POS0NUM; break; //
@@ -959,7 +958,7 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
       }}
   break;
   case 15: { // empvario
-    empvario_param *ep;
+    empvario_options *ep;
     ep = &(options->empvario);
     switch(j) {
     case 0:
@@ -986,10 +985,10 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
 	RFERROR3("'%.50s' takes at most %d values. Got %d\n", name, MAXBINS, n);
       ep->nbins = n;
       if (n == 1) {
-	double v = Real(el, name, 0);
-	if (v != (int) v || v < 0)
+	double val = Real(el, name, 0);
+	if (val != (int) val || val < 0)
 	  RFERROR1("If '%.50s' is a single value, it must be a non-negative integer\n", name);
-	ep->bins[0] = v;
+	ep->bins[0] = val;
       } else for (int u=0; u<n; u++) ep->bins[u] = Real(el, name, u);
     }
       break;
@@ -1033,7 +1032,7 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
     }}
     break;
     case 16: { // gui
-      gui_param *gp;
+      gui_options *gp;
       gp = &(options->gui);
       switch(j) {
       case 0: gp->alwaysSimulate = LOGI; break;
@@ -1055,7 +1054,7 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
       }}
       break;
       case 17: { // graphics
-	graphics_param *gp = &(options->graphics);
+	graphics_options *gp = &(options->graphics);
 	switch(j) {
 	case 0 : gp->close_screen = LOGI; break;
 	case 1 : gp->PL = INT; break;
@@ -1102,7 +1101,7 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
 	}}
 	break;
 	case 18 : {
-	  registers_param *rp = &(options->registers);
+	  registers_options *rp = &(options->registers);
 	  switch(j) {
 	  case 0: { // simu
 	    int keynr = INT;
@@ -1127,7 +1126,7 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
     break;
 
   case 19: {
-    internal_param *wp = &(options->internal);
+    internal_options *wp = &(options->internal);
     // ACHTUNG internal wird nicht pauschal zurueckgesetzt !
     switch(j) {
       case INTERNALS_DO_TESTS: wp->do_tests = LOGI;       break;
@@ -1142,7 +1141,7 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
     break;
 
   case 20: {
-    messages_param *wp = &(options->messages);
+    messages_options *wp = &(options->messages);
     // ACHTUNG messages wird nicht pauschal zurueckgesetzt !
     if (!isList) {
       switch(j) {
@@ -1190,7 +1189,7 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
 
 
   case 21: {
-    coords_param *cp = &(options->coords);
+    coords_options *cp = &(options->coords);
     switch(j) {
     case COORDS_XYZNOTATION: cp->xyz_notation = USRLOG; break;
     case 1: {
@@ -1216,34 +1215,49 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
     case 3: getUnits(el, name, cp->curunits, isList ? NULL : cp->newunits);
       break;
     case 4: getUnits(el, name, cp->varunits, NULL);  break;
-    case COORDS_DATAIDX:
+    case DATA_IDX: {
       // either exct column number must be given
       //                      or a set of potential variable names
       Integer2(el, name, cp->data_idx);
       if (cp->data_idx[1] != NA_INTEGER) { // snd = NA : mean all after first
-	int n = cp->data_idx[1] - cp->data_idx[0] + 1;
-	if (n > MAXDATANAMES)
-	  RFERROR1("maximum number named variables is %d", MAXDATANAMES);
-	cp->data_nr_names = 0;
-      }
+	//	int n = cp->data_idx[1] - cp->data_idx[0] + 1;
+	//       	if (n > MAXDATANAMES) 
+	  //RFERROR1("maximum number named variables is %d", MAXDATANAMES);
+	cp->n_data_names = 0;
+      }}
       break;
-    case COORDS_DATANAMES:
-      cp->data_nr_names = length(el);
-      if (cp->data_nr_names > 0)
-	String(el, name, cp->data_names, cp->data_nr_names);
+    case DATA_NAMES: {
+      int len = length(el);
+      if (len > MAXDATANAMES) {
+	WARN3("vector '%.20s' is too long (current=%d > max=%d)",// along
+	      coords[DATA_NAMES], len, MAXDATANAMES);
+        len = MAXDATANAMES;
+     }
+      cp->n_data_names = len;
+      if (len > 0) String(el, name, cp->data_names, len);
+      //printf("set n=%d\n", cp->n_data_names);
+    }
       break; 
-    case COORDS_XIDX:
+    case COORDS_XIDX: {
       Integer2(el, name, cp->x_idx);
       if (cp->x_idx[1] != NA_INTEGER) {// snd = NA : mean all after first
 	int n =  cp->x_idx[1] - cp->x_idx[0] + 1;
-	if (n > MAXCOORDNAMES)
-	  RFERROR1("maximum number named variables is %d", MAXCOORDNAMES);
-	cp->x_nr_names = 0;
-      }
+	if (n > MAXCOORDNAMES) {
+	  //	  WARN1("maximum number named variables is %d", MAXCOORDNAMES);
+	  //n = MAXCOORDNAMES;
+	}
+	cp->n_x_names = 0;
+      }}
       break;
-    case COORDS_XNAMES:
-      cp->x_nr_names = length(el);
-      if (cp->x_nr_names > 0) String(el, name, cp->x_names, cp->x_nr_names);
+    case COORDS_XNAMES:{
+      int len = length(el);
+      if (len > MAXCOORDNAMES) {
+	RFERROR1("vector '%.20s' is too long", coords[COORDS_XNAMES]); // along
+ 	len = MAXCOORDNAMES;
+      }
+     cp->n_x_names = len;
+      if (len > 0) String(el, name, cp->x_names, len);
+    }
       break;
     case 9: 
       cp->new_coord_system =
@@ -1290,7 +1304,7 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
     break;
 
   case 22: {
-    special_param *sp = &(options->special);
+    special_options *sp = &(options->special);
     switch(j) {
     case 0: sp->multcopies = POSINT;
 	break;      
@@ -1300,7 +1314,7 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
 
 
   case 23: { // obsolete
-    messages_param *wp = &(options->messages);
+    messages_options *wp = &(options->messages);
     switch(j) {
     case 0: wp->warn_oldstyle = LOGI;       break;
     case 1: wp->help_newstyle = LOGI;       break;
@@ -1341,10 +1355,10 @@ void getoptions(SEXP sublist, int i, bool local) {
     int k=0;
   char x[2]=" ";
   //#define ADD(ELT) {printf(#ELT"\n");SET_VECTOR_ELT(sublist, k++, ELT);}
-  globalparam *options = WhichOptionList(local);
+  option_type *options = WhichOptionList(local);
   switch(i) {
   case 0 : { 
-     general_param *p = &(options->general);
+     general_options *p = &(options->general);
     ADD(ScalarString(mkChar(MODE_NAMES[p->mode])));
     ADD(ScalarLogical(p->storing));
     ADD(ScalarInteger(p->every));    
@@ -1371,7 +1385,7 @@ void getoptions(SEXP sublist, int i, bool local) {
   break;
   
   case 1 : {
-    gauss_param *p = &(options->gauss);
+    gauss_options *p = &(options->gauss);
     // nachfolgend sollte immer >= 0 sein
     ADD(ScalarLogical(p->paired));   
     ADD(ExtendedBooleanUsr(p->stationary_only));
@@ -1383,7 +1397,7 @@ void getoptions(SEXP sublist, int i, bool local) {
    break;
 
   case 2 : {
-    krige_param *p = &(options->krige);
+    krige_options *p = &(options->krige);
     ADD(ScalarLogical(p->ret_variance));   
     ADD(ScalarInteger(p->locmaxn));
     SET_VECTOR_ELT(sublist, k++, Int(p->locsplitn, 3));
@@ -1393,7 +1407,7 @@ void getoptions(SEXP sublist, int i, bool local) {
    break;
    
   case 3 : {
-    ce_param *p = &(options->ce);
+    ce_options *p = &(options->ce);
     ADD(ScalarLogical(p->force)); 
     SET_VECTOR_ELT(sublist, k++, Num(p->mmin, MAXCEDIM)); 
     ADD(ScalarInteger(p->strategy)); 
@@ -1410,7 +1424,7 @@ void getoptions(SEXP sublist, int i, bool local) {
    break;
    
   case 4: {
-    direct_param *p = &(options->direct);
+    direct_options *p = &(options->direct);
     //ADD(ScalarInteger(p->inversionmethod));    
     //ADD(ScalarReal(p->svdtolerance));     
     ADD(ScalarInteger(p->maxvariables));    
@@ -1418,21 +1432,21 @@ void getoptions(SEXP sublist, int i, bool local) {
     break;
 
   case 5:  {
-    nugget_param *p = &(options->nugget);
+    nugget_options *p = &(options->nugget);
     ADD(ScalarReal(p->tol));
     // ADD(ScalarLogical(p->meth));
   }
     break;
     
   case 6 : {
-    sequ_param *p = &(options->sequ);
+    sequ_options *p = &(options->sequ);
     ADD(ScalarInteger(p->back));    
     ADD(ScalarInteger(p->initial));    
   }
    break;
    
   case 7 :; {
-    spectral_param *p = &(options->spectral);
+    spectral_options *p = &(options->spectral);
     SET_VECTOR_ELT(sublist, k++, Int(p->lines, MAXTBMSPDIM));
     ADD(ScalarLogical(p->grid));
     ADD(ScalarReal(p->prop_factor));
@@ -1441,7 +1455,7 @@ void getoptions(SEXP sublist, int i, bool local) {
    break;
 
   case 8: {
-    tbm_param *p = &(options->tbm);
+    tbm_options *p = &(options->tbm);
     // nachfolgend sollte immer >= 0 sein
     ADD(ScalarInteger(p->tbmdim));
     ADD(ScalarInteger(p->fulldim));
@@ -1459,7 +1473,7 @@ void getoptions(SEXP sublist, int i, bool local) {
 
 
   case 9: {
-    mpp_param *p = &(options->mpp);
+    mpp_options *p = &(options->mpp);
      ADD(ScalarInteger(p->n_estim_E));
     SET_VECTOR_ELT(sublist, k++, Num(p->intensity, MAXMPPDIM));
     //ADD(ScalarReal(p->refradius_factor));
@@ -1476,16 +1490,16 @@ void getoptions(SEXP sublist, int i, bool local) {
    break;
 
   case 10: {
-    hyper_param *p = &(options->hyper);
+    hyper_options *p = &(options->hyper);
     ADD(ScalarInteger(p->superpos));    
     ADD(ScalarInteger(p->maxlines));    
     ADD(ScalarInteger(p->mar_distr));
-    ADD(ScalarReal(p->mar_param));    
+    ADD(ScalarReal(p->mar_options));    
   }
    break;
 
   case 11 : {
-    extremes_param *p = &(options->extreme);
+    extremes_options *p = &(options->extreme);
     ADD(ScalarReal(p->standardmax));
     ADD(ScalarInteger(p->maxpoints));           
     ADD(ScalarReal(p->GEV_xi));
@@ -1503,7 +1517,7 @@ void getoptions(SEXP sublist, int i, bool local) {
    break;
 
   case 12: {
-    br_param *p = &(options->br);
+    br_options *p = &(options->br);
     ADD(ScalarInteger(p->BRmaxmem)); 
     ADD(ScalarReal(p->BRmeshsize));
     ADD(ScalarInteger(p->BRvertnumber));
@@ -1515,7 +1529,7 @@ void getoptions(SEXP sublist, int i, bool local) {
    break;
 
   case 13 : {
-    distr_param *p = &(options->distr);
+    distr_options *p = &(options->distr);
     ADD(ScalarReal(p->safety));
     ADD(ScalarReal(p->minsteplen));
     ADD(ScalarInteger(p->maxsteps));
@@ -1529,7 +1543,7 @@ void getoptions(SEXP sublist, int i, bool local) {
    break;
    
   case 14 : {
-    fit_param *p = &(options->fit);
+    fit_options *p = &(options->fit);
     ADD(ScalarReal(p->bin_dist_factor));
     ADD(ScalarReal(p->upperbound_scale_factor)); 
     ADD(ScalarReal(p->lowerbound_scale_factor)); 
@@ -1585,7 +1599,7 @@ void getoptions(SEXP sublist, int i, bool local) {
    break;
    
   case 15: {
-    empvario_param *p = &(options->empvario);   
+    empvario_options *p = &(options->empvario);   
     ADD(ScalarReal(p->phi0));
     ADD(ScalarReal(p->theta0));
     ADD(ScalarReal(p->tol));
@@ -1603,7 +1617,7 @@ void getoptions(SEXP sublist, int i, bool local) {
    break;
 
   case 16: {
-    gui_param *p = &(options->gui);   
+    gui_options *p = &(options->gui);   
     ADD(ScalarLogical(p->alwaysSimulate));
     ADD(p->method>=0 ? ScalarString(mkChar(METHOD_NAMES[p->method])) 
 	: R_NilValue);
@@ -1612,7 +1626,7 @@ void getoptions(SEXP sublist, int i, bool local) {
    break;
 
   case 17 : {
-    graphics_param *p = &(options->graphics);   
+    graphics_options *p = &(options->graphics);   
     ADD(ScalarLogical(p->close_screen));
     ADD(ScalarInteger(p->PL));
     ADD(ScalarReal(p->height));
@@ -1633,7 +1647,7 @@ void getoptions(SEXP sublist, int i, bool local) {
    break;
 
   case 18: {
-    registers_param *p = &(options->registers);
+    registers_options *p = &(options->registers);
     ADD(ScalarInteger(p->keynr));    
     ADD(ScalarInteger(p->predict));    
     ADD(ScalarInteger(p->likelihood));
@@ -1641,14 +1655,14 @@ void getoptions(SEXP sublist, int i, bool local) {
    break;
   
   case 19 : {
-    internal_param *p = &(options->internal);
+    internal_options *p = &(options->internal);
     ADD(ScalarLogical(p->do_tests));
     ADD(ScalarInteger(p->examples_reduced));
   }
    break;
 
   case 20 : {
-    messages_param *p = &(options->messages);
+    messages_options *p = &(options->messages);
     ADD(ScalarLogical(p->warn_oldstyle));
     ADD(ScalarLogical(p->help_newstyle));
     ADD(ScalarLogical(p->warn_Aniso));
@@ -1684,27 +1698,31 @@ void getoptions(SEXP sublist, int i, bool local) {
    break;
 
 
+   
   case 21 : {
-    coords_param *p = &(options->coords);
+    coords_options *p = &(options->coords);
     ADD(ExtendedBooleanUsr(p->xyz_notation));    
     ADD(ScalarString(mkChar(COORD_SYS_NAMES[p->coord_system])));
     ADD(UNITS(p->newunits));
     ADD(UNITS(p->curunits));
     ADD(UNITS(p->varunits)); // 4
     int idx_default[2] = {NA_INTEGER, NA_INTEGER};
-    if (p->data_nr_names == 0) {
+    if (p->n_data_names == 0) {
       SET_VECTOR_ELT(sublist, k++, Int(p->data_idx, 2));
       SET_VECTOR_ELT(sublist, k++, String(NULL, 0));
-    } else {      
+    } else {
+      assert(p->n_data_names < MAXDATANAMES);
+      //printf("n_data %d %s %s\n", p->n_data_names, p->data_names[0], p->data_names[1]);
       SET_VECTOR_ELT(sublist, k++, Int(idx_default, 2));
-      SET_VECTOR_ELT(sublist, k++, String(p->data_names, p->data_nr_names));
+      SET_VECTOR_ELT(sublist, k++, String(p->data_names, p->n_data_names));
     }
-    if (p->x_nr_names == 0) { // 7
+    if (p->n_x_names == 0) { // 7
       SET_VECTOR_ELT(sublist, k++, Int(p->x_idx, 2));
       SET_VECTOR_ELT(sublist, k++, String(NULL, 0));
     } else {
-      SET_VECTOR_ELT(sublist, k++, Int(idx_default, 2));
-      SET_VECTOR_ELT(sublist, k++, String(p->x_names, p->x_nr_names));
+      assert(p->n_x_names < MAXDATANAMES);
+	SET_VECTOR_ELT(sublist, k++, Int(idx_default, 2));
+      SET_VECTOR_ELT(sublist, k++, String(p->x_names, p->n_x_names));
     }
     ADD(ScalarString(mkChar(COORD_SYS_NAMES[p->new_coord_system]))); //9
     SET_VECTOR_ELT(sublist, k++, Num(p->zenit, 2));     
@@ -1721,7 +1739,7 @@ void getoptions(SEXP sublist, int i, bool local) {
    break;
 
   case 22 : {
-    special_param *p = &(options->special);
+    special_options *p = &(options->special);
     ADD(ScalarInteger(p->multcopies));    
   }
    break;

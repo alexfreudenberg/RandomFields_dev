@@ -340,6 +340,12 @@
       
       Default: \code{1e-10}
     }
+
+    \item{\code{pseudoinverse}}{logical. In case of a singular matrix \eqn{M},
+      shall the pseudo inverse be returned for \code{solvex(M)}?
+      
+      Default: \code{FALSE}
+    }
     
     \item{\code{pivot_max_reldeviation}}{positive number.
 	Together with \code{pivot_max_deviation} it determines
@@ -353,9 +359,12 @@
    \item{\code{solve_method}}{
       vector of at most 3 integers that gives the sequence of methods
       in order to inverse a matrix or to calculate its square root:
-      \code{"cholesky"}, \code{"svd"}, \code{"eigen"} \code{"sparse"},
+      \code{"cholesky"}, \code{"svd"}, \code{"lu"}, % \code{"qr"},
+      \code{"eigen"} \code{"sparse"},
       \code{"method undefined"}. In the latter case, the algorithm decides
-      which method might suit best. 
+      which method might suit best.
+
+    %  Note that \code{"qr"} returns only the transposed of the inverse!
       
       Note that if \code{use_spam} is not \code{false} the algorithm
       checks whether a sparse matrix algorithm should be used and which is
@@ -492,7 +501,7 @@ try(cholx(M)) ## also fails
 
 %cholx(M) ## works
 
-RFoptions(la_mode=LA_INTERN, pivot=PIVOT_AUTO)
+# RFoptions(la_mode=LA_INTERN, pivot=PIVOT_AUTO)
 cholx(M) ## works
 
 RFoptions(la_mode=LA_AUTO, pivot=PIVOT_AUTO)

@@ -116,7 +116,7 @@ void tbm(double *x, int *info, model *cov, double *v){
     }
   }
 
-  else XERR(ERRORTBMCOMBI);
+  else OnErrorStop(ERRORTBMCOMBI, cov);
 
 }
 
@@ -142,7 +142,7 @@ void Dtbm(double *x, int *info, model *cov, double *v){
     }
   }
 
-  else XERR(ERRORTBMCOMBI);
+  else OnErrorStop(ERRORTBMCOMBI, cov);
 
   END_TALLOC_XX1;
   
@@ -155,10 +155,10 @@ bool numeric_tbm(model *cov) {
 }
 
 int checktbmop(model *cov) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   // printf("entering checktbmop\n");
   model *next=cov->sub[TBMOP_COV];
-  tbm_param *gp  = &(global->tbm);
+  tbm_options *gp  = &(global->tbm);
   int err; 
   ASSERT_ONESYSTEM;
 
@@ -175,7 +175,6 @@ int checktbmop(model *cov) {
   int 
     tbmdim = P0INT(TBMOP_TBMDIM),
     fulldim = P0INT(TBMOP_FULLDIM),
-    vdim = VDIM0,
     storedlayer = P0INT(TBMOP_LAYERS);
   bool layers = storedlayer != NA_LOGICAL ? storedlayer :
     OWNXDIM(0) == tbmdim + 1 && equalsSpaceIsotropic(OWN);
@@ -236,11 +235,11 @@ Types Typetbm(Types required, model *cov, isotropy_type i) {
 
 
 bool settbm(model *cov) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   isotropy_type iso = CONDPREVISO(0);
   if (!isFixed(iso)) return false;
 
-  tbm_param *gp  = &(global->tbm);
+  tbm_options *gp  = &(global->tbm);
   // critical parameter TBMOP_LAYER is already treated by SUBMODEL_I
   kdefault(cov, TBMOP_LAYERS, (int) gp->layers);
   set_type(OWN, 0, PREVTYPE(0));
@@ -250,8 +249,8 @@ bool settbm(model *cov) {
 
  
 bool allowedItbm(model *cov) {
-  globalparam *global = &(cov->base->global);
-  tbm_param *gp  = &(global->tbm);
+  option_type *global = &(cov->base->global);
+  tbm_options *gp  = &(global->tbm);
   bool *I = cov->allowedI;
   kdefault(cov, TBMOP_LAYERS, (int) gp->layers);
   for (int i=(int) FIRST_ISOUSER; i<=(int) LAST_ISOUSER; I[i++] = false);

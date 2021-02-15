@@ -48,8 +48,8 @@ print(ca20.fit02.RF <- RFfit(ca20.RFmod02, data=ca20.df))
 
 ### The following does NOT work, as R assumes (NA + ca20.df$altitude) + M
 ### In particular, the model definition gives a warning, and an error: 
-try(ca20.RFmod02 <- NA + ca20.df$altitude + M) ### error ...
-%try(ca20.fit02.RF <- RFfit(ca20.RFmod02, data=ca20.df)) ### error ...
+try(ca20.RFmod02 <- NA + ca20.df$altitude + M) ### error ...%## OK
+%try(ca20.fit02.RF <- RFfit(ca20.RFmod02, data=ca20.df)) ### error ...%## OK
 
 ## factors:
 ca20.RFmod03 <- ~ 1 + area + M ### 

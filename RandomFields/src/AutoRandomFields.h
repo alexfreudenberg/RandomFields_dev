@@ -22,10 +22,10 @@
 #define MAXACCEPTED 1e300
 #define MAXVARIANTS 6
 #define MAXSYSTEMS 1
-#define MAXDATANAMES 5
 
 #define MAXMPPVDIM 9 // just to distinguish, 9 has no meaning
 
+#define MAXDATANAMES 20
 #define MAXCOORDNAMES 4
 
 #define MAXBINS 50
@@ -102,7 +102,7 @@ typedef enum domain_type { // IF CHANGED CHANGE ALSO RFgetModelNames
 
 
 // NOTE!!
-// !!! CHANGE ALSO RF_GLOBALS.R !!!
+// !!! CHANGE ALSO RF_OPTIONSS.R !!!
 typedef enum isotropy_type { 
   ISOTROPIC,  // RC genauer : rotation invariant!!
   DOUBLEISOTROPIC, // RC fully symmetric 

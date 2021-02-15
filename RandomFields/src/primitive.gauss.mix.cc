@@ -121,10 +121,8 @@ double LogMixDensCauchy(double VARIABLE_IS_NOT_USED *x, double logV, model *cov)
 
 
 int initCauchy(model *cov, gen_storage  VARIABLE_IS_NOT_USED *s) {
-   int dim = PREVLOGDIM(0);
-  double
-    gamma =  P0(CAUCHY_GAMMA),
-    D = (double) dim;
+  int dim = PREVLOGDIM(0);
+  double gamma =  P0(CAUCHY_GAMMA);
 
   //  TREE0(cov);
   //  PMI(cov);
@@ -239,9 +237,9 @@ void nonstatconstant(double VARIABLE_IS_NOT_USED *x,
 }
 
 int checkconstant(model *cov) {
- utilsparam *global_utils = &(cov->base->global_utils);
+ utilsoption_type *global_utils = &(cov->base->global_utils);
   int err; // anzahl listen elemente
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
 
   if (global->messages.warn_constant) {
     global->messages.warn_constant = false; // OK
@@ -288,8 +286,7 @@ int checkconstant(model *cov) {
 void rangeconstant(model *cov, int VARIABLE_IS_NOT_USED k, int i, int j,
 		   simple_range_type *range) {
  // auch in rangec verwendet!
-  int vdim = VDIM0;
-   
+  
   if (isnowPosDef(cov)) {
     if (isnowTcf(cov)) {
       range->min = i == j;
@@ -606,7 +603,7 @@ double densityGauss(double *x, model *cov) {
     return EXP(- 0.25 * x2 - (double) dim * (M_LN2 + M_LN_SQRT_PI));
 }
 int struct_Gauss(model *cov, model **newmodel) {  
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   ASSERT_NEWMODEL_NOT_NULL;
 
   //printf("dleete next lines\n");  ILLEGAL_FRAME_STRUCT;

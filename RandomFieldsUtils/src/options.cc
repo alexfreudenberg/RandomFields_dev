@@ -49,7 +49,7 @@ const char * solve[solveN] =
     "max_chol", "max_svd", "pivot",
     "pivot_idx", // dynamic parameter
     "pivot_relerror", "pivot_max_deviation", "pivot_max_reldeviation",
-    "det_as_log", "pivot_actual_size", "pivot_check"
+    "det_as_log", "pivot_actual_size", "pivot_check", "pseudoinverse"
     //, "tmp_delete"
   };
 
@@ -59,7 +59,7 @@ const char **all[prefixN] = {basic, solve};
 int allN[prefixN] = {basicN, solveN};
 
 
-utilsparam GLOBAL = { // OK
+utilsoption_type OPTIONS = { // OK
   basic_START,
   { solve_START }
 };
@@ -78,7 +78,7 @@ int numCPU = MAXINT;
 int doPosDef(double *M0, int size, bool posdef,
 	     double *rhs0, int rhs_cols, double *result,
 	     double *logdet, int calculate, solve_storage *Pt,
-	     solve_param *sp);
+	     solve_options *sp);
 
 
 void setoptions(int i, int j, SEXP el, char name[LEN_OPTIONNAME], 
@@ -87,10 +87,10 @@ void setoptions(int i, int j, SEXP el, char name[LEN_OPTIONNAME],
   if (local || parallel())
     ERR1("Option '%.25s' can be set only through 'RFoptions' at global level",
 	 all[i][j])
-  utilsparam *options = &GLOBAL; 
+  utilsoption_type *options = &OPTIONS; 
   switch(i) {
   case 0: {// general
-    basic_param *gp = &(options->basic);
+    basic_options *gp = &(options->basic);
     switch(j) {
     case 0: {  // general options
       int threshold = 1000; //PL_ERRORS;
@@ -156,7 +156,7 @@ void setoptions(int i, int j, SEXP el, char name[LEN_OPTIONNAME],
  case 1: {
    //   printf("name = %.50s %d\n", name, j);
    
-    solve_param *so = &(options->solve);
+    solve_options *so = &(options->solve);
     switch(j) {
     case 0: so->sparse = USRLOG;
       if (so->sparse != False) {
@@ -222,6 +222,7 @@ void setoptions(int i, int j, SEXP el, char name[LEN_OPTIONNAME],
     case 17: so->det_as_log = LOGI; break;    
     case 18: so->actual_size = POS0NUM; break;    
     case 19: so->pivot_check = USRLOG; break;    
+    case 20: so->pseudoinverse = LOGI; break;    
    default: BUG;
     }}
     break;
@@ -234,11 +235,11 @@ void setoptions(int i, int j, SEXP el, char name[LEN_OPTIONNAME],
 void getoptions(SEXP sublist, int i,
 		       bool VARIABLE_IS_NOT_USED local) {
   int  k = 0;
-  utilsparam *options = &GLOBAL; 
+  utilsoption_type *options = &OPTIONS; 
   switch(i) {
   case 0 : {
     //    printf("OK %d\n", i);
-    basic_param *p = &(options->basic);
+    basic_options *p = &(options->basic);
     ADD(ScalarInteger(p->Rprintlevel));    
     ADD(ScalarInteger(p->Cprintlevel - PLoffset));
     ADD(ScalarInteger(p->seed));    
@@ -256,7 +257,7 @@ void getoptions(SEXP sublist, int i,
     break;
   
   case 1 : {
-    solve_param *p = &(options->solve);
+    solve_options *p = &(options->solve);
     //    printf("sparse user interface %d %d %d\n", p->sparse, NA_LOGICAL, NA_INTEGER);
     ADD(ExtendedBooleanUsr(p->sparse));
     //    printf("A\n");
@@ -284,6 +285,7 @@ void getoptions(SEXP sublist, int i,
     ADD(ScalarLogical(p->det_as_log));
     ADD(ScalarInteger(p->actual_size));
     ADD(ExtendedBooleanUsr(p->pivot_check));
+    ADD(ScalarLogical(p->pseudoinverse));
   }
     break;
   default : BUG;
@@ -291,14 +293,14 @@ void getoptions(SEXP sublist, int i,
   //printf("EE A\n");
 }
 
-void utilsparam_NULL(utilsparam *S) {
-  assert(solveN == 20 && basicN == 12 && prefixN==2);
-  MEMCOPY(S, &GLOBAL, sizeof(utilsparam));
+void utilsoption_NULL (utilsoption_type *S) {
+  assert(solveN == 21 && basicN == 12 && prefixN==2);
+  MEMCOPY(S, &OPTIONS, sizeof(utilsoption_type));
   S->solve.pivot_idx = NULL;
   S->solve.pivot_idx_n = 0;
 }
 
-void utilsparam_DELETE(utilsparam *S) {
+void utilsoption_DELETE(utilsoption_type *S) {
   FREE(S->solve.pivot_idx);
   S->solve.pivot_idx_n = 0;
 }
@@ -309,7 +311,7 @@ void deloptions(bool VARIABLE_IS_NOT_USED local) {
 #ifdef DO_PARALLEL
   if (local) RFERROR("'pivot_idx' cannot be freed on a local level");
 #endif  
-  utilsparam *options = &GLOBAL;
+  utilsoption_type *options = &OPTIONS;
   FREE(options->solve.pivot_idx);
 }
 
@@ -322,9 +324,10 @@ int own_chol_up_to(int size, int maxtime) {
 #ifdef TIME_AVAILABLE
   if (size <= 0) return true;
   Long delta[2];
-  solve_param sp;
+  solve_options sp;
   solve_storage pt;
-  MEMCOPY(&sp, &(GLOBAL.solve), sizeof(solve_param)); 
+  solve_NULL(&pt);
+  MEMCOPY(&sp, &(OPTIONS.solve), sizeof(solve_options)); 
   sp.Methods[0] = Cholesky;					     
   sp.Methods[1] = NoFurtherInversionMethod;
   sp.pivot_mode = PIVOT_NONE;	  
@@ -333,7 +336,7 @@ int own_chol_up_to(int size, int maxtime) {
   // basic assumption is that R implementation's getting faster
   // for larger matrices
   while (true) {
-    int size1 = size + 1,
+    int sizeP1 = size + 1,
       sizesq = size * size,
       loops = size > 64 ? 1 : 16384 / ((size + 8) * (size+8));
     double *M = (double*) MALLOC(sizesq * sizeof(double));
@@ -342,9 +345,9 @@ int own_chol_up_to(int size, int maxtime) {
       clock_t start = clock();
       for (int k=0; k<loops; k++) {      
 	MEMSET(M, 0, sizesq * sizeof(double));
-	for (int i=0; i<sizesq; i+=size1) M[i] = 1.0;
-	M[1] = M[size] = 1e-5;
-	doPosDef(M, size, true, NULL, 0, NULL, NULL, MATRIXSQRT, NULL, &sp);   
+	for (int i=0; i<sizesq; i+=sizeP1) M[i] = 1.0;
+	if (size > 1) M[1] = M[size] = 1e-5;
+	doPosDef(M, size, true, NULL, 0, NULL, NULL, MATRIXSQRT, &pt, &sp);   
       }
       delta[j] = (Long) clock() - start; 
       if (delta[j] < 0) delta[j] += MAXINT; // manual: 32bit repres. of clock
@@ -357,6 +360,7 @@ int own_chol_up_to(int size, int maxtime) {
     old_quotient = (double) delta[0] / delta[1];
     size *= 2;
   }
+  solve_DELETE0(&pt);
   double new_quotient = (double) delta[0] / delta[1];
   if (new_quotient < FASTER) return MAXINT;
   if (size <= 0) return(0);
@@ -387,13 +391,13 @@ int own_chol_up_to() {
   
 void SetLaMode(la_modes usr_mode) {
   //  printf("stlamode=%d\n", usr_mode);
-  utilsparam *global = &GLOBAL; 
+  utilsoption_type *global = &OPTIONS; 
   la_modes la_mode = usr_mode;
-  global->solve.tinysize = global->basic.LaMaxTakeOwn = -1;
+  global->solve.tinysize = global->basic.LaMaxTakeIntern = -1;
 #define TINY_SIZE_MAX 3  
   if (la_mode == LA_INTERN) {
     global->solve.tinysize = TINY_SIZE_MAX;
-    global->basic.LaMaxTakeOwn = MAXINT;
+    global->basic.LaMaxTakeIntern = MAXINT;
   } else if (la_mode == LA_AUTO) {  
     la_mode = GPUavailable ? LA_GPU : LA_R;
 #if defined TIME_AVAILABLE
@@ -402,11 +406,11 @@ void SetLaMode(la_modes usr_mode) {
     int PLalt = PL;
     PL = 0;
 #  endif  
-    global->basic.LaMaxTakeOwn = own_chol_up_to();
-    global->solve.tinysize = MIN(TINY_SIZE_MAX, global->basic.LaMaxTakeOwn);
-    if (PL > 0 || true)
+    global->basic.LaMaxTakeIntern = own_chol_up_to();
+    global->solve.tinysize = MIN(TINY_SIZE_MAX, global->basic.LaMaxTakeIntern);
+    if (PL > 0)
       PRINTF("Limit size for facile Cholesky algorithm  = %d\n",
-	     global->basic.LaMaxTakeOwn);
+	     global->basic.LaMaxTakeIntern);
 #  ifdef SCHLATHERS_MACHINE
 #else   
     PL = PLalt;
@@ -421,6 +425,8 @@ void SetLaMode(la_modes usr_mode) {
   global->basic.la_mode = la_mode;
 }
 void SetLaMode() {
-  utilsparam *global = &GLOBAL; 
+  utilsoption_type *global = &OPTIONS; 
    SetLaMode(global->basic.la_usr);
 }
+
+

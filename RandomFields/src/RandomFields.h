@@ -262,7 +262,12 @@ extern "C" {
   SEXP MomentsIntern(SEXP reg, SEXP alpha);
   SEXP CovLocNonGrid(SEXP reg, SEXP x, SEXP y, SEXP result);
   SEXP LocNonGrid(SEXP reg, SEXP x);
-  
+
+  SEXP areDataIdxDifferentFromFormer(SEXP Idx);
+  SEXP areDataNamesDifferentFromFormer(SEXP Names);
+  SEXP areCoordIdxDifferentFromFormer(SEXP Idx);
+  SEXP areCoordNamesDifferentFromFormer(SEXP Names);
+  SEXP DebugCall();
 
 #ifdef __cplusplus
 }

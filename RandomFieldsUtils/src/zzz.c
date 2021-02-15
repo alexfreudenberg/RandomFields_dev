@@ -59,6 +59,7 @@ static const R_CMethodDef cMethods[]  = {
 static R_CallMethodDef callMethods[]  = {
   // in die respectiven C-Dateien muss RandomFieldsUtils.h eingebunden sein
   CALLDEF(attachoptions, 0),
+  CALLDEF(DebugCall, 0),
   CALLDEF(Chol, 1),
   CALLDEF(SolvePosDef, 3),
   CALLDEF(struve, 4),
@@ -97,8 +98,8 @@ static const R_ExternalMethodDef extMethods[] = {
 
 #define CALLABLE(FCTN)  R_RegisterCCallable("RandomFieldsUtils", #FCTN, (DL_FUNC)  FCTN)
 void R_init_RandomFieldsUtils(DllInfo  *dll) {
-  CALLABLE(utilsparam_DELETE);
-  CALLABLE(utilsparam_NULL);
+  CALLABLE(utilsoption_DELETE);
+  CALLABLE(utilsoption_NULL);
 
   CALLABLE(solve_DELETE);
   CALLABLE(solve_NULL);
@@ -158,11 +159,12 @@ void R_init_RandomFieldsUtils(DllInfo  *dll) {
 #ifdef SCHLATHERS_MACHINE
 #ifdef __GNUC__
 // https://gcc.gnu.org/onlinedocs/gcc/Diagnostic-Pragmas.html
+// GCC diagnostic push
 // GCC diagnostic ignored "-Wcast-function-type"
 #endif
 #endif
 void R_unload_RandomFieldsUtils(DllInfo *info) { }
 #ifdef __GNUC__
-// GCC diagnostic warning "-Wcast-function-type"
+// GCC diagnostic pop
 #endif
 

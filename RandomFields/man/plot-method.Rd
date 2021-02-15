@@ -383,8 +383,8 @@ x <- seq(0, 1, len=21)
  
 model <- RMexp(Aniso = cbind(c(10,0), c(0,1)))
 X <- RFsimulate(model, x=cbind(x,x))
-fit <- RFfit(~RMexp(Aniso=cbind(c(NA, 0), c( 0, NA))), data=X, fit.nphi = 2,
-             modus="easygoing")
+fit <- RFfit(~RMexp(Aniso=cbind(c(NA, 0), c( 0, NA))), data=X,
+             empvario.nphi = 2, modus="easygoing")
 plot(fit)
 }}
 

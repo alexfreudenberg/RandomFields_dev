@@ -58,7 +58,7 @@ double bernoulli(double p) {
 
 
 int check_hyperplane(model *cov) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
  model 
    *key = cov->key,
    *next= cov->sub[0],
@@ -66,7 +66,7 @@ int check_hyperplane(model *cov) {
  int err,
    dim = OWNLOGDIM(0)
     ; // taken[MAX DIM],
-  hyper_param *gp  = &(global->hyper);
+  hyper_options *gp  = &(global->hyper);
 
   ASSERT_CARTESIAN;
   ASSERT_ONESYSTEM;
@@ -75,7 +75,7 @@ int check_hyperplane(model *cov) {
   kdefault(cov, HYPER_SUPERPOS, gp->superpos);
   kdefault(cov, HYPER_MAXLINES, gp->maxlines);
   kdefault(cov, HYPER_MAR_DISTR, gp->mar_distr);
-  kdefault(cov, HYPER_MAR_PARAM, gp->mar_param);
+  kdefault(cov, HYPER_MAR_PARAM, gp->mar_options);
   kdefault(cov, HYPER_ADDITIVE, true);
   if ((err = checkkappas(cov, false)) != NOERROR) RETURN_ERR(err);
    RESERVE_BOXCOX;
@@ -111,18 +111,18 @@ int check_hyperplane(model *cov) {
 
 
 int check_hyperplane_intern(model *cov) {  
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   assert(cov->key == NULL);
 
   model *next= cov->sub[0];  
   int err,
     dim = OWNLOGDIM(0);    
-  hyper_param *gp  = &(global->hyper);
+  hyper_options *gp  = &(global->hyper);
 
   kdefault(cov, HYPER_SUPERPOS, gp->superpos);
   kdefault(cov, HYPER_MAXLINES, gp->maxlines);
   kdefault(cov, HYPER_MAR_DISTR, gp->mar_distr);
-  kdefault(cov, HYPER_MAR_PARAM, gp->mar_param);
+  kdefault(cov, HYPER_MAR_PARAM, gp->mar_options);
   kdefault(cov, HYPER_ADDITIVE, true);
  
  ASSERT_UNREDUCED;
@@ -396,7 +396,7 @@ void do_hyperplane(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
      *res = cov->rf,
     E=RF_NA,
     sd=RF_NA,
-    mar_param = P0(HYPER_MAR_PARAM);
+    mar_options = P0(HYPER_MAR_PARAM);
   Long i, j, resindex;
   randomvar_type randomvar=NULL;
 getStorage(s ,   hyper); 
@@ -457,7 +457,7 @@ getStorage(s ,   hyper);
 
 	  /* temporary code */
 	  if (q==0) {
-	    double colour = randomvar(mar_param);
+	    double colour = randomvar(mar_options);
 	    for (j=resindex=0; resindex < totalpoints; resindex++) {
 		if (additive) res[resindex] += colour;
 		else res[resindex] = res[resindex] < colour ? colour
@@ -470,7 +470,7 @@ getStorage(s ,   hyper);
 		       resindex++) {
 		  //		  print("\n%10g %10g\n", gx, gy);  
 		  if ((cell = determine_cell(gx, gy, hx, hy, hr, &integers,
-					     &tree, randomvar, mar_param,
+					     &tree, randomvar, mar_options,
 					     cell))
 		      == NULL) {
 		    err = ERRORMEMORYALLOCATION;
@@ -491,7 +491,7 @@ getStorage(s ,   hyper);
 		if ((cell=determine_cell(loc->x[j], loc->x[j+1], 
 					 hx, hy, hr,
 					 &integers, &tree, randomvar, 
-					 mar_param, cell))==NULL){
+					 mar_options, cell))==NULL){
 		  err = ERRORMEMORYALLOCATION;
 		  goto ErrorHandling;
 		}
@@ -521,12 +521,12 @@ getStorage(s ,   hyper);
 	sd = 1.0 / 12.0;
 	break;
       case HYPER_FRECHET :
-	assert(mar_param > 2);
+	assert(mar_options > 2);
 	NotProgrammedYet("frechet");
 	break;
       case HYPER_BERNOULLI : 
-	E = mar_param;
-	sd = mar_param * (1.0 - mar_param);
+	E = mar_options;
+	sd = mar_options * (1.0 - mar_options);
 	break;
       default : ERR("distribution unknown in hyperplane\n");
       }
@@ -550,8 +550,7 @@ getStorage(s ,   hyper);
   FREE(hy);
   FREE(hr);
   if (tree!=NULL) avltr_destroy(tree, delcell);
-  XERR(err); 
-  ERR("hyperplane failed\n");
+  OnErrorStop(err, cov);
 }
                       
 		   

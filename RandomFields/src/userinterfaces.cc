@@ -190,7 +190,7 @@ void includeparam(void **qq,       // px
   case LANGSXP : {
     if (STRCMP("setseed", param_name) != 0 && STRCMP("env", param_name)!=0){ 
       if (KT->global.general.storing) {
-	// printf("storing %d %d\n", KT->global.general.storing, GLOBAL.general.storing);
+	// printf("storing %d %d\n", KT->global.general.storing, OPTIONS.general.storing);
 	 RFERROR1("If models with R commands in the parameters (such as '%.50s') are used then 'storing' must be FALSE.", DefList[USER].nick);
        }
        if (!KT->global.messages.warn_oldstyle) {
@@ -381,8 +381,8 @@ void CheckModel(SEXP Model, double *x, double *Y, double *T, double *Ty,
     spatialtotptsy = Spatialtotptsy;
   double *y = Y;
   model *cov = NULL;
-  char EM2[LENERRMSG] = "";
-    
+  char EM0[LENERRMSG] = "";
+     
   GetRNGstate(); // some parts use monte carlo to determine internal values
   while (true) {
     isotropy_type iso = ISO_MISMATCH;
@@ -397,7 +397,7 @@ void CheckModel(SEXP Model, double *x, double *Y, double *T, double *Ty,
 #endif
 
     
-    globalparam *global = &(KT->global);
+    option_type *global = &(KT->global);
     coord_sys_enum coord = global->coords.coord_system;
 
     STRCPY(KT->error_location, "Having built the model");
@@ -620,13 +620,14 @@ void CheckModel(SEXP Model, double *x, double *Y, double *T, double *Ty,
     } 
 
     char EM[LENERRMSG];
+    
     model *causing = KT->error_causing_cov;
 
     ///printf("msg=%s\n", causing==NULL ?  (char*) "<strange failure>" : causing->err_msg);
     
     errorMSG(err, causing==NULL ? (char*)"<strange failure>" : causing->err_msg,
 	     KT, EM);
-    SPRINTF(EM2, "%.50s %.500s", PREF_FAILURE, EM);
+    SPRINTF(EM0, "%.50s %.500s", PREF_FAILURE, EM);
     //   printf("location:%.50s  %.50s  %.50rs\n", KT->error_location,  cov->err_msg, EM);
     if (spatialtotpts == 0 || distances) break;
     y = x;
@@ -641,7 +642,7 @@ void CheckModel(SEXP Model, double *x, double *Y, double *T, double *Ty,
   PutRNGstate();// PutRNGstate muss vor UNPROTECT stehen!! -- hier irrelevant
 
   if (err != NOERROR) { 
-    RFERROR(EM2); 
+    RFERROR(EM0); 
   }
 
   if (false && KT->global.messages.warn_mathdef == True) { // 3.1.21 :false &&
@@ -832,7 +833,6 @@ SEXP GetParameterNames(SEXP nr) {
   defn *C = DefList + INTEGER(nr)[0]; // nicht gatternr
   SEXP pnames;
   int i;
-  // print("hello %20s\n", C->name);
 
   PROTECT(pnames = allocVector(STRSXP, C->kappas)); 
   for (i=0; i<C->kappas; i++) {
@@ -1203,7 +1203,7 @@ void CMbuild(SEXP Model, int level, model **Cov,
   defn *C; 
   model *cov;
   bool subleft[MAXSUB]; 
-  globalparam *global = &(KT->global);
+  option_type *global = &(KT->global);
  
   if (TYPEOF(Model) != VECSXP) { // not list8
     RFERROR("list expected, which defines the (covariance) model.");
@@ -1487,7 +1487,7 @@ void CMbuild(SEXP Model, int level, model **Cov,
 	    int which = Match((char*) CHAR(STRING_ELT(p, 0)), List, lenL);
 	    if (which < 0) PERR1("value of '%.50s' is not recognized", param_name);
 
-	    cov->px[i] = (double*) MALLOC(sizeof(int));
+	    PALLOC(i, 1, 1); 
 	    ((int*) cov->px[i])[0] = which;
 	    //printf("which=%d %50s i=%d\n", which, CHAR(STRING_ELT(p, 0)), i);
 	  } else {

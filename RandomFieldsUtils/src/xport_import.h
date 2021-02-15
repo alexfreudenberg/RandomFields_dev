@@ -8,7 +8,7 @@ extern int PL;
 bool parallel();
 
 
-extern utilsparam GLOBAL;
+extern utilsoption_type OPTIONS;
 
 #define prefixN 2
 extern const char * prefixlist[prefixN], **all[prefixN];
@@ -18,7 +18,7 @@ typedef
 struct KEY_type KEY_type;
 struct KEY_type {
   KEY_type *next;
-  utilsparam global_utils;
+  utilsoption_type global_utils;
   int pid,  visitingpid;
   bool ok, doshow;
   errorloc_type error_location;

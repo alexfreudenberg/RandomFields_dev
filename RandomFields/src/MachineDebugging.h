@@ -194,7 +194,7 @@ void checkfor(model *cov);
 
 #ifndef XXX_ABC_FGT
 #undef DEBUGINFOERR 
-#define DEBUGINFOERR {						\
+#define DEBUGINFOERR {		\
     errorstring_type dummy_; STRCPY(dummy_, cov->err_msg); 	\
     SPRINTF(cov->err_msg, "%.50s (%.50s, line %d)\n", dummy_, __FILE__, __LINE__); \
     PRINTF("note: %s\n", cov->err_msg);					\

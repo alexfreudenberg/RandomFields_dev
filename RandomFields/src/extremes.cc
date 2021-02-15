@@ -34,41 +34,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define RANDOMCOIN_INTENSITY (COMMON_GAUSS + 1) 
 #define RANDOMCOIN_METHOD (COMMON_GAUSS + 2) 
 
-/* not used 
-double GetTotal(model* cov) {
-  defn *C = DefList + COVNR;
-  double v = 1.0;
-  int i,
-    nsub = cov->nsub,
-    kappas = C->kappas;							
-
-  if (C->Type == RandomType) {
-    if (cov->total_n >= 0) {
-      int VARIABLE_IS_NOT_USED old_n = cov->total_n;
-      if (cov->total_n < glob al->distr.repetitions) {
-	double *r = (double*) MALLOC(cov->xdimown * sizeof(double));
-	while(cov->total_n < glo bal->distr.repetitions) {
-	  DORANDOM(cov, r);
-	  assert(cov->total_n > cov->total_n);
-	}
-	FREE(r);
-      }
-      v *= cov->total_sum / (double) cov->total_n;
-    }
-  } else {
-    for (i=0; i<nsub; i++) {
-      v *= GetTotal(cov->sub[i]);
-    }    
-    for (i=0; i<kappas; i++) {						
-      if (cov->kappasub[i] != NULL) 
-	v *= GetTotal(cov->kappasub[i]);  
-    }
-  }
-  return v;
-}
-*/
-
-
 
 
   void range_mpp(model VARIABLE_IS_NOT_USED *cov, range_type *range) {
@@ -166,7 +131,7 @@ int init_mpp(model *cov, gen_storage *S) { // cov ist process
  
 
 void dompp(model *cov, gen_storage *s, double *simuxi) { // cov ist process
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   assert(cov->simu.active);
   location_type *loc = Loc(cov);	
   if (Loccaniso(cov) != NULL) BUG;
@@ -477,7 +442,7 @@ void dompp(model *cov, gen_storage *s, double *simuxi) { // cov ist process
 
 #define MAXAPPLY(GET, OP)						\
       assert(zaehler >=0 && zaehler<total);				\
-      /* if (zaehler<0 || zaehler>=total) { PMI(cov);  printf("//z=%d n=%d\n", zaehler, n); } */ \
+      /* if (zaehler<0 || zaehler>=total) { PMI(cov);  printf(1"//z=%d n=%d\n", zaehler, n); } */ \
       GET {								\
 	OP;								\
 	/*  assert( {if (*value > sub->mpp.maxheights[0] *EXP(gumbel) * (1+1e-15)) {  printf("//r=%10g %10g delta=%10e %d %10e\n", *value /EXP(gumbel), sub->mpp.maxheights[0], *value /EXP(gumbel) - sub->mpp.maxheights[0], loggiven, factor); };true;}); */ \
@@ -661,7 +626,7 @@ void dompp(model *cov, gen_storage *s) {
 
 
 void finalmaxstable(model *cov, double *Res, int n, gen_storage *s) {
-   globalparam *global = &(cov->base->global);
+   option_type *global = &(cov->base->global);
  
   // cov is process
   model *key = cov->key,
@@ -838,13 +803,13 @@ int addStandardPoisson(model **Cov) { // a submodel of poisson only
 }
 
 int check_poisson(model *cov) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   model *shape=cov->sub[POISSON_SHAPE],
     *key = cov->key,
     *sub = key == NULL ? shape : key;
   int err,
     dim = OWNXDIM(0); // taken[MAX DIM],
-  mpp_param *gp  = &(global->mpp);
+  mpp_options *gp  = &(global->mpp);
 
   ASSERT_ONE_SUBMODEL(cov);
   //print("eee\n");
@@ -977,9 +942,9 @@ void extremalgaussian(double *x, int *info, model *cov, double *v) {
 //#define MPP_TCF 1
 
 int SetGEVetc(model *cov) { // cov is process
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   int err;
-  extremes_param *ep = &(global->extreme);
+  extremes_options *ep = &(global->extreme);
 
   if (cov->sub[MPP_TCF] != NULL && cov->sub[MPP_SHAPE]!=NULL)
     SERR2("either '%.50s' or '%.50s' must be given",
@@ -1005,8 +970,7 @@ int check_schlather(model *cov) {
     *next = cov->sub[cov->sub[MPP_TCF] != NULL ? MPP_TCF : MPP_SHAPE];
   int err,
     dim = OWNXDIM(0); // taken[MAX DIM],
-  // mpp_param *gp  = &(global->mpp);
-  double v;
+  // mpp_options *gp  = &(global->mpp);
   bool schlather = DefList[COVNR].Init == init_mpp; // else opitz
 
   //  printf("A \n");
@@ -1049,7 +1013,9 @@ int check_schlather(model *cov) {
 
     if (hasEvaluationFrame(next)) {
       if (next->pref[Nothing] == PREF_NONE) RETURN_ERR(ERRORPREFNONE);
-      Zero(next, &v);
+      assert(VDIM0 == 1);
+      double v;
+      AtZero(next, &v);
       if (v != 1.0) 
 	SERR2("a correlation function is required as submodel, but '%.50s' has variance %10g.", NICK(next), v);
     }
@@ -1192,7 +1158,7 @@ void param_set_identical(model *to, model *from, int depth) {
 int FillInPts(model *cov,  // struct of shape
 			model *shape // shape itself
 			) {
-   globalparam *global = &(cov->base->global);
+   option_type *global = &(cov->base->global);
  // fuegt im max-stabilen Fall diegleiche Funktion als
   // intensitaetsfunktion fuer die Locationen ein; random scale
   // wird mitbeachtet
@@ -1308,15 +1274,13 @@ int addPGS(model **Key, // struct of shape
   // praeferenzen programmieren?
   // printf("specific=%d\n", specific);
   
-  globalparam *global = &(shape->base->global);
+  option_type *global = &(shape->base->global);
   int method = global->extreme.scatter_method;
   for (i=0; i<specific; i++) {
     if (method != POISSON_SCATTER_ANY && i != method) continue;    
     if (i > 0) {
       errorMSG(err, shape->base, msg[i-1]);
-      //     XERR(err);  // eigentlich muss das hier weg
     }
-    //    if (i > 0) XERR(err); assert(i ==0);
     if (*Key != NULL) COV_DELETE(Key, shape); 
     assert(shape->calling != NULL);
     addModel(Key, pgs[i], shape->calling);
@@ -1347,9 +1311,6 @@ int addPGS(model **Key, // struct of shape
     if ((err = CHECK(cov, dim, dim, PointShapeType, XONLY, 
 		     CoordinateSystemOf(ISO(SYSOF(shape), 0)),
 		     vdim, frame)) != NOERROR) {
-      //printf(">>>>>>> KEY() break %d %.50s %d %d\n", i, Nick(cov), dim, err);
-    
-      //  XERR(err);
       continue; 
     }
     NEW_COV_STORAGE(cov, gen);
@@ -1358,7 +1319,7 @@ int addPGS(model **Key, // struct of shape
     // APMI(cov);
     
     bool compoundpoisson = hasPoissonFrame(cov),
-      poissongauss = hasPoissonGaussFrame(cov),
+      //poissongauss = hasPoissonGaussFrame(cov),
       //      poisson = compoundpoisson || poissongauss,
       maxstableCov = hasMaxStableFrame(cov);
     if ((err = INIT(cov, maxstableCov ? 1 : compoundpoisson ? 0 : 2, cov->Sgen))
@@ -1466,7 +1427,7 @@ int struct_ppp_pts(model **Key, // = *cov->key
     int err2;
     //assert(false);
     if (*Key != NULL) {
-      XERR(err);
+      OnErrorStop(err, shape);
       SET_CALLING(*Key, calling);// make sure that the locations are not deleted
       COV_DELETE(Key, shape);
     }
@@ -1620,7 +1581,7 @@ void loglikelihoodMaxstable(double *data,
 			    model *cov, // = process
 			    logDfct logD, double *v) {
   // DARF JA NICHT DURCH MEHRERE CORES AUFGERUFEN WERDEN!!
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   model *sub = cov;
   while (isnowProcess(sub))
     sub = sub->key != NULL ? sub->key : sub->sub[0];
@@ -1655,8 +1616,9 @@ void loglikelihoodMaxstable(double *data,
   case LL_AUTO: case LL_COMPOSITE: {
     double z[2], gamma, gamma0,
       *xx = LocY(cov);
-    Zero(sub, &gamma0);
-    Zero(info, sub, &gamma0);
+    assert(VDIM0 == 1);
+    AtZero(sub, &gamma0);
+    AtZero(info, sub, &gamma0);
     for (int i=0; i<len; i++, xx += dim) {
       info[INFO_IDX_X] = i;
       double *yy = xx + dim;
@@ -1700,7 +1662,7 @@ void loglikelihoodSchlather(double *data, int *info, model *cov, double *v) {
 #define COIN_BALLANI 2
 
 int check_randomcoin(model *cov) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   model 
     *pdf = cov->sub[COIN_COV],
     *shape = cov->sub[COIN_SHAPE],
@@ -1708,8 +1670,8 @@ int check_randomcoin(model *cov) {
     *key = cov->key;
   int err,
     dim = OWNXDIM(0); // taken[MAX DIM],
-  mpp_param *gp  = &(global->mpp);
-  //extremes_param *ep = &(global->extreme);
+  mpp_options *gp  = &(global->mpp);
+  //extremes_options *ep = &(global->extreme);
 
   ASSERT_CARTESIAN;
   ASSERT_ONESYSTEM;
@@ -1819,7 +1781,7 @@ int struct_randomcoin(model *cov, model **newmodel){
 
   //  printf("\n\n\n\nstruct random coin\n");
   
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   model *tmp_shape = NULL,
     *pdf = cov->sub[COIN_COV],
     *shape = cov->sub[COIN_SHAPE];

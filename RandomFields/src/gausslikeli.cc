@@ -188,7 +188,7 @@ SEXP BoxCox_trafo(SEXP boxcox, SEXP res, SEXP Vdim, SEXP inverse){
 
 
 SEXP set_boxcox(SEXP boxcox, SEXP Reg) {
-  globalparam *global = &GLOBAL;
+  option_type *global = &OPTIONS;
   if (length(Reg) > 0) {
     int reg = INTEGER(Reg)[0];
     set_currentRegister(reg);
@@ -205,7 +205,7 @@ SEXP set_boxcox(SEXP boxcox, SEXP Reg) {
 
 
 SEXP get_boxcox(SEXP Reg) {
-  globalparam *global = &GLOBAL;
+  option_type *global = &OPTIONS;
   if (length(Reg) > 0) {
     int reg = INTEGER(Reg)[0];
     set_currentRegister(reg);
@@ -474,7 +474,7 @@ SEXP get_logli_wholetrend(SEXP model_reg) {
   listoftype *datasets = L->datasets;					\
   assert(L->datasets != NULL);						\
   int									\
-  err = NOERROR,							\
+  VARIABLE_IS_NOT_USED err = NOERROR,					\
     vdim = VDIM0,							\
     ncol = NCOL_OUT_OF(datasets),					\
     repet = ncol / vdim;
@@ -553,9 +553,9 @@ void get_fx(model *cov, double *v, int set) {
 void get_F(model *cov, double *work, double *ans) {
   // do NOT set cov->base->set = 0;
 
-   START_PREDICT;
-  int pred_tot = Loctotalpoints(cov);					
-Long pred_totvdim = (Long) pred_tot * vdim;
+  START_PREDICT;
+  //  int pred_tot = Loctotalpoints(cov);					
+  //Long pred_totvdim = (Long) pred_tot * vdim;
 
   assert(ans != NULL);
   
@@ -633,10 +633,10 @@ Long pred_totvdim = (Long) pred_tot * vdim;
 
 
 #define CHOLESKY_ONLY\
-  solve_param Sparam;						\
-  MEMCOPY(&Sparam, &(cov->base->global_utils.solve), sizeof(solve_param)); \
-  Sparam.Methods[0] = Cholesky;						\
-  Sparam.Methods[1] = NoFurtherInversionMethod
+  solve_options Soptions;						\
+  MEMCOPY(&Soptions, &(cov->base->global_utils.solve), sizeof(solve_options)); \
+  Soptions.Methods[0] = Cholesky;						\
+  Soptions.Methods[1] = NoFurtherInversionMethod
 
 void gauss_trend(model *cov, double *v, int set, bool ignore_y) {
   //  printf("entering gauss trend\n");
@@ -686,10 +686,7 @@ void gauss_trend(model *cov, double *v, int set, bool ignore_y) {
   cov->base->set = store;
 
  END_TALLOC_XXX1;
-
-// printf("end gauss trend %d\n", err);
-  
-  if (err != NOERROR) XERR(err);
+ OnErrorStop(err, cov);
 }
 
 /*
@@ -707,7 +704,7 @@ void gauss_trend(model *cov, double *v, int set, bool ignore_y) {
 void gauss_predict(model *cov, double *v) {
   // printf("entering gausss predict\n");
   // do NOT set cov->base->set
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   assert(!global->krige.ret_variance);
   if (global->general.vdim_close_together) {
     ERR("'vdim_close_together' must be false for kriging and conditional simulation");
@@ -727,8 +724,6 @@ void gauss_predict(model *cov, double *v) {
   assert(conditioning->Ssolve != NULL);
   
   int 
-    spatialdim = Locspatialdim(cov),
-    timespacedim = Loctsdim(cov),
     totptsY = LoctotalpointsY(cov), // conditioning points
     totptsYvdim  = totptsY * vdim,
     totptsYvdimSq  = totptsYvdim * vdim,
@@ -822,7 +817,7 @@ void gauss_predict(model *cov, double *v) {
 			       //  as if ordinary Kriging (p 167; 265 in Chiles
 			       ResiWithoutNA, atonce, NULL,
 			       conditioning->Ssolve,
-			       &Sparam);
+			       &Soptions);
     if (Exterr != NOERROR)
       GERR2("In RandomFieldsUtils: %.200s (error = %d)", cov->Ssolve->err_msg,
 	    Exterr);
@@ -878,8 +873,7 @@ void gauss_predict(model *cov, double *v) {
   
  ErrorHandling :
   cov->base->set = 0;
-
-  if (err != NOERROR) XERR(err);
+  OnErrorStop(err, cov);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1026,7 +1020,7 @@ SEXP simple_residuals(SEXP model_reg){
       //
 
       Exterr = Ext_solvePosDefSp(L->XtX, fx_notnas, true, beta, 1, NULL,  
-				 cov->Ssolve, &Sparam);
+				 cov->Ssolve, &Soptions);
       if (Exterr != NOERROR)
 	GERR2("In RandomFieldsUtils: %.200s (error = %d)", cov->Ssolve->err_msg,
 	      Exterr);
@@ -1059,7 +1053,7 @@ SEXP simple_residuals(SEXP model_reg){
   
  ErrorHandling:
   cov->base->set = 0;
-  if (err != NOERROR) XERR(err);
+  OnErrorStop(err, cov);
 
   return get_logli_residuals(model_reg);
 }
@@ -1101,8 +1095,8 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, INFO, model *cov,
   //  if (VDIM1 != 1) BUG;
   getStorage(Ssolve, solve);
   CHOLESKY_ONLY;
-  Sparam.pivot_partialdet = standardized;
-  Sparam.det_as_log = true;
+  Soptions.pivot_partialdet = standardized;
+  Soptions.det_as_log = true;
   assert(cov->Ssolve != NULL);
 
   *v = 0.0;
@@ -1211,11 +1205,11 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, INFO, model *cov,
       Exterr = Ext_solvePosDefSp(Ccur, notnas, 
 				 true, // except for negative definite function
 				 L->CinvXY, XYcols, 
-				 &logdet, Ssolve, &Sparam);
+				 &logdet, Ssolve, &Soptions);
       if (Exterr != NOERROR)
 	GERR2("In RandomFieldsUtils: %.200s (error = %d)", Ssolve->err_msg,
 	      Exterr);
-      if (!R_FINITE(logdet) && ! Sparam.pivot_partialdet) {
+      if (!R_FINITE(logdet) && ! Soptions.pivot_partialdet) {
 	WARN2(" low-rank covariance matrix detected. Consider setting '%.20s=TRUE' in '%.20s' .", DefList[LIKELIHOOD_CALL].kappanames[LIKELIHOOD_STANDARDIZED_L], DefList[LIKELIHOOD_CALL].nick); // OK
       }
 
@@ -1285,7 +1279,7 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, INFO, model *cov,
     Exterr = Ext_solvePosDefSp(L->XtX, betatot, true, beta, 
 			       L->betas_separate ? repet : 1,
 			       NULL, 
-			       Ssolve, &Sparam);
+			       Ssolve, &Soptions);
     if (Exterr != NOERROR)
       GERR2("In RandomFieldsUtils: %.200s (error = %d)", Ssolve->err_msg,
 	    Exterr);
@@ -1363,12 +1357,7 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, INFO, model *cov,
 
  ErrorHandling:
   cov->base->set = 0;
-
-  if (err != NOERROR) {
-    //    printf("XXXXX\n");
-    XERR(err);
-  }
-   
+  OnErrorStop(err, cov);
 }
 
 // v ok
@@ -1510,7 +1499,7 @@ void AbbrBeta(char *Old, char *abbr) {
   
   
 void GetBeta(model *cov, likelihood_storage *L, int *neffect)  {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   if (isnowProcess(cov)) {
     int nas = ((bool) ISNA((P(GAUSS_BOXCOX)[0]))) +
       ((bool) ISNA((P(GAUSS_BOXCOX)[1])));
@@ -1677,11 +1666,10 @@ void GetBeta(model *cov, likelihood_storage *L, int *neffect,
 int struct_gauss_logli(model *cov) {
   // APMI(cov);
   cov->base->set = 0;
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   assert(isnowProcess(cov));
-  model 
-    *calling = cov->calling,
-    *sub = cov->key != NULL ? cov->key : cov->sub[0];
+  model *calling = cov->calling;
+  //    *sub = cov->key != NULL ? cov->key : cov->sub[0];
 
   /*
     if (false) { // Beschleunigung, insb. im Genetik-Bereich

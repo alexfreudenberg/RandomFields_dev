@@ -56,20 +56,20 @@ extern "C" {
   */
 
   
-  DECLARE1(void, utilsparam_DELETE, utilsparam *, S)
-  DECLARE1(void, utilsparam_NULL, utilsparam *, S)
+  DECLARE1(void, utilsoption_DELETE, utilsoption_type *, S)
+  DECLARE1(void, utilsoption_NULL, utilsoption_type *, S)
   DECLARE1(void, solve_DELETE, solve_storage**, S)
   DECLARE1(void, solve_NULL, solve_storage*, x)
   DECLARE7(int, solvePosDef, double*, M, int, size, bool, posdef, 
 	   double *, rhs, int, rhs_cols, double *, logdet, solve_storage *, PT)
   DECLARE8(int, solvePosDefSp, double *, M, int, size, bool, posdef,
 	   double *, rhs, int, rhs_cols, double *,logdet,
-	   solve_storage *, Pt, solve_param *,sp)
+	   solve_storage *, Pt, solve_options *,sp)
   //  DECLARE8(int, solvePosDefResult, double*, M, int, size, bool, posdef, 
   //	   double *, rhs, int, rhs_cols, double *, result, double*, logdet, 
   //	   solve_storage*, PT)
   DECLARE4(int, sqrtPosDefFree, double *, M, int, size, solve_storage *, pt,
-	   solve_param *, sp)
+	   solve_options *, sp)
   DECLARE3(int, sqrtRHS, solve_storage *, pt, double*, RHS, double *, res)
   DECLARE2(int, invertMatrix, double *, M, int, size)
   DECLARE2(double, StruveH, double, x, double, nu)
@@ -90,7 +90,7 @@ extern "C" {
   DECLARE0(int, cores1)
   DECLARE0(int, cpus)
   
-  DECLARE1(void, getUtilsParam, utilsparam **, up)
+  DECLARE1(void, getUtilsParam, utilsoption_type **, up)
   DECLARE10(void, attachRFoptions, const char **, prefixlist, int, N, 
 	   const char ***, all, int *, allN, setoptions_fctn, set, 
 	   finalsetoptions_fctn, final, getoptions_fctn, get,
@@ -106,7 +106,7 @@ extern "C" {
   DECLARE4(double, scalarX, double *, x, double *, y, int, len, int, n)
   //  DECLARE4(int, scalarInt, int *, x, int *, y, int, len, int, n)
   DECLARE2(double, detPosDef, double *, M, int, size) // destroys M!
-  DECLARE3(double, detPosDefsp, double *, M, int, size, solve_param *, sp)
+  DECLARE3(double, detPosDefsp, double *, M, int, size, solve_options *, sp)
   DECLARE8(int, XCinvXdet,double*, M, int, size, double *,X, int, X_cols,
 	  double *, XCinvX, double *, det, bool, log, solve_storage, *PT)
   DECLARE10(int, XCinvYdet,double*, M, int, size, bool, posdef,
@@ -190,7 +190,7 @@ install.packages("RandomFieldsUtils_0.5.21.tar.gz", configure.args="CXX_FLAGS=-m
 #define MISS_SSE (!HAS_SSE && NEED_SSE)
 
 
-#define AttachMessageN 1000
+#define AttachMessageN 2000
 #define HAS_ONE_RELEVANT (HAS_PARALLEL || USES_AVX2 || USES_AVX || USES_SSSE3 ||  USES_SSE2 || USES_SSE)
 #define HAS_ALL_RELEVANT (HAS_PARALLEL && !MISS_AVX2 && !MISS_AVX && !MISS_SSSE3 &&  !MISS_SSE2 && !MISS_SSE)
 
@@ -229,7 +229,7 @@ install.packages("RandomFieldsUtils_0.5.21.tar.gz", configure.args="CXX_FLAGS=-m
     HINT && MISS_AVX ?					\
     "\n\n   install.packages(\""#PKG"\", configure.args=\"CXX_FLAGS='-mavx "#OMP"'\")"\
     : "",								\
-    true || HINT && MISS_ANY_SIMD ? "\n\nAlternatively,\n    install.packages(\""#PKG"\", configure.args=\"USE_AVX='yes'\") \nOr, consider installing '"#PKG"'\nfrom https://github.com/schlather/"#PKG", i.e.,\n   install.packages(\"devtools\")\n   library(devtools)\n   devtools::install_github(\"schlather/"#PKG"/pkg\")" : "",\
+    HINT && MISS_ANY_SIMD ? "\n\nAlternatively,\n    install.packages(\""#PKG"\", configure.args=\"USE_AVX='yes'\") \nOr, consider installing '"#PKG"'\nfrom https://github.com/schlather/"#PKG", i.e.,\n   install.packages(\"devtools\")\n   library(devtools)\n   devtools::install_github(\"schlather/"#PKG"/pkg\")" : "", \
     HINT && !HAS_PARALLEL ? "\n\nFor OMP alone try\n   install.packages(\""#PKG"\", configure.args=\"CXX_FLAGS='"#OMP"'\")" : ""
 #endif
 
@@ -254,7 +254,7 @@ install.packages("RandomFieldsUtils_0.5.21.tar.gz", configure.args="CXX_FLAGS=-m
   SEXP Ans = PROTECT(allocVector(STRSXP, 1));	\
   char simd_msg[AttachMessageN];			\
   SPRINTF(simd_msg, AttachMessage(PKG,HINT)); \
-  SET_STRING_ELT(Ans, 0, mkChar(simd_msg));		\
+  SET_STRING_ELT(Ans, 0, mkChar(simd_msg));				\
   UNPROTECT(1);						\
   return Ans;
 

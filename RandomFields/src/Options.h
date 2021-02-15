@@ -36,7 +36,7 @@ extern const char *general[generalN];
 #define GENERAL_EXACTNESS 7
 #define GENERAL_CLOSE 10
 #define GENERAL_REPORTCOORD 16
-struct general_param {
+struct general_options {
   char pch; /*  character shown after each simulation
     just for entertainment of the user
     except for "!", then the numbers are shown
@@ -131,7 +131,7 @@ struct general_param {
 extern const char *gauss[gaussN];
 #define GAUSS_BEST_DIRECT 3
 #define GAUSS_BOXCOX_OPTION 5
-struct gauss_param{
+struct gauss_options{
   usr_bool stationary_only; // logical + NA
   double
     approx_zero, 
@@ -151,7 +151,7 @@ struct gauss_param{
 #define krigeN 5
 #define KRIGE_SPLITN 2
 extern const char *krige[krigeN];
-struct krige_param {
+struct krige_options {
   bool ret_variance,  fillall
      ;
   int locmaxn,
@@ -171,7 +171,7 @@ struct krige_param {
 
 #define CEN 12
 extern const char *CE[CEN];
-struct ce_param {
+struct ce_options {
   bool force, useprimes, dependent;
   char strategy;
   int trials, maxgridsize, maxmem;
@@ -189,7 +189,7 @@ struct ce_param {
 #define spectralN 4
 #define SPECTRAL_PROPFACTOR 2
 extern const char * spectral[spectralN];
-struct spectral_param {
+struct spectral_options {
   bool grid;
   double prop_factor, sigma;
   int lines[MAXTBMSPDIM];
@@ -200,7 +200,7 @@ struct spectral_param {
 
 #define pTBMN 9
 extern const char * pTBM[pTBMN];
-struct tbm_param {
+struct tbm_options {
   bool grid;
   int tbmdim, fulldim, points,
     lines[MAXTBMSPDIM];          // number of lines simulated
@@ -221,7 +221,7 @@ struct tbm_param {
 #define directN 1
 #define DIRECT_MAXVAR_PARAM 0
 extern const char *direct[directN];
-struct direct_param {
+struct direct_options {
   int maxvariables;
 };
 #define direct_START  { DIRECT_ORIG_MAXVAR }
@@ -229,21 +229,21 @@ struct direct_param {
 
 #define sequN 2
 extern const char * sequ[sequN];
-struct sequ_param{
+struct sequ_options{
   int back, initial;
 };
 #define sequ_START {10, -10}
 
 
 
-struct ave_param {
+struct ave_options {
 };
 #define ave_START {}
 
 
 #define pnuggetN 1
 extern const char * pnugget[pnuggetN];
-struct nugget_param {
+struct nugget_options {
   double tol;
 };
 #define nugget_START {nugget_tol[NM]}
@@ -251,7 +251,7 @@ struct nugget_param {
 
 #define mppN 6
 extern const char * mpp[mppN];
-struct mpp_param {
+struct mpp_options {
   int  n_estim_E,
     scatter_max[MAXMPPDIM];
   double intensity[MAXMPPDIM], // intensity factor for e.g. unif_initu
@@ -276,9 +276,9 @@ struct mpp_param {
 
 #define hyperN 4
 extern const char * hyper[hyperN];
-struct hyper_param {
+struct hyper_options {
   int superpos, maxlines, mar_distr;
-  double mar_param;
+  double mar_options;
 };
 #define hyper_START {700, 1000, HYPER_UNIFORM, RF_NA}
 
@@ -286,7 +286,7 @@ struct hyper_param {
 #define extremeN 12
 extern const char * extreme[extremeN];
 #define EXTREME_FLAT 5
-struct extremes_param {
+struct extremes_options {
   usr_bool flathull;
   int maxpoints, check_every, min_n_zhou, max_n_zhou, mcmc_zhou, scatter_method;
   double standardmax,
@@ -302,7 +302,7 @@ struct extremes_param {
 
 #define brN 7
 extern const char * br[brN];
-struct br_param {
+struct br_options {
   int BRmaxmem, BRvertnumber, BRoptim, deltaAM;
   double BRmeshsize, BRoptimtol, variobound;
 };
@@ -313,7 +313,7 @@ struct br_param {
 
 #define distrN 9
 extern const char * distr[distrN];
-struct distr_param{
+struct distr_options{
   double safety, minsteplen, innermin, outermax;
   int maxsteps, parts, maxit, mcmc_n, repetitions;
 };
@@ -333,7 +333,7 @@ struct distr_param{
 #define FIT_MAXNEIGHBOUR 19
 #define FIT_CLIQUE 20
 extern const char * fit[fitN];
-struct fit_param{
+struct fit_options{
   double bin_dist_factor, upperbound_scale_factor, lowerbound_scale_factor, 
     lowerbound_scale_LS_factor, upperbound_var_factor, lowerbound_var_factor, 
   //lowerbound_sill, 
@@ -382,7 +382,7 @@ struct fit_param{
 
 #define empvarioN 9
 extern const char * empvario[empvarioN];
-struct empvario_param{
+struct empvario_options{
   double phi0, theta0, tol,
     bins[MAXBINS], deltaT[2];
   
@@ -398,7 +398,7 @@ struct empvario_param{
 #define guiN 3
 extern const char * gui[guiN];
 #define GUI_SIZE 2
-struct gui_param{
+struct gui_options{
   bool alwaysSimulate;
   int method, size[2];
 };
@@ -407,7 +407,7 @@ struct gui_param{
 #define graphicsN 16
 extern const char *graphics[graphicsN];
 #define GRAPHICS_UPTO 3
-struct graphics_param{
+struct graphics_options{
   usr_bool always_open, always_close;
   bool split_screen, close_screen, onefile, grDefault;
   double height, width, resolution, xlim;
@@ -423,7 +423,7 @@ struct graphics_param{
 
 #define registersN 3
 extern const char *registers[registersN];
-struct registers_param {
+struct registers_options {
   int keynr, predict, likelihood;
 };
 #define register_START {0, MODEL_PREDICT, MODEL_USER}
@@ -433,7 +433,7 @@ struct registers_param {
 extern const char * internals[internalN];
 #define INTERNALS_DO_TESTS 0
 #define INTERNALS_EX_RED 1
-struct internal_param{ 
+struct internal_options{ 
   // if changed, CHANGE ALSO RestWarnings in 'userinterfaces.cc';
   bool do_tests;
   int examples_reduced;
@@ -454,7 +454,7 @@ extern const char * messages[messagesN];
 #define MESSAGES_COORD_CHANGE 11
 #define MESSAGES_ZENIT 13
 #define MESSAGES_RAW 23
-struct messages_param{ 
+struct messages_options{ 
   // if changed, CHANGE ALSO RestWarnings in 'userinterfaces.cc';
   bool
   warn_oldstyle, help_newstyle, warn_Aniso, note_ambiguous, help_normal_mode,
@@ -481,13 +481,13 @@ struct messages_param{
 
 #define coordsN 20
 #define COORDS_XYZNOTATION 0
-#define COORDS_DATAIDX 5
-#define COORDS_DATANAMES 6
+#define DATA_IDX 5
+#define DATA_NAMES 6
 #define COORDS_XIDX 7
 #define COORDS_XNAMES 8
 #define ZENIT 10
 extern const char *coords[coordsN];
-struct coords_param {
+struct coords_options {
   usr_bool xyz_notation; // 0; + Exception for RFcov
   double zenit[2]; // 8
   coord_sys_enum coord_system, // 1
@@ -506,8 +506,8 @@ struct coords_param {
     earthcoord_names[4][MAXCHAR];
   // auxiliary variables 
   int
-    data_nr_names, //  5; needed by data_names and x_names
-    x_nr_names, //  5; needed by data_names and x_names
+    n_data_names, //  5; needed by data_names and x_names
+    n_x_names, //  5; needed by data_names and x_names
     data_idx[2],
     x_idx[2], // (5B, 6B) alternatives for data_names and x_namwe
     max_col, max_coord;
@@ -525,7 +525,7 @@ struct coords_param {
 
 #define specialN 1
 extern const char * special[specialN];
-struct special_param {
+struct special_options {
    int multcopies;
 };
 #define special_START {20}
@@ -539,39 +539,39 @@ extern const char * obsolete[obsoleteN];
 // trend
 
 #define prefixN 25
-struct globalparam{
-  general_param general;
-  gauss_param gauss;
-  krige_param krige;
-  ce_param ce;
-  spectral_param spectral;
+struct option_type{
+  general_options general;
+  gauss_options gauss;
+  krige_options krige;
+  ce_options ce;
+  spectral_options spectral;
 
 
-  tbm_param tbm;
-  direct_param direct;
-  sequ_param sequ;
-  ave_param ave;
-  nugget_param nugget;
-  mpp_param mpp;
-   hyper_param hyper;
-  extremes_param extreme;
-  br_param br;
-  distr_param distr;
-  fit_param fit;
+  tbm_options tbm;
+  direct_options direct;
+  sequ_options sequ;
+  ave_options ave;
+  nugget_options nugget;
+  mpp_options mpp;
+   hyper_options hyper;
+  extremes_options extreme;
+  br_options br;
+  distr_options distr;
+  fit_options fit;
  
-  empvario_param empvario;
-  gui_param gui;
-  graphics_param graphics;
-  registers_param registers;
-  internal_param internal;
-  messages_param messages;
-  coords_param coords;
-  special_param special;
+  empvario_options empvario;
+  gui_options gui;
+  graphics_options graphics;
+  registers_options registers;
+  internal_options internal;
+  messages_options messages;
+  coords_options coords;
+  special_options special;
 };
 
 extern const char * prefixlist[prefixN], **all[prefixN];
 extern int allN[prefixN];
 
-extern globalparam GLOBAL;
+extern option_type OPTIONS;
 
 #endif

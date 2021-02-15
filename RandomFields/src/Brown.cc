@@ -219,12 +219,11 @@ int init_BRorig(model *cov, gen_storage *s){
   assert(cov->mpp.moments >= 1);
   model *key = cov->key;
   if (key == NULL) BUG;
-  int err, 
-    dim = OWNXDIM(0);
+  int err; 
 getStorage(sBR ,   br); 
 getStorage(pgs ,   pgs);
  GETSTOMODEL;
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
 
   //PMI(cov->calling->calling);
   if (pgs == NULL) {
@@ -287,7 +286,7 @@ int init_BRshifted(model *cov, gen_storage *s) {
   int err = NOERROR,
     dim = OWNXDIM(0);
   bool keygrid = Locgrid(key);
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   Long 
     keytotal = Loctotalpoints(key),
     shiftedloclen = keygrid ? 3 : keytotal,
@@ -432,8 +431,8 @@ int check_BRmixed(model *cov) {
   //NotProgrammedYet("at the moment Brown-Resnick processes");
   
   int err;
-  globalparam *global = &(cov->base->global);
-  br_param *bp = &(global->br);
+  option_type *global = &(cov->base->global);
+  br_options *bp = &(global->br);
    
   if (!cov->logspeed) SERR("BrownResnick requires a variogram model as submodel that tends to infinity [t rate of at least 4log(h) for being compatible with BRmixed");
   
@@ -742,7 +741,7 @@ getStorage(sBR ,   br);
 
 
 int init_BRmixed(model *cov, gen_storage *s) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   location_type *loc = Loc(cov);
   getStorage(sBR ,   br); 
   GETSTOMODEL;
@@ -843,7 +842,7 @@ getStorage(pgs ,   pgs);
 
 void do_BRmixed(model *cov, gen_storage *s) {
   // to do: improve simulation speed by dynamic sizes
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   assert(cov->key!=NULL);
 getStorage(sBR ,   br);
  GETSTOMODEL;
@@ -1206,7 +1205,8 @@ int structBRintern(model *cov, model **newmodel) {
     double yy, C0, gammamin,
       alpha,
       xx=step * 1e-6;
-    Zero(submodel, &C0);
+    assert(VDIM0 == 1);
+    AtZero(submodel, &C0);
 
     DEFAULT_INFO(info);
     COV(&xx, info, submodel, &yy);
@@ -1471,7 +1471,7 @@ void finaldoBrownResnick(model *cov, double *res, int n, gen_storage *s) {
 
 
 int initBRuser (model *cov, gen_storage *S) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   location_type *loc = Loc(cov);
   model *sub = cov->key;
   if (sub == NULL) 
@@ -1521,7 +1521,7 @@ void brnormed() {
 }
 
 int check_brnormed(model *cov) {
-  utilsparam *global_utils = &(cov->base->global_utils);
+  utilsoption_type *global_utils = &(cov->base->global_utils);
   model  
     *key = cov->key,
     *next = cov->sub[0],
@@ -1755,7 +1755,7 @@ getStorage(pgs ,   pgs);
 // total, nth, zeropos, zaehler, fmaxDfprop, max, accepted, C, dummyCi, maxCi
 
 int init_brnormed(model *cov, gen_storage *s){
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
 
   getStorage(sBR ,   br); 
   getStorage(pgs ,   pgs); 

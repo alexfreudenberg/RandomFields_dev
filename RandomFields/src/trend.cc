@@ -143,11 +143,8 @@ Types Typeshapefct(Types required, model *cov, isotropy_type required_iso){
 
 
 int checkshapefct(model *cov){
-
-  model 
-    *calling = cov->calling,
-    *musub = cov->kappasub[SHAPE_FCT_MEAN];
-  int i,  err,
+  model *musub = cov->kappasub[SHAPE_FCT_MEAN];
+  int 
     vdim = 0, 
     logdim = OWNLOGDIM(0);
     
@@ -164,6 +161,7 @@ int checkshapefct(model *cov){
   } else {
     ASSERT_ONESYSTEM;
     assert(musub != NULL);
+    int err;
     if ((err = CHECK(musub, logdim, OWNXDIM(0), ShapeType, XONLY,
 		     PREVISO(0), SUBMODEL_DEP, TrendType)) != NOERROR) {
       //    APMI(cov);

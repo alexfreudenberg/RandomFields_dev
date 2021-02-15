@@ -89,7 +89,7 @@ typedef enum ptwise_type {pt_posdef,
 			  pt_indef,
 			  pt_negdef, 
 			  pt_zero, // identical zero, so both pos & neg def
-			  pt_paramdep,
+			  pt_optionsdep,
 			  pt_submodeldep,
 			  pt_undefined, pt_unknown, pt_mismatch}
   ptwise_type;

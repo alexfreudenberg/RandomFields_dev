@@ -32,13 +32,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define SPECTRAL_SIGMA (COMMON_GAUSS + 4)
 
 int check_spectral(model *cov) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
 #define nsel 4
   model *next=cov->sub[0],
     *key =cov->key,
     *sub = key==NULL ? next : key;
   int err;
-  spectral_param *gp  = &(global->spectral);
+  spectral_options *gp  = &(global->spectral);
 
   ASSERT_CARTESIAN;
   FRAME_ASSERT_GAUSS_INTERFACE;
@@ -256,8 +256,8 @@ void E(int dim, spectral_storage *s, double A, double *e) {
 void do_spectral(model *cov, gen_storage *S) {  // in two dimensions only!
 
   
-  globalparam *global = &(cov->base->global);
-  //  gauss_param *dp = &(gp->gauss);
+  option_type *global = &(cov->base->global);
+  //  gauss_options *dp = &(gp->gauss);
   usr_bool exact = global->general.exactness;
   model *next = cov->sub[0];
   defn *C = DefList + NEXTNR; // nicht COVNR!
@@ -487,7 +487,8 @@ void do_spectral(model *cov, gen_storage *S) {  // in two dimensions only!
     
   } // for k<NTOT
   double sqrttwodivbyn;
-  Zero(next, &sqrttwodivbyn);
+  assert(next->vdim[0] == 1);
+  AtZero(next, &sqrttwodivbyn);
   
   sqrttwodivbyn = SQRT(sqrttwodivbyn * 2.0 // 2.0 from spectral simul.
 		       / (double) ntot);

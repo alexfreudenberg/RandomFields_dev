@@ -1081,12 +1081,17 @@ UnifyData <- function(model, x, y=NULL, z=NULL, T=NULL,  grid=NULL, data,
      if (is.null(newmodel)) stop("new model not found.", CONTACT)
      
      if (!missing.further) {
-       setRFoptions(coords.coordnames = coordnames, coords.varnames = varnames)
+       #Print(coordnames, varnames,extractRepeatedNames(varnames))
+       setRFoptions(coords.coordnames = coordnames,
+                    coords.varnames = extractRepeatedNames(varnames))
        for (m in 1:length(further.models))
          if (!is.null(further.models[[m]]) &&
              !is.numeric(further.models[[m]])) {           
            further.models[[m]] <-
-             if (model.dependent.further.models) {        
+             if (model.dependent.further.models) {
+
+               str(model)
+               
                nf <- names(further.models)
                PrepareModel2(model=model, params=params, xdim=xdim, x=neu,
                              add.na=add.na, data=orig.data, arg = nf[m],
@@ -1125,12 +1130,14 @@ UnifyData <- function(model, x, y=NULL, z=NULL, T=NULL,  grid=NULL, data,
   }
   
   if (PL > PL_SUBIMPORTANT ||
-      (PL >= PL_IMPORTANT && info$data.info != "safe")) {
+      (PL >= PL_IMPORTANT && info$data.info != "safe")
+      && .Call(C_areDataIdxDifferentFromFormer, info$is.var)
+      ) {
     nn <- min(length(info$is.var), RFopt$messages$vec_len)
     reduced <- nn < length(info$is.var)
     nnRep <- min(length(repetitions), RFopt$messages$vec_len)
     reducedRep <- nn < length(repetitions)
-     
+
     Note("detection", "Using columns ", paste(info$is.var[1:nn], collapse=","),
          if (reduced) "...",
          " as data columns",

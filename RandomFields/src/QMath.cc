@@ -148,12 +148,11 @@ MATH_DEFAULT
 
 
 void MathPow(double *x, int *info, model *cov, double *v){
-MATH_DEFAULT
-*v = POW(w[0], w[1]); 
+  MATH_DEFAULT
+    *v = POW(w[0], w[1]); 
 }
 
 int check_Pow(model *cov){
-  int err;
   model *sub = cov->kappasub[0];
   cov->ptwise_definite = pt_indef;
   if (sub != NULL && MODELNR(sub) == CONST && !PARAMisNULL(sub, CONST_C)) {
@@ -333,7 +332,6 @@ MATH_DEFAULT
 }
 
 int check_Fmax(model *cov){
-  int err;
   for (int i=0; i<=1; i++) {
     model *sub = cov->kappasub[i];
     if (sub != NULL && MODELNR(sub) == CONST &&!PARAMisNULL(sub, CONST_C)) {
@@ -350,7 +348,6 @@ MATH_DEFAULT
 *v = FMIN(w[0], w[1]); 
 }
 int check_Fmin(model *cov){
-  int err;
   for (int i=0; i<=1; i++) {
     model *sub = cov->kappasub[i];
     if (sub != NULL && MODELNR(sub) == CONST &&!PARAMisNULL(sub, CONST_C)) {
@@ -673,7 +670,7 @@ IncludeModel(".fmax", MathDefType, 0, 0, 2, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, falsch, NOT_MONOTONE); 
 nickname("fmax");
 kappanames("x", REALSXP, "y", REALSXP);
-setptwise(pt_paramdep); 
+setptwise(pt_optionsdep); 
 ADDCOV(MathFmax);
 
 IncludeModel(".fmin", MathDefType, 0, 0, 2, NULL, XONLY,
@@ -681,7 +678,7 @@ IncludeModel(".fmin", MathDefType, 0, 0, 2, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, falsch, NOT_MONOTONE); 
 nickname("fmin");
 kappanames("x", REALSXP, "y", REALSXP);
-setptwise(pt_paramdep); 
+setptwise(pt_optionsdep); 
 ADDCOV(MathFmin);
 
 ////////////////////////////////////////////////////////////////////////
@@ -756,7 +753,7 @@ IncludeModel(".pow", MathDefType, 0, 0, 2, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, (ext_bool) false, NOT_MONOTONE); 
 nickname("pow");
 kappanames("x", REALSXP, "y", REALSXP);
-setptwise(pt_paramdep); 
+setptwise(pt_optionsdep); 
 ADDCOV(MathPow);
 
  

@@ -580,7 +580,7 @@ RFfit <- function(model, x, y=NULL, z=NULL, T=NULL,  grid=NULL, data,
            ##             "Poisson"),
            ...)
 {
-
+ 
   .C(C_NoCurrentRegister)
 
   RFopt <-internalRFoptions(xyz=length(y)!=0,..., fit.addNAlintrend = 2,
@@ -610,7 +610,7 @@ RFfit <- function(model, x, y=NULL, z=NULL, T=NULL,  grid=NULL, data,
     for (m in models) further.models[[m]] <- get(m)
 
 ##  Print(model, if(!missing(x)) x)
-
+ 
   Z <- UnifyData(model=model, x=x, y=y, z=z, T=T, grid=grid,
                  data=data, distances=distances, dim=dim,
                  RFopt=RFopt,
@@ -652,7 +652,7 @@ RFfit <- function(model, x, y=NULL, z=NULL, T=NULL,  grid=NULL, data,
         !hasArg("estimate_variance_globally")) {
       stop("Since a transform of the parameters to be estimated is given, the parameter 'estimate_variance_globally=TRUE' might be faulty. On the user's full responsibility, the user might set 'estimate_variance_globally=TRUE' explicitely within the current function call.")
     }
-    res <- do.call("rffit.gauss",
+   res <- do.call("rffit.gauss",
                    c(list(Z, lower=lower, upper=upper, users.guess=users.guess,
                           optim.control=optim.control,
                           recall = FALSE),

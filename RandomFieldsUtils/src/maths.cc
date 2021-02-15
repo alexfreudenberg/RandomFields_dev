@@ -512,8 +512,6 @@ SEXP logWMr(SEXP X, SEXP Nu1, SEXP Nu2, SEXP Factor) {
 double incomplete_gamma(double start, double end, double s) {
   // int_start^end t^{s-1} e^{-t} \D t
 
-  // print("incomplete IN s=%10g e=%10g s=%10g\n", start, end, s);
-
   double
     v = 0.0, 
     w = 0.0;
@@ -540,8 +538,6 @@ double incomplete_gamma(double start, double end, double s) {
   
   w = pgamma(start, s, 1.0, 0, 0);  // q, shape, scale, lower, log
   if (R_FINITE(end)) w -= pgamma(end, s, 1.0, 0, 0);
-
-  //  print("incomplete s=%10g e=%10g s=%10g v=%10g g=%10g w=%10g\n", start, end, s, v, gammafn(s), w);
 
   return v + gammafn(s) * w * factor;
 }

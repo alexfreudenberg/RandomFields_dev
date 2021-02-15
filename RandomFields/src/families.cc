@@ -147,8 +147,7 @@ void range_arcsqrt(model  VARIABLE_IS_NOT_USED *cov, range_type* range){
 
 void addVariable(char *name, double *z, int nrow, int ncol, SEXP env) {  
   SEXP Y;
-  int j,
-    size= nrow * ncol;
+  int size= nrow * ncol;
   if (ncol == 1) PROTECT(Y = allocVector(REALSXP, nrow));
   else PROTECT(Y = allocMatrix(REALSXP, nrow, ncol));
   MEMCOPY(REAL(Y), z, sizeof(double) * size);
@@ -159,8 +158,7 @@ void addVariable(char *name, double *z, int nrow, int ncol, SEXP env) {
 
 void addIntVariable(char *name, int *z, int nrow, int ncol, SEXP env) {  
   SEXP  Y;
-  int j,
-    size= nrow * ncol;
+  int size= nrow * ncol;
   if (ncol == 1) PROTECT(Y = allocVector(INTSXP, nrow));
   else PROTECT(Y = allocMatrix(INTSXP, nrow, ncol));
   MEMCOPY(INTEGER(Y), z, sizeof(int) * size);
@@ -643,7 +641,7 @@ void range_RRspheric(model VARIABLE_IS_NOT_USED *cov, range_type *range){
 
 
 int init_RRspheric(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   int i, m,
     nm = cov->mpp.moments,
     nmvdim = nm + 1, // vdim == 1 
@@ -1044,7 +1042,7 @@ void locR(double *x, int* info, model *cov, double *v) {
   LOC_PARAMETERS;
   TALLOC_DOUBLE(z1);
   if (x != NULL) {
-    TALLOC_GLOBAL_X1(z1, dim);
+    TALLOC_OPTIONS_X1(z1, dim);
     LOCFOR z1[i] = (x[i] - location[mi]) / scale[si];
   }
   VTLG_R(z1, info, next, v);
@@ -1057,7 +1055,7 @@ void locR2sided(double *x, double *y, int *info, model *cov, double *v) {
   LOC_PARAMETERS;  
   TALLOC_DOUBLE(z1);
   if (x != NULL) {
-    TALLOC_GLOBAL_X1(z1, dim);
+    TALLOC_OPTIONS_X1(z1, dim);
     LOCFOR z1[i] = (x[i] - location[mi]) / scale[si];
   } // !! Z1 can be != NULL as used differently among the location-fcts
   TALLOC_X2(z2, dim);
@@ -2302,6 +2300,7 @@ void rectangularR2sided(double *x, double *y, INFO, model *cov, double *v) {
 
 
 int GetMajorant(model *cov) {
+  assert(VDIM0 == 1);
   DEFAULT_INFO(info);
   RECTANGULAR_PARAMETERS;
   double v, m, delta, old_ratio,
@@ -2473,7 +2472,7 @@ int GetMajorant(model *cov) {
 }
 
 int check_rectangular(model *cov) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   model *next = cov->sub[0];
   int err,
     dim = OWNXDIM(0);
@@ -2884,7 +2883,7 @@ void mcmcR2sided(double VARIABLE_IS_NOT_USED  *x, double  VARIABLE_IS_NOT_USED *
 }
 
 int check_mcmc(model *cov) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   ASSERT_UNREDUCED;
   ASSERT_CARTESIAN;
   model *next = cov->sub[MCMC_FCTN];

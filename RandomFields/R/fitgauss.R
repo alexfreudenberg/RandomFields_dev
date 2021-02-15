@@ -924,7 +924,9 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
                         ...) {
 
   ##  print(Z$model)
-  ##  Print(Z); print(Z$transform$fctn);  print(Z$transform$params.fctn); 
+  ##
+  Print(Z);
+  #print(Z$transform$fctn);  print(Z$transform$params.fctn); 
 
   ##  Print(lower, recall, upper, users.guess, Z, list(...))
   ##  Print("start", recall)
@@ -2813,7 +2815,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
             next
           }
         }
-        #Print(MLEVARIAB, max.variab)
+        
       }
 
      

@@ -17,29 +17,29 @@
 extern const char *basic[basicN];
 #define BASIC_WARN_OPTION 9
 typedef // benoetigt
-struct basic_param {
+struct basic_options {
   int  
   Rprintlevel, Cprintlevel, seed, cores, warn_unknown_option,
-    LaMaxTakeOwn;
+    LaMaxTakeIntern;
   bool skipchecks, asList /* hidden:verbose */, kahanCorrection, helpinfo,
    warn_parallel;
   la_modes la_usr, la_mode;
-} basic_param;
+} basic_options;
 #define basic_START \
   { R_PRINTLEVEL, C_PRINTLEVEL, NA_INTEGER, INITCORES, WARN_UNKNOWN_OPTION_ALL,\
       MAXINT, 							\
       false, true, false, true, true,					\
-      LA_AUTO, LA_R							\
+      LA_AUTO, LA_R /*LA_R  */					\
       }
 
 extern const char * InversionNames[nr_InversionMethods];
 
 #define SOLVE_SVD_TOL 3
-#define solveN 20
+#define solveN 21
 typedef // benoetigt
-struct solve_param {
+struct solve_options {
   usr_bool sparse, pivot_check;
-  bool det_as_log, pivot_partialdet;
+  bool det_as_log, pivot_partialdet, pseudoinverse;
   double spam_tol, spam_min_p[2], svd_tol, eigen2zero, pivot_relerror,
     max_deviation, max_reldeviation;
   InversionMethod Methods[SOLVE_METHODS];
@@ -50,29 +50,29 @@ struct solve_param {
     tinysize;
   //  bool tmp_delete;
   pivot_modes actual_pivot,pivot_mode;
-} solve_param;
+} solve_options;
 #ifdef SCHLATHERS_MACHINE
 #define svd_tol_start 1e-08
 #else
 #define svd_tol_start 0
 #endif
 #define solve_START							\
-  False, False, true, false,						\
+  False, False, true, false, false,					\
     2.220446e-16, {0.8, 0.9}, svd_tol_start, 1e-12, 1e-11,		\
     1e-10, 1e-10,							\
     {NoInversionMethod,  NoFurtherInversionMethod},			\
     {400, 10000}, 500, 4294967, PIVOTSPARSE_MMD, 16384,			\
     10000,  /* never change -- see RFoptions.Rd */			\
     0, NULL, 0, 3,							\
-    PIVOT_UNDEFINED, PIVOT_NONE
+    PIVOT_UNDEFINED, PIVOT_NONE /* PIVOT_NONE */
     
 extern const char * solve[solveN];
 
 typedef // benoetigt
-struct utilsparam{
-  basic_param basic;
-  solve_param solve;
-} utilsparam;
+struct utilsoption_type{
+  basic_options basic;
+  solve_options solve;
+} utilsoption_type;
 
 
 #define LEN_OPTIONNAME 201 // zwingend ungerade
@@ -100,6 +100,7 @@ typedef void (*deleteoptions_fctn) (bool);
 //int own_chol_up_to();
 void SetLaMode();
 void SetLaMode(la_modes);
+void solve_DELETE0(solve_storage *x);
 
 
 #endif

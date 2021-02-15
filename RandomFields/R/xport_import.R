@@ -12,7 +12,7 @@ optionsDelete <- function(RFopt, register=NULL) {
 ## BEIM AUFRUF: entweder mit COPY = FALSE oder nachfolgend mit !hasArg("COPY")
 getRFoptions <- function(...) RFoptions(local_=TRUE, ..., no.class=TRUE)
 setRFoptions <- function(...) {
-  RFoptions(local_=TRUE, ..., no.class=TRUE)
+  RFoptions(local_=TRUE, warnUnknown_=WARN_UNKNOWN_OPTION_NONE, ..., no.class=TRUE)
 }
 
 
@@ -48,7 +48,9 @@ internalRFoptions <- function(..., local_=TRUE, getoptions_=NULL,
         .Call(C_copyoptions)
       }
       L <- L[!idx]
-      if (length(L) > 0) do.call("RFoptions", c(list(local_=local_), L))
+      if (length(L) > 0)
+        do.call("RFoptions", c(list(local_=local_,
+                                    warnUnknown_=WARN_UNKNOWN_OPTION_NONE1), L))
       setoptions <- FALSE
     } else {
 ##      Print("Copy option")
@@ -58,7 +60,7 @@ internalRFoptions <- function(..., local_=TRUE, getoptions_=NULL,
   
   ## sequence: local_, warnUnknown_, LIST / saveoptions_ / GETOPTION
    if (setoptions) {
-    RFoptions(local_=local_, ...)
+    RFoptions(local_=local_, warnUnknown_=WARN_UNKNOWN_OPTION_NONE1, ...)
   } 
 
   if (RETURN) {

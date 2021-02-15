@@ -189,7 +189,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
     (Cov)->nrow[IDX] = ROW; (Cov)->ncol[IDX] = COL;			\
     if (((Cov)->px[IDX] =						\
 	 (double*) CALLOC((ROW) * (COL), _PARAMsize)) == NULL) {	\
-      XERR(ERRORMEMORYALLOCATION)					\
+      OnErrorStop(ERRORMEMORYALLOCATION,Cov);				\
     }									\
   }
 #define PALLOC(IDX, ROW, COL) PARAMALLOC(cov, IDX, ROW, COL)

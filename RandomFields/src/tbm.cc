@@ -188,7 +188,7 @@ void rangetbmproc(model VARIABLE_IS_NOT_USED *cov, int k, int i, int j,
 
 
 int checktbmproc(model *cov) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
 
   FRAME_ASSERT_GAUSS_INTERFACE;
 
@@ -206,7 +206,7 @@ int checktbmproc(model *cov) {
   int  err = NOERROR;  // taken[MAX DIM],
   isotropy_type
     isoselect[NSEL]={ISOTROPIC, DOUBLEISOTROPIC};
-  tbm_param *gp  = &(global->tbm);
+  tbm_options *gp  = &(global->tbm);
   char *error_location = cov->base->error_location;  
  
   ASSERT_CARTESIAN;
@@ -325,8 +325,8 @@ int checktbmproc(model *cov) {
 
 
 int struct_tbmproc(model *cov, model **newmodel) { 
-  globalparam *global = &(cov->base->global);
-  coord_sys_enum coord = global->coords.coord_system;
+  option_type *global = &(cov->base->global);
+  //coord_sys_enum coord = global->coords.coord_system;
   model
     *next = cov->sub[TBM_COV];
   ASSERT_NEWMODEL_NULL;
@@ -814,7 +814,7 @@ void GetE(int fulldim, tbm_storage *s, int origdim, bool Time,
 
 
 void do_tbmproc(model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   model 
     *key = cov->key; 
   assert(key != NULL); // == NULL ? cov->sub[0] : cov->key;

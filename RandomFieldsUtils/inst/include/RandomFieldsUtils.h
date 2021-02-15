@@ -74,6 +74,8 @@ extern "C" {
   void Ordering(double *d, int *len, int *dim, int *pos);
   SEXP crossprodX(SEXP X, SEXP Y, SEXP mode);
 
+  SEXP DebugCall();
+
 #ifdef __cplusplus
 }
 #endif

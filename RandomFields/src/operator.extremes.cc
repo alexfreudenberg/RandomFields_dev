@@ -37,7 +37,7 @@ void extrgauss(double *x, int *info, model *cov, double *v) {
   model *next = cov->sub[0];
   double var, z;
   
-  Zero(info, next, &var);
+  AtZero(info, next, &var);
   COV(x, info, next, &z);
   *v = 1.0 - SQRT(0.5 * (1.0 - z / var));
 }
@@ -45,9 +45,7 @@ void extrgauss(double *x, int *info, model *cov, double *v) {
 
 int check_extrgauss(model *cov) {
   // to do extend to multivariate
-  model
-    *next = cov->sub[0];
-  double v;
+  model *next = cov->sub[0];
   int
     vdim = VDIM0,
     err = NOERROR;
@@ -59,7 +57,8 @@ int check_extrgauss(model *cov) {
   setbackward(cov, next);
   int maxv = MIN(vdim, MAXMPPVDIM);
   for (int i=0; i<maxv; i++) cov->mpp.maxheights[i] = 1.0;
-  Zero(next, &v);
+  double v;
+  AtZero(next, &v);
   if (v != 1.0) SERR("only correlation functions allowed");
   RETURN_NOERROR;
 }
@@ -75,7 +74,7 @@ void brownresnick(double *x, int *info, model *cov, double *v) {
   model *next = cov->sub[0];
   double z;  
 
-  Zero(info, next, &z);
+  AtZero(info, next, &z);
   COV(x, info, next, v);
   *v = 2.0 * pnorm(SQRT((z - *v) * BR_SEMI_FACTOR), 0.0, 1.0, false, false);
 }
@@ -101,7 +100,7 @@ void Dbrownresnick(double *x, int *info, model *cov, double *v) {
   }
   
   if (*x != 0.0) {
-    Zero(info, next, &z);
+    AtZero(info, next, &z);
     COV(x, info, next, v);
     
     assert(DefList[NEXTNR].D != NULL);
@@ -153,7 +152,7 @@ void DDbrownresnick(double *x, int *info, model *cov, double *v) {
   }
    
   if (*x != 0.0) {
-    Zero(info, next, &z);
+    AtZero(info, next, &z);
     COV(x, info, next, v);
     Abl1(x, info, next, &abl);
     Abl2(x, info, next, &abl2);
@@ -192,7 +191,7 @@ void D3brownresnick(double *x, int* info, model *cov, double *v) {
   }
    
   if (*x != 0.0) {
-    Zero(info, next, &z);
+    AtZero(info, next, &z);
     COV(x, info, next, v);
     Abl1(x, info, next, &abl);
     Abl2(x, info, next, &abl2);
@@ -384,14 +383,14 @@ void BR2EG(double *x, int *info, model *cov, double *v) {
   // BrownResnick to binary Gaussian
   model *next = cov->sub[0];
   double z;
-  Zero(info, next, &z);
+  AtZero(info, next, &z);
   COV(x, info, next, v);
   z = 2.0 * pnorm(SQRT( (z - *v) * BR_SEMI_FACTOR), 0.0, 1.0, true, false) -1.0;
   *v = 1.0 - 2.0 * z * z;
 }
 
 int check_BR2EG(model *cov) {
-  utilsparam *global_utils = &(cov->base->global_utils);
+  utilsoption_type *global_utils = &(cov->base->global_utils);
   // to do extend to multivariate
   model  
    *next = cov->sub[0];
@@ -420,7 +419,7 @@ int check_BR2EG(model *cov) {
   // mit c = 0 folgt SQRT(0.5 (1-c)) = 1 / SQRT(2)
   // semivario = 2 * {Phi^{-1}( (1 / SQRT(2) + 1) / 2 ) } ^2
 
-  Zero(next, &v);
+  AtZero(next, &v);
   t = qnorm(0.5 * (1.0 + INVSQRTTWO), 0.0, 1.0, true, false);
   t *=  t / (BR_SEMI_FACTOR * (1.0 - alpha)); // 1/2 wegen Erf->qnorm
   if (!global_utils->basic.skipchecks && v > t)
@@ -435,14 +434,14 @@ void BR2BG(double *x, int *info, model *cov, double *v) {
   // BrownResnick to binary Gaussian
   model *next = cov->sub[0];
   double z;
-  Zero(info, next, &z);
+  AtZero(info, next, &z);
   COV(x, info, next, v); 
   z = 2.0 * pnorm(SQRT( (z - *v) * BR_SEMI_FACTOR), 0.0, 1.0, true, false) -1;
   *v = COS(M_PI * z);
 }
 
 int check_BR2BG(model *cov) {
-  utilsparam *global_utils = &(cov->base->global_utils);
+  utilsoption_type *global_utils = &(cov->base->global_utils);
   // to do extend to multivariate
   model *next = cov->sub[0];
   double v, t,
@@ -475,7 +474,7 @@ int check_BR2BG(model *cov) {
   // mit c = 0 folgt arcCOS(c)/ pi + 1 = 3/2
   // semivario = 2 * { Phi^{-1}( 3 / 4) }^2
 
-  Zero(next, &v);
+  AtZero(next, &v);
   t = qnorm(0.75, 0.0, 1.0, false, false);
   t *= t / (BR_SEMI_FACTOR * (1.0 - alpha)); // 1/2 wegen Erf->qnorm
  

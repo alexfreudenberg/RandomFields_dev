@@ -25,17 +25,22 @@
 ## sudo apt-get install tk8.5-dev
 ## see R Installation and Administration
 ##./configure --with-tcl-config=/usr/lib/tcl8.5/tclConfig.sh --with-tk-config=/usr/lib/tk8.5/tkConfig.sh
-# sudo tar xvf ~/TMP/bwidget-1.9.5.tar 
+                                        # sudo tar xvf ~/TMP/bwidget-1.9.5.tar
+
+## .C <- function(...) { cat("\ndebugging version: "); x <- ...elt(1); print(if (is.list(x)) x[1] else x); base::.Call(C_DebugCall); z <- base::.C(...);  cat("\nend call: ");  base::.Call(C_DebugCall); z}
+
+## .Call <- function(...) { cat("\ndebugging version: "); x <- ...elt(1); print(if (is.list(x)) x[1] else x); base::.Call(C_DebugCall); z <- base::.Call(...); cat("\nend call: "); base::.Call(C_DebugCall); z}
+
 
 .onLoad <- function(lib, pkg) {
-  .C("loadoptions")
+  base::.C("loadoptions")
 }
 
 GetMessage <-function() .Call("attachoptions")
 
 .onAttach <- function (lib, pkg) {
   #print("dooppelte anfuehrungszeichen kroore")
- # packageStartupMessage("This is RandomFields Version: 4.0.0.11") # ")
+ # packageStartupMessage("This is RandomFields Version: 4.0.0.12") # ")
   packageStartupMessage("Note that a new package 'RandomFieldsLight' is upcoming,\nwhich offers a simplified access to modelling random fields.")
   packageStartupMessage(GetMessage());
 }
@@ -47,7 +52,7 @@ GetMessage <-function() .Call("attachoptions")
 }
 
 .onUnload <- function(lib, pkg){
-   .C("detachoptions")
+   base::.C("detachoptions")
 }
 
 #Implementierung von Cox & Isham's non-separable model

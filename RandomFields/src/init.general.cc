@@ -159,15 +159,15 @@ double *ZERO(model *cov) {
   return ZERO(PREVTOTALXDIM, cov->base); // i_ncol
 }
 
-void Zero(int *info, model *cov, double *v) {
+void AtZero(int *info, model *cov, double *v) {
   double *zero = ZERO(cov);
   if (isKernel(PREV)) NONSTATCOV(zero, zero, info, cov, v)
     else COV(zero, info, cov, v);
 }
 
-void Zero(model *cov, double *v) {
+void AtZero(model *cov, double *v) {
   DEFAULT_INFO(info);
-  Zero(info, cov, v);
+  AtZero(info, cov, v);
 }
  
 
@@ -579,7 +579,7 @@ void InitModelList() {
   AddVariant(NegDefType, PREVMODEL_I);
   AddVariant(TcfType, PREVMODEL_I);
   setDI(NULL, allowedItrue, NULL);
-  setptwise(pt_paramdep); 
+  setptwise(pt_optionsdep); 
 
   PROJ_MODEL = 
   IncludeModel(R_P, MathDefType, 0, 0, 4, NULL, XONLY, PARAMDEP_I,

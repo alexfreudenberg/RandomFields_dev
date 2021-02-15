@@ -172,7 +172,7 @@ str(RFspDataFrame2conventional(f))
 head(coordinates(f))
 str(f[2]) ## selects second column of data-slot
 all.equal(f, cbind(f,f)[1:3]) ## TRUE
-try(as(f, "RFspatialGridDataFrame")) # yields error
+try(as(f, "RFspatialGridDataFrame")) # yields error%## OK
 
 plot(f, nmax=2)
 

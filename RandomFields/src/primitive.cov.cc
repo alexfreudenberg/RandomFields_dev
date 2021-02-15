@@ -2125,7 +2125,7 @@ void SteinST1(double *x, INFO, model *cov, double *v){
 
 
 int checkSteinST1(model *cov) {  
- utilsparam *global_utils = &(cov->base->global_utils);
+ utilsoption_type *global_utils = &(cov->base->global_utils);
   double nu = P0(STEIN_NU), *z= P(STEIN_Z), absz;
    int d, 
     spatialdim=OWNLOGDIM(0) - 1;
@@ -2307,7 +2307,7 @@ void DDUser(double *x, INFO, model *cov, double *v){
 
 
 int checkUser(model *cov){
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   defn *C = DefList + COVNR;
 
   kdefault(cov, USER_DOM, XONLY);

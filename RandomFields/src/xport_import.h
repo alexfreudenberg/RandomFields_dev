@@ -54,8 +54,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
   CALL(chol2inv);				\
   CALL(sleepMicro);				\
   CALL(pid);					\
-  CALL(utilsparam_DELETE);			\
-  CALL(utilsparam_NULL)				\
+  CALL(utilsoption_DELETE);			\
+  CALL(utilsoption_NULL)				\
  
 #ifdef CALL
 #undef CALL
@@ -64,19 +64,19 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 UTILSCALLS;
 
 void includeXport();
-extern utilsparam* GLOBAL_UTILS;
+extern utilsoption_type* OPTIONS_UTILS;
 extern int CORES;
 extern int PL;
 
 void PIDKEY_DELETE();
 typedef
-struct globalparam globalparam;
-globalparam *WhichOptionList(bool local);
+struct option_type option_type;
+option_type *WhichOptionList(bool local);
 bool parallel();
 
-//void globalparam_NULL(KEY_type *KT, bool copy_messages);
-//void globalparam_NULL(KEY_type *KT);
-//void globalparam_DELETE(KEY_type *S);
+//void option_type_NULL(KEY_type *KT, bool copy_messages);
+//void option_type_NULL(KEY_type *KT);
+//void option_type_DELETE(KEY_type *S);
 
 
 #endif

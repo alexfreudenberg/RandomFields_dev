@@ -66,12 +66,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //#undef DO_PARALLEL
 #endif
 
-#define SAVE_ERR(cov, N)					\
-  (cov)->err = N;						\
+//  assert((cov) != NULL && (cov)->base != NULL);			
+
+#define SAVE_ERR(cov, N)	\
+  (cov)->err = N;  \
   (cov)->base->error_causing_cov =				\
     (N) == NOERROR ? NULL					\
-    : cov->base->error_causing_cov == NULL ? (cov)		\
-    : cov->base->error_causing_cov
+    : (cov)->base->error_causing_cov == NULL ? (cov)		\
+    : (cov)->base->error_causing_cov; 
 
 #define RETURN_ERR(err) { SAVE_ERR(cov, err); return err; }
 #define RETURN_ERR_COV(cov, err) { SAVE_ERR(cov, err); return err; }

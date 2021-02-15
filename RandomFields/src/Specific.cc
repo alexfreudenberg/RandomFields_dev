@@ -36,7 +36,7 @@ int check_specificGauss(model *cov) {
     *next= cov->sub[0];
   int err ,
     dim = ANYDIM; // taken[MAX DIM],
-  //  direct_param *gp  = &(globa l->direct); //
+  //  direct_options *gp  = &(globa l->direct); //
 
   FRAME_ASSERT_GAUSS_INTERFACE;
    

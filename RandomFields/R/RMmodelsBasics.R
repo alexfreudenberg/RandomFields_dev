@@ -86,8 +86,10 @@ CheckMaths <- function(arg, subst, distr) {
 CheckArg <- function(arg, subst, distr) {
   ## See also CheckArg in PrepareModel
   ##  print(deparse(subst))
-  # str(arg)
-  # Print("CheckArg", deparse(subst), is(arg, "formula"))
+                                        #
+  ## str(arg);  stopifnot(length(arg) != 4 || !is.matrix(arg))
+                                        #
+##  Print("CheckArg", deparse(subst), is(arg, "formula"))
    u <- rawTry(is.numeric(arg) || is.logical(arg) || is.language(arg)
                || is.list(arg) || (isS4(arg) && is(arg, CLASS_CLIST)))
   if (is.logical(u) && u) arg

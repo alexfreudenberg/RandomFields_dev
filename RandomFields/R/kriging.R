@@ -649,8 +649,8 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
   return(Res)
 }
 
-rfSimulate <- function(model, x, reg, RFopt, n) {
-  rfInit(model=list("Simulate", model, env=.GlobalEnv,
+rfSimulate <- function(model, x, reg, RFopt, n, envir) {
+  rfInit(model=list("Simulate", model, env=envir,
                     setseed=eval(parse(text="quote(set.seed(seed=seed))"))),
            x=x, reg=reg, RFopt=RFopt)
   res <- rfDoSimulate(n=n, reg=reg, spConform=FALSE)
@@ -662,6 +662,7 @@ rfCondGauss <- function(model, x, n=1,
                         given=NULL, ## alternative for coordinates of data
                         params=NULL,
                         err.model=NULL, err.params, ...) { # ... wegen der Variablen
+  envir <- if (hasArg("parent")) list(...)$parent else .GlobalEnv
   .Call(C_setlocalRFutils, NA, NULL)
   RFopt <- getRFoptions()
    
@@ -768,7 +769,7 @@ rfCondGauss <- function(model, x, n=1,
       ## data points are all lying on the grid
       simu <- rfSimulate(model=all$conditioning,
                          x=UnifyXT(X$x, T=X$T, grid=X$grid),
-                         n=n, reg=reg, RFopt=RFopt)
+                         n=n, reg=reg, RFopt=RFopt, envir=envir)
  
       ## for all the other cases of simulation see, below
       if (is.vector(simu)) dim(simu) <- c(length(simu), 1)
@@ -829,8 +830,9 @@ rfCondGauss <- function(model, x, n=1,
     }
 
     xx <- rbind(t(xx), coords$x[notfound, , drop=FALSE])
+    
     simu <- rfSimulate(model=all$conditioning, x=UnifyXT(xx, grid=FALSE), n=n,
-                       RFopt = RFopt, reg=reg)
+                       RFopt = RFopt, reg=reg, envir=envir)
 
 
     if (is.vector(simu)) dim(simu) <- c(length(simu), 1)

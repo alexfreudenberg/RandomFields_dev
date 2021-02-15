@@ -29,7 +29,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define  GAUSS_BOXCOX_RANGE				      \
   case GAUSS_BOXCOX :	{					       \
-  globalparam *global = &(cov->base->global);			       \
+  option_type *global = &(cov->base->global);			       \
   if (j >= MAXBOXCOXVDIM || !R_FINITE(global->fit.BC_lambdaLB[2 * j + i]) ||   \
       !R_FINITE(global->fit.BC_lambdaUB[2 * j + i])) {			       \
     range->min =  RF_NEGINF;					       \

@@ -597,7 +597,7 @@ void doOK(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
       assert(!PisNULL(i));
       DORANDOM(sub, P(i));
     } else if (sub->randomkappa) {
-      XERR(ERRORNOTPROGRAMMEDYET);
+      OnErrorStop(ERRORNOTPROGRAMMEDYET,cov);
       // muesste ja irgendwie auf kappa uebertragen werden
     }
   }  
@@ -675,7 +675,7 @@ void StandardCovMatrix(model *cov, bool ignore_y, double *v) {
       (!equalsnowInterface(calling) && !isnowProcess(calling)))
     calling = cov;
    if (calling->Sfctn == NULL && alloc_fctn(calling, dim, vdim*vdim) !=NOERROR)
-    XERR(ERRORMEMORYALLOCATION);
+     OnErrorStop(ERRORMEMORYALLOCATION, cov);
   
    CovarianceMatrix(cov, ignore_y, v); 
 }
@@ -1371,11 +1371,13 @@ void addCovIntern(int F_derivs, covfct cf, covfct D, covfct D2,
    if (C->cov!=NULL && C->D != NULL && C->RS_derivs < 2)  C->RS_derivs = 2;
   }
   if (inverse != NULL) C->inverse = inverse;
-  else if (isMonotone(C->Monotone) && isIsotropic(C->systems[0]) && 
+  else if (C->vdim == SCALAR) {
+    if (isMonotone(C->Monotone) && isIsotropic(C->systems[0]) && 
 	   C->inverse==inverseErr)
-    C->inverse = InverseIsoMon;
-  if (stat_iso && C->inverse != inverseErr) 
-    C->nonstat_loginverse = inverse_log_nonstatStandard;
+      C->inverse = InverseIsoMon;
+    if (stat_iso && C->inverse != inverseErr) 
+      C->nonstat_loginverse = inverse_log_nonstatStandard;
+  }
 
   //  if (inverse_nonstat != NULL) printf("nonstat %s\n", C->nick);
   

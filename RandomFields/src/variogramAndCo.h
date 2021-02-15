@@ -64,8 +64,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
   									\
   /*// printf("************************************************** %s %d %d %d\n", #whereSfctn, (ignore_x), (ignore_y), LocHasY(whereSfctn)); */ \
   bool yAvailable = ((ignore_x) || !(ignore_y)) && LocHasY(whereSfctn),/* might be changed !*/ \
-    extraData =  !((ignore_x) xor (ignore_y)) && LocHasY(whereSfctn),	\
-    xswapped = (ignore_x) && LocHasY(whereSfctn),			\
+    VARIABLE_IS_NOT_USED extraData =					\
+            !((ignore_x) xor (ignore_y)) && LocHasY(whereSfctn),	\
+     VARIABLE_IS_NOT_USED xswapped =(ignore_x) && LocHasY(whereSfctn),	\
     ggridY = LocgridY(whereSfctn, ignore_y),		\
     trafoY = ((Time && !ggridY) || caniso != NULL);			\
   ggridY &= !trafoY;							\
@@ -78,7 +79,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
     *ny = fctn->ny;		 					\
 		 							\
   Long vdim0totX = (Long) vdim0 * totX,					\
-    vdim1totX = vdim1 * totX,						\
+    VARIABLE_IS_NOT_USED vdim1totX = vdim1 * totX,			\
     VARIABLE_IS_NOT_USED VDIM_0, VARIABLE_IS_NOT_USED NEND,		\
     VARIABLE_IS_NOT_USED  NINCR, VARIABLE_IS_NOT_USED  MINCR,		\
     VARIABLE_IS_NOT_USED ENDFORINCR,					\
@@ -92,7 +93,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
     *ystart =fctn->ystart,						\
     *yy = NULL,		/* set by TransformLoc; freed  */		\
     *incy =fctn->incy;							\
-  coord_type grY = LocgrY(whereSfctn, ignore_y);			\
+  coord_type VARIABLE_IS_NOT_USED grY = LocgrY(whereSfctn, ignore_y);	\
     if (global->general.vdim_close_together) {				\
     /* v-dimensions close together */					\
     VDIM_0 = vdim0;							\
@@ -277,7 +278,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
       NONGRIDCYCLE(EMPTY, PREPAREX, UNIVAR_FCTN_X; v+=vdimSq,		\
 		   MULTIVAR_FCTN_X);					\
     }									\
-    if (err != NOERROR) XERR(err);					\
+    OnErrorStop(err, cov);						\
   }
 
 

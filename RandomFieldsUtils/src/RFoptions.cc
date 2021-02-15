@@ -51,25 +51,25 @@ void getoptions(SEXP sublist, int i, bool local);
 
 #define MAXNLIST 5
 int NList = 0; // originally 1
-int nbasic_options = 0,
+int noption_class_list = 0,
   AllprefixN[MAXNLIST] = {prefixN, 0, 0, 0, 0},
   *AllallN[MAXNLIST] = {allN, NULL, NULL, NULL, NULL};
-const char  *basic_options[MAXNLIST] = {prefixlist[1], NULL, NULL, NULL},
+const char  *option_class_list[MAXNLIST] = {prefixlist[1], NULL, NULL, NULL},
   **Allprefix[MAXNLIST] = {prefixlist, NULL, NULL, NULL, NULL},
   ***Allall[MAXNLIST] = { all, NULL, NULL, NULL, NULL};
-setoptions_fctn setparam[MAXNLIST] = 
+setoptions_fctn setoption_fct_list[MAXNLIST] = 
   {setoptions, setpDef, setpDef, setpDef, setpDef};
-getoptions_fctn getparam[MAXNLIST] = 
+getoptions_fctn getoption_fct_list[MAXNLIST] = 
   {getoptions, getpDef, getpDef, getpDef, getpDef};
-finalsetoptions_fctn finalparam[MAXNLIST] = { NULL, NULL, NULL, NULL, NULL };
-deleteoptions_fctn delparam[MAXNLIST] = { NULL, NULL, NULL, NULL, NULL };
+finalsetoptions_fctn finaloption_fct_list[MAXNLIST] = { NULL, NULL, NULL, NULL, NULL };
+deleteoptions_fctn deloption_fct_list[MAXNLIST] = { NULL, NULL, NULL, NULL, NULL };
 
 
 void hintVariable(char *name, int warn_unknown_option) {
   static bool printing = true; // da nur Mutterprozess schreiben darf
-  if (warn_unknown_option > 0 && GLOBAL.basic.Rprintlevel > 0) {
+  if (warn_unknown_option > 0 && OPTIONS.basic.Rprintlevel > 0) {
     PRINTF("'%s' is considered as a variable (not as an option).\n", name);
-    if (printing && GLOBAL.basic.helpinfo && !parallel()) {
+    if (printing && OPTIONS.basic.helpinfo && !parallel()) {
       PRINTF("[These hints can be turned off by 'RFoptions(%s=-%d)'.]\n",
 	     basic[BASIC_WARN_OPTION], MAX(1, warn_unknown_option));
       printing = false;
@@ -171,7 +171,10 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList,
     } // if j < 0 || !=
   } // no prefix given
 
-  if (j<0) ERR1("Multiple partial matching for option '%.50s'.", name); 
+  if (j<0) {
+    if (j == NOMATCHING) ERR1("option not recognized: '%.50s'.", name)
+      else ERR1("Multiple partial matching for option '%.50s'.", name);
+  }
  
   if (getlist != NULL) {
     int k=0;
@@ -181,7 +184,7 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList,
       ERR2("Option '%.50s' not allowed for this call.\n   In case you really need this option, use the command 'RFoption(%.50s=...)'", mainname, mainname);
   }
   
-  setparam[ListNr](i, j, el, name, isList, local); 
+  setoption_fct_list[ListNr](i, j, el, name, isList, local); 
 }
 
 
@@ -194,7 +197,7 @@ SEXP getRFoptions(int ListNr, int i, bool local) {
     //    printf("getopt %d k=%d elmnts=%d %d %.50s\n", i, k, elmts, ListNr, Allall[ListNr][i][k]);
     SET_STRING_ELT(subnames, k, mkChar(Allall[ListNr][i][k])); 
   }
-  getparam[ListNr](sublist, i, local);
+  getoption_fct_list[ListNr](sublist, i, local);
   setAttrib(sublist, R_NamesSymbol, subnames);
   UNPROTECT(2);
   return sublist;
@@ -239,7 +242,7 @@ void getListNr(bool save, int t, int actual_nbasic, SEXP which,
 	      ){
   int i, ListNr;
   const char *z;
-  if (save && t < nbasic_options) z = basic_options[t];
+  if (save && t < noption_class_list) z = option_class_list[t];
   else z = (char*) CHAR(STRING_ELT(which, t - actual_nbasic));
   for (ListNr=0; ListNr<NList; ListNr++) {
     int PreFixN = AllprefixN[ListNr];
@@ -260,7 +263,7 @@ void getListNr(bool save, int t, int actual_nbasic, SEXP which,
 SEXP getRFoptions(SEXP which, getlist_type *getlist, bool save, bool local) {
   
   int ListNr, idx,
-    actual_nbasic = nbasic_options * save,
+    actual_nbasic = noption_class_list * save,
     totalN = length(which) + actual_nbasic;  
 
   if (totalN == 0) return R_NilValue;
@@ -301,7 +304,7 @@ void splitAndSet(SEXP el, char *name, bool isList, getlist_type *getlist,
 
   // 
   //  printf("i=%d %d %.50s %.50s\n", i, len, prefix, mainname);
-  setparameter(el, PreFix, mainname, isList && GLOBAL.basic.asList, getlist,
+  setparameter(el, PreFix, mainname, isList && OPTIONS.basic.asList, getlist,
 	       warn_unknown_option, local);
   //   printf("ende\n");
 }
@@ -314,7 +317,7 @@ SEXP RFoptions(SEXP options) {
   char *name, *pref;
   bool isList = false;
   int
-    warn_unknown_option = GLOBAL.basic.warn_unknown_option,
+    warn_unknown_option = OPTIONS.basic.warn_unknown_option,
     n_protect = 0;
   bool local = false;
 
@@ -326,7 +329,7 @@ SEXP RFoptions(SEXP options) {
   
   options = CDR(options); /* skip 'name' */
 
-  // printf(" %d %d\n", GLOBAL.basic.warn_unknown_option, options == R_NilValue);
+  // printf(" %d %d\n", OPTIONS.basic.warn_unknown_option, options == R_NilValue);
   name = (char*) "";
   if (options != R_NilValue) {
     if (!isNull(TAG(options))) name = (char*) CHAR(PRINTNAME(TAG(options)));
@@ -374,7 +377,7 @@ SEXP RFoptions(SEXP options) {
 	  name = (char*) CHAR(STRING_ELT(subnames, j));
 	  // printf("Lxx '%s' %d %d %d local=%d\n", name, isList, i,j, local);
 	  setparameter(VECTOR_ELT(sublist, j), pref, name, 
-		       isList & GLOBAL.basic.asList, NULL, warn_unknown_option,
+		       isList & OPTIONS.basic.asList, NULL, warn_unknown_option,
 		       local);
 	}
 	UNPROTECT(1);
@@ -392,7 +395,7 @@ SEXP RFoptions(SEXP options) {
       options = CDR(options);
       if (options != R_NilValue) {
 	//	printf("hier\n");
-	int len = length(getoptions) + nbasic_options * save;
+	int len = length(getoptions) + noption_class_list * save;
 	getlist = (getlist_type *) MALLOC(sizeof(getlist_type) * (len + 1));
 	getlist[len].ListNr = -1;
       }
@@ -418,12 +421,12 @@ SEXP RFoptions(SEXP options) {
 
 
   for (i=0; i<NList; i++)
-    if (finalparam[i] != NULL) {      finalparam[i]();
+    if (finaloption_fct_list[i] != NULL) {      finaloption_fct_list[i]();
     }
 
   if (n_protect > 0) UNPROTECT(n_protect);
 
-  if (!local) GLOBAL.basic.asList = true; // OK
+  if (!local) OPTIONS.basic.asList = true; // OK
  
   return(ans);
 } 
@@ -446,19 +449,19 @@ void attachRFoptions(const char **PKGprefixlist, int N,
       return;    
     }
   }
-  if (basicopt) basic_options[nbasic_options++] = PKGprefixlist[0];
+  if (basicopt) option_class_list[noption_class_list++] = PKGprefixlist[0];
   if (NList >= MAXNLIST) BUG;
   Allprefix[NList] = PKGprefixlist;
   AllprefixN[NList] = N;
   Allall[NList] = PKGall;
   AllallN[NList] = PKGallN;
-  setparam[NList] = set;
-  finalparam[NList] = final;
-  getparam[NList] = get;
-  delparam[NList] = del;
+  setoption_fct_list[NList] = set;
+  finaloption_fct_list[NList] = final;
+  getoption_fct_list[NList] = get;
+  deloption_fct_list[NList] = del;
   NList++;
   PLoffset = pl_offset;
-  basic_param *gp = &(GLOBAL.basic);
+  basic_options *gp = &(OPTIONS.basic);
   PL = gp->Cprintlevel = gp->Rprintlevel + PLoffset;
   CORES = gp->cores;
 }
@@ -476,30 +479,31 @@ void detachRFoptions(const char **PKGprefixlist, int N) {
 	PKGprefixlist[0]);
   }
 
-  if (delparam[ListNr] != NULL) delparam[ListNr](false);
+  if (deloption_fct_list[ListNr] != NULL) deloption_fct_list[ListNr](false);
   
   int i;
-  for (i=0; i<nbasic_options ; i++)
-    if (STRCMP(basic_options[i], PKGprefixlist[0]) == 0) break;
-  for (i++ ; i < nbasic_options; i++) basic_options[i - 1] = basic_options[i];
+  for (i=0; i<noption_class_list ; i++)
+    if (STRCMP(option_class_list[i], PKGprefixlist[0]) == 0) break;
+  for (i++ ; i < noption_class_list; i++)
+    option_class_list[i - 1] = option_class_list[i];
   
   for (ListNr++; ListNr<NList; ListNr++) {    
     Allprefix[ListNr - 1] = Allprefix[ListNr];
     AllprefixN[ListNr - 1] =  AllprefixN[ListNr];
     Allall[ListNr - 1] = Allall[ListNr];
     AllallN[ListNr - 1] = AllallN[ListNr];
-    setparam[ListNr - 1] = setparam[ListNr];
-    finalparam[ListNr - 1] = finalparam[ListNr];
-    getparam[ListNr - 1] = getparam[ListNr];
+    setoption_fct_list[ListNr - 1] = setoption_fct_list[ListNr];
+    finaloption_fct_list[ListNr - 1] = finaloption_fct_list[ListNr];
+    getoption_fct_list[ListNr - 1] = getoption_fct_list[ListNr];
   }
 
   NList--;
   if (NList <= 1) PLoffset = 0;
 }
 
-void getUtilsParam(utilsparam **global) { 
-  // printf("GLO %ld\n", &GLOBAL);
-  *global = &GLOBAL; 
+void getUtilsParam(utilsoption_type **global) { 
+  // printf("GLO %ld\n", &OPTIONS);
+  *global = &OPTIONS; 
 }
 
 

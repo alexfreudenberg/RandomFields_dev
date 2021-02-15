@@ -214,14 +214,14 @@ int check2X(model *cov, int logicaldim, int xdimprev,
 
 
 int basic_asserts(model *cov, Types frame, bool *coord_trafo) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
     // erst bei check unten
   assert(cov != NULL);
  int 
     prev_lastsystem = PREVLASTSYSTEM;
   model *calling = cov->calling;
-  defn //*P = Cov List + prev -> nr, //  nicht gatternr
-    *C = DefList + COVNR;        //  nicht gatternr
+  //  defn //*P = Cov List + prev -> nr, //  nicht gatternr
+  //   *C = DefList + COVNR;        //  nicht gatternr
    char *error_location = cov->base->error_location;  
 
   cov->checked = false;
@@ -854,7 +854,7 @@ int set_own_domain_and_check(model *cov, int vdim0, int vdim1,
   // printf("entring set_own_domain %s\n", NAME(cov));
 
 
-  utilsparam *global_utils = &(cov->base->global_utils);
+  utilsoption_type *global_utils = &(cov->base->global_utils);
   KEY_type *KT = cov->base;
   defn *C = DefList + COVNR;
   Types prevtype = PREVTYPE(0);
@@ -1356,7 +1356,7 @@ int setgatter_but_nr(model *cov, int minp, int maxp, int mino, int maxo,
 
 int change_coord_system(model *cov, ext_bool coordinate_trafo,
 			errorstring_type ERRSTR) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   // ACHTUNG!!! FUNKTION DARF NUR IN InternalCov.cc VERWENDET WERDEN !!
   // hier wird das grosse Rad gedreht: Wechsel zwischen den Systemen
   // function itself sets TRAFO, 
@@ -1603,8 +1603,8 @@ int checkkappas(model *cov, bool errornull, errorstring_type ERRSTR){
       continue;
     }
     STRCPY(param_name,  OWNKAPPA(C, i));
-	   //	   cov->ownkappanames != NULL && cov->ownkappanames[i]!=NULL 
-	   //	   ? cov->ownkappanames[i] : C->kappanames[i]);
+    //	   cov->ownkappanames != NULL && cov->ownkappanames[i]!=NULL 
+    //	   ? cov->ownkappanames[i] : C->kappanames[i]);
     
     if (ks != NULL) {
       if (isRandom(ks)) { // allgemeiner TypeConsistent(RandomType, ... )??
@@ -1705,12 +1705,12 @@ int checkkappas(model *cov, bool errornull, errorstring_type ERRSTR){
       
       // nc==0, nr==0 is coded as SIZE_NOT_DETERMINED
       char msg[255], msg2[255];
-      SPRINTF(msg, "not of the required size: (%d, %d) instead of (",
+      SPRINTF(msg, "not of the required size: (%d x %d) instead of (",
 	      nrow[i], ncol[i]);
-      if (nr!=SIZE_NOT_DETERMINED) SPRINTF(msg2, "%.50s%d, ", msg, nr);
-      else SPRINTF(msg2, "%.50sundetermined, ", msg);
-      if (nc!=SIZE_NOT_DETERMINED) SPRINTF(msg, "%.50s%d)", msg2, nc);
-      else SPRINTF(msg, "%.50sundetermined)", msg2);
+      if (nr!=SIZE_NOT_DETERMINED) SPRINTF(msg2, "%.70s%d x", msg, nr);
+      else SPRINTF(msg2, "%.70sundetermined x", msg);
+      if (nc!=SIZE_NOT_DETERMINED) SPRINTF(msg, "%.90s %d)", msg2, nc);
+      else SPRINTF(msg, "%.90s undetermined)", msg2);
       // printf("msg = %s\n", msg);
       //      crash();      APMI0(cov);
       PERR(msg);
@@ -1761,7 +1761,7 @@ int checkDims(model *cov, int vdim0, int vdim1, errorstring_type ERRSTR) {
 
 int check_within_range_multivariate(model *cov, bool NAOK,
 				    errorstring_type ERRSTR) {
-  utilsparam *global_utils = &(cov->base->global_utils);
+  utilsoption_type *global_utils = &(cov->base->global_utils);
   defn *C = DefList + COVNR; //nicht gatternr
   // sets also maxdim and finiterange in cov !
   rangefct_multi getrange = C->range_multi;
@@ -1849,7 +1849,7 @@ int check_within_range_multivariate(model *cov, bool NAOK,
 
 int check_within_range(model *cov, bool NAOK, errorstring_type ERRSTR) {
   // sets also maxdim and finiterange in cov !
-  utilsparam *global_utils = &(cov->base->global_utils);
+  utilsoption_type *global_utils = &(cov->base->global_utils);
   defn *C = DefList + COVNR; //nicht gatternr
   rangefct getrange = C->range;
   if (getrange == NULL)

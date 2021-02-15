@@ -84,7 +84,7 @@ void range_direct(model VARIABLE_IS_NOT_USED *cov, int k, int i, int j, simple_r
 
 
 int init_directGauss(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   model *next = cov->sub[0];
   double //*xx,
     *Cov=NULL;
@@ -99,7 +99,7 @@ int init_directGauss(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
     vdimtot = vdim * totpts,
     vdimSqtotSq = vdimtot * vdimtot,
     bytes = sizeof(double) * vdimSqtotSq;
-  solve_param sp = cov->base->global_utils.solve;
+  solve_options sp = cov->base->global_utils.solve;
 
 
   EXT_NEW_STORAGE(solve);
@@ -270,7 +270,7 @@ int init_directGauss(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
 
 
 void do_directGauss(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {  
-  globalparam *global = &(cov->base->global);
+  //option_type *global = &(cov->base->global);
   location_type *loc = Loc(cov);
 getStorage(s ,   direct); 
   Long 

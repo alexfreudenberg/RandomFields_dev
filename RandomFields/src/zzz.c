@@ -79,6 +79,7 @@ static R_CallMethodDef callMethods[]  = {
   // in die respectiven C-Dateien muss RandomFieldsUtils.h eingebunden sein
   CALLDEF(attachoptions, 0),
   CALLDEF(copyoptions, 0),
+  CALLDEF(DebugCall, 0),
   
   CALLDEF(GetParameterNames, 1),
   CALLDEF(GetSubNames, 1),
@@ -112,6 +113,10 @@ static R_CallMethodDef callMethods[]  = {
   CALLDEF(getelements, 5), 
   CALLDEF(getneighbours, 5), 
   CALLDEF(set_boxcox, 2),
+  CALLDEF(areDataNamesDifferentFromFormer, 1),
+  CALLDEF(areDataIdxDifferentFromFormer, 1),
+  CALLDEF(areCoordNamesDifferentFromFormer, 1),
+  CALLDEF(areCoordIdxDifferentFromFormer, 1),
   CALLDEF(get_boxcox, 1),
   //  CALLDEF(BoxCox_inverse, 2), 
   CALLDEF(BoxCox_trafo, 4),

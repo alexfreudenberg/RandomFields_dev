@@ -44,13 +44,13 @@ bool is_top(model *cov) {
 
 
 
-int required(double v, double *values, int n) {
-  if (ISNA(v)) {
+int required(double requ, double *values, int n) {
+  if (ISNA(requ)) {
     for (int i=0; i<n; i++) if (ISNA(values[i])) return i;
-  } else if (ISNAN(v)) { // in der Reihenfolge !!
+  } else if (ISNAN(requ)) { // in der Reihenfolge !!
     for (int i=0; i<n; i++) if (R_IsNaN(values[i])) return i;
   } else {
-    for (int i=0; i<n; i++) if (!ISNA(values[i]) && v == values[i]) return i;
+    for (int i=0; i<n; i++) if (!ISNA(values[i]) && requ == values[i]) return i;
   }
   return MISMATCH;
 }
@@ -177,7 +177,7 @@ int GetNAPosition(model *cov, double *values, int nvalues,
 
 	  if (isNotEstimable(sorts[*NAs])) continue;
 	  
-	  double v = 0.0; // dummy value
+	  double requ = 0.0; // dummy value
 	  int idx = c * nrow[i] + r;
 
 	  found[*NAs] = UNSET;
@@ -188,21 +188,21 @@ int GetNAPosition(model *cov, double *values, int nvalues,
 	
 	  switch(type[i]) {
 	  case REALSXP :
-	    v = P(i)[idx];
+	    requ = P(i)[idx];
 	    mem[*NAs] = P(i) + idx;
-	    found[*NAs] = required(v, values, nvalues);
+	    found[*NAs] = required(requ, values, nvalues);
 	    //	    printf("%s %s %d %d %d NAs=%d %d v=%f\n", C->name, C->kappanames[i], r, c, found[*NAs], *NAs, nfillvalues, v);
 	    if (*NAs < nfillvalues && found[*NAs]>=0)
 	      mem[*NAs][0] = fillvalues[*NAs];
 	    covModels[*NAs] = cov;
 	    break;
 	  case INTSXP : {
-	    v = PINT(i)[idx] == NA_INTEGER ? RF_NA : (double) PINT(i)[idx];
+	    requ = PINT(i)[idx] == NA_INTEGER ? RF_NA : (double) PINT(i)[idx];
 	    if (allowforintegerNA) {
-	      found[*NAs] = required(v, values, nvalues);
+	      found[*NAs] = required(requ, values, nvalues);
 	    } else {
 	      sortsofparam s = SortOf(cov, i, r, c, mle_conform);
-	      if (!isNotEstimable(s) && required(v, values, nvalues) >= 0)
+	      if (!isNotEstimable(s) && required(requ, values, nvalues) >= 0)
 		SERR1("%.20s: integer variables currently not allowed to be 'NA'", KNAME(i)); // !!!
 	    }
 	  }    
@@ -222,7 +222,7 @@ int GetNAPosition(model *cov, double *values, int nvalues,
 	  }
 	  
 	  //	  isnan[*NAs] = R_IsNaN(v);
-	  //	  if (ISNAN(v)) { // entgegen Arith.h gibt ISNA nur NA an !!
+	  //	  if (ISNAN(requ)) { // entgegen Arith.h gibt ISNA nur NA an !!
 
 	  //	  printf("found = %d *NAs=%d\n", found[*NAs], *NAs);
 	  
@@ -340,8 +340,8 @@ int GetNAPosition(model *cov, double *values, int nvalues,
 	      if (c>0) PRINTF(", "); else leer(depth+1);
 	      if (printing <= 2)  PRINTF("*");
 	      else {
-		if (type[i]== REALSXP) PRINTF("%6.2e", v);
-		else  PRINTF("%5d", (int) v);
+		if (type[i]== REALSXP) PRINTF("%6.2e", requ);
+		else  PRINTF("%5d", (int) requ);
 	      }
 	    }
 	  }  // else kein NA 
@@ -417,8 +417,8 @@ SEXP GetNAPositions(SEXP Model_reg, SEXP Model, SEXP x,
   SEXP ans;
   KEY_type *KT = KEYT();
   char *error_location = KT->error_location;  
-  globalparam *global = &(KT->global);
-  utilsparam *global_utils = &(KT->global_utils);
+  option_type *global = &(KT->global);
+  utilsoption_type *global_utils = &(KT->global_utils);
  
   model *cov = KT->KEY[Reg];
   if (Model != R_NilValue) {
@@ -607,7 +607,6 @@ void Take21internal(model *cov, model *cov_bound,
 SEXP Take2ndAtNaOf1st(SEXP model_reg, SEXP Model, SEXP model_bound,
 		      SEXP X, SEXP nbounds, SEXP skipchecks, SEXP rawConcerns) {
   int m,
-    d = 0,
     NBOUNDS_INT =INTEGER(nbounds)[0],
     *NBOUNDS= &NBOUNDS_INT,
     nr[2] = {INTEGER(model_reg)[0], MODEL_BOUNDS};
@@ -616,7 +615,7 @@ SEXP Take2ndAtNaOf1st(SEXP model_reg, SEXP Model, SEXP model_bound,
   SEXP bounds,
     models[2] = {Model, model_bound};
   KEY_type *KT = KEYT();
-  utilsparam *global_utils = &(KT->global_utils);
+  utilsoption_type *global_utils = &(KT->global_utils);
   bool oldskipchecks = global_utils->basic.skipchecks;
 
 #define MAXDIM0 4  
@@ -663,7 +662,7 @@ void GetNARanges(model *cov, model *min, model *max,
   defn 
     *C = DefList + COVNR; // nicht gatternr
   SEXPTYPE *type = C->kappatype;
-  double v, dmin, dmax;
+  double dmin, dmax;
   
   for (i=0; i<C->kappas; i++) {
     model *sub = cov->kappasub[i];
@@ -716,17 +715,17 @@ void GetNARanges(model *cov, model *min, model *max,
       if (isNotEstimable(pt) || equalsnowTrendParam(cov, i)) continue;
       
       for (r=0; r<end; r++) {
-	v = RF_NA;
+	double val = RF_NA;
 	if (type[i] == REALSXP) {
-	  v = P(i)[r];
+	  val = P(i)[r];
 	} else if (type[i] == INTSXP) {
-	  v = PINT(i)[r] == NA_INTEGER ? RF_NA : (double) PINT(i)[r];
+	  val = PINT(i)[r] == NA_INTEGER ? RF_NA : (double) PINT(i)[r];
 	} else if (isRObject(type[i]) || type[i] == STRSXP ||
 		   type[i] == LISTOF + REALSXP)
 	  break; //  continue;  // !!!!!!!!!!!
 	else BUG;
 	
-	if (ISNAN(v)) {
+	if (ISNAN(val)) {
 	  if (isDollar(cov)) {
 	    assert(i!=DAUSER && i!=DPROJ);
 	  }
@@ -781,10 +780,6 @@ sortsofeffect getTrendEffect(model *cov) {
 
 
 int CheckEffect(model *cov, likelihood_facts *facts) {
-  int nr;    
-  // bool na_var = false;
-  double *p;
-      
   if (equalsnowTrend(cov)) {
     if (COVNR == MULT) {
       sortsofeffect current = getTrendEffect(cov->sub[0]);
@@ -1084,7 +1079,7 @@ int internalSetAndGet(model *key, int shortlen,
 SEXP SetAndGetModelFacts(model *cov, int shortlen, int allowforintegerNA,
 			    bool excludetrend, sort_origin origin) {
   // main goal: put facts into SEXP variables
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   int err = NOERROR,
     xdimOZ = Locspatialdim(cov);
   const char *colnames[MINMAX_ENTRIES] =

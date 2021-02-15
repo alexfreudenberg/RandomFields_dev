@@ -327,9 +327,9 @@ void EarthMiles2Cart(double *x, double *y, INFO,
 #define QZenit 9
 #define Qtotal 12
 int checkEarth(model *cov){
-   globalparam *global = &(cov->base->global);
+   option_type *global = &(cov->base->global);
 
-   // printf("checkEarch %d %d %d %f %f %ld %ld\n", TRAFONR, EARTHKM2GNOMONIC, EARTHMILES2GNOMONIC, global->coords.zenit[0], global->coords.zenit[1], global, GLOBAL);
+   // printf("checkEarch %d %d %d %f %f %ld %ld\n", TRAFONR, EARTHKM2GNOMONIC, EARTHMILES2GNOMONIC, global->coords.zenit[0], global->coords.zenit[1], global, OPTIONS);
    
  // ACHTUNG! KEIN AUFRUF VON SUB[0] !
   if (equalsXonly(PREVDOM(0)) // 20.2.14: warum war es vorher OWNDOM(0) == X ONLY?
@@ -530,7 +530,7 @@ SEXP GetCoordSystem(SEXP keynr, SEXP oldsystem, SEXP newsystem) {
 
   if (knr>=0 && knr <= MODEL_MAX && key[knr] != NULL) {
     cov = key[knr];
-    globalparam *global = &(cov->base->global);
+    option_type *global = &(cov->base->global);
     coord_sys_enum
       os = (coord_sys_enum) GetName(oldsystem, CS[0], 
 				    COORD_SYS_NAMES, nr_coord_sys, coord_auto),

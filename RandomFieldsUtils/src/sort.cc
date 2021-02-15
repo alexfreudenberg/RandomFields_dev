@@ -324,10 +324,8 @@ void sortingFromTo(double *d, int len, int from, int to, usr_bool NAlast) {
 	d[NAstart++] = swap;
       }
     }   
-    //   print("Rstart %d %d %d\n", start, end, NAstart);
    assert(NAstart == start);
   }
-  // print("Xstart %d %d\n", start, end);
   quicksort(start, end, d, from - 1, to - 1);
   // for (int i=0; i<len; i++) printf("%10g\n", d[i]); BUG;
 }

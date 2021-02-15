@@ -561,7 +561,6 @@ ALL_NULL(plus)
 void plus_DELETE(plus_storage ** S){
   plus_storage *x = *S;
   if (x != NULL) {
-    int i;
     UNCONDFREE(*S);
   }
 }

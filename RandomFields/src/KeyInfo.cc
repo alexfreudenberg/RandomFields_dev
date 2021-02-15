@@ -420,31 +420,31 @@ SEXP IGetModelInfo(model *cov, int prlevel, bool both, int spConform,
   defn *C = DefList + COVNR; // nicht gatternr
   location_type
     *loc = cov->calling == NULL ? LocPrev(cov) : Loc(cov);
-  bool return_param,
+  bool return_options,
     param_ok[MAXPARAM + 1],
     C_conform = spConform < 0,
     given_key = MODELKEYS_GIVEN,
     return_key = given_key && whichSub != WHICH_USER,
     return_sub = cov->nsub > 0 && (whichSub != WHICH_INTERNAL || !given_key),
-    show_param = prL >= 1;
+    show_options = prL >= 1;
  
   for (i=0; i<C->kappas; i++) {
     int old_nn = notnull;
     sortsofparam sort = SortOf(cov, i, 1, 1, origin);
     if ((param_ok[i] = sort <= LASTRETURNED)) {    
       if (both) {
-	notnull += cov->nrow[i]>0 && cov->ncol[i]>0 && show_param;
+	notnull += cov->nrow[i]>0 && cov->ncol[i]>0 && show_options;
 	notnull += cov->kappasub[i] != NULL;
       } else {
-	notnull += (cov->nrow[i]>0 && cov->ncol[i]>0 && show_param) ||
+	notnull += (cov->nrow[i]>0 && cov->ncol[i]>0 && show_options) ||
 	  cov->kappasub[i] != NULL;
       }
       param_ok[i] = notnull > old_nn;
     }
   }
-  return_param = notnull > 0;
+  return_options = notnull > 0;
 
-  nmodelinfo = ninfobase + (int) return_param;
+  nmodelinfo = ninfobase + (int) return_options;
   switch(prL) {
   case 5 : nmodelinfo += ninfo4; FALLTHROUGH_OK; 
   case 4 : nmodelinfo += ninfo3; FALLTHROUGH_OK; 
@@ -483,7 +483,7 @@ SEXP IGetModelInfo(model *cov, int prlevel, bool both, int spConform,
   }
 
  
-  if (return_param) {
+  if (return_options) {
     PROTECT(param = allocVector(VECSXP, notnull));
     PROTECT(pnames = allocVector(STRSXP, notnull));
     for (j=i=0; i<C->kappas; i++) {
@@ -497,7 +497,7 @@ SEXP IGetModelInfo(model *cov, int prlevel, bool both, int spConform,
 	  if (!both) continue;
       }
  
-      if (show_param && cov->nrow[i]>0 && cov->ncol[i]>0) {
+      if (show_options && cov->nrow[i]>0 && cov->ncol[i]>0) {
 	if (isAnyDollar(cov) && i==DANISO) {
 	  SET_STRING_ELT(pnames, j, mkChar("Aniso"));
 	  double
@@ -1612,7 +1612,7 @@ void pmiroot(model *cov, int maxlevel) { // OK
 }
 
 void iexplDollar(model *cov, bool MLEnatsc_only) {
-  globalparam *global = &(cov->base->global);
+  option_type *global = &(cov->base->global);
   /*    
 	get the naturalscaling values and devide the preceeding scale model     
 	by this value
@@ -1818,7 +1818,7 @@ SEXP GetModel(SEXP keynr, SEXP Modus, SEXP SpConform, SEXP whichSub,
 
   //    TREE(cov);
   SEXP value = R_NilValue;
-  utilsparam *global_utils = &(cov->base->global_utils);
+  utilsoption_type *global_utils = &(cov->base->global_utils);
   int  err = NOERROR,
     skipchecks = global_utils->basic.skipchecks;
   model *dummy = NULL;

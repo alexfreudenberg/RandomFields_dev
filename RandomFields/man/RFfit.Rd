@@ -161,7 +161,7 @@ model <- RMexp(Aniso=matrix(nc=2, c(4,2,-2,1)), var=1.5)
 d <- RFsimulate(model, x=x, y=y, n=n)
 estmodel <- RMexp(Aniso=matrix(nc=2, c(NA,NA,-2,1)), var=NA) +
             RMshape(mean=NA)
-RFfit(estmodel, data=d, fit.nphi=20)
+RFfit(estmodel, data=d, empvario.nphi=20)
 
 
 }}
