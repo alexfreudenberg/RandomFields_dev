@@ -119,6 +119,27 @@ double Determinant(double *M, int size, bool log) {
   return tmp;
 }
 
+double DeterminantLU(double *M, int size, bool log, int *permut) {
+  int sizeP1 = size + 1,
+    sizeSq = size * size;
+  if (log) {
+    double tmp = 0.0, vorz= 1.0;
+    for (int i=0; i<size; i++) {
+      tmp += LOG(M[i * sizeP1]);
+      if (permut[i] != i) vorz *= -1.0;
+    }
+    if (vorz == -1.0)
+      RFERROR("calculation of log determinant need positive determinant");
+    return tmp;
+  } 
+  double tmp = 1.0;  
+  for (int i=0; i<size; i++) {
+    tmp *= M[i * sizeP1];
+    if (permut[i] != i) tmp *= -1.0;
+  }
+  return tmp;
+}
+
 double cumProd(double *D, int size, bool log) {
   if (log) {
     double dummy = 0.0;
@@ -803,11 +824,48 @@ int doPosDef(double *M0, int size, bool posdef,
     case Rcholesky : {
       //      printf("chol (R)\n");
      if (calculate == SOLVE) {
-	if (RHS != RESULT)
-	  MEMCOPY(RESULT, RHS, sizeof(double) * size * rhs_cols);
-	CMALLOC(xja, size, int);
-  	F77_CALL(dgesv)(&size, &rhs_cols, MPT, &size, xja, RESULT, &size, &err);
-      } else if (calculate == MATRIXSQRT) {
+       int n_rhs = rhs_cols;
+       double *m = NULL;
+       CMALLOC(xja, size, int);
+       if (rhs_cols == 0) {
+	 //	 printf("hier %ld %ld %ld res=%ld %ld %ld\n", RESULT, MPT, M0, result, rhs0, RHS);
+	 if (RESULT == MPT){
+	   Long bytes = sizeSq * sizeof(double);
+	   m = (double *) MALLOC(bytes);
+	   MEMCOPY(m, M0, bytes);
+	 }
+	 
+	 MEMSET(RESULT, 0, sizeof(double) * sizeSq);
+	 for (int i=0; i<sizeSq; i+=sizeP1) RESULT[i] = 1.0;
+	 n_rhs = size;
+ 
+	 
+	 /*
+	 for (int i=0; i<size; i++)  {
+	   for (int j=0; j<size; j++) {
+	     printf("%f ", RESULT[i + j * size]); //
+	   }
+	   printf("\n");//
+	 }
+	 printf("\n M\n");//
+	 for (int i=0; i<size; i++)  {
+	   for (int j=0; j<size; j++) {
+	     printf("%f ", MPT[i + j * size]);//
+	   }
+	   printf("\n");//
+	 }
+	 */
+	 
+      } else {
+	 if (RHS != RESULT) MEMCOPY(RESULT, RHS, sizeof(double) * size * rhs_cols);
+       }
+       F77_CALL(dgesv)(&size, &n_rhs, m == NULL ?  MPT : m, &size, xja,
+		       RESULT, &size, &err);
+       FREE(m);
+      
+       if (err != NOERROR) RFERROR("LU algorithm failed.");
+       if (logdet != NULL) *logdet = DeterminantLU(MPT, size, sp->det_as_log, xja);
+    } else if (calculate == MATRIXSQRT) {
 	if (MPT != RESULT) MEMCOPY(RESULT, MPT, sizeSq * sizeof(double));
         F77_CALL(dpotrf)("U", &size, RESULT, &size, &err);
 	if (logdet != NULL) {
@@ -821,7 +879,7 @@ int doPosDef(double *M0, int size, bool posdef,
 	// F77_CALL(dpotri)("U", &sz, REAL(ans), &sz, &info FCONE);
       } else BUG;
       if (err != NOERROR) {
-	CERR1("Cholesky decompostion failed (err=%d). Consider 'RFoptions(la_mode=\"intern\", pivot=PIVOT_AUTO)'", err);
+	CERR1("algorithm failed (err=%d). Consider 'RFoptions(la_mode=\"intern\", pivot=PIVOT_AUTO)'", err);
       }
       break;
     }
@@ -1539,15 +1597,14 @@ int doPosDef(double *M0, int size, bool posdef,
       }
       
       CMALLOC(iwork, size, int);		    
-      F77_CALL(dgetrf)(&size, &size, // LU
-		       MPT, &size, iwork, &err);
+      F77_CALL(dgetrf)(&size, &size, MPT, &size, iwork, &err);
       if (err != NOERROR) {
 	CERR1("'dgetrf' (LU) failed with err=%d.", err);
       }
  
       if (logdet != NULL) {
 	CERR("logdet cannot be determined for 'LU'.");
-	*logdet = Determinant(MPT, size, sp->det_as_log);
+	*logdet = DeterminantLU(MPT, size, sp->det_as_log, iwork);
         if (calculate == DETERMINANT) return NOERROR;
       }
 
@@ -1784,7 +1841,7 @@ int doPosDef(double *M0, int size, bool posdef,
       GERR("strange method appeared: please contact author.");
     default : GERR1("unknown method (%d) in 'RandomFieldsUtils'.", pt->method);
     } // switch
-    
+
     if (err==NOERROR) break;
   } // for m
 
