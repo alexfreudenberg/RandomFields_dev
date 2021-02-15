@@ -330,7 +330,9 @@ SEXP empirical(SEXP  X, SEXP Dim,
     switch(method){
     case PSEUDOVARIOGRAM:     // pseudo variogram
       FOR(assert(Head+Row < nDta && Tail + Col < nDta);
-	  double x2 = values[Head + Row] - values[Tail + Col]; x2 *= x2);
+	  // EDIT MK
+    //double x2 = values[Head + Row] - values[Tail + Col]; x2 *= x2);
+    double x2 = values[Head + Col] - values[Tail + Row]; x2 *= x2);
       break;
     case VARIOGRAM:  // cross variogram
       FOR(assert(Head+Row < nDta && Tail + Col < nDta && Head+Col < nDta && Tail + Row < nDta);
