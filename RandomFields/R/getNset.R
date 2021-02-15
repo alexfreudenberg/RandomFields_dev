@@ -504,8 +504,8 @@ RFgetMethodNames <- function() {
 }
 
 
-RFformula <- function(f) return(parseModel(f, Env=.GlobalEnv,
-                                           EnvDummies=.GlobalEnv))
+RFformula <- function(f) return(parseModel(f, envir=.GlobalEnv,
+                                           envirDummies=.GlobalEnv))
 
 GetProcessType <- function(model) {
 ##  print(model)

@@ -1339,14 +1339,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
       }
       return(1E300)
     }
-    print("-----------VARIAB -------------------------")
-    print(variab)
-    print("-----------MODEL VALUES -------------------")
-    print(matrix(round(model.values,2), ncol=4))
-    print("-----------EMPRIICAL VALUES ---------------")    
-    print(matrix(round(c(binned.variogram),2), ncol=4))
-    print("-----------DIFFERENCE  --------------------")    
-    print(matrix(round(model.values - c(binned.variogram),2), ncol=4))
+
     if (LSQ.SELF.WEIGHING) {
       ## weights = 1/ model.values^2
       
@@ -2417,9 +2410,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
 			vdim=vdim)
       n.bin <- ev$n.bin
       sd <- ev$sd
-      #print("##### BINNED VARIOGRAM ##########")
       binned.variogram <- ev$empirical
-      #print(binned.variogram)
     } else {
       stop("das ist doch auch in C programmiert?!")
       
@@ -2803,13 +2794,10 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
       options(show.error.messages = show.error.message) ##
       max <- -Inf
 
-      #print("######## BEST MLE #############")
       for (i in methodprevto$mle) { ## ! -- the parts that change if
         ##                             this part is copied for other methods
         ## should mle be included when M=reml?
         ## same for lsq methods as well: should previous result be included?
-      #print("param.table")
-      #print(param.table)
 
         if (!any(is.na(variab <- param.table[IDX("variab"), i]))) {
 
@@ -2819,7 +2807,6 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
           if (is.finite(value)) {
             param.table[tblidx[[M]][1], i] <- value
             if (value > max) {
-              print("Better!")
               max.variab <- variab
               max <- value
             }
@@ -2839,11 +2826,8 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
       mle.optim.control <-
         c(opt.control, list(parscale=parscale, fnscale=fnscale))
 
-      print("max.variab:")
-      print(max.variab)
                                         ##
-      print("###################################################")
-      Print(parscale, MLEVARIAB, info.cov, methodprevto$mle, globalvariance)
+#      Print(parscale, MLEVARIAB, info.cov, methodprevto$mle, globalvariance)
 #      print(minmax)
 
       if (length(parscale) > 0 && length(parscale) != length(MLEVARIAB))

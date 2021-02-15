@@ -276,7 +276,7 @@ SEXP empirical(SEXP  X, SEXP Dim,
 	  for(int row = 0; row < vdim; row++, Row+=totalpoints) {	\
 	    Long Col = 0;						\
 	    for(int col = 0; col < vdim; col++, Col+=totalpoints) {	\
-	      int curbin = low + nbin * (vdim * row + col);		\
+	      int curbin = low + nbin * (row + vdim * col);		\
 	      Long Head = head;						\
 	      Long endHead = Head + totalpointsrepetvdim;		\
 	      for (Long Tail = tail; Head < endHead;			\
@@ -330,9 +330,7 @@ SEXP empirical(SEXP  X, SEXP Dim,
     switch(method){
     case PSEUDOVARIOGRAM:     // pseudo variogram
       FOR(assert(Head+Row < nDta && Tail + Col < nDta);
-	  // EDIT MK
-    //double x2 = values[Head + Row] - values[Tail + Col]; x2 *= x2);
-    double x2 = values[Head + Col] - values[Tail + Row]; x2 *= x2);
+	  double x2 = values[Head + Row] - values[Tail + Col]; x2 *= x2);
       break;
     case VARIOGRAM:  // cross variogram
       FOR(assert(Head+Row < nDta && Tail + Col < nDta && Head+Col < nDta && Tail + Row < nDta);
@@ -402,7 +400,7 @@ SEXP empirical(SEXP  X, SEXP Dim,
 	  for(int row = 0; row < vdim; row++, Row+=totalpoints) {	\
 	    Long Col = 0;						\
 	    for(int col = 0; col < vdim; col++, Col+=totalpoints) {	\
-	      int curbin = low + nbin * (vdim * row + col);		\
+	      int curbin = low + nbin * (row + vdim * col);		\
 	      Long Head = head;						\
 	      Long endHead = Head + totalpointsrepetvdim;		\
 	      for (Long Tail = tail; Head < endHead;			\
@@ -744,7 +742,7 @@ SEXP empvarioXT(SEXP Xsexp, SEXP Tsexp,
 		    for(int row = 0; row < vdim; row++, Row+=segmentbase[4]) { \
 		      Long Col = 0;					\
 		      for(int col = 0; col < vdim; col++, Col+=segmentbase[4]){ \
-			int curbin = ib + totalbins * (vdim * row + col); \
+			int curbin = ib + totalbins * (row + vdim * col); \
 			for (rep = t; rep < segmentbase[6];		\
 			     rep += segmentbase[5]) {			\
 			  int rv; if (false) continue;			\
@@ -881,7 +879,7 @@ SEXP empvarioXT(SEXP Xsexp, SEXP Tsexp,
 	      for(int row = 0; row < vdim; row++, Row+=totalpoints) {	\
 		Long Col = 0;						\
 		for(int col = 0; col < vdim; col++, Col+=totalpoints) { \
-		  int curbin = low + totalbins * (vdim * row + col);	\
+		  int curbin = low + totalbins * (row + vdim * col);	\
 		  Long Head = jj + t;					\
 		  Long endHead = jj + totalpointsrepetvdim;		\
 		  for (Long Tail = t + i; Head < endHead;		\

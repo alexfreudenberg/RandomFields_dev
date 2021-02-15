@@ -122,21 +122,27 @@ double Determinant(double *M, int size, bool log) {
 double DeterminantLU(double *M, int size, bool log, int *permut) {
   int sizeP1 = size + 1,
     sizeSq = size * size;
+  //
+  //for (int i=0;i<sizeSq; i++) printf("%f ", M[i]); printf("\n");
   if (log) {
-    double tmp = 0.0, vorz= 1.0;
+    double tmp = 0.0,
+      vorz= size % 2 == 0 ? 1.0 : -1.0;
     for (int i=0; i<size; i++) {
       tmp += LOG(M[i * sizeP1]);
-      if (permut[i] != i) vorz *= -1.0;
+      if (permut[i] != i) vorz = -vorz;
     }
-    if (vorz == -1.0)
+    //
+    printf("RFU det = %f %f\n", tmp, vorz);
+     if (vorz == -1.0)
       RFERROR("calculation of log determinant need positive determinant");
     return tmp;
   } 
   double tmp = 1.0;  
   for (int i=0; i<size; i++) {
     tmp *= M[i * sizeP1];
-    if (permut[i] != i) tmp *= -1.0;
+    if (permut[i] != i) tmp = -tmp;
   }
+  //  printf("RFU det = %f\n", tmp);
   return tmp;
 }
 
@@ -422,6 +428,7 @@ int doPosDef(double *M0, int size, bool posdef,
 	     double *logdet, int calculate, solve_storage *Pt,
 	     solve_options *sp
 	     ){
+  
   // it is ok to have
   // ==15170== Syscall param sched_setaffinity(mask) points to unaddressable byte(s)
   // caused by gcc stuff
@@ -756,9 +763,9 @@ int doPosDef(double *M0, int size, bool posdef,
   proposed_pivot = sp->pivot_mode;
   for (int m=0; m<SOLVE_METHODS && (m==0 || Meth[m] != Meth[m-1]); m++) {
     pt->method = Meth[m];
-    //    printf("m=%d %d %d size=%d %d la_mode=%d\n", m, pt->method, Cholesky ,size , OPTIONS.basic.LaMaxTakeIntern, la_mode); 
+    //    printf("m=%d %d %s:  %d size=%d %d la_mode=%d\n", m, pt->method, InversionNames[pt->method], Cholesky ,size , OPTIONS.basic.LaMaxTakeIntern, la_mode); 
     if (pt->method == Cholesky && size > OPTIONS.basic.LaMaxTakeIntern) {
-       pt->method = calculate == DETERMINANT ? LU :  Rcholesky;
+      pt->method = calculate == DETERMINANT ? LU : Rcholesky;
     }
     if (pt->method < 0) break;
     if (calculate != SOLVE) {
@@ -823,11 +830,11 @@ int doPosDef(double *M0, int size, bool posdef,
       break;
     case Rcholesky : {
       //      printf("chol (R)\n");
-     if (calculate == SOLVE) {
-       int n_rhs = rhs_cols;
-       double *m = NULL;
-       CMALLOC(xja, size, int);
-       if (rhs_cols == 0) {
+      if (calculate == SOLVE) {
+	int n_rhs = rhs_cols;
+	double *m = NULL;
+	CMALLOC(xja, size, int);
+	if (rhs_cols == 0) {
 	 //	 printf("hier %ld %ld %ld res=%ld %ld %ld\n", RESULT, MPT, M0, result, rhs0, RHS);
 	 if (RESULT == MPT){
 	   Long bytes = sizeSq * sizeof(double);
@@ -841,6 +848,7 @@ int doPosDef(double *M0, int size, bool posdef,
  
 	 
 	 /*
+
 	 for (int i=0; i<size; i++)  {
 	   for (int j=0; j<size; j++) {
 	     printf("%f ", RESULT[i + j * size]); //
@@ -854,17 +862,19 @@ int doPosDef(double *M0, int size, bool posdef,
 	   }
 	   printf("\n");//
 	 }
+   
+	 
 	 */
 	 
-      } else {
+       } else {
 	 if (RHS != RESULT) MEMCOPY(RESULT, RHS, sizeof(double) * size * rhs_cols);
        }
-       F77_CALL(dgesv)(&size, &n_rhs, m == NULL ?  MPT : m, &size, xja,
-		       RESULT, &size, &err);
-       FREE(m);
-      
+       double *matrix = m == NULL ?  MPT : m;
+       F77_CALL(dgesv)(&size, &n_rhs, matrix, &size, xja, RESULT, &size, &err);
+       if (logdet != NULL)
+	 *logdet = DeterminantLU(matrix, size, sp->det_as_log, xja);
        if (err != NOERROR) RFERROR("LU algorithm failed.");
-       if (logdet != NULL) *logdet = DeterminantLU(MPT, size, sp->det_as_log, xja);
+       FREE(m);
     } else if (calculate == MATRIXSQRT) {
 	if (MPT != RESULT) MEMCOPY(RESULT, MPT, sizeSq * sizeof(double));
         F77_CALL(dpotrf)("U", &size, RESULT, &size, &err);
@@ -1591,20 +1601,23 @@ int doPosDef(double *M0, int size, bool posdef,
     }
 
     case LU : {// LU
+      //printf("LU\n");
       if (calculate == MATRIXSQRT) {
 	err = ERRORFAILED;
 	continue;
       }
       
-      CMALLOC(iwork, size, int);		    
-      F77_CALL(dgetrf)(&size, &size, MPT, &size, iwork, &err);
+      CMALLOC(xja, size, int);		    
+      F77_CALL(dgetrf)(&size, &size, MPT, &size, xja, &err);
       if (err != NOERROR) {
 	CERR1("'dgetrf' (LU) failed with err=%d.", err);
       }
  
+      //printf("LU %d\n", logdet != NULL);
+
+      
       if (logdet != NULL) {
-	CERR("logdet cannot be determined for 'LU'.");
-	*logdet = DeterminantLU(MPT, size, sp->det_as_log, iwork);
+	*logdet =  DeterminantLU(MPT, size, sp->det_as_log, xja);
         if (calculate == DETERMINANT) return NOERROR;
       }
 
@@ -1612,7 +1625,7 @@ int doPosDef(double *M0, int size, bool posdef,
 	int totalRHS = size * rhs_cols;
 	if (result != NULL) MEMCOPY(RESULT, RHS, sizeof(double) * totalRHS);
 	F77_CALL(dgetrs)("N", &size, // LU rhs
-			 &rhs_cols, MPT, &size, iwork, 
+			 &rhs_cols, MPT, &size, xja, 
 			 RESULT, &size, &err);
 	if (err != NOERROR) {	
 	  CERR1("'dgetrs' (LU) failed with err=%d.", err);
@@ -1623,7 +1636,7 @@ int doPosDef(double *M0, int size, bool posdef,
 	  *p = &dummy;
 	for (int i=0; i<=1; i++) { 
 	  F77_CALL(dgetri)(&size, MPT, // LU solve
-			   &size, iwork, p, &lw2, &err);	
+			   &size, xja, p, &lw2, &err);	
 	  if (err != NOERROR) break;
 	  lw2 = (int) dummy;
 	  CMALLOC(w2, lw2, double);
@@ -1943,7 +1956,9 @@ SEXP doPosDef(SEXP M, SEXP rhs, SEXP logdet, int calculate,
       } 
     } else RHS = REAL(rhs);
   }
-  
+
+
+  //printf("length = %d\n", length(logdet) == 0 );
   err = doPosDef(MM, size, true, // no PROTECT( needed
 		 rhs_cols == 0 ? NULL : RHS, // rhs_cols == 0 iff RHS = NULL
 		 rhs_cols, 

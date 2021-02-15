@@ -33,7 +33,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #ifdef __GNUC__
 // https://gcc.gnu.org/onlinedocs/gcc/Diagnostic-Pragmas.html
-// GCC diagnostic ignored "-Wcast-function-type"
+#pragma GCC diagnostic ignored "-Wcast-function-type"
 #endif
 
 static R_NativePrimitiveArgType 
@@ -159,12 +159,12 @@ void R_init_RandomFieldsUtils(DllInfo  *dll) {
 #ifdef SCHLATHERS_MACHINE
 #ifdef __GNUC__
 // https://gcc.gnu.org/onlinedocs/gcc/Diagnostic-Pragmas.html
-// GCC diagnostic push
-// GCC diagnostic ignored "-Wcast-function-type"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-function-type"
 #endif
 #endif
 void R_unload_RandomFieldsUtils(DllInfo *info) { }
 #ifdef __GNUC__
-// GCC diagnostic pop
+#pragma GCC diagnostic pop
 #endif
 
