@@ -1789,16 +1789,25 @@ void SchurMult(model *cov, double *v){
     double 
       *diag=P(SCHUR_DIAG),
       *red=P(SCHUR_RED);
-    for (i=0; i<vdim; i++) q[i] = SQRT(diag[i]);
-    for (k=i=0; i<vdim; i++) {
-      for (j=0; j<vdim; j++, k++) {
-	v[k] *= q[i] * q[j];
+    if (diag == NULL) {
+      for (k=i=0; i<vdim; i++) {
+	v[i + vdim * i] = 1.0;
+	for (j=0; j<vdim; j++, k++) {
+	  v[i + vdim * j] = v[j + vdim * i] = red[k];
+	}
       }
-    }
-    for (k=i=0; i<vdim; i++) {
-      for (j=0; j<vdim; j++, k++) {
-	v[i + vdim * j] *= red[k];	
-  	v[j + vdim * i] *= red[k];
+    } else {
+      for (i=0; i<vdim; i++) q[i] = SQRT(diag[i]);
+      for (k=i=0; i<vdim; i++) {
+	for (j=0; j<vdim; j++, k++) {
+	  v[k] *= q[i] * q[j];
+	}
+      }
+      for (k=i=0; i<vdim; i++) {
+	for (j=0; j<vdim; j++, k++) {
+	  v[i + vdim * j] *= red[k];	
+	  v[j + vdim * i] *= red[k];
+	}
       }
     }
     END_TALLOC_X1;
@@ -1855,7 +1864,38 @@ int checkSchur(model *cov) {
     *nrow = cov->nrow,
     *ncol = cov->ncol;
 
+  
   VDIM0 = VDIM1 = vdim;
+  if ( cov->qlen == 0) {
+    if ((M != NULL) xor (diag == NULL && red == NULL))
+      ERR3("either '%.50s' or one of '%.50s', '%.50s' must be given", 
+	   KNAME(SCHUR_M), KNAME(SCHUR_DIAG), KNAME(SCHUR_RED));
+
+    if (!global_utils->basic.skipchecks) {
+      if (diag != NULL)       
+	for (int i=0; i<vdim; i++)
+	  if (diag[i]<0) ERR1("elements of '%.50s' negative.",KNAME(SCHUR_DIAG));
+      
+      if (M == NULL) {
+	C = (double*) MALLOC(bytes);
+	for (int k=0, i=0; i<vdim; i++) {
+	  for (int j=0; j<vdim; j++, k++) {
+	    C[i + vdim * j] = C[i * vdim + j] = red[k];
+	  }
+	  C[i * vdimP1] = 1.0;
+	}
+      }
+    
+      bool posdef = Ext_is_positive_definite(M==NULL ? C : M, ncol[SCHUR_M]);
+      FREE(C);
+      if (!posdef)
+	ERR3("%d x %d matrix '%.50s' is not (strictly) positive definite",
+	     nrow[SCHUR_M], ncol[SCHUR_M], KNAME(SCHUR_M));
+    }
+    QALLOC(1);
+    
+  }
+  
   if ((err = CHECK_PASSTF(next, PosDefType, nrow[SCHUR_M], EvaluationType))
       != NOERROR) goto ErrorHandling;
   //  if ((err = CHECK(next, cov->tsdim, cov->xdimown, PosDefType, OWNDOM(0), 
@@ -1863,23 +1903,6 @@ int checkSchur(model *cov) {
   //RETURN_ERR(err);
   setbackward(cov, next);
 
-  if ((M != NULL) xor (diag == NULL || red == NULL))
-    GERR3("either '%.50s' and '%.50s' or '%.50s' must be given", 
-	  KNAME(SCHUR_DIAG), KNAME(SCHUR_RED), KNAME(SCHUR_M));
-  C = (double*) MALLOC(bytes);
-  if (M == NULL) {
-    if (!global_utils->basic.skipchecks)
-      for (int i=0; i<vdim; i++) {
-	if (diag[i]<0)
-	  GERR1("elements of '%.50s' negative.", KNAME(SCHUR_DIAG));
-      }
-    for (int k=0, l=0, i=0; i<vdim; i++, l+=vdimP1) {
-      for (int j=0; j<vdim; j++, k++) {
-	C[i + vdim * j] = C[i * vdim + j] = red[k];
-      }
-      C[l] = 1.0;
-    }
-  } else MEMCOPY(C, M, bytes);
 
   //  for (int i=0; i<vdim;  i++) {  printf("\n");
   //    for (int j=0;j<vdim;j++) printf("%f ", M[i * vdim + j]);
@@ -1889,10 +1912,6 @@ int checkSchur(model *cov) {
   //  } printf("\n");
   //printf("skip=%d\n", global_utils->basic.skipchecks);
  
-  if (!global_utils->basic.skipchecks &&
-      !Ext_is_positive_definite(C, ncol[SCHUR_M])) 
-    GERR3("%d x %d matrix '%.50s' is not (strictly) positive definite",
-	  nrow[SCHUR_M], ncol[SCHUR_M], KNAME(SCHUR_M));
 
   for (int i=0; i<maxv; i++) cov->mpp.maxheights[i] = 1.0;
 
@@ -1915,8 +1934,7 @@ int checkSchur(model *cov) {
   */
  
   ErrorHandling:
-   FREE(C);
-
+ 
    ONCE_EXTRA_STORAGE;
    RETURN_ERR(err);
 }

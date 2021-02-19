@@ -1864,16 +1864,19 @@ void CovMatrix(double VARIABLE_IS_NOT_USED *x, INFO, model *cov, double *v){
   else StandardCovMatrix(sub, true, v);
 }
 
+ 
+ 
 int check_covmatrix(model *cov) {
   model *sub = cov->key == NULL ? cov->sub[0] : cov->key;
   assertNoLocY(cov);
   ASSERT_LOC_GIVEN;
   int err = NOERROR,
-    rows, cols,
+     rows, cols,
     dim = Loctsdim(cov), // !! not GettLoctsdim
     total = Loctotalpoints(cov); // !! not Loctotalpoints
   isotropy_type iso = SymmetricOf(PREVISO(0));
-
+  DEF_SAVE_ERROR;
+  
   assert(dim == OWNLOGDIM(0));
   if (LocDist(cov) && LocxdimOZ(cov) == 1) {
     iso = PREVISO(0);
@@ -1887,18 +1890,20 @@ int check_covmatrix(model *cov) {
 
   if ((err = CHECK(sub, dim, OWNXDIM(0), PosDefType, XONLY, iso,
 		   SUBMODEL_DEP, EvaluationType)) != NOERROR) {
+    SAVE_ERROR;
     if ((err = CHECK(sub, dim, OWNXDIM(0), 
 		     PosDefType, KERNEL, CARTESIAN_COORD, SUBMODEL_DEP,
 		     EvaluationType)) != NOERROR) {
       //      APMI(cov)
+      SAVE_ERROR;
       if ((err = CHECK(sub, dim, OWNXDIM(0), VariogramType, XONLY,
 		       // iso,
 		       SymmetricOf(PREVISO(0)),
 		       SUBMODEL_DEP, EvaluationType)) != NOERROR) {
-	RETURN_ERR(err);
+	RETURN_SAVED_ERR;  
       }
-    }
-  }
+    }  
+  }   
 
   setbackward(cov, sub);  
   rows = VDIM0 = sub->vdim[0]; 
@@ -2146,6 +2151,7 @@ void kappapredict(int i, model VARIABLE_IS_NOT_USED *cov, int *nr, int *nc) {
   //    *nr = SIZE_NOT_DETERMINED;
   //    *nc = 1;
   //  } else
+  //  printf("i=%d %d\n", i, PREDICT_GIVEN);
   *nr = *nc = (i==PREDICT_GIVEN) ? SIZE_NOT_DETERMINED : -1;
 }
 
@@ -2265,4 +2271,11 @@ int struct_predict(model *cov, model VARIABLE_IS_NOT_USED  **newmodel){
 
 void range_predict(model VARIABLE_IS_NOT_USED *predict, range_type* range){
   range_likelihood(predict, range); 
+
+  range->min[PREDICT_GIVEN] = RF_NA;
+  range->max[PREDICT_GIVEN] = RF_NA;
+  range->pmin[PREDICT_GIVEN] = RF_NA;
+  range->pmax[PREDICT_GIVEN] = RF_NA;
+  range->openmin[PREDICT_GIVEN] = true;
+  range->openmax[PREDICT_GIVEN] = true;
 }

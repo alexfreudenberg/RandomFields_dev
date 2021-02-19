@@ -33,7 +33,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #ifdef __GNUC__
 // https://gcc.gnu.org/onlinedocs/gcc/Diagnostic-Pragmas.html
-#pragma GCC diagnostic ignored "-Wcast-function-type"
+// GCC diagnostic ignored "-Wcast-function-type"
 #endif
 
 static R_NativePrimitiveArgType 
@@ -49,6 +49,8 @@ static const R_CMethodDef cMethods[]  = {
   CDEF(sleepMicro, 1, int_arg),
   CDEF(pid, 1, int_arg),
   CDEF(hostname, 2, host_arg),
+  CDEF(setCPUs, 1, int_arg),
+  CDEF(recompilationNeeded, 1, int_arg),
   CDEF(loadoptions, 0, none),
   CDEF(detachoptions, 0, none),
   {NULL, NULL, 0, NULL}
@@ -58,7 +60,7 @@ static const R_CMethodDef cMethods[]  = {
 #define CALLDEF(name, n) {#name, (DL_FUNC) &name, n}
 static R_CallMethodDef callMethods[]  = {
   // in die respectiven C-Dateien muss RandomFieldsUtils.h eingebunden sein
-  CALLDEF(attachoptions, 0),
+  CALLDEF(AVXmessages, 1),
   CALLDEF(DebugCall, 0),
   CALLDEF(Chol, 1),
   CALLDEF(SolvePosDef, 3),
@@ -81,6 +83,7 @@ static R_CallMethodDef callMethods[]  = {
   CALLDEF(chol2mv, 2),
   CALLDEF(tcholRHS, 2),
   CALLDEF(crossprodX, 3),
+  CALLDEF(getPackagesToBeInstalled, 1),
   //  CALLDEF(),
   {NULL, NULL, 0}
 };
@@ -148,7 +151,7 @@ void R_init_RandomFieldsUtils(DllInfo  *dll) {
   //  CALLABLE(scalarInt);
 
   CALLABLE(pid);
-  CALLABLE(sleepMicro);
+  CALLABLE(sleepMicro); // problem?
  
   R_registerRoutines(dll, cMethods, callMethods, NULL, // .Fortran
 		     extMethods);
@@ -159,12 +162,12 @@ void R_init_RandomFieldsUtils(DllInfo  *dll) {
 #ifdef SCHLATHERS_MACHINE
 #ifdef __GNUC__
 // https://gcc.gnu.org/onlinedocs/gcc/Diagnostic-Pragmas.html
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wcast-function-type"
+// GCC diagnostic push
+// GCC diagnostic ignored "-Wcast-function-type"
 #endif
 #endif
 void R_unload_RandomFieldsUtils(DllInfo *info) { }
 #ifdef __GNUC__
-#pragma GCC diagnostic pop
+// GCC diagnostic pop
 #endif
 

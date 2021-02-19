@@ -143,6 +143,9 @@ void errorMSG(int err, errorstring_type errorstring, KEY_type *KT,
   case XERRORWRONGISO: 
     SCPY(m, "unexpected appearance of a rather general function. Should the model be isotropic, but isn't?")
     break;
+  case XERRORBADISO: 
+    SCPY(m, "a more restrictive isotropy condition required for submodel than submodel can deliver.")
+    break;   
   case XERRORWRONGDOM:
     SCPY(m, "unexpected appearance of a kernal function. Should the model be stationary, but isn't?");
     break;

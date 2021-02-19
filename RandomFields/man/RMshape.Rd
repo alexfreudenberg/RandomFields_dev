@@ -60,7 +60,7 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 
 ## first simulate some data with a sine and a mean as trend
 repet <- 100
-\dontshow{if(RFoptions()$internal$examples_reduced){warning("reduced 'repet'"); repet <- 3}} 
+\dontshow{if(RFoptions(getoptions_="internal")$examples_red){if(RFoptions(getoptions_="messages")$warn_examples_red) warning("reduced 'repet'"); repet <- 3}} 
 x <- seq(0, pi, len=10)
 trend <- 2 * sin(R.p(new="isotropic")) + 3
 model1 <- RMexp(var=2, scale=1) + trend
@@ -69,7 +69,7 @@ dta <- RFsimulate(model1, x=x, n=repet)
 
 ## now, let us estimate variance, scale, and two parameters of the trend
 model2 <- RMexp(var=NA, scale=NA) + NA * sin(R.p(new="isotropic")) + NA
-\dontshow{if(RFoptions()$internal$examples_reduced){warning("reduced 'repet'"); model2 <- RMexp(var=NA) + NA * sin(R.p(new="isotropic")) + NA}}
+\dontshow{if(RFoptions(getoptions_="internal")$examples_red){if (RFoptions(getoptions_="messages")$warn_examples_red) warning("reduced 'repet'"); model2 <- RMexp(var=NA) + NA * sin(R.p(new="isotropic")) + NA}}
 print(RFfit(model2, data=dta))
 
 ## model2 can be made explicit by enclosing the trend parts by

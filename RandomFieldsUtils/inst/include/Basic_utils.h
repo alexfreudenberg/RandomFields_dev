@@ -53,12 +53,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #endif
 
 
-#ifdef USEGPU
-#define GPUavailable true
-#else
-#define GPUavailable false
-#endif
-
 
 #ifdef DO_PARALLEL // for testing only
 //#undef DO_PARALLEL
@@ -236,5 +230,6 @@ typedef int64_t Long;
 #define HELPINFO(M) if (OPTIONS.basic.helpinfo) { PRINTF("%s\n(Note that you can unable this information by 'RFoptions(helpinfo=FALSE)'.)\n", M); } // OK
 
 #define UTILSINFO(M) if (OPTIONS_UTILS->basic.helpinfo) { PRINTF("%s\n(Note that you can unable this information by 'RFoptions(helpinfo=FALSE)'.)\n", M); } // OK
+
 
 #endif

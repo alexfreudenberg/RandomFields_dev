@@ -10,7 +10,7 @@
 \usage{
 RFlikelihood(model, x, y = NULL, z = NULL, T = NULL, grid = NULL,
                 data, params, distances, dim, likelihood,
-                estimate_variance =NA, ...) 
+                estimate_variance =NA, standardizedL = FALSE, ...) 
 
 }
 \arguments{
@@ -30,7 +30,11 @@ RFlikelihood(model, x, y = NULL, z = NULL, T = NULL, grid = NULL,
  %\item{log}{logical. If \code{TRUE} the loglikelihood is returned.
 % }
  \item{estimate_variance}{logical or \code{NA}. See Details.
- } 
+ }
+ \item{standardizedL}{logical.
+   The standardized loglikelihood might be usefull
+   if the matrix is close to singular.
+ }
  \item{...}{\argDots}
 }
 \details{

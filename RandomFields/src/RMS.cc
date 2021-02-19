@@ -238,8 +238,6 @@ void nonstat_logS(double *x, double *y, int *info,
   TALLOC_DOUBLE(z1);
   TALLOC_DOUBLE(z2);
 
-  //  printf("%ld %ld\n", z1, z2);
-  
   if (nproj > 0) {
     int *proj = PPROJ;
     TALLOC_OPTIONS_X1(z1, nproj);
@@ -272,19 +270,12 @@ void nonstat_logS(double *x, double *y, int *info,
     
     if (s1 <= 0.0 || s2  <= 0.0)
       ERR1("'%.50s' must be a positive function", KNAME(DSCALE));
-    //  if (x[0]!=1.0) printf("\n%.50s x=%10g,%10g %10g y=%10g,%10g %10g; %d\n", NAME(Scale), x[0], x[1], s1, y[0], y[1], s2, xdimown);
     smeanSq = 0.5 * (s1 * s1 + s2 * s2);
-    //  printf("s_x[0]=%10g %10g s=%10g %10g %10g ", x[0], x[1], s1, s2, smeanSq);
     s = SQRT(smeanSq);
     for (i=0; i<xdimown; i++) {
       z1[i] = x[i] / s;
       z2[i] = y[i] / s;
-    }
-
-      //printf("h/s= %10g\n", SQRT((z1[0] - z2[0]) * (z1[0] - z2[0])  + (z1[1] - z2[1]) * (z1[1] - z2[1])));
-     //  if (x[0]!=1.0) printf("s=%10g, %10g %10g; %10g %10g \n", s, z1[0], z1[1], z2[0], z2[1]);
-    //    assert(z2[1] < 0.3);
-	     
+    }	     
   } else if ((notdelete = aniso==NULL && (scale==NULL || scale[0] == 1.0))) {
     z1 = x;
     z2 = y;
@@ -740,11 +731,8 @@ void inversenonstatS(double *x, model *cov, double *left, double*right,
   if (DefList[NEXTNR].inverse_nonstat == inversenonstatErr) BUG;
   if (log) {
     INVERSENONSTATLOG(&y, next, left, right);
-    //   printf("logS %f  %f %f %s\n", y, *left, *right, NAME(next));    
   } else {
     INVERSENONSTAT(&y, next, left, right);
-    //    printf("S %f  %e %e x=%f, var=%f  %s\n", y, *left, *right, *x, var, NAME(next));
-    //if (y > 1.0) {PMI(cov); crash();}
   }
   
   if (aniso != NULL) {
@@ -829,14 +817,12 @@ void inversenonstatS(double *x, model *cov, double *left, double*right,
   } else {
     if (scale != NULL) s *= scale[0];
 
-    // printf("name %s\n", DefList[NEXTNR].name);
     int nextdim = NEXTTOTALXDIM;
     if (dim > nextdim && isAnyIsotropic(NEXTISO(0)) &&
 	aniso == NULL && Aniso == NULL) {
       assert(nextdim == 1);
       double r = right[0],
 	l = left[0];
-      //   printf("%e %e\n", l, r);
       if (-l != r) BUG;
       for (int i=1; i<dim; i++) {
 	left[i] = l;
@@ -845,18 +831,12 @@ void inversenonstatS(double *x, model *cov, double *left, double*right,
     }
   }
   if (s != 1.0) {
-    //    PMI0(cov);
-    //printf("dim = %d\n", dim);
-    //BUG;
     for (int i=0; i<dim; i++) {
       left[i] *= s; //!
       right[i] *= s;
     }
   }
 
-  //  PMI0(cov);
-  //  printf("SS %f  %e %e %f dim=%d %s\n", y, *left, right[0], s, dim, NAME(next));
- 
 }
 
 void inversenonstatS(double *x, model *cov, double *left, double*right) {
@@ -979,7 +959,6 @@ int TaylorS(model *cov) {
 
 int checkS(model *cov) {
   option_type *global = &(cov->base->global);
-  //  printf("checkS!!\n");
 
   // hier kommt unerwartet  ein scale == nan rein ?!!
   model 
@@ -1012,7 +991,6 @@ int checkS(model *cov) {
     RETURN_ERR(err);
   }
   kdefault(cov, DVAR, 1.0);
- //  printf("checkS2!!\n");
 
   if ( (!PisNULL(DSCALE) || Scale != NULL) && OWNLASTSYSTEM != 0)
     SERR1("'%.50s' may be used only if a single coordinate system is envolved", 
@@ -1098,7 +1076,6 @@ int checkS(model *cov) {
   ONCE_EXTRA_STORAGE;
 
   int xdimNeu = OWNXDIM(0);
- //  printf("checkS ff !!\n");
   if (Aniso != NULL) { // CASE 1: Aniso is given by arbitrary fctn
     if (!isDollarProc(cov) && !angle && !isKernel(OWN)) RETURN_ERR(ERRORFAILED);
     if (!PisNULL(DANISO) || !PisNULL(DPROJ) || !PisNULL(DSCALE) ||
@@ -1294,9 +1271,6 @@ int checkS(model *cov) {
 	   || (isAnySpherical(PREVISO(0)) && PREVXDIM(0) > 2)
 #endif							      
 	   ))) {
-	//	PMI0(cov->calling);
-	// PMI0(cov);
-	// printf("%d %d %d %d\n",  LocLocTime(loc), xdim,   isCartesian(OWNISO(last)),	       isAnySpherical(PREVISO(0)) && PREVXDIM(0) > 2);
 	SERR1("unallowed use of '%.50s' or model too complicated.",
 	      KNAME(DPROJ));
       }
@@ -1310,7 +1284,6 @@ int checkS(model *cov) {
       else if (Space) for (int i=0; i<Nproj; i++) PPROJ[i] = i;
       else PPROJ[0] = xdim - 1; // R coding 
 
-    //      printf("Space %d %ld %d %d\n", Space, p, PROJ_TIME, xdim);
     }
 
     xdimNeu = Nproj;
@@ -1345,9 +1318,7 @@ int checkS(model *cov) {
 
     set_xdim(PREVSYSOF(sub), 0, xdimNeu);
     set_logdim(PREVSYSOF(sub), 0, xdimNeu);
-    //    PMI(cov);    printf("PP = %d %s\n", PPROJ[0], NAME(cov));
     if (equalsSpaceIsotropic(OWN)) {
-      // printf("%d %d\n", xdimNeu, nproj);
       if (xdimNeu > 2) SERR("maximum length of projection vector is 2");
       if (xdimNeu == 2) {
 	if (PPROJ[0] >= PPROJ[1])
@@ -1415,7 +1386,6 @@ int checkS(model *cov) {
    
     
   } else { // nproj == 0
- //  printf("checkS  u!!\n");
     COPYALLSYSTEMS(PREVSYSOF(sub), OWN, false);
 
     // verhindern, dass die coordinaten-transformation anlaeuft,
@@ -1450,13 +1420,11 @@ int checkS(model *cov) {
 	 */
 
   } // end no aniso ((end of CASE 4))
-//  printf("checkS 664!!\n");
  
   if (( err = checkkappas(cov, false)) != NOERROR) {
     RETURN_ERR(err);
   }
   
- //  printf("checkS 4!!\n");
   setbackward(cov, sub);
   for (int s=0; s<=last; s++) set_maxdim(OWN, s, OWNLOGDIM(s));
 
@@ -1501,8 +1469,7 @@ int checkS(model *cov) {
     model *calling = cov->calling; 
     if (calling != NULL && isnowProcess(calling) &&
 	!PisNULL(DPROJ)) {
-      printf("unkom,ment spaeter"); //erst sequenial "reparieren"
-      // BUG;
+      BUG;
       //for (int i=0; i<Forbidden; i++) cov->pref[i] *= 0.5;
       //cov->pref[Specific] = 5;
     }
@@ -1520,8 +1487,6 @@ int checkS(model *cov) {
     PRINTF("Value of the scale parameter equals '%4.2f', which is less than 100,\nalthough models defined on R^3 are used in the context of earth coordinates,\nwhere larger scales are expected. (This message appears only ones per session.)\n", PisNULL(DSCALE) ? 1.0 : P0(DSCALE)); 
   }
  
- // printf("checkS! end!\n");
-
   if ((err = TaylorS(cov)) != NOERROR) RETURN_ERR(err);
 
   RETURN_NOERROR;
@@ -1566,11 +1531,6 @@ bool allowedIS(model *cov) {
   bool allowed = allowedIstandard(cov);
   if (allowed) for (int i=FIRST_ISOUSER; i<=LAST_ISOUSER; I[i++] = true);
   //
-  //for (int i=0; i<LAST_ISOUSER; i++) printf("%d ", I[i]); BUG;
-  
-  //  assert(!angle);
-  //  printf("%d %d %d\n", Scale != NULL && !isRandom(Scale), Aniso != NULL || Daniso != NULL, !angle);
-  //  APMI(cov);
 
   int nproj = cov->nrow[DPROJ], // OK
     *p = PINT(DPROJ);// OK
@@ -1689,7 +1649,6 @@ Types TypeS(Types required, model *cov, isotropy_type required_iso){
   bool ok =(COVNR != DOLLAR_PROC &&
 	    (isShape(required) || isTrend(required) || equalsRandom(required)))
     || (COVNR == DOLLAR_PROC && isProcess(required));
-  //  printf("ok=%d\n", ok);
   if (!ok) return BadType;
  
   model *sub = cov->key==NULL ? cov->sub[0] : cov->key;
@@ -2172,7 +2131,6 @@ int initS(model *cov, gen_storage *s){
 
     bool unnormed = R_FINITE(next->mpp.unnormedmass);
     if (unnormed) {
-      //printf("unnormedmass in $ %.50s\n", NAME(next));
       if (vdim > 1) BUG;
       cov->mpp.unnormedmass = next->mpp.unnormedmass * var[0];
     } else cov->mpp.unnormedmass = RF_NAN;
@@ -2211,8 +2169,6 @@ int initS(model *cov, gen_storage *s){
 
 void doS(model *cov, gen_storage *s){
 
-  //  printf("hier doS\n");
-  
   model
     *Var = cov->kappasub[DVAR],
     *Scale = cov->kappasub[DSCALE];
@@ -2314,13 +2270,11 @@ int structSproc(model *cov, model **newmodel) {
     cov->Sdollar->somegrid = cov->Sdollar->blockmatrix =
       cov->Sdollar->separable = false;
     if (Aniso!= NULL) { // Aniso fctn
-      // printf("dim = %d\n", tsdim);
       assert(tsdim > 0);
       if (cov->ownloc != NULL) BUG;
        double *xx=NULL;
       Long total = Loctotalpoints(cov);
       int xdim = TransformLoc(cov, Loc(cov), &xx, NULL, True);
-      //printf("back hier\n");
     
       newtsdim = Aniso->vdim[0];
       assert(LocSets(cov) == 1);
@@ -2357,7 +2311,6 @@ int structSproc(model *cov, model **newmodel) {
       cov->Sdollar->separable =
 	Loc(cov)->caniso == NULL && (grid || Time);
 
-      // printf("Pisn %d \n", PisNULL(DPROJ));
 
       // && isXonly(NEXT); 21.1.21: diese Bedingungen entfernt,
       //                            entsprechend gewuenscht(!!) eingeschraenkt
@@ -2436,7 +2389,6 @@ int structSproc(model *cov, model **newmodel) {
 	    else cumsum[neu] = cumsum[alt] * (int) gr[alt][XLENGTH];
 	    total[neu] = cumsum[neu] * (int) gr[neu][XLENGTH];
 	  }
-	  //	  printf("some grdi\n")	 ; 
 	  loc_set(xx, NULL, NULL, NULL, nproj, nproj, UNKNOWN_NUMBER_GRIDPTS, 0,
 		  false, true, true, false, cov);
 	  FREE(xx);
@@ -2456,16 +2408,12 @@ int structSproc(model *cov, model **newmodel) {
 		A[d] = aniso[d * nrow +  proj[d]];
 		assert(A[d] != 0.0);
 	      }					     
-	    //  printf("AFE aniso = %d %f\n", aniso!=NULL, scale);
 	    for (int i=0 ; i<spatialpoints; i++, L += xdimOZ) {
-	      //    printf("i=%d L=%ld\n", i, L-Locx(cov));
 	      for (int d=0 ; d<nproj; d++) {
-		//		if (i > 105) printf("  d=%d %d\n", d, proj[d]);
 		if (aniso == NULL) *(xx++) = L[proj[d]] /= scale;
 		else *(xx++) = L[proj[d]] * A[d];
 	      }
 	    }
-	    //  	    printf("no grdi %d %d %d %d\n",nproj,spatialpoints,grid,PPROJ[0]); 
 	    loc_set(x0, NULL, NULL, NULL, nproj, nproj, spatialpoints, 0,
 		    false, grid, false, false, cov);
 	    FREE(x0);
@@ -2494,12 +2442,6 @@ int structSproc(model *cov, model **newmodel) {
     } // Scale and Aniso are not given as functions
 
 
-    //   printf("newtsdim = %d %d\n",newtsdim, cov->Sdollar->separable);
-
-   //PMI0(cov);
-    //   TREE(cov);
-
-    
     if ((err = covcpy(&(cov->key), next)) != NOERROR) RETURN_ERR(err);
     if (!isGaussMethod(cov->key)) addModelKey(cov, GAUSSPROC);
     SetLoc2NewLoc(cov->key, LocP(cov));
@@ -2564,7 +2506,6 @@ int initSproc(model *cov, gen_storage *s){
     assert(!PisNULL(DPROJ) || !PisNULL(DANISO));
     assert(VDIM0 == VDIM1);
     // projection or reducing anisotropy matrix
-    //    printf("\n\n\n\n\n ********* cov-rf %d \n",  VDIM0 * prevtotalpts);
     cov->rf = (double*) MALLOC(sizeof(double) * VDIM0 * prevtotalpts);
   } else cov->rf = cov->key->rf;
 
@@ -2608,13 +2549,8 @@ void doSproc(model *cov, gen_storage *s){
       totalpoints = Loctotalpoints(cov),
       totptsvdim = totalpoints * vdim;
 
-    //    for (int i=0; i<VDIM0 * LocLoctotalpoints(LocPrev(cov)); i++) cov->rf[i] = i;
-    //    printf("short do %s %e %e %d Time=%d\n", NAME(cov), cov->rf[0], cov->rf[VDIM0 * LocLoctotalpoints(LocPrev(cov))-1], LocLoctotalpoints(LocPrev(cov)), LocLoctime(LocPrev(cov)));  return; 
-   
     DO(cov->key, s);
 
-    //    printf("hiere\n");   
-    
     model *Var = cov->kappasub[DVAR];
 
     if (Var != NULL) {
@@ -2700,9 +2636,6 @@ void doSproc(model *cov, gen_storage *s){
 	TALLOC_L1(nx, prevdim);      
 	for (int d=0; d<prevdim; d++) nx[d] = 0;
 
-	//	printf("%d %d %d %d\n", cov->Sdollar->somegrid, prevdim, 1, 1);
-      
-	
 	int d=0,
 	  zaehler = 0,
 	  i = 0,
@@ -2731,8 +2664,6 @@ void doSproc(model *cov, gen_storage *s){
 	}
       
 	END_TALLOC_L1;
-
-	//	BUG; printf("hier\n");
 	
       } else { // purely spatial
 	//PMI0(cov);
@@ -2758,7 +2689,5 @@ void doSproc(model *cov, gen_storage *s){
     }
    
   }
-  //  printf("%d\n", LocPrev(cov)->totalpoints * vdim);
-  //  printf("$proc: %e %e\n", cov->rf[0], cov->rf[LocPrev(cov)->totalpoints * vdim-1]);
 }
 

@@ -27,7 +27,7 @@
 
 RFoptions(seed=NA)
 len <- 10
-\dontshow{if(!interactive()){warning("reduced 'len'");len<-2;}}%ok
+\dontshow{if (RFoptions(getoptions_="internal")$examples_red){if (RFoptions(getoptions_="messages")$warn_examples_red)warning("reduced 'len'");len<-2;}}%ok
 x <- seq(0, 1, len=len)
 y <- seq(0, 1, len=len)
 grid.size <- c(length(x), length(y))
@@ -36,7 +36,7 @@ model <- RMexp(var=1.1, Aniso=matrix(nc=2, c(2,0.1,1.5,1)))
 
 m <- 5 
 n <- 100
-\dontshow{if(!interactive()){warning("reduced 'm'");m<-2;}}%ok
+\dontshow{if(RFoptions(getoptions_="internal")$examples_red){if(RFoptions(getoptions_="messages")$warn_examples_red) warning("reduced 'm'");m<-2;}}%ok
 
 # using local.dependent=FALSE (which is the default)
 c1 <- numeric(m)
@@ -86,7 +86,7 @@ x1 <- seq(-150,150,step)
 y1 <- seq(-15, 15, step)
 x2 <- seq(-50, 50, step)
 model <- RPtbm(RMexp(scale=10))
-\dontshow{if(!interactive()){warning("values for x1, y1, x2 changed'");x1<-y1<-x2 <- -1:1}}%ok
+\dontshow{if(RFoptions(getoptions_="internal")$examples_red){if ( RFoptions(getoptions_="messages")){$warn_examples_red)warning("values for x1, y1, x2 changed'");x1<-y1<-x2 <- -1:1}}%ok
 
 RFoptions(storing=TRUE)
 mar <- c(2.2, 2.2, 0.1, 0.1)

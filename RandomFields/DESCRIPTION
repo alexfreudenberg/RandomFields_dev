@@ -1,10 +1,10 @@
 Package: RandomFields
-Version: 4.0.0.14
+Version: 4.0.0.18
 Title: Simulation and Analysis of Random Fields
 Author: Martin Schlather [aut, cre], Alexander Malinowski [aut], Marco Oesting [aut], Daphne Boecker [aut], Kirstin Strokorb [aut], Sebastian Engelke [aut], Johannes Martini [aut], Felix Ballani [aut], Olga Moreva [aut], Jonas Auel[ctr], Peter Menck [ctr], Sebastian Gross [ctr], Ulrike Ober [ctb], Felix Reinbot [ctb], Paulo Ribeiro [ctb], Brian Dmake. Ripley [ctb], Richard Singleton [ctb], Ben Pfaff [ctb], R Core Team [ctb]
 Maintainer: Martin Schlather <schlather@math.uni-mannheim.de>
 LinkingTo: RandomFieldsUtils
-Depends: R (>= 3.5.0), sp, RandomFieldsUtils (>= 0.6)
+Depends: R (>= 3.5.0), sp, RandomFieldsUtils (>= 0.6.55)
 Imports: graphics, methods, grDevices, stats, utils
 Suggests: colorspace, RColorBrewer, mvtnorm, raster, tcltk2, tcltk,
         DEoptim, tkrplot, spam, tools, minqa, soma, optimx, nloptr,
@@ -22,7 +22,7 @@ Collate: aaa_auto.R aaa_globals.R xport_import.R basic.fctns.R
 License: GPL (>= 3)
 URL:
         http://ms.math.uni-mannheim.de/de/publications/software/randomfields
-Packaged: 2021-02-15 17:27:18 UTC; schlather
+Packaged: 2021-02-19 15:28:33 UTC; schlather
 NeedsCompilation: yes
 Repository: CRAN
 Date/Publication: 2016-04-23 15:04:07

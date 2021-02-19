@@ -120,31 +120,31 @@ double Determinant(double *M, int size, bool log) {
 }
 
 double DeterminantLU(double *M, int size, bool log, int *permut) {
-  int sizeP1 = size + 1,
-    sizeSq = size * size;
-  //
-  //for (int i=0;i<sizeSq; i++) printf("%f ", M[i]); printf("\n");
+  int sizeP1 = size + 1;
+    //    sizeSq = size * size;
+  //  for (int i=0;i<sizeSq; i++) {  if (i % size ==0)printf("\n"); printf("%f ", M[i]);  }printf("\n");
   if (log) {
-    double tmp = 0.0,
-      vorz= size % 2 == 0 ? 1.0 : -1.0;
+    double tmp = 0.0;
+    int vorz= 0;
     for (int i=0; i<size; i++) {
-      tmp += LOG(M[i * sizeP1]);
-      if (permut[i] != i) vorz = -vorz;
+      tmp += LOG(fabs(M[i * sizeP1]));
+      vorz += (permut[i] != i+1) + (M[i * sizeP1] < 0);
+      //   printf("tmp %f %d %d %d\n", M[i * sizeP1], vorz , i, permut[i]);
     }
-    //
-    printf("RFU det = %f %f\n", tmp, vorz);
-     if (vorz == -1.0)
+    //    printf("RFU det = %f %d\n", tmp, vorz);
+    if (vorz % 2)
       RFERROR("calculation of log determinant need positive determinant");
     return tmp;
   } 
   double tmp = 1.0;  
   for (int i=0; i<size; i++) {
     tmp *= M[i * sizeP1];
-    if (permut[i] != i) tmp = -tmp;
+    if (permut[i] != i+1) tmp = -tmp;
   }
   //  printf("RFU det = %f\n", tmp);
   return tmp;
 }
+
 
 double cumProd(double *D, int size, bool log) {
   if (log) {
@@ -747,7 +747,7 @@ int doPosDef(double *M0, int size, bool posdef,
   }
 
   
-  //  printf("AFF\n");
+  // printf("AFF\n");
 
   errorstring_type ErrStr;
   STRCPY(ErrStr, "");
@@ -875,7 +875,7 @@ int doPosDef(double *M0, int size, bool posdef,
 	 *logdet = DeterminantLU(matrix, size, sp->det_as_log, xja);
        if (err != NOERROR) RFERROR("LU algorithm failed.");
        FREE(m);
-    } else if (calculate == MATRIXSQRT) {
+      } else if (calculate == MATRIXSQRT) {
 	if (MPT != RESULT) MEMCOPY(RESULT, MPT, sizeSq * sizeof(double));
         F77_CALL(dpotrf)("U", &size, RESULT, &size, &err);
 	if (logdet != NULL) {
@@ -894,6 +894,7 @@ int doPosDef(double *M0, int size, bool posdef,
       break;
     }
     case Cholesky : {
+      //      printf("chol\n");
       //
 #ifdef DO_PARALLEL
       //   printf("chol (own), %d cores\n",  CORES);
@@ -910,7 +911,7 @@ int doPosDef(double *M0, int size, bool posdef,
 	      sp->max_chol, sp->max_chol);
       }
 
-      ///printf("size = %d %d %d\n", size, rhs_cols, size > rhs_cols ? size : rhs_cols);
+      ///      printf("size = %d %d %d\n", size, rhs_cols, size > rhs_cols ? size : rhs_cols);
       
       CMALLOC(D, size > rhs_cols ? size : rhs_cols, double);
       for (int i=0; i<size; i++) D[i] = MPT[sizeP1 * i];
@@ -1001,7 +1002,7 @@ int doPosDef(double *M0, int size, bool posdef,
       } else err = ERRORFAILED;
     
       Pivot_Cholesky:
-      //      printf("pivot %d %s\n", err, ErrStr);
+      //      printf("Err pivot %d %s %d\n", err, ErrStr, proposed_pivot );
       if (err != NOERROR && proposed_pivot != PIVOT_NONE) {
 	if (PL > PL_DETAILS) { PRINTF("trying pivoting\n"); }
 	int actual_size = NA_INTEGER;
@@ -1024,7 +1025,7 @@ int doPosDef(double *M0, int size, bool posdef,
 	  pi = pt->pivot_idx;
 	} else { // PIVOT_IDX 
 	  if (sp->pivot_idx_n < size || sp->actual_size > size) {
-	    //  printf("XA, %d %d %d\n", sp->pivot_idx_n , size, sp->actual_size);
+	    //	    printf("XA, %d %d %d\n", sp->pivot_idx_n , size, sp->actual_size);
 	    CERR("pivot_idx does not have the correct length.\nSet 'RFoption(pivot_idx=, pivot_actual_size=)' to the attributes of a\npivoted Cholesky decomposition.");
 	  }
 	  actual_size = pt->actual_size = sp->actual_size;
@@ -2131,6 +2132,7 @@ bool is_positive_definite(double *C, int dim) { // bool not allowed in C
   test = (double*) MALLOC(bytes);
   MEMCOPY(test, C, bytes);
   err = chol(test, dim);
+  //  printf("errr = %d\n", err);
   UNCONDFREE(test);
   return(err == NOERROR);
 }

@@ -14,8 +14,13 @@ typedef enum pivot_modes {PIVOT_NONE, PIVOT_AUTO, PIVOT_DO, PIVOT_IDX,
 #define PIVOTSPARSE_MMD 1 // for spam
 #define PIVOTSPARSE_RCM 2 // for spam
 
+typedef enum install_modes {Inone, Iask, Iinstall, Isse, Isse2, // 4
+			    Isse3, Issse3, Iavx,  Iavx2, // 8
+			    Igpu} install_modes;
+#define INSTALL_LAST Igpu
 
-extern const char *LA_NAMES[LA_LAST + 1], *PIVOT_NAMES[PIVOT_LAST + 1];
+extern const char *LA_NAMES[LA_LAST + 1], *PIVOT_NAMES[PIVOT_LAST + 1],
+  *INSTALL_NAMES[INSTALL_LAST + 1];
 
 
 

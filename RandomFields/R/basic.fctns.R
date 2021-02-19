@@ -112,6 +112,8 @@ extractRepeatedNames <- function(cn)  {
                substr(cnlow, 1, 4) == "value" |
                substr(cnlow, 1, 8) == "variable")
   ##  Print(cn, cnlow , cn[ans], ans, strsplit(cn[ans], ".", fixed=TRUE))
+
+  Print(ncol, cnlow, ans)
   
   if (length(ans) == 0) return(NULL)
   s <- strsplit(cn[ans], ".", fixed=TRUE)
@@ -125,6 +127,7 @@ extractRepeatedNames <- function(cn)  {
       }
     }
   }
+  return(ans)
 }
 
 
@@ -146,7 +149,7 @@ extractFromNames <- function(what="var", RFopt, cn, ncol=length(cn)) {
   
   varnames <- RFopt$coords[[paste0(what, "names")]]
   ans <- NULL
-  if (what == "var") { 
+  if (what == "var") {
     if ((vdim <- length(varnames)) >  0) {
       if (RFopt$general$vdim_close_together)
         stop("'vdim_close_together' must be FALSE")
@@ -167,6 +170,7 @@ extractFromNames <- function(what="var", RFopt, cn, ncol=length(cn)) {
     }
     if (length(ans) == 0) {
       ans <- extractRepeatedNames(cn)
+      Print(ans)
       if (length(ans) == 0) return(NULL)      
     }
   } else { ## "coord"
@@ -191,6 +195,7 @@ extractFromNames <- function(what="var", RFopt, cn, ncol=length(cn)) {
 
 S <- function(x) if (length(x) > 1) "s" else ""
 ARE <- function(x) if (length(x) > 1) "are" else "is"
+HAVE <- function(x) if (length(x) > 1) "have" else "has"
 
 
 data.columns <- function(data, model=NULL, xdim=0, x=NULL,
@@ -232,7 +237,7 @@ data.columns <- function(data, model=NULL, xdim=0, x=NULL,
   if (length(vdim) == 0) vdim <- 0
   repet <- 0
   if (!missing(model) && !is.null(model)) {
-    str(model)
+##    str(model)
     M <- PrepareModel2(model=model, params=params,
                        x=x, ...,  data=orig.data, xdim=xdim,
                        return_transform = return_transform)

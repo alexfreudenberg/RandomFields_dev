@@ -1,11 +1,11 @@
 
-######exportPattern("^[^\\.]")
+#########exportPattern("^[^\\.]")
 
 export(cholx, cholPosDef, Print, solvex, solvePosDef, chol2mv, tcholRHS,
        crossprodx,
        colMax, rowMeansx, rowProd, SelfDivByRow, quadratic, dotXV,
        sleep.milli, sleep.micro,
-       hostname, pid, cpus, threads, cores, cores1,
+       hostname, pid, 
        FileExists, LockRemove, WaitOthers,
        sortx, orderx,
        gauss, matern, nonstwm, whittle,
@@ -21,9 +21,11 @@ export(cholx, cholPosDef, Print, solvex, solvePosDef, chol2mv, tcholRHS,
 useDynLib(RandomFieldsUtils, .registration = TRUE, .fixes = "C_")
 #useDynLib(spam)
 
-importFrom("utils", "str", "packageDescription", "contrib.url", "read.table")
+importFrom("utils", "str", "packageDescription", "contrib.url", "read.table",
+           "install.packages")
 importFrom("methods", "hasArg", "is")
 importFrom("grDevices", "dev.off")
+importFrom("parallel", "detectCores")
 
 S3method(print, RFopt)
 S3method(summary, RFopt)

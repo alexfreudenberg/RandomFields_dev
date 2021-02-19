@@ -73,7 +73,7 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 model <- RMgauss(scale=exp(rate=1))
 x <- seq(0,10,0.02)
 n <- 10
-\dontshow{if(RFoptions()$internal$examples_reduced){warning("reduced 'n'"); n<-1}} 
+\dontshow{if(RFoptions(getoptions_="internal")$examples_red){if (RFoptions(getoptions_="messages")$warn_examples_red)warning("reduced 'n'"); n<-1}} 
 for (i in 1:n) {  
   readline(paste("Simulation no.", i, ": press return", sep=""))
   RFoptions(seed = i)

@@ -30,7 +30,7 @@ y <- x <- seq(0, 10, len=256) ## currently does not work
 T <- c(0, 0.02, 1275)
 col <- c(topo.colors(300)[1:100], cm.colors(300)[c((1:50) * 2,
          101:150)])
-%\dontshow{if(RFoptions()$internal$examples_red){warning("reduced x,y,T")
+%\dontshow{if(RFoptions(getoptions_="internal")$examples_red && RFoptions(getoptions_="messages")$warn_examples_red){warning("reduced x,y,T")
 y <- x <- seq(0, 10, len=5)
 T <- c(0, 0.02, 4)
 %}}
@@ -46,7 +46,7 @@ plot(z, MARGIN.movie=3) # add 'file="ci.avi"' to get it stored
 y <- x <- seq(0, 10,len = 256)
 T <- c(0, 0.02, 1275)
 col <- c(topo.colors(300)[1:100], cm.colors(300)[c((1:50) * 2, 101:150)]) 
-\dontshow{if(RFoptions()$internal$examples_red){warning("reduced x,y,T"); 
+\dontshow{if(RFoptions(getoptions_="internal")$examples_red){if(RFoptions(getoptions_="messages")$warn_examples_red) warning("reduced x,y,T"); 
 y <- x <- seq(0, 10,len = 10) 
 T <- c(0, 0.02, 4)
 }}
@@ -69,12 +69,12 @@ save(file=paste(basicname, "/", basicname, ".dat", sep=""), z) # OK
 ### Example 16 in Schlather (2010)
 intens <- 1000 ## takes a huge amount of time; take smaller values
 len <- 81
-\dontshow{if(RFoptions()$internal$examples_red){warning("modified intens & len");intens<-3;len<-4}}
+\dontshow{if(RFoptions(getoptions_="internal")$examples_red){if(RFoptions(getoptions_="messages")$warn_examples_red) warning("modified intens & len");intens<-3;len<-4}}
 y <- x <- seq(-3, 3, len=len)
 T <- seq(0, 0.075, len=len)
 col <- c(topo.colors(300)[1:100], cm.colors(300)[c((1:50) * 2,
 101:150)])
-\dontshow{if(RFoptions()$internal$examples_red){warning("reduced 'intens'"); intens<-3}}
+\dontshow{if(RFoptions(getoptions_="internal")$examples_red){if(RFoptions(getoptions_="messages")$warn_examples_red) warning("reduced 'intens'"); intens<-3}}
 model <- RMstp(M=matrix(nc=3, rep(0, 9)),
                S=RMetaxxa(E=c(1, 1, 1), alpha = -2 * pi,
                           A=t(matrix(nc=3, c(2, 0, 0, 1, 1 , 0, 0, 0, 0)))),

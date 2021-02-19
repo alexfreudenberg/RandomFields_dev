@@ -161,4 +161,57 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
   V N(AV AN, BV BN, CV CN, DV DN, EV EN, FV FN, GV GN, HV HN, IV IN, JV JN);
 
 
+#define CALL11(V, N, AV, AN, BV, BN, CV, CN, DV, DN, EV, EN, FV, FN, GV, GN, HV, HN, IV, IN, JV, JN, KV, KN) \
+  /* N##_type Ext_##N = NULL; */					\
+  attribute_hidden V RU_##N(AV AN, BV BN, CV CN, DV DN, EV EN, FV FN, GV GN, HV HN, IV IN, JV JN, KV KN) { \
+  static N##_type fun = NULL;						\
+  if (fun == NULL) fun = (N##_type) R_GetCCallable(MY_PACKAGE, #N);	\
+  return fun(AN, BN, CN, DN, EN, FN, GN, HN, IN, JN, KN); }		      
+#define DECLARE11(V, N, AV, AN, BV, BN, CV, CN, DV, DN, EV, EN, FV, FN, GV, GN, HV, HN, IV, IN, JV, JN, KV, KN) \
+  typedef V (*N##_type)(AV AN, BV BN, CV CN, DV DN, EV EN, FV FN, GV GN, HV HN, IV IN, JV JN, KV KN); \
+  /* extern N##_type Ext_##N; */					\
+  attribute_hidden V RU_##N(AV AN, BV BN, CV CN, DV DN, EV EN, FV FN, GV GN, HV HN, IV IN, JV JN, KV KN); \
+  V N(AV AN, BV BN, CV CN, DV DN, EV EN, FV FN, GV GN, HV HN, IV IN, JV JN, KV KN);
+
+
+#define CALL12(V, N, AV, AN, BV, BN, CV, CN, DV, DN, EV, EN, FV, FN, GV, GN, HV, HN, IV, IN, JV, JN, KV, KN, LV, LN) \
+  /* N##_type Ext_##N = NULL; */					\
+  attribute_hidden V RU_##N(AV AN, BV BN, CV CN, DV DN, EV EN, FV FN, GV GN, HV HN, IV IN, JV JN, KV KN, LV LN) { \
+  static N##_type fun = NULL;						\
+  if (fun == NULL) fun = (N##_type) R_GetCCallable(MY_PACKAGE, #N);	\
+  return fun(AN, BN, CN, DN, EN, FN, GN, HN, IN, JN, KN, LN); }		      
+#define DECLARE12(V, N, AV, AN, BV, BN, CV, CN, DV, DN, EV, EN, FV, FN, GV, GN, HV, HN, IV, IN, JV, JN, KV, KN, LV, LN) \
+  typedef V (*N##_type)(AV AN, BV BN, CV CN, DV DN, EV EN, FV FN, GV GN, HV HN, IV IN, JV JN, KV KN, LV LN); \
+  /* extern N##_type Ext_##N; */					\
+  attribute_hidden V RU_##N(AV AN, BV BN, CV CN, DV DN, EV EN, FV FN, GV GN, HV HN, IV IN, JV JN, KV KN, LV LN); \
+  V N(AV AN, BV BN, CV CN, DV DN, EV EN, FV FN, GV GN, HV HN, IV IN, JV JN, KV KN, LV LN);
+
+#define CALL13(V, N, AV, AN, BV, BN, CV, CN, DV, DN, EV, EN, FV, FN, GV, GN, HV, HN, IV, IN, JV, JN, KV, KN, LV, LN, MV, MN) \
+  /* N##_type Ext_##N = NULL; */					\
+  attribute_hidden V RU_##N(AV AN, BV BN, CV CN, DV DN, EV EN, FV FN, GV GN, HV HN, IV IN, JV JN, KV KN, LV LN, MV MN) { \
+  static N##_type fun = NULL;						\
+  if (fun == NULL) fun = (N##_type) R_GetCCallable(MY_PACKAGE, #N);	\
+  return fun(AN, BN, CN, DN, EN, FN, GN, HN, IN, JN, KN, LN, MN); }	
+#define DECLARE13(V, N, AV, AN, BV, BN, CV, CN, DV, DN, EV, EN, FV, FN, GV, GN, HV, HN, IV, IN, JV, JN, KV, KN, LV, LN, MV, MN) \
+  typedef V (*N##_type)(AV AN, BV BN, CV CN, DV DN, EV EN, FV FN, GV GN, HV HN, IV IN, JV JN, KV KN, LV LN, MV MN); \
+  /* extern N##_type Ext_##N; */					\
+  attribute_hidden V RU_##N(AV AN, BV BN, CV CN, DV DN, EV EN, FV FN, GV GN, HV HN, IV IN, JV JN, KV KN, LV LN, MV MN); \
+  V N(AV AN, BV BN, CV CN, DV DN, EV EN, FV FN, GV GN, HV HN, IV IN, JV JN, KV KN, LV LN, MV MN);
+
+
+
+#define CALL14(V, N, AV, AN, BV, BN, CV, CN, DV, DN, EV, EN, FV, FN, GV, GN, HV, HN, IV, IN, JV, JN, KV, KN, LV, LN, MV, MN, NV, NN) \
+  /* N##_type Ext_##N = NULL; */					\
+  attribute_hidden V RU_##N(AV AN, BV BN, CV CN, DV DN, EV EN, FV FN, GV GN, HV HN, IV IN, JV JN, KV KN, LV LN, MV MN, NV NN) { \
+  static N##_type fun = NULL;						\
+  if (fun == NULL) fun = (N##_type) R_GetCCallable(MY_PACKAGE, #N);	\
+  return fun(AN, BN, CN, DN, EN, FN, GN, HN, IN, JN, KN, LN, MN, NN); }	
+#define DECLARE14(V, N, AV, AN, BV, BN, CV, CN, DV, DN, EV, EN, FV, FN, GV, GN, HV, HN, IV, IN, JV, JN, KV, KN, LV, LN, MV, MN, NV, NN) \
+  typedef V (*N##_type)(AV AN, BV BN, CV CN, DV DN, EV EN, FV FN, GV GN, HV HN, IV IN, JV JN, KV KN, LV LN, MV MN, NV NN); \
+  /* extern N##_type Ext_##N; */					\
+  attribute_hidden V RU_##N(AV AN, BV BN, CV CN, DV DN, EV EN, FV FN, GV GN, HV HN, IV IN, JV JN, KV KN, LV LN, MV MN, NV NN); \
+  V N(AV AN, BV BN, CV CN, DV DN, EV EN, FV FN, GV GN, HV HN, IV IN, JV JN, KV KN, LV LN, MV MN, NV NN);
+
+
+
 #endif

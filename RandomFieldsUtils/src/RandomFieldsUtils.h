@@ -50,9 +50,8 @@ extern "C" {
   
   SEXP RFoptions(SEXP options);
 
-  void loadoptions();
+ void loadoptions();
   void detachoptions();
-  SEXP attachoptions();
   
   SEXP sortX(SEXP Data, SEXP From, SEXP To, SEXP NAlast);
   SEXP orderX(SEXP Data, SEXP From, SEXP To, SEXP NAlast);
@@ -75,7 +74,11 @@ extern "C" {
   SEXP crossprodX(SEXP X, SEXP Y, SEXP mode);
 
   SEXP DebugCall();
-
+  SEXP getPackagesToBeInstalled(SEXP Force);
+  void setCPUs(int *n);
+  void recompilationNeeded(int *n);
+  SEXP AVXmessages(SEXP pkgs);
+ 
 #ifdef __cplusplus
 }
 #endif

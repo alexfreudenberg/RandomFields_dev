@@ -46,8 +46,8 @@ stabletest <- function(alpha, theta, size=512) {
 
 alphas <- seq(1.52, 2.0, 0.02) 
 thetas <- seq(0.05, 3.5, 0.05)
-\dontshow{if (RFoptions()$internal$examples_reduced) {
-   warning("reduced size of alphas and thetas")
+\dontshow{if (RFoptions(getoptions_="internal")$examples_red) {
+ if (RFoptions(getoptions_="messages")$warn_examples_red) warning("reduced size of alphas and thetas")
    alphas <- seq(1.52, 2.0, 0.3) 
    thetas <- seq(0.1, 3.5, 2)
 }

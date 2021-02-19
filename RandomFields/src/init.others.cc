@@ -1065,7 +1065,7 @@ void includeOtherModels() {
 		 false, SCALAR, 2, (ext_bool) false, MON_MISMATCH);
   kappanames("boxcox", REALSXP,
 	     "superpos", INTSXP, "maxlines", INTSXP, "mar_distr", INTSXP, 
-	     "mar_options", REALSXP, "additive", INTSXP);
+	     "mar_param", REALSXP, "additive", INTSXP);
   //  addCov(Id, NULL, IdInverse);
   //  addCov(nonstatId);
   change_sortof(GAUSS_BOXCOX, ANYPARAM);

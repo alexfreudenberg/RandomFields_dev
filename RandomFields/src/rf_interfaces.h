@@ -70,8 +70,8 @@ int struct_linearpart(model *cov, model **newmodel);
 #define PREDICT_NA_VAR 1
 #define PREDICT_BETASSEPARATE 2
 #define PREDICT_IGNORETREND 3
-#define PREDICT_GIVEN 4
-//#define PREDICT_GIVENIDX 5
+#define PREDICT_STANDARDIZED_L 4
+#define PREDICT_GIVEN 5
 //#define PREDICT_PREDICTIDX 6
 #define PREDICT_CONDITIONING 0
 #define PREDICT_PREDICT 1

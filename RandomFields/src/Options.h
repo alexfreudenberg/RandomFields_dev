@@ -447,7 +447,7 @@ struct internal_options{
 #define NOTE_WITHOUT_HINT 2
 #define NOTE_WITH_HINT 3
 
-#define messagesN 28
+#define messagesN 29
 extern const char * messages[messagesN];
 #define MESSAGES_NEWANISO 2
 #define MESSAGES_ONGRID 8
@@ -463,7 +463,7 @@ struct messages_options{
     warn_zenit, // not used anymore
     warn_constant, warn_negvar,  help_onlyvar, 
     warn_modus_operandi, warn_singlevariab, help_mle,
-    warn_raw_covariates, help_addNA, help_help;
+    warn_raw_covariates, help_addNA, help_help, warn_examples_reduced;
   usr_bool warn_mathdef  // obsolete?!
     ;//   
   int  note_detection, note_coordinates, warn_seed, vec_len;
@@ -474,7 +474,7 @@ struct messages_options{
       true, true, true, true, true,		\
       true, true, true, 		\
       true, true, true, \
-      true, true, true,				\
+      true, true, true,	true,			\
       Nan,					\
       NOTE_WITH_HINT, NOTE_WITH_HINT, NOTE_WITH_HINT, 10}
 

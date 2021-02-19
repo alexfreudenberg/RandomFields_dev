@@ -167,7 +167,8 @@ int setgrid(coord_type xgr, double *x, int spatialdim) {
   /*
   if (glob al->internal.examples_reduced) {    
     for (d=0; d<spatialdim; d++) {
-       if (xgr[d][XLENGTH] > gl obal->internal.examples_reduced) { // OK
+       if (xgr[d][XLENGTH] > gl obal->internal.examples_reduced && // OK
+gp->wwarn_reduced) { 
 	warning("the size of the example has been reduced");
 	xgr[d][XLENGTH] = glo bal->internal.examples_reduced;
       }
@@ -2733,7 +2734,6 @@ void set_system_domain(system_type *sys, domain_type dom) {
 }
 
 #define areIdxDiff(data) {				\
-  /* printf */							\
   if (false) {   SEXP Ans1;						\
     PROTECT(Ans1 = allocVector(LGLSXP, 1));				\
     LOGICAL(Ans1)[0] = true;					\
@@ -2775,8 +2775,8 @@ SEXP areCoordIdxDifferentFromFormer(SEXP Idx) areIdxDiff(coord)
     return Ans1;}							\
 									\
     KEY_type *KT = KEYT(); assert(KT != NULL);				\
-    /*   printf("enter"#data" %d %d\n", KT->n_##data##_names, KT->data##_names != NULL); */ \
-     assert((KT->n_##data##_names == 0) xor (KT->data##_names != NULL)); \
+    /*//   printf("enter"#data" %d %d\n", KT->n_##data##_names, KT->data##_names != NULL); */ \
+    assert((KT->n_##data##_names == 0) xor (KT->data##_names != NULL)); \
     int n = length(Names);						\
     bool different = n != KT->n_##data##_names;	\
     if (!false) for (int i=0; i<n && !different; i++)			\
@@ -2793,7 +2793,7 @@ SEXP areCoordIdxDifferentFromFormer(SEXP Idx) areIdxDiff(coord)
 	  int nch = STRLEN((char*) CHAR(STRING_ELT(Names, i)));		\
 	  KT->data##_names[i] = (char *) MALLOC(sizeof(char) * (nch+1)); \
 	  STRCPY(KT->data##_names[i], (char*) CHAR(STRING_ELT(Names, i))); \
-	  /*  printf("nch=%d %s %s %d\n",nch, (char*) CHAR(STRING_ELT(Names, i)),  KT->data##_names[i], KT->n_##data##_names); */  \
+	  /* // printf("nch=%d %s %s %d\n",nch, (char*) CHAR(STRING_ELT(Names, i)),  KT->data##_names[i], KT->n_##data##_names); */  \
 	  }								\
 	   }								\
 	    }								\
@@ -2801,7 +2801,7 @@ SEXP areCoordIdxDifferentFromFormer(SEXP Idx) areIdxDiff(coord)
 	     PROTECT(Ans = allocVector(LGLSXP, 1));			\
 	     LOGICAL(Ans)[0] = different;				\
 	     UNPROTECT(1);						\
-	     /* printf("leave %d %d", KT->n_##data##_names, KT->data##_names != NULL); */  \
+	     /*// printf("leave %d %d", KT->n_##data##_names, KT->data##_names != NULL); */ \
 return Ans;								\
   }
 

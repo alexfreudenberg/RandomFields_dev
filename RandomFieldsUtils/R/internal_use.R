@@ -147,7 +147,7 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
       ##s topifnot(RFoptions()$basic$print <=2)
       ##     Print(.fct.list[.idx], package)
       if (catcherror)
-        .time <- system.time(.res <- try(do.call(utils::example, 
+        .time <- system.time(.res <- try(do.call(utils::example,  ## OK
                                                  list(.fct.list[.idx], ask=.ask,
                                                       package=package,
                                                     echo=.echo, local=.local))))

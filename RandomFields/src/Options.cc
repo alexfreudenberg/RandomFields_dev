@@ -462,7 +462,8 @@ const char * messages[messagesN] =  {
   "warn_seed", "warn_modus_operandi", // 17.11.20 to be deleted in near future
   "warn_singlevariab", "help_mle", "note_detection",
   "warn_raw_covariates", "help_addNA", "help_help", "warn_ambiguous",
-  "vec_len" // name in str()
+  "vec_len",// name in str(),
+  "warn_examples_reduced"
 };
 
 const char *coords[coordsN] =
@@ -1173,7 +1174,8 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
       case 25: wp->help_help = LOGI; break;
       case 26: wp->warn_ambiguous = LOGI;       break;
       case 27: wp->vec_len = POSINT;       break;
-    default: BUG; 
+      case 28: wp->warn_examples_reduced = LOGI; break;
+   default: BUG; 
       }
     } else {
       switch(j) {
@@ -1694,6 +1696,7 @@ void getoptions(SEXP sublist, int i, bool local) {
     ADD(ScalarLogical(p->help_help));
     AddScalarLogInt(p->warn_ambiguous);
     AddScalarLogInt(p->vec_len);
+    ADD(ScalarLogical(p->warn_examples_reduced));
   }
    break;
 

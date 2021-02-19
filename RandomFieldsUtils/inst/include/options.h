@@ -12,7 +12,7 @@
 #define TIME_AVAILABLE 1
 #endif
 
-#define basicN 12
+#define basicN 14
 // IMPORTANT: all names of basic must be have least 3 letters !!!
 extern const char *basic[basicN];
 #define BASIC_WARN_OPTION 9
@@ -21,14 +21,16 @@ struct basic_options {
   int  
   Rprintlevel, Cprintlevel, seed, cores, warn_unknown_option,
     LaMaxTakeIntern;
+  install_modes install;
   bool skipchecks, asList /* hidden:verbose */, kahanCorrection, helpinfo,
-   warn_parallel;
+    warn_parallel, installPackages;
   la_modes la_usr, la_mode;
 } basic_options;
 #define basic_START \
   { R_PRINTLEVEL, C_PRINTLEVEL, NA_INTEGER, INITCORES, WARN_UNKNOWN_OPTION_ALL,\
-      MAXINT, 							\
-      false, true, false, true, true,					\
+      MAXINT, \
+      Iask,							\
+      false, true, false, true, true, false, 			\
       LA_AUTO, LA_R /*LA_R  */					\
       }
 
@@ -101,6 +103,7 @@ typedef void (*deleteoptions_fctn) (bool);
 void SetLaMode();
 void SetLaMode(la_modes);
 void solve_DELETE0(solve_storage *x);
+void resetInstalled();
 
 
 #endif

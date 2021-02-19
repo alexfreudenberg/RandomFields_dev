@@ -250,6 +250,7 @@ SEXP gauss_linearpart(SEXP model_reg, SEXP Set){
       int totptsvdim = LoctotalpointsY(cov) * vdim;
       SEXP partY , partX;
       PROTECT(partY = allocVector(REALSXP, totptsvdim));
+      assert(L->YhatWithoutNA[set] != NULL);
       MEMCOPY(REAL(partY), L->YhatWithoutNA[set], 
 	      totptsvdim * sizeof(double));
       SET_VECTOR_ELT(Y, set, partY);
@@ -268,7 +269,8 @@ SEXP gauss_linearpart(SEXP model_reg, SEXP Set){
   } else {
     cov->base->set = element - 1;
     int totptsvdim = LoctotalpointsY(cov) * vdim;
-   
+
+    assert(L->YhatWithoutNA[cov->base->set] != NULL)
     PROTECT(Y = allocVector(REALSXP, totptsvdim));
     MEMCOPY(REAL(Y), 
 	    L->YhatWithoutNA[cov->base->set], totptsvdim * sizeof(double));
@@ -317,6 +319,7 @@ void get_logli_residuals(model *cov, double *work, double *ans,
     nrow = NROW_OUT_OF(datasets),
     ndata = nrow * ncol,
     totptsvdim = nrow * vdim;
+  assert(nrow == LoctotalpointsY(cov));
   double *X = L->X[cov->base->set],
     *pres = ans,
     *data = SET_OUT_OF(datasets);
@@ -353,9 +356,11 @@ void get_logli_residuals(model *cov, double *work, double *ans,
       }
     }
     int set = cov->base->set;
+    double *tmp = L->YhatWithoutNA[set];
+    assert(tmp != NULL);
     for (z=r=0; r<repet; r++)
       for (int k=0; k<totptsvdim; k++)
-	pres[z++] -= L->YhatWithoutNA[set][k];
+	pres[z++] -= tmp[k];
   }
   
   if (L->fixedtrends) {
@@ -564,6 +569,7 @@ void get_F(model *cov, double *work, double *ans) {
     nrow = NROW_OUT_OF(datasets),
     //    ndata = nrow * ncol,
     totptsvdim = nrow * vdim; assert(false); // predict??!
+  assert(nrow == LoctotalpointsY(cov));
   double *X = L->X[cov->base->set],
     *pres = ans,
     *data = SET_OUT_OF(datasets);
@@ -597,9 +603,11 @@ void get_F(model *cov, double *work, double *ans) {
 	  for (int k=0; k<totptsvdim; k++) pres[z++] += work[k];
       }
     }
+    double *tmp = L->YhatWithoutNA[cov->base->set];
+    assert(tmp != NULL);
     for (z=r=0; r<repet; r++)
       for (int k=0; k<totptsvdim; k++)
-	pres[z++] += L->YhatWithoutNA[cov->base->set][k];
+	pres[z++] += tmp[k];
   }
   
   if (L->fixedtrends) {
@@ -1118,6 +1126,7 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, INFO, model *cov,
       *val = L->C,
       *YhatWithoutNA = L->YhatWithoutNA[set],
       *Xdata = L->X[set] + betatot * totptsvdim;
+    assert(YhatWithoutNA != NULL);
   
     if (L->dettrend_has_nas || L->nas_boxcox) {
       MEMCOPY(Xdata, SET_OUT_OF(datasets), ndata * sizeof(double));
@@ -1935,14 +1944,16 @@ getStorage(L ,   likelihood);
       cov->base->set = set;
       double 
 	*data = SET_OUT_OF(datasets),
-	*YhatWithoutNA = L->YhatWithoutNA[set];	    
+	*YhatWithoutNA = L->YhatWithoutNA[set];
+      assert(YhatWithoutNA != NULL);
       int  m, p,
 	ncol = NCOL_OUT_OF(datasets),
 	repet = ncol / vdim,
 	nrow = NROW_OUT_OF(datasets),
 	ndata = nrow * ncol,
 	totptsvdim = nrow * vdim;
-      
+      assert(nrow == LoctotalpointsY(cov));
+
       L->X[set] = 
 	(double*) CALLOC((Long)(betatot + repet) * vdim * LoctotalpointsY(cov), 
                            sizeof(double)); // auch die Y-Werte; vdim included!

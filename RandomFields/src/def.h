@@ -89,7 +89,22 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define LOCAL_ERRLOC_MSG char ERRMSG[LENERRMSG];
 #define LOCAL_ERRORSTRING
 
+#define DEF_SAVE_ERROR model * errcov_save = NULL
+#define SAVE_ERROR							\
+  if (errcov_save != NULL &&						\
+      cov->base->error_causing_cov->zaehler <= errcov_save->zaehler) 	\
+    /* the deeper the better */						\
+    {} else errcov_save = cov->base->error_causing_cov
+#define RETURN_SAVED_ERR { SAVE_ERROR;		\
+  cov->err = errcov_save->err;			\
+  cov->base->error_causing_cov = errcov_save;	\
+  STRCPY(cov->err_msg, errcov_save->err_msg);	\
+   return cov->err;}
 
+//
+//#define DEF_SAVE_ERROR
+//#define SAVE_ERROR
+//#define RETURN_SAVED_ERR RETURN_ERR(err)
 
 
 #endif

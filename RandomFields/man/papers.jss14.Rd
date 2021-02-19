@@ -25,7 +25,7 @@
   
 
 \examples{\dontshow{StartExample()}
-\dontshow{if (RFoptions()$internal$examples_reduced) RFoptions(modus_operandi="sloppy")}
+\dontshow{if (RFoptions(getoptions_="internal")$examples_red && RFoptions(getoptions_="messages")$warn_examples_red) RFoptions(modus_operandi="sloppy")}
 \dontrun{
                ###########################################
                ##  SECTION 4: UNCONDITIONAL SIMULATION  ##
@@ -125,7 +125,7 @@ PT <- weather[ , 1 : 2]  ## full data set takes more than
 ## transformation of earth coordinates to Euclidean coordinates
 Dist.mat <- as.vector(RFearth2dist(weather[ , 3 : 4]))
 All <- TRUE
-\dontshow{if(RFoptions()$internal$examples_reduced){warning("reduced data set")
+\dontshow{if(RFoptions(getoptions_="internal")$examples_red){if(RFoptions(getoptions_="messages")$warn_examples_red) warning("reduced data set")
 All <- 1:10
 PT <- weather[All , 1 : 2] 
 Dist.mat <- as.vector(RFearth2dist(weather[All , 3 : 4]))

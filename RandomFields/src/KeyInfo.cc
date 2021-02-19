@@ -42,8 +42,8 @@ bool PMI_print_dollar = !true,
   PMI_print_pgs = !true, 
   PMI_print_details = !true,
   PMI_print_structure = true,
-  PMI_print_loc = true,
-  PMI_print_fields = true;
+  PMI_print_loc = !true,
+  PMI_print_fields = !true;
 int  PMI_print_rect = 1;  // 0, 1, 2
 int MAX_PMI = 5;
 
@@ -354,8 +354,6 @@ SEXP Param(model *cov, void* p, int nrow, int ncol, SEXPTYPE type,
 }
 
 SEXP Param(model *cov, int i, SEXPTYPE type,  bool drop, bool C_conform) {
-  //  printf("name = %s.%s %dx%d\n", NAME(cov),  DefList[COVNR].kappanames[i], cov->nrow[i], cov->ncol[i]);
-   
   return Param(cov, (void*) cov->px[i], cov->nrow[i], cov->ncol[i], type, drop,
 	       C_conform);
 }
@@ -676,7 +674,6 @@ getStorage(S0 ,       localCE);
   }
 
   if (prL >= 4) {
-   //  printf("k=%d\n", k);
     SET_STRING_ELT(nameMvec, k, mkChar("logspeed"));
     SET_VECTOR_ELT(Model, k++, ScalarReal(cov->logspeed));
 
@@ -700,8 +697,6 @@ getStorage(S0 ,       localCE);
              
     SET_STRING_ELT(nameMvec, k, mkChar("finiterange"));  
     SET_VECTOR_ELT(Model, k++, ScalarExtendedLogical(cov->finiterange));
-      
-    //  printf("ek=%d\n", k);
   }
   
   if (prL>=5) {
@@ -820,12 +815,9 @@ void Path(model *cov, model *sub) {
   defn *C = DefList + COVNR;
   const char *sep="-> ";
   
-  //printf("%d %ld %ld\n", cov->calling == NULL, cov, cov->calling);
-
   if (cov->calling == NULL) {
     PRINTF(" *** "); 
   } else {
-    // if (cov->calling == cov) crash();
     assert(cov->calling != cov);
     Path(cov->calling, cov);
   }
@@ -857,7 +849,6 @@ void Path(model *cov, model *sub) {
       return;
     }
   }
-
 
   PRINTF("%s (UNKNOWN,%d)%s", C->nick, cov->zaehler, sep);
 }
@@ -1017,14 +1008,11 @@ void pmi(model *cov, char all_subs, int level, int maxlevel,
 #define MNlength 4
   char MN[Forbidden + 1][MNlength], name[100];
 
-  //if (storage != NULL)
-  //printf("storage=%d %s %s \n", stor_level,NAME(storage[stor_level]),NAME(cov));
   if (storage != NULL && storage[stor_level] != cov) return;
  
   //int n = 2;
   if (level > maxlevel) {
     leer(level); PRINTF("'%s' [%d] left out\n", NAME(cov), cov->zaehler);
-    // printI(cov);
     return;
   }
 
@@ -1086,7 +1074,6 @@ void pmi(model *cov, char all_subs, int level, int maxlevel,
 	PRINTF("list [%d]\n", cov->nrow[i]);
 	if (k_end > k_max) k_end = k_max;
 	for (int k=0; k<k_end; k++) {
-	  //	  printf("p->lpx[k]=%ld\n", p->lpx[k]);
 	  leer(level + 2); 
    	  if (p->ncol[k]==1) {
             if (p->nrow[k] > 1) { PRINTF("[%d] ", p->nrow[k]); }
@@ -1179,7 +1166,7 @@ getStorage(S0 ,     localCE);
 			     q[0].cube.L, q[1].cube.L, q[2].cube.L,q[3].cube.L);
       break;
     default :
-      printf("%.50s SlocalCE->q2 = %d\n", NAME(cov), which); // ok
+      PRINTF("%.50s SlocalCE->q2 = %d\n", NAME(cov), which); 
       BUG;
     }
   } else if (cov->qlen > 0) {

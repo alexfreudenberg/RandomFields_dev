@@ -460,10 +460,11 @@ rfeval <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
    return(res)
 }
 
-
+## from https://stackoverflow.com/questions/6979917/how-to-unload-a-package-without-restarting-r
+ 
 
 RFcovmatrix <- function(model, x, y = NULL, z = NULL, T=NULL, grid,
-                        params, distances, dim,  ...) {  
+                        params, distances, dim,  ...) {
   rfeval(model=model, x=x, y=y, z=z, T=T, grid=grid, 
          distances=distances, dim=dim, params=params, ..., fctncall="CovMatrix",
          reg=MODEL_COVMATRIX)

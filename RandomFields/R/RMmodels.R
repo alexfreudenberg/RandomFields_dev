@@ -4187,7 +4187,7 @@ RPdirect <- new(CLASS_RM,
 
 
 
-RPhyperplane <- function(phi, boxcox, superpos, maxlines, mar_distr, mar_param, additive) {
+RPhyperplane <- function(phi, boxcox, superpos, maxlines, mar_distr, mar_options, additive) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
@@ -4199,8 +4199,8 @@ RPhyperplane <- function(phi, boxcox, superpos, maxlines, mar_distr, mar_param, 
 	par.model[['maxlines']] <- CheckArg(maxlines, subst, FALSE)
   if (hasArg('mar_distr') && !is.null(subst <- substitute(mar_distr))) 
 	par.model[['mar_distr']] <- CheckArg(mar_distr, subst, FALSE)
-  if (hasArg('mar_param') && !is.null(subst <- substitute(mar_param))) 
-	par.model[['mar_param']] <- CheckArg(mar_param, subst, FALSE)
+  if (hasArg('mar_options') && !is.null(subst <- substitute(mar_options))) 
+	par.model[['mar_options']] <- CheckArg(mar_options, subst, FALSE)
   if (hasArg('additive') && !is.null(subst <- substitute(additive))) 
 	par.model[['additive']] <- CheckArg(additive, subst, FALSE)
   

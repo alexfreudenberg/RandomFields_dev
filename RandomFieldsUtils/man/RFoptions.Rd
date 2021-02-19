@@ -17,20 +17,54 @@
  and the simulation of random fields
 }
 \usage{
- RFoptions(..., no.readonly = TRUE, no.class=FALSE)
+ RFoptions(..., no.readonly = TRUE, no.class=FALSE, install.control=NULL)
 }
 \arguments{
- \item{...}{arguments in \code{tag = value} form, or a list of tagged
- values.}
- \item{no.readonly}{If \command{\link{RFoptions}} is called without
-   argument then all arguments are returned in a list. If
-   \code{no.readonly=TRUE} then only rewritable arguments are returned.
-   Currently all arguments are rewritable. So, no effect for package
-   \pkg{RandomFieldsUtils}
- }
- \item{no.class}{logical. If \code{TRUE} the list is returned without
-   class specification.
- }
+  \item{...}{arguments in \code{tag = value} form, or a list of tagged
+    values.}
+  \item{no.readonly}{If \command{\link{RFoptions}} is called without
+    argument then all arguments are returned in a list. If
+    \code{no.readonly=TRUE} then only rewritable arguments are returned.
+    Currently all arguments are rewritable. So, no effect for package
+    \pkg{RandomFieldsUtils}
+  }
+  \item{no.class}{logical. If \code{TRUE} the list is returned without
+    class specification.
+  }
+  \item{install.control}{list, containing any argument 
+    \command{\link[utils]{install.packages}} except \code{type}.
+    The argument \code{configure.args} (i) is merged with the presetting
+    of \command{RFoptions}; (ii) may not contain \code{'CXX_FLAGS'}
+    which should be passed as an extra argument with the list.
+    
+    Note that if this argument is given (even with value \code{NULL}),
+    an immediate installation takes place. In case the user tries to
+    force to install 0 packages, an overview over the packages is given.
+    If the user is asked whether re-installation shall take place,
+    user can pass arguments to install.packages, e.g.,
+    \code{"repos=NULL, quiet=TRUE"}.
+    
+    If this argument is given, no further
+    argument may be passed to \command{RFoptions}.
+    
+    The arguments \code{verbose} and \code{quiet} also affect\code{RFoptions}.
+    
+    Additionally, the argument \code{force} has the following behaviour:
+    \itemize{
+      \item{\code{TRUE}}{
+	reinstallation of all attached libraries based on and including
+	\pkg{RandomFieldsUtils}
+      }
+      \item{\code{FALSE}}{In case some packages have to be re-installed
+	the user will be asked.
+      }
+      \item{not given}{
+	reinstallation of the attached libraries based on and including
+	\pkg{RandomFieldsUtils} that have not been tried yet in the
+	current session.
+      }
+    }
+  }
 }
 \details{
   The subsections below comment on\cr
@@ -60,7 +94,9 @@
       Number of cores for multicore algorithms;
       currently only used for the Cholesky decomposition.
       
-      Default : 1
+      Default : \code{1} if the package has been compiled with
+      standard flags of CRAN and
+      \code{0.75 * cores() + 0.25 * cpus()} else.
     }
     
     \item{\code{cPrintlevel}}{
@@ -94,7 +130,42 @@
 
       Default: \code{TRUE}
     }
+    
+    \item{\code{install}}{character. Only used by linux systems and
+      alike including macOS
+     The default by CRAN is that SIMD/AVX cannot be used at full extend.
+      \code{install} determines what the action if the compiled
+      version does not use the full CPU capacities.
+      The users usually use 
+      \describe{
+	\item{\code{"none"}}{no re-installation}
+	\item{\code{"ask"}}{asks whether the library should be reinstalled,
+	  using the full capacity of the CPU according to the package.}
+	\item{\code{"install"}}{install without asking}
+      }
+      Note that, in each session, a package can be reinstalled only.
+      This feature avoids trying to run jobs that cannot be done (e.g.\ due to
+      missing programs of the OS). See argument \code{install.control}
+      for overwriting this behaviour.
+      
+      Default: at starting point it is \code{"ask"} or \code{"none"},
+      but the value may change during the session.
+      
+%      The user can also indicate what whould be installed:
+%      \describe{
+%	\item{\code{"sse"}}{installs SSE}
+%	\item{\dots}
+%	\item{\code{"avx2"}}{installs AVX2}
+%      }
 
+    }
+
+    \item{\code{installPackages}}{logical. Read only.
+      Indicates whether packages are left to be re-installed.
+      \code{RFoptions(install="none")} sets it to \code{FALSE}.
+      \code{RFoptions(install="none", install="ask")} sets it to \code{TRUE}.
+    }
+    
     \item{\code{kahanCorrection}}{obsolete.
       logical. If \code{TRUE}, the Kahan summation algorithm is used for
       calculating scalar products.
@@ -501,10 +572,15 @@ try(cholx(M)) ## also fails
 
 %cholx(M) ## works
 
-# RFoptions(la_mode=LA_INTERN, pivot=PIVOT_AUTO)
+RFoptions(la_mode=LA_INTERN, pivot=PIVOT_AUTO)
 cholx(M) ## works
+RFoptions(la_mode=LA_R)
 
-RFoptions(la_mode=LA_AUTO, pivot=PIVOT_AUTO)
+
+RFoptions(solve_method="svd", pseudoinverse=TRUE)
+solvex(M)
+RFoptions(solve_method="method undefined", pseudoinverse=FALSE)
+
 }
 
 \keyword{spatial}

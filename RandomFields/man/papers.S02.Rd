@@ -24,7 +24,7 @@ RFoptions(seed=0, xi=1)
 ## seeds in the paper.
 
 x <- seq(0, 10, length=128)
-\dontshow{if(RFoptions()$internal$examples_red){warning("reduced <x>");x<-seq(0,10,length=4)}}
+\dontshow{if(RFoptions(getoptions_="internal")$examples_red){if(RFoptions(getoptions_="messages")$warn_examples_red) warning("reduced <x>");x<-seq(0,10,length=4)}}
 # Fig. 1-4
 \dontrun{\dontshow{plot(RFsimulate(RPsmith(RMgauss(s=1.5)), x, x))   # < 1 sec
 plot(RFsimulate(RPsmith(RMball(s=RRspheric(2, 3,
@@ -37,3 +37,4 @@ plot(RFsimulate(RPschlather(RMgauss()), x, x))    #  17 sec
 
 
 \keyword{spatial}
+## ){if (

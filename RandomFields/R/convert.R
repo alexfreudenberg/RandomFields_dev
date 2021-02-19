@@ -105,6 +105,7 @@ ExtractNames <- function(Names, data, dont.add.data, model, RFopt, dots, envir) 
 
       if (length(data.names) > 0) {   
         is.var  <- extractFromNames(RFopt=RFopt, cn=data.names)
+Print(is.var, data.names, RFopt)        
         if (is.matrix(is.var)) {
           is.var.eFN <- is.var
           is.var <- c(is.var)
@@ -936,12 +937,15 @@ PrepareModel2 <- function(model, ...,
     ##                                     und komplett extra behandelt wird  
     if (!dont.add.data) is.unclear <- setdiff(is.unclear, is.covariate)## mues-
     ##                                                     sen alle erkannt sein
-    if (length(is.unclear) > 0) { ## jetzt ohne factors und
+    if (FALSE && length(is.unclear) > 0) { ## jetzt ohne factors und
       ##                                       nur bei dont.add.data
-      envirTest <- new.env(parent=.Globalenvir)
+      ## 12.3.21 unklar wieso diese Zeilen
+      envirTest <- new.env(parent=.GlobalEnv)
       for (i in is.unclear) {
         n <-data.names[i]
         m <- get(n, envir=envir)
+        ## m[min durcg data1[ , if (simple) i else which(i == dn), drop=FALSE]
+        ##ersetzen
         assign(n, envir=envirTest, m[min(2, nrow(m)), , drop=FALSE]) # to get
         ## testing fast
       }
@@ -1039,8 +1043,7 @@ PrepareModel2 <- function(model, ...,
 
   if (any(M$add.na)) Help("addNA")
 
-  ##
-  Print(M, data,DataNames, return_transform && sum(genuine.formulae) ); 
+  ##  Print(M, data,DataNames, return_transform && sum(genuine.formulae) ); 
   
   M
 }
@@ -1198,7 +1201,7 @@ parseModel <- function(model, envir, envirDummies, add.na=NULL,
             model <- c(SYMBOL_MULT, tL, list(const))
           }
         }
-        Print(P, model)
+##        Print(P, model)
       } else { ## pure numbers (might be within matrix)
         if (length(C) > 1) {
           swaps <- 0 

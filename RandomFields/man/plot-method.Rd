@@ -339,7 +339,7 @@ persp(model, xlim=c(-10, 20), fctn.type="Variogram")
 from <- 0
 step <- .1 
 len <- 50  # nicer if len=100 %ok
-\dontshow{if(RFoptions()$internal$examples_red){warning("reduced 'len'"); len<-3}} 
+\dontshow{if(RFoptions(getoptions_="internal")$examples_red) { if (RFoptions(getoptions_="messages")$warn_examples_red)warning("reduced 'len'"); len<-3}}
 x1D <- GridTopology(from, step, len)
 x2D <- GridTopology(rep(from, 2), rep(step, 2), rep(len, 2))
 x3D <- GridTopology(rep(from, 3), rep(step, 3), rep(len, 3))
@@ -367,12 +367,12 @@ x <- seq(0, 10, 0.05)
 bins <- seq(from=0, by=.2, to=3)
 
 model <- RMexp()
-X <- RFsimulate(model, x=cbind(x))
+X <- RFsimulate(model, x=x)
 ev1 <- RFvariogram(data=X, bins=bins)
 plot(ev1)
 
 model <- RMexp(Aniso = cbind(c(10,0), c(0,1)))
-X <- RFsimulate(model, x=cbind(x,x))
+X <- RFsimulate(model, x=cbind(x,x), grid=TRUE)
 ev2 <- RFvariogram(data=X, bins=bins, phi=3)
 plot(ev2, model=list(exp = model))
 

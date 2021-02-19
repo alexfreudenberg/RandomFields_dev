@@ -91,12 +91,12 @@ extern "C" {
   DECLARE0(int, cpus)
   
   DECLARE1(void, getUtilsParam, utilsoption_type **, up)
-  DECLARE10(void, attachRFoptions, const char **, prefixlist, int, N, 
+  DECLARE14(void, attachRFoptions, char *, name,
+	    const char **, prefixlist, int, N, 
 	   const char ***, all, int *, allN, setoptions_fctn, set, 
-	   finalsetoptions_fctn, final, getoptions_fctn, get,
-	    deleteoptions_fctn, del,
-	   int, PLoffset,
-	   bool, basicopt)
+	    finalsetoptions_fctn, final, getoptions_fctn, get,
+	    deleteoptions_fctn, del, int, PLoffset, bool, basicopt,
+	    install_modes, avx_needs, install_modes, gpu_needs, Uint, avx_info)
   DECLARE2(void, detachRFoptions, const char **, prefixlist, int, N)
 
   DECLARE3(void, sorting, double*, data, int, len, usr_bool, NAlast)
@@ -150,6 +150,11 @@ install.packages("RandomFieldsUtils_0.5.21.tar.gz", configure.args="CXX_FLAGS=-m
 #else
 #define HAS_PARALLEL false
 #endif
+#if defined USEGPU
+#define HAS_GPU true
+#else
+#define HAS_GPU false
+#endif
 #if defined AVX2
 #define HAS_AVX2 true
 #else
@@ -176,12 +181,14 @@ install.packages("RandomFieldsUtils_0.5.21.tar.gz", configure.args="CXX_FLAGS=-m
 #define HAS_SSE false
 #endif
 
+#define USES_GPU (HAS_GPU && NEED_GPU)
 #define USES_AVX2 (HAS_AVX2 && NEED_AVX2)
 #define USES_AVX (HAS_AVX && NEED_AVX)
 #define USES_SSSE3 (HAS_SSSE3 && NEED_SSSE3)
 #define USES_SSE2 (HAS_SSE2 && NEED_SSE2)
 #define USES_SSE (HAS_SSE && NEED_SSE)
 
+#define MISS_GPU (!HAS_GPU && NEED_GPU)
 #define MISS_AVX2 (!HAS_AVX2 && NEED_AVX2)
 #define MISS_AVX (!HAS_AVX && NEED_AVX)
 #define MISS_ANY_SIMD (MISS_AVX2 || MISS_AVX || !HAS_SSE2)
@@ -195,67 +202,74 @@ install.packages("RandomFieldsUtils_0.5.21.tar.gz", configure.args="CXX_FLAGS=-m
 #define HAS_ALL_RELEVANT (HAS_PARALLEL && !MISS_AVX2 && !MISS_AVX && !MISS_SSSE3 &&  !MISS_SSE2 && !MISS_SSE)
 
 
-#define HAS_QUESTIONS							\
-  HAS_ONE_RELEVANT ? "sees" : "does not see any of",			\
-    HAS_PARALLEL ? "OMP" : "",						\
-    USES_AVX2 ? ", AVX2" : "",						\
-    USES_AVX ? ", AVX" : "",					\
-    USES_SSSE3 ? ", SSSE3" : "",				\
-    USES_SSE2 ? ", SSE2" : "",				\
-    USES_SSE ? ", SSE" : "",					\
-    !HAS_ONE_RELEVANT || HAS_ALL_RELEVANT ? "" : ", but not ",		\
-    !HAS_PARALLEL ? "OMP, " : "",					\
-    MISS_AVX2 ? "AVX2" : "",				\
-    MISS_AVX ? ", AVX" : "",						\
-    MISS_SSSE3 ? ", SSSE3" : "",				\
-    MISS_SSE2 ? ", SSE2" : "",				\
-    MISS_SSE ? ", SSE" : ""
+#define AVX_INFO	  \
+  (HAS_ONE_RELEVANT * 1 + \
+   USES_GPU  *  (1<<1) + \
+   USES_AVX2 * (1<<2) +	  \
+   USES_AVX  * (1<<3) +	  \
+   USES_SSSE3 * (1<<4) +	  \
+   USES_SSE2  * (1<<5) +	  \
+   USES_SSE  * (1<<6) +				     \
+   (HAS_ONE_RELEVANT && !HAS_ALL_RELEVANT) * (1<<10) +  \
+   MISS_GPU  * (1<<11) +				     \
+   MISS_AVX2 * (1<<12)+				     \
+   MISS_AVX  * (1<<13) +				     \
+   MISS_SSSE3 * (1<<14) +				     \
+   MISS_SSE2  * (1<<15) +				     \
+   MISS_SSE * (1<<16))
 
 
-#ifdef WIN32
-#define AttachMessageX(PKG, HINT, AND, OMP)				\
-  "'"#PKG"' %.20s %.10s%.10s%.10s%.10s%.10s%.10s%.10s%.10s%.10s%.10s%.10s%.10s%.10s.%.320s%.120s%.120s", HAS_QUESTIONS, \
-    HINT && MISS_ANY_SIMD ? "\nBy default '"#PKG"' is compiled with flag '-mavx' under your OS.\nIf you are sure that AVX2 is available, consider adding the flag '-march=native'\nto 'PKG_CXXFLAGS' in the file src/Makefile.win and then recompile\n'"#PKG"' "#AND"." : "", \
-    HINT && MISS_AVX2 ?							\
-    "\nOr: try adding flag '-mavx2' to 'PKG_CXXFLAGS'" : "",\
-    HINT && (!HAS_PARALLEL) ? "\nFor OMP alone, try adding the flags -Xpreprocessor -fopenmp -pthread to PKG_LIBS and PKG_CXXFLAGS" : ""
+
+#if defined WIN32
+  #define AVX_NEEDS Inone
+  #define GPU_NEEDS Inone
 #else
-#define AttachMessageX(PKG, HINT, AND, OMP) 				\
-  "'"#PKG"' %.20s %.10s%.10s%.10s%.10s%.10s%.10s%.10s%.10s%.10s%.10s%.10s%.10s%.10s.%.320s%.200s%.200s%.350s%.200s", HAS_QUESTIONS, \
-    HINT && MISS_ANY_SIMD ? "\nWithout appropriate SIMD instruction set, the calculations might be slow.\nConsider recompiling '"#PKG"' "#AND" with flags e.g.,\n\n   install.packages(\""#PKG"\", configure.args=\"CXX_FLAGS='-march=native "#OMP"'\")" : "", \
-    HINT && MISS_AVX2 ?					\
-    "\n\n   install.packages(\""#PKG"\", configure.args=\"CXX_FLAGS='-mavx2 "#OMP"'\")" \
-    : "",								\
-    HINT && MISS_AVX ?					\
-    "\n\n   install.packages(\""#PKG"\", configure.args=\"CXX_FLAGS='-mavx "#OMP"'\")"\
-    : "",								\
-    HINT && MISS_ANY_SIMD ? "\n\nAlternatively,\n    install.packages(\""#PKG"\", configure.args=\"USE_AVX='yes'\") \nOr, consider installing '"#PKG"'\nfrom https://github.com/schlather/"#PKG", i.e.,\n   install.packages(\"devtools\")\n   library(devtools)\n   devtools::install_github(\"schlather/"#PKG"/pkg\")" : "", \
-    HINT && !HAS_PARALLEL ? "\n\nFor OMP alone try\n   install.packages(\""#PKG"\", configure.args=\"CXX_FLAGS='"#OMP"'\")" : ""
+#define AVX_NEEDS					      \
+ (MISS_AVX2 ? Iavx2 : MISS_AVX ? Iavx : MISS_SSSE3 ? Issse3 : \
+   MISS_SSE2 ? Isse2 :  MISS_SSE ? Isse : Inone)
+  #define GPU_NEEDS (MISS_GPU ? Igpu : Inone) 
 #endif
 
-#if defined ownprefixN
-#  if defined DO_PARALLEL
-#    define AttachMessage(PKG, HINT) AttachMessageX(PKG, HINT, , )
-#  else
-#    define AttachMessage(PKG, HINT)  \
-     AttachMessageX(PKG, HINT, ,\
-		    -Xpreprocessor -fopenmp -pthread' LIB_FLAGS='-lomp -pthread)
-#  endif
-#elif defined DO_PARALLEL
-#  define AttachMessage(PKG, HINT)			\
-     AttachMessageX(PKG, HINT, and 'RandomFieldsUtils', )
-#else
-#  define AttachMessage(PKG, HINT)				\
-     AttachMessageX(PKG, HINT, and 'RandomFieldsUtils',		\
-	            -Xpreprocessor -fopenmp -pthread' LIB_FLAGS='-lomp -pthread)
+
+#define EAX 0
+#define EBX 1
+#define ECX 2
+#define EDX 3
+#define sse Available(1, EDX,25)
+#define sse2 Available(1, EDX,26)
+#define sse3 Available(1, ECX,0)
+#define ssse3 Available(1, ECX,9)
+#define sse4a Available(1, ECX,6)
+#define fma3 Available(1, ECX,12)
+#define avx Available(1, ECX,28)
+#define avx2 Available(7, EBX,5)
+#define avx512F Available(7, EBX,16)
+#define avx512PF Available(7, EBX,26)
+#define avx512AR Available(7, EBX,27)
+#define avx512CD Available(7, EBX,28)
+
+#ifdef _WIN32
+#define AVAILABLE							\
+  static inline bool Available(unsigned Blatt, int Register, int Bit) {	\
+    uint32_t s[4];							\
+    __cpuid((int *)s, (int) Blatt);						\
+    return s[Register] & (1 << (Bit));					\
+  }
+#else 
+#define AVAILABLE							\
+static inline bool Available(unsigned Blatt, int Register, int Bit) {	\
+  uint32_t s[4];							\
+  asm volatile								\
+    ("cpuid": "=a"(s[0]), "=b"(s[1]),"=c"(s[2]),"=d"(s[3]):"a"(Blatt),"c"(0)); \
+  return s[Register] & (1 << (Bit));					\
+}
 #endif
-  
-#define ReturnAttachMessage(PKG,HINT) 	\
-  SEXP Ans = PROTECT(allocVector(STRSXP, 1));	\
-  char simd_msg[AttachMessageN];			\
-  SPRINTF(simd_msg, AttachMessage(PKG,HINT)); \
-  SET_STRING_ELT(Ans, 0, mkChar(simd_msg));				\
-  UNPROTECT(1);						\
-  return Ans;
+
+#define WARN_PARALLELXX							\
+  if (OPTIONS_UTILS->basic.warn_parallel && mypid == parentpid) 	\
+    PRINTF("Do not forget to run 'RFoptions(storing=FALSE)' after each call of a parallel command (e.g. from packages 'parallel') that calls a function in 'RandomFields'. (OMP within RandomFields is not affected.) This message can be suppressed by 'RFoptions(warn_parallel=FALSE)'.") /*// ok */ \
+    
+#define WARN_PARALLEL 
+
 
 #endif

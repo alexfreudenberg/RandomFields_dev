@@ -27,6 +27,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "xport_import.h"
 #include "kleinkram.h"
 
+#ifdef _WIN32
+#include <intrin.h>							
+#endif
+
+
+AVAILABLE
+
 
 struct getlist_type{
   int ListNr, i;
@@ -49,21 +56,34 @@ void getpDef(SEXP VARIABLE_IS_NOT_USED  sublist, int VARIABLE_IS_NOT_USED i,
 void setoptions(int i, int j, SEXP el, char name[LEN_OPTIONNAME], bool isList, bool local);
 void getoptions(SEXP sublist, int i, bool local);
 
-#define MAXNLIST 5
+#define MAXNLIST 7
+#define PKGNAMELENGTH 20
 int NList = 0; // originally 1
 int noption_class_list = 0,
-  AllprefixN[MAXNLIST] = {prefixN, 0, 0, 0, 0},
-  *AllallN[MAXNLIST] = {allN, NULL, NULL, NULL, NULL};
-const char  *option_class_list[MAXNLIST] = {prefixlist[1], NULL, NULL, NULL},
-  **Allprefix[MAXNLIST] = {prefixlist, NULL, NULL, NULL, NULL},
-  ***Allall[MAXNLIST] = { all, NULL, NULL, NULL, NULL};
+  AllprefixN[MAXNLIST] = {prefixN, 0, 0, 0, 0, 0, 0},
+  *AllallN[MAXNLIST] = {allN, NULL, NULL, NULL, NULL, NULL, NULL};
+const char  *option_class_list[MAXNLIST] =
+  {prefixlist[1], NULL, NULL, NULL, NULL, NULL},
+  **Allprefix[MAXNLIST] = {prefixlist, NULL, NULL, NULL, NULL, NULL, NULL},
+  ***Allall[MAXNLIST] = { all, NULL, NULL, NULL, NULL, NULL, NULL};
+char pkgnames[MAXNLIST][PKGNAMELENGTH+1] = {"", "", "", "", "", "", ""};
 setoptions_fctn setoption_fct_list[MAXNLIST] = 
-  {setoptions, setpDef, setpDef, setpDef, setpDef};
+  {setoptions, setpDef, setpDef, setpDef, setpDef, setpDef, setpDef};
 getoptions_fctn getoption_fct_list[MAXNLIST] = 
-  {getoptions, getpDef, getpDef, getpDef, getpDef};
-finalsetoptions_fctn finaloption_fct_list[MAXNLIST] = { NULL, NULL, NULL, NULL, NULL };
-deleteoptions_fctn deloption_fct_list[MAXNLIST] = { NULL, NULL, NULL, NULL, NULL };
-
+  {getoptions, getpDef, getpDef, getpDef, getpDef, getpDef, getpDef};
+finalsetoptions_fctn finaloption_fct_list[MAXNLIST] =
+  { NULL, NULL, NULL, NULL, NULL, NULL, NULL };
+deleteoptions_fctn deloption_fct_list[MAXNLIST] =
+  { NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+bool installed [MAXNLIST] = { false, false, false, false, false, false, false};
+install_modes min_avx_needs[MAXNLIST] = // currently only used if == none or not
+  {Inone, Inone, Inone, Inone, Inone, Inone, Inone},
+  min_gpu_needs[MAXNLIST] = // currently not used
+  {Inone, Inone, Inone, Inone, Inone, Inone, Inone};
+Uint avx_infos [MAXNLIST] = {0, 0, 0, 0, 0, 0, 0};
+  
+/* precide information of min_install is not used yet; just whether it is 
+   'none' or not */
 
 void hintVariable(char *name, int warn_unknown_option) {
   static bool printing = true; // da nur Mutterprozess schreiben darf
@@ -194,7 +214,7 @@ SEXP getRFoptions(int ListNr, int i, bool local) {
   PROTECT(sublist = allocVector(VECSXP, elmts));
   PROTECT(subnames = allocVector(STRSXP, elmts));
   for (int k=0; k<elmts; k++) {
-    //    printf("getopt %d k=%d elmnts=%d %d %.50s\n", i, k, elmts, ListNr, Allall[ListNr][i][k]);
+    //   printf("getopt %d k=%d elmnts=%d %d %.50s\n", i, k, elmts, ListNr, Allall[ListNr][i][k]);
     SET_STRING_ELT(subnames, k, mkChar(Allall[ListNr][i][k])); 
   }
   getoption_fct_list[ListNr](sublist, i, local);
@@ -326,6 +346,7 @@ SEXP RFoptions(SEXP options) {
      the comment for PRINTF
   */
 
+  //  printf("CORES RFOP = %d %d\n", CORES, OPTIONS.basic.cores);
   
   options = CDR(options); /* skip 'name' */
 
@@ -433,12 +454,14 @@ SEXP RFoptions(SEXP options) {
  
 
 int PLoffset = 0;
-void attachRFoptions(const char **PKGprefixlist, int N, 
+void attachRFoptions(char *pkgname,
+		     const char **PKGprefixlist, int N, 
 		     const char ***PKGall, int *PKGallN,
 		     setoptions_fctn set, finalsetoptions_fctn final,
-		     getoptions_fctn get,
-		     deleteoptions_fctn del,
-		     int pl_offset, bool basicopt) {
+		     getoptions_fctn get, deleteoptions_fctn del,
+		     int pl_offset, bool basicopt,
+		     install_modes avx_needs, install_modes gpu_needs,
+		     Uint avx_info) {
   for (int ListNr=0; ListNr<NList; ListNr++) {    
     if (AllprefixN[ListNr] == N && 
 	STRCMP(Allprefix[ListNr][0], PKGprefixlist[0]) == 0) {
@@ -451,6 +474,7 @@ void attachRFoptions(const char **PKGprefixlist, int N,
   }
   if (basicopt) option_class_list[noption_class_list++] = PKGprefixlist[0];
   if (NList >= MAXNLIST) BUG;
+  strcopyN(pkgnames[NList], pkgname, PKGNAMELENGTH);
   Allprefix[NList] = PKGprefixlist;
   AllprefixN[NList] = N;
   Allall[NList] = PKGall;
@@ -459,14 +483,35 @@ void attachRFoptions(const char **PKGprefixlist, int N,
   finaloption_fct_list[NList] = final;
   getoption_fct_list[NList] = get;
   deloption_fct_list[NList] = del;
+  // printf("avx_needs %d \n", avx_needs);
+  switch(avx_needs) {
+  case Iavx2 : min_avx_needs[NList] = Iavx2; if (avx2) break;
+  case Iavx : min_avx_needs[NList] = Iavx; if (avx) break;
+  case Issse3 :min_avx_needs[NList] = Issse3; if (ssse3) break;
+  case Isse3 :min_avx_needs[NList] = Isse3; if ( sse3) break;
+  case Isse2 :min_avx_needs[NList] = Isse2; if (sse2) break;
+  case Isse : min_avx_needs[NList] = Isse; if ( sse) break;
+  case Inone : min_avx_needs[NList] = Inone; break;
+  default: BUG;
+  }
+  min_gpu_needs[NList] = gpu_needs;
+  avx_infos[NList] = avx_info;
+  
+  basic_options *gp = &(OPTIONS.basic);
+  assert((OPTIONS.basic.install != Inone) || !gp->installPackages);  
+  if (OPTIONS.basic.install != Inone)
+    gp->installPackages |= min_avx_needs[NList] > Inone;
+  // if only gpu_needs, the system has been recompiled already,
+  // and probably no graphic card has been found
+
+  //  printf("%s %d %d\n", pkgnames[NList],
+  //	 gp->installPackages, min_avx_needs[NList]);
+  
   NList++;
   PLoffset = pl_offset;
-  basic_options *gp = &(OPTIONS.basic);
-  PL = gp->Cprintlevel = gp->Rprintlevel + PLoffset;
+  PL = gp->Cprintlevel = gp->Rprintlevel + PLoffset;  
   CORES = gp->cores;
 }
-
-
 
 void detachRFoptions(const char **PKGprefixlist, int N) {
   int ListNr;
@@ -495,6 +540,9 @@ void detachRFoptions(const char **PKGprefixlist, int N) {
     setoption_fct_list[ListNr - 1] = setoption_fct_list[ListNr];
     finaloption_fct_list[ListNr - 1] = finaloption_fct_list[ListNr];
     getoption_fct_list[ListNr - 1] = getoption_fct_list[ListNr];
+    min_avx_needs[ListNr - 1] = min_avx_needs[ListNr];
+    min_gpu_needs[ListNr - 1] = min_gpu_needs[ListNr];
+    avx_infos[ListNr - 1] = avx_infos[ListNr];
   }
 
   NList--;
@@ -504,6 +552,139 @@ void detachRFoptions(const char **PKGprefixlist, int N) {
 void getUtilsParam(utilsoption_type **global) { 
   // printf("GLO %ld\n", &OPTIONS);
   *global = &OPTIONS; 
+}
+
+
+void resetInstalled() {
+  for (int ListNr=0; ListNr<NList; ListNr++)
+    installed[ListNr] = min_avx_needs[ListNr] == Inone;
+  // printf("installed %d %d\n", installed[0], installed[1]);
+}
+
+
+
+SEXP getPackagesToBeInstalled(SEXP Force) {
+  basic_options *gp = &(OPTIONS.basic);
+  gp->installPackages = false;
+  int zaehler =0;
+  bool force = LOGICAL(Force)[0];
+  //printf("get %d\n", NList);
+  for (int ListNr=0; ListNr<NList; ListNr++)
+    // again, do not consider gpu_needs since likely graphic card is missing
+    zaehler += force || (!installed[ListNr] && min_avx_needs[ListNr] != Inone);
+  //printf("zaehler %d %d\n", zaehler, force);
+  if (zaehler == 0) return R_NilValue; // can happen due to user's call
+  // and by call from .onLoad
+  SEXP str;
+  //
+  PROTECT(str = allocVector(STRSXP, zaehler));
+  zaehler = 0;
+  for (int ListNr=0; ListNr < NList; ListNr++) {
+    //    printf("%d, %d %s %d\n", zaehler, ListNr, pkgnames[ListNr], min_avx_needs[ListNr]);
+    if (force || (!installed[ListNr] && min_avx_needs[ListNr] != Inone)) {
+      //      printf("add %d, %s\n", zaehler, pkgnames[zaehler]);
+      SET_STRING_ELT(str, zaehler++, mkChar(pkgnames[ListNr]));
+      installed[ListNr] = true;
+    }
+  }
+  
+  UNPROTECT(1);
+  return str;
+}
+
+void setCPUs(int *n) {
+  //  printf("set cpus = %d %d %s\n", *n, min_avx_needs[0], pkgnames[0]);
+  basic_options *gp = &(OPTIONS.basic);
+  if (min_avx_needs[0] == Inone) {
+    CORES = gp->cores = *n;
+    //   printf("CORES %d\n", CORES);
+  }
+}
+
+//## 5 8, 0 8
+
+void recompilationNeeded(int *n) {
+  //  printf("set cpus = %d %d %s\n", *n, min_avx_needs[0], pkgnames[0]);
+  *n = (int) false;
+  for (int ListNr=0; ListNr<NList; ListNr++) {
+    //    printf("%d %d %s\n", ListNr, min_avx_needs[ListNr], pkgnames[ListNr]);
+    *n |= min_avx_needs[ListNr] != Inone;
+  }
+}
+
+
+SEXP AVXmessages(SEXP pkgs) {
+  const char OMP[80] =
+    " -Xpreprocessor -fopenmp -pthread' LIB_FLAGS='-lgomp -pthread";
+  if (HAS_PARALLEL) STRCPY((char *) OMP, "");
+   
+  if (length(pkgs) == 0) {
+    install_modes required = Inone;
+    //    printf("AV ok\n");
+    for (int ListNr=0; ListNr<NList; ListNr++)
+      if (min_avx_needs[ListNr] > required) required = min_avx_needs[ListNr];
+    //  printf("AV ok x\n");
+ #ifdef WIN32
+    if (required > Inone) {
+      PRINTF("\n\nBy default the packages are compiled without flag '-mavx' under your OS.\nIf you are sure that AVX2 is available, consider adding the flag '-march=native'\nto 'PKG_CXXFLAGS' in the file src/Makefile.win and then recompile\n'");
+      if (required >= Iavx2)
+	PRINTF("Or: try adding flag '-mavx' or '-mavx2' to 'PKG_CXXFLAGS'\n");
+    }
+    if (!HAS_PARALLEL)
+      PRINTF("For OMP alone, try adding the flags -Xpreprocessor -fopenmp -pthread to PKG_LIBS and PKG_CXXFLAGS");
+#else
+    if (required > Inone) {
+      PRINTF("\n\n   install.packages(<package>, configure.args=\"CXX_FLAGS='-march=native%s'\")\n\n   install.packages(<package>, configure.args=\"CXX_FLAGS='-march=native%s' USE_GPU='yes'\")",OMP, OMP);
+      if (required > Iavx) {
+	PRINTF("\n\n   install.packages(<package>, configure.args=\"CXX_FLAGS='-mavx%s'\")", OMP);
+	if (required > Iavx2) 
+	  PRINTF("\\n   install.packages(<package>, configure.args=\"CXX_FLAGS='-mavx2%s'\")", OMP);
+      }
+    }
+    /*   HINT && MISS_ANY_SIMD ? "\n\nAlternatively,\n    install.packages(\""#PKG"\", configure.args=\"USE_AVX='yes'\") \nOr, consider installing '"#PKG"'\nfrom https://github.com/schlather/"#PKG", i.e.,\n   install.packages(\"devtools\")\n   library(devtools)\n   devtools::install_github(\"schlather/"#PKG"/pkg\")" : "", */
+    if (!HAS_PARALLEL)
+      PRINTF("\n\nFor OMP alone try\n   install.packages(<package>, configure.args=\"CXX_FLAGS='%s'\")", OMP);
+#endif
+  } else {
+    if (!STRCMP("OMP", CHAR(STRING_ELT(pkgs, 0))))
+      return ScalarString(mkChar(OMP));
+    bool all = !STRCMP("all", CHAR(STRING_ELT(pkgs, 0)));
+    int len =  all ? NList : length(pkgs);
+    for (int i=0; i<len; i++) {
+      for (int ListNr=0; ListNr<NList; ListNr++) {
+ 	//	PRINTF("i=%d %d\n",i, ListNr);
+	//	PRINTF("%s\n", pkgnames[ListNr]);
+	//	PRINTF("%s\n", CHAR(STRING_ELT(pkgs, i)));
+	if ((all && i==ListNr) ||
+	    (!all && !STRCMP(pkgnames[ListNr], CHAR(STRING_ELT(pkgs, i))))) {	  
+	  Uint avx_info = avx_infos[ListNr];
+	  PRINTF("%s ", pkgnames[ListNr]);		 
+	  PRINTF("%s ", avx_info & 1 ?  "sees" : "does not see any of");
+	  if (avx_info & 1<<1) PRINTF("GPU, ");
+	  if (avx_info & 1<<2) PRINTF("AVX2, ");
+	  if (avx_info & 1<<3) PRINTF("AVX, ");
+	  if (avx_info & 1<<4) PRINTF("SSSE3, ");
+	  if (avx_info & 1<<5) PRINTF("SSE2, ");
+	  if (avx_info & 1<<6) PRINTF("SSE, ");
+	  if (HAS_PARALLEL) PRINTF("OMP, ");
+ 	  if (avx_info & 1<<10) {
+	    PRINTF(" but not ");
+	    if (avx_info & 1<<11) PRINTF("GPU, ");
+	    if ((avx_info & 1<<12) > 0 && avx2) PRINTF("AVX2, ");
+	    if ((avx_info & 1<<13) > 0 && avx) PRINTF("AVX,");
+	    if ((avx_info & 1<<14) > 0 && ssse3) PRINTF("SSSE3, ");
+	    if ((avx_info & 1<<15) > 0 && sse2) PRINTF("SSE2, ");
+	    if ((avx_info & 1<<16) > 0 && sse) PRINTF("SSE, ");
+	    if (!HAS_PARALLEL) PRINTF("OMP.");
+	  }
+	  PRINTF("\n");
+	}
+      }
+    }
+  }
+  PRINTF("\n"); 
+  
+  return ScalarString(mkChar(OMP));
 }
 
 

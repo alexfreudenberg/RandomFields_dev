@@ -60,7 +60,7 @@ soil <- RFspatialPointsDataFrame(
 )
 dta <- soil["moisture"]
 \dontshow{if (RFoptions()$internal$examples_red) {
-  warning("data have been reduced !")
+  if (RFoptions(getoptions_="messages")$warn_examples_red) warning("data have been reduced !")
   rm(soil) ## muss vorher entfernt werden, sonst funktioniert data(soil)
   ##          nicht sicher
   data(soil)

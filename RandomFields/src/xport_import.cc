@@ -162,11 +162,9 @@ KEY_type *KEYT() {
     neu->visitingpid = 0;
     neu->ok = true;
     if (PIDKEY[mypid % PIDMODULUS] != neu) BUG;
-    KEY_type_NULL(neu);    
-    if (OPTIONS_UTILS->basic.warn_parallel && mypid == parentpid) {
-      PRINTF("Do not forget to run 'RFoptions(storing=FALSE)' after each call of a parallel command (e.g. from packages 'parallel') that calls a function in 'RandomFields'. (OMP within RandomFields is not affected.) This message can be suppressed by 'RFoptions(warn_parallel=FALSE)'."); // ok
-    }
-   return neu;
+    KEY_type_NULL(neu);
+    WARN_PARALLEL;
+    return neu;
   }
   while (p->pid != mypid && p->next != NULL) p = p->next;
   if (p->pid != mypid) {
@@ -231,6 +229,21 @@ void finalizeoptions() {
 void setoptions(int i, int j, SEXP el, char name[LEN_OPTIONNAME], bool isList, bool local);
 void getoptions(SEXP sublist, int i, bool local);
 
+
+#define NEED_GPU false
+#define NEED_AVX2 false
+#define NEED_AVX true
+#define NEED_SSSE3 false
+#define NEED_SSE2 true
+#define NEED_SSE false
+SEXP attachoptions() { // no print commands!!!
+#ifdef ReturnAttachMessage
+  ReturnAttachMessage(RandomFields, true);
+#else
+  return R_NilValue;
+#endif  
+}
+
 void loadoptions() { // no print commands!!!
   for (int i=0; i<PIDMODULUS; i++) PIDKEY[i] = NULL; 
   includeXport();
@@ -242,26 +255,13 @@ void loadoptions() { // no print commands!!!
   global_utils->solve.pivot_mode = PIVOT_AUTO;
   global_utils->solve.pivot_check = Nan;
   // global_utils->basic.warn_unknown_option = WARN_UNKNOWN_OPTION_NONE1;
-  Ext_attachRFoptions(prefixlist, prefixN, all, allN,
+  Ext_attachRFoptions((char *) "RandomFields", prefixlist, prefixN, all, allN,
   		      setoptions, finalizeoptions, getoptions, NULL,
-  		      PLoffset, true);
+  		      PLoffset, true, AVX_NEEDS, GPU_NEEDS, AVX_INFO);
   //  printf("before final\n");
   finalizeoptions();
   //  printf("before init\n"); 
   InitModelList();
-}
-
-SEXP attachoptions() { // no print commands!!!
-#define NEED_AVX2 false
-#define NEED_AVX true
-#define NEED_SSSE3 false
-#define NEED_SSE2 true
-#define NEED_SSE false
-#ifdef ReturnAttachMessage
-  ReturnAttachMessage(RandomFields, true);
-#else
-  return R_NilValue;
-#endif
 }
 
 
@@ -272,8 +272,8 @@ option_type *WhichOptionList(bool local) {
     return &(KT->global);
   }
   return &OPTIONS;
-}
-
+} 
+ 
 void PIDKEY_DELETE() {
   for (int kn=0; kn<PIDMODULUS; kn++) {
     KEY_type *KT = PIDKEY[kn];

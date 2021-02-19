@@ -20,7 +20,9 @@ RMschur(phi, M,  diag, rhored, var, scale, Aniso, proj)
    same size as multivariate model \code{phi}}
  \item{diag,rhored}{alternative way of passing \code{M}:
    \code{diag} is a vector of variances, \code{rhored} is a vector
-   containing the correlations of the lower triangle of the \code{M}.
+   containing the correlations of the lower triangle of \eqn{M},
+   If \code{diag} is not given, a correlation matrix \eqn{M} is assumed,
+   i.e.~\code{rhored=M[lower.tri(M)]}
  }
  \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above

@@ -89,9 +89,7 @@ KEY_type *KEYT() {
     neu->ok = true;
     if (PIDKEY[mypid % PIDMODULUS] != neu) BUG;
     KEY_type_NULL(neu);    
-    if (OPTIONS.basic.warn_parallel && mypid == parentpid) {
-      PRINTF("Do not forget to run 'RFoptions(storing=FALSE)' after each call of a parallel command (e.g. from packages 'parallel') that calls a function in 'RandomFields'. (OMP within RandomFields is not affected.) This message can be suppressed by 'RFoptions(warn_parallel=FALSE)'.\n"); // ok
-    }
+    WARN_PARALLEL;
    return neu;
   }
   while (p->pid != mypid && p->next != NULL) {
@@ -136,31 +134,29 @@ void getoptions(SEXP sublist, int i, bool local);
 void deloptions(bool local);
 
 
-void loadoptions() {
-  for (int i=0; i<PIDMODULUS; i++) PIDKEY[i] = NULL; 
-  pid(&parentpid);
-  attachRFoptions(prefixlist, prefixN,
-		  all, allN,
-  		  setoptions,
-		  NULL, // final
-		  getoptions,
-		  deloptions,
-		  0, true);
-  //finalizeoptions();
-  SetLaMode();
-}
-
-
-    
-SEXP attachoptions() {
+#define NEED_GPU true
 #define NEED_AVX2 true
 #define NEED_AVX true
   //#define NEED_SSE4 true
 #define NEED_SSSE3 false
 #define NEED_SSE2 true
 #define NEED_SSE false
-  ReturnAttachMessage(RandomFieldsUtils, true);  
+void loadoptions() {
+  for (int i=0; i<PIDMODULUS; i++) PIDKEY[i] = NULL; 
+  pid(&parentpid);
+  //  printf("install needd %d\n", NEEDS);
+  attachRFoptions((char *) "RandomFieldsUtils",
+		  prefixlist, prefixN,
+		  all, allN,
+  		  setoptions,
+		  NULL, // final
+		  getoptions,
+		  deloptions,
+		  0, true, AVX_NEEDS, GPU_NEEDS, AVX_INFO);
+  //finalizeoptions();
+  SetLaMode();
 }
+
 
 void PIDKEY_DELETE() {
   for (int kn=0; kn<PIDMODULUS; kn++) {

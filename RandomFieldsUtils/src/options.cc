@@ -41,7 +41,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 const char *basic[basicN] =
   { "printlevel","cPrintlevel", "seed", "cores", "skipchecks",
     "asList", "verbose", "kahanCorrection", "helpinfo", "warn_unknown_option",
-    "la_mode", "warn_parallel"};
+    "la_mode", "warn_parallel", "install", "installPackages"};
 
 const char * solve[solveN] = 
   { "use_spam", "spam_tol", "spam_min_p", "svdtol", "eigen2zero",
@@ -148,7 +148,20 @@ void setoptions(int i, int j, SEXP el, char name[LEN_OPTIONNAME],
       break;
      
     case 11 : gp->warn_parallel = LOGI;  break;
-
+    case 12 : {
+      install_modes old =  gp->install;
+      gp->install = (install_modes )
+	GetName(el, name, INSTALL_NAMES, INSTALL_LAST + 1, Iask);
+      if (gp->install == Inone) gp->installPackages = false;
+      else if (old != gp->install) {
+	gp->installPackages = true;
+	resetInstalled();
+      }
+    }
+      break;
+    case 13 :
+      // gp->installPackages != LOGI;  
+      break;
     default: BUG;
     }}
     break;
@@ -252,7 +265,8 @@ void getoptions(SEXP sublist, int i,
     ADD(ScalarInteger(p->warn_unknown_option));    
     ADD(ScalarString(mkChar(LA_NAMES[p->la_usr])));
     ADD(ScalarLogical(p->warn_parallel));
-
+    ADD(ScalarString(mkChar(INSTALL_NAMES[p->install])));
+     ADD(ScalarLogical(p->installPackages));
   }
     break;
   
@@ -399,7 +413,7 @@ void SetLaMode(la_modes usr_mode) {
     global->solve.tinysize = TINY_SIZE_MAX;
     global->basic.LaMaxTakeIntern = MAXINT;
   } else if (la_mode == LA_AUTO) {  
-    la_mode = GPUavailable ? LA_GPU : LA_R;
+    la_mode = HAS_GPU ? LA_GPU : LA_R;
 #if defined TIME_AVAILABLE
 #  ifdef SCHLATHERS_MACHINE
 #else    

@@ -142,15 +142,12 @@ void set_currentRegister(int cR) {
 
 //int zaehler = 0;
 double *ZERO(int dim, KEY_type *KT) {
-  //   printf("zero enter %lu %lu\n", KT, KT->zerox);
   assert(KT != NULL);
   if (dim > KT->nzero) {
     FREE(KT->zerox); 
     KT->nzero = dim;
     KT->zerox = (double*) CALLOC(KT->nzero, sizeof(double));
   }
-  //  printf("%lu %lu %d %10g\n", KT, KT->zerox, KT->nzero,  KT->zerox[0]);
-  // if (zaehler++) crash();
   return KT->zerox;
 }
 
@@ -194,9 +191,6 @@ bool CheckListmodel(){
     err=NOERROR;
   defn *C = NULL;
   for ( ; nr<currentNrCov; nr++) {
-    //    printf("n=%d(%d) %s\n", nr, currentNrCov, C->name);
-
-    
     C = DefList + nr; // nicht gatternr    
       
     err = 1;
@@ -269,7 +263,6 @@ bool CheckListmodel(){
     err = 9;
     if (nr != COVARIATE && nr != FIXCOV && nr != VARIOGRAM2COV &&
 	nr != VAR2COV_PROC && nr != PREDICT_CALL) {
-      //      printf("%s\n", C->name);
       for (int k=0; k<C->kappas; k++) {
 	if (C->kappatype[k] == VECSXP) {
 	  PRINTF("Martin, see KeyInfo.cc fctn Param to deal with %s\n",C->name);
@@ -303,32 +296,31 @@ bool CheckListmodel(){
     }
   }
 
-  printf("urgent to do: replace CORES by KEYT()->global_utils \n");// OK
-  printf("partially match of location with kriging\n"); // OK
-  printf("!!!! ACHTUNG ! bei Verwendung von TALLOC auf Sextra basierend, darf bis zu END_TALLOC kein cov stehen, oder es muss sichergestellt werden  dass die Fkt mit argument 'cov' nicht auch noch TALLOC aufruft!\n"); // OK
-  printf("fft is currently disabled\n"); //
-  printf("smith model \n"); // OK
-  printf("steht was wichtiges in famillies.cc.spaeter?\n"); // OK
-  printf("eps<1.0 in huetchen.cc!"); // OK
-  printf("rpbernoulli auch fuer prozesse"); // OK
-  printf("brownresnick ueberarbeiten. insb. warum dort TransformLoc aufgerufen wrid"); // OK
-  printf("trafo in variogram.cc nach vorne ziehn, so dass Gitter bleiben wenn nur gestreckt, also statt grid_expand=True ein AVOID"); // OK
-  printf("case !grid, proj<0, separable to be programmed"); // OK
-  printf(" Doku rfsimulateadvanced "); // OK
-  printf(" ength(err.model) > 1 in RFinterpolate R; xRMranef in RMmodelsSpecial.R und kriging.R"); // OK
-  printf("RFgui "); // OK
-  printf(" RMS: quasi projektmatrizen: blockmatrizen"); // OK
- printf(" sequential: 'back' in Sequential fuer whittle (bei nu=markov field)exakt suchen und als Specific implementieren? -- pref umsetzen in whittle etc"); // OK
- printf(" gausslikeli ruft covvario auf und x wird gegebenefalls immer wieder von neuem transformiert"); // OK
- printf(" krigin variance"); // OK
- printf(" USE_OWN_ALG + GAUSS * Chol -> Ux + test in utils.cc ausprobieren; http://www.netlib.org/blas/"); // OK
- printf(" "); // OK
-  //  printf("done\n");
+  PRINTF("urgent to do: replace CORES by KEYT()->global_utils \n");// OK
+  PRINTF("partially match of location with kriging\n"); // OK
+  PRINTF("!!!! ACHTUNG ! bei Verwendung von TALLOC auf Sextra basierend, darf bis zu END_TALLOC kein cov stehen, oder es muss sichergestellt werden  dass die Fkt mit argument 'cov' nicht auch noch TALLOC aufruft!\n"); // OK
+  PRINTF("fft is currently disabled\n"); //
+  PRINTF("smith model \n"); // OK
+  PRINTF("steht was wichtiges in famillies.cc.spaeter?\n"); // OK
+  PRINTF("eps<1.0 in huetchen.cc!"); // OK
+  PRINTF("rpbernoulli auch fuer prozesse"); // OK
+  PRINTF("brownresnick ueberarbeiten. insb. warum dort TransformLoc aufgerufen wrid"); // OK
+  PRINTF("trafo in variogram.cc nach vorne ziehn, so dass Gitter bleiben wenn nur gestreckt, also statt grid_expand=True ein AVOID"); // OK
+  PRINTF("case !grid, proj<0, separable to be programmed"); // OK
+  PRINTF(" Doku rfsimulateadvanced "); // OK
+  PRINTF(" ength(err.model) > 1 in RFinterpolate R; xRMranef in RMmodelsSpecial.R und kriging.R"); // OK
+  PRINTF("RFgui "); // OK
+  PRINTF(" RMS: quasi projektmatrizen: blockmatrizen"); // OK
+ PRINTF(" sequential: 'back' in Sequential fuer whittle (bei nu=markov field)exakt suchen und als Specific implementieren? -- pref umsetzen in whittle etc"); // OK
+ PRINTF(" gausslikeli ruft covvario auf und x wird gegebenefalls immer wieder von neuem transformiert"); // OK
+ PRINTF(" krigin variance"); // OK
+ PRINTF(" USE_OWN_ALG + GAUSS * Chol -> Ux + test in utils.cc ausprobieren; http://www.netlib.org/blas/"); // OK
+ PRINTF(" "); // OK
+  //  PRINTF("done\n");
   return true;
 
 
  ErrorHandling:
-  // if (C != NULL) PRINTF("%s: ", C->nick);
   PRINTF("Fehler in CheckListmodel: err=%d nr=%d (%s) %d\n", err, nr,
 	 DefList[nr].nick, C == NULL);
   
@@ -497,8 +489,6 @@ void InitModelList() {
   //                                        D2 gemacht
   addCov(nonstatS);
   addlogCov(logSstat, nonstat_logS, NULL);
-
-  // printf("%d\n",  currentNrCov); BUG;
 
   pref_type pPowS=  {5, 0, 0,  5, 5, 5, 5, 0, 0, 5, 0, 0, 1, 5};
   //                CE CO CI TBM Sp di sq Ma av n mpp Hy spf any

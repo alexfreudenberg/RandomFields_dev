@@ -36,3 +36,16 @@
  PIVOTSPARSE_MMD 	<- as.integer(1)
  PIVOTSPARSE_RCM 	<- as.integer(2)
 
+ Inone 	<- as.integer(0)
+ Iask 	<- as.integer(1)
+ Iinstall 	<- as.integer(2)
+ Isse 	<- as.integer(3)
+ Isse2 	<- as.integer(4)
+ Isse3 	<- as.integer(5)
+ Issse3 	<- as.integer(6)
+ Iavx 	<- as.integer(7)
+ Iavx2 	<- as.integer(8)
+ Igpu 	<- as.integer(9)
+
+ INSTALL_LAST 	<- as.integer(Igpu)
+

@@ -1090,7 +1090,7 @@ UnifyData <- function(model, x, y=NULL, z=NULL, T=NULL,  grid=NULL, data,
            further.models[[m]] <-
              if (model.dependent.further.models) {
 
-               str(model)
+#               str(model)
                
                nf <- names(further.models)
                PrepareModel2(model=model, params=params, xdim=xdim, x=neu,

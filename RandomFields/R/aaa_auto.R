@@ -37,10 +37,10 @@
  MAXACCEPTED 	<- as.double(1e300)
  MAXVARIANTS 	<- as.integer(6)
  MAXSYSTEMS 	<- as.integer(1)
- MAXDATANAMES 	<- as.integer(5)
 
  MAXMPPVDIM 	<- as.integer(9)
 
+ MAXDATANAMES 	<- as.integer(20)
  MAXCOORDNAMES 	<- as.integer(4)
 
  MAXBINS 	<- as.integer(50)

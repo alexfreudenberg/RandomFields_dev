@@ -556,8 +556,13 @@ void CheckModel(SEXP Model, double *x, double *Y, double *T, double *Ty,
      //		       SUBMODEL_DEP, Any Type))
      //	!= NOERROR) {
 
-      // printf("check cov-errmd '%s'\n", cov->err_msg);
-    
+      //      APMI(cov);
+      // goto ErrorHandling;
+
+      //      printf("check cov-errmd '%s'\n", cov->err_msg);
+
+     
+      
       if (PL >= PL_ERRORS) {
 	PMI(cov); // OK
 	PRINTF("err =%d at '%s'\n", err, KT->error_location);
@@ -568,7 +573,7 @@ void CheckModel(SEXP Model, double *x, double *Y, double *T, double *Ty,
 #endif    
      KT->error_causing_cov = cov;
       goto ErrorHandling;
-    }
+    } 
 
     if (PL >= PL_DETAILS) {
       PMI(cov); // OK
@@ -623,7 +628,7 @@ void CheckModel(SEXP Model, double *x, double *Y, double *T, double *Ty,
     
     model *causing = KT->error_causing_cov;
 
-    ///printf("msg=%s\n", causing==NULL ?  (char*) "<strange failure>" : causing->err_msg);
+    //    printf("msg=%s: %s %d\n", causing==NULL ?  (char*) "<strange failure>" : causing->err_msg, NAME(causing), causing->zaehler);
     
     errorMSG(err, causing==NULL ? (char*)"<strange failure>" : causing->err_msg,
 	     KT, EM);
@@ -633,7 +638,7 @@ void CheckModel(SEXP Model, double *x, double *Y, double *T, double *Ty,
     y = x;
     spatialtotptsy = spatialtotpts;
     zaehler++;
-
+ 
   }// Ende while
 
   // !!!! ACHTUG !!!!
@@ -1367,7 +1372,7 @@ void CMbuild(SEXP Model, int level, model **Cov,
 		  "submodel could not be identified. Please give the names of the parameters and the submodels explicitely. Did you mean '%.50s' ?", 
 		  C->subnames[i]);
 	  MMERR(msg);
-	}
+	} 
       }
 
       if (!subleft[i]) MMERR("submodel given twice"); 

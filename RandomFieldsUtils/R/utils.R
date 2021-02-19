@@ -85,31 +85,6 @@ get.lscpu <- function(pattern) {
 }
 
 
-cpus <- function() {
-  if(Sys.info()["sysname"] == "Windows")
-    as.numeric(system("WMIC CPU Get NumberOfLogicalProcessors"))
-  else if(Sys.info()["sysname"] == "Linux")  get.lscpu("CPU\\(s\\):")
-  else NA
-}
-
-threads <- function() {
-  if(Sys.info()["sysname"] == "Windows") cpus() / cores()
-  else if(Sys.info()["sysname"] == "Linux") get.lscpu("Thread")
-  else NA
-}
-
-cores <- function() {
-  if(Sys.info()["sysname"] == "Windows")
-    as.numeric(system("WMIC CPU Get NumberOfCores"))
-  else if(Sys.info()["sysname"] == "Linux") cpus() / threads()
-  else NA
-}
-
-cores1 <- function() {
-  c <- cores()
-  return(if (is.na(c)) 1 else c)
-}
-
 WaitOthers <- function(file, i, cores=NULL,
                        ideal.processes=ceiling(cores * 1.25),
                        max.processes=ceiling(cores * 1.5),

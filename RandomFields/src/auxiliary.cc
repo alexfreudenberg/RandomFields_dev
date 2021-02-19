@@ -205,7 +205,6 @@ SEXP distInt(SEXP XX, SEXP N, SEXP Genes) {
 #ifdef __cplusplus
 extern "C" {
 #endif
-  //  SEXP vectordist(SEXP V, SEXP DIAG){
 
 SEXP vectordist(SEXP V, SEXP DIAG){
   bool notdiag = !LOGICAL(DIAG)[0];
