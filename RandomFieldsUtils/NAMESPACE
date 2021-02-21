@@ -12,7 +12,7 @@ export(cholx, cholPosDef, Print, solvex, solvePosDef, chol2mv, tcholRHS,
        I0L0, struveH, struveL,
        # besselKx,
        RFoptions, confirm,
-       checkExamples,
+       checkExamples, Dependencies,
        dbinorm,
        LA_AUTO, LA_INTERN, LA_R, LA_GPU,
        PIVOT_NONE, PIVOT_AUTO, PIVOT_DO, PIVOT_IDX

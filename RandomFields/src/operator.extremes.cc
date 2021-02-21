@@ -46,16 +46,14 @@ void extrgauss(double *x, int *info, model *cov, double *v) {
 int check_extrgauss(model *cov) {
   // to do extend to multivariate
   model *next = cov->sub[0];
-  int
-    vdim = VDIM0,
-    err = NOERROR;
-  if (VDIM0 != VDIM1) BUG;
-  if ((err = CHECK_PASSTYPE(next, PosDefType)) !=NOERROR) RETURN_ERR(err);
+  int err = NOERROR;
+  assert(VDIM0 == VDIM1);
+ if ((err = CHECK_PASSTYPE(next, PosDefType)) !=NOERROR) RETURN_ERR(err);
   //  if ((err = CHECK(next, cov->tsdim,  cov->xdimprev, PosDefType,
   //		     OWNDOM(0), OWNISO(0),
   //		     SUBMODEL_DEP, cov->frame)) != NOERROR) RETURN_ERR(err);
   setbackward(cov, next);
-  int maxv = MIN(vdim, MAXMPPVDIM);
+  int maxv = MIN(VDIM0, MAXMPPVDIM);
   for (int i=0; i<maxv; i++) cov->mpp.maxheights[i] = 1.0;
   double v;
   AtZero(next, &v);
@@ -317,14 +315,13 @@ int checkbrownresnick(model *cov) {
   // to do extend to multivariate
   model  
    *next = cov->sub[0];
-  int err, 
-    vdim = VDIM0;
-  if (vdim != VDIM1) BUG;
-
-   if ((err = CHECK_PASSTF(next, VariogramType, SUBMODEL_DEP, 
+  int err;
+ 
+  assert(VDIM0 == VDIM1);
+  if ((err = CHECK_PASSTF(next, VariogramType, SUBMODEL_DEP, 
 			   // hasMaxStableFrame(cov) ? BrMethodType  :
 			   EvaluationType))
-       // if ((err = CHECK(next, dim,  dim, VariogramType, OWNDOM(0), 
+      // if ((err = CHECK(next, dim,  dim, VariogramType, OWNDOM(0), 
        //	   OWNISO(0), SUBMODEL_DEP, 
        //	   hasMaxStableFrame(cov) ? Ma xStableType : EvaluationType))
       != NOERROR) {
@@ -336,7 +333,7 @@ int checkbrownresnick(model *cov) {
 
   if ((err = TaylorBrownresnick(cov)) != NOERROR) RETURN_ERR(err);
 
-  int maxv = MIN(vdim, MAXMPPVDIM);
+  int maxv = MIN(VDIM0, MAXMPPVDIM);
   for (int i=0; i<maxv; i++) cov->mpp.maxheights[i] = 1.0;
   MEMCOPY(cov->pref, DefList[COVNR].pref, sizeof(pref_shorttype)); 
  
@@ -396,16 +393,15 @@ int check_BR2EG(model *cov) {
    *next = cov->sub[0];
   double v, t,
     alpha = 0.0;
-  int err,
-    vdim = VDIM0;
-   if (VDIM0 != VDIM1) BUG;
+  int err;
   
+  assert(VDIM0 == VDIM1);
   if ((err = CHECK_PASSTYPE(next, PosDefType)) !=NOERROR) RETURN_ERR(err);
   //  if ((err = CHECK(next, cov->tsdim, cov->xdimown, PosDefType, 
   //		     OWNDOM(0), OWNISO(0), 
   //		     SCALAR, cov->frame)) != NOERROR)  RETURN_ERR(err);
   setbackward(cov, next);
-  int maxv = MIN(vdim, MAXMPPVDIM);
+  int maxv = MIN(VDIM0, MAXMPPVDIM);
   for (int i=0; i<maxv; i++) cov->mpp.maxheights[i] = 1.0;
   if (next->pref[Nothing] == PREF_NONE) RETURN_ERR(ERRORPREFNONECOV);
 
@@ -446,20 +442,19 @@ int check_BR2BG(model *cov) {
   model *next = cov->sub[0];
   double v, t,
     alpha = 0.0; // to do
-  int err, 
-    vdim = VDIM0;
-  if (VDIM0 != VDIM1) BUG;
+  int err;
+  assert(VDIM0 == VDIM1);
   //  if ((err = CHECK(next, cov->tsdim, cov->xdimown, PosDefType,
   //		     OWNDOM(0), OWNISO(0), 
   //		     SCALAR, cov->frame)) != NOERROR)  RETURN_ERR(err);
-  if ((err = CHECK_PASSTF(next, PosDefType, vdim, //cov->frame
+  if ((err = CHECK_PASSTF(next, PosDefType, VDIM0, //cov->frame
 			  //hasMaxStableFrame(cov) ? BrMethodType :
 			  EvaluationType
 			  )) != NOERROR)
     RETURN_ERR(err);
 
   setbackward(cov, next);
-  int maxv = MIN(vdim, MAXMPPVDIM);
+  int maxv = MIN(VDIM0, MAXMPPVDIM);
   for (int i=0; i<maxv; i++) cov->mpp.maxheights[i] = 1.0;
   if (next->pref[Nothing] == PREF_NONE) RETURN_ERR(ERRORPREFNONECOV);
   

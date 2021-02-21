@@ -226,13 +226,8 @@ ArrangeDevice <- function(graphics, figs, dh=2.8, h.outer=1.2,
 
 StartExample <- function(reduced = TRUE, save.seed=TRUE) {
    if (save.seed) {
-    RFopt <- internalRFoptions()    
-#    L <- list(se ed=RFopt$ba sic$s eed)
- #   if (length(RFopt$coords) != 0) L$coord_system= RFopt$coords$coord_system
- #   assign("RandomFields_options", envir=.RandomFields.env, L)
-    assign("RandomFields_options", envir=.RandomFields.env, RFopt)
+     assign("RandomFields_options", envir=.RandomFields.env, getRFoptions())
   }
-  ## Print(ls( envir=.RandomFields.env), .RandomFields.env)
   if (!interactive() || hasArg("reduced")) {
     n <- 1
     while (n <= 10 && !exists("topic", envir=parent.frame(n=n),
@@ -251,7 +246,6 @@ StartExample <- function(reduced = TRUE, save.seed=TRUE) {
 }
 
 FinalizeExample <- function() {
-  ## print("finalize")
   if (!interactive()) {
     close.screen(all.screens = TRUE)  
     n <- length(dev.list()) - 2 ## otherwise R CMD check complains
@@ -262,15 +256,12 @@ FinalizeExample <- function() {
       }
     }
   }
-#  Print(ls( envir=.RandomFields.env), .RandomFields.env)
-  options <- get("RandomFields_options", envir=.RandomFields.env)
-                                        #
-#  Print(options)
-  options$examples_reduced <- FALSE 
-  RFoptions(list_ = options) ## internalRFoptions geht nicht, da
-  ##                            printlevel, seed auch gesetzt werden muss
-  #do.call("RFoptions", options)
-                                        #print("done finalize")
+  if (exists("RandomFields_options", envir=.RandomFields.env)) {
+    options <- get("RandomFields_options", envir=.RandomFields.env)
+    options$examples_reduced <- FALSE 
+    RFoptions(list_ = options) ## internalRFoptions geht nicht, da
+    ##                            printlevel, seed auch gesetzt werden muss
+  }
   if (exists("RFpar_options_main", envir=.RandomFields.env)) {
     RFpar(main=get("RFpar_options_main", envir=.RandomFields.env))
     rm("RFpar_options_main", envir=.RandomFields.env)

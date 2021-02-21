@@ -99,7 +99,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
   cov->err = errcov_save->err;			\
   cov->base->error_causing_cov = errcov_save;	\
   STRCPY(cov->err_msg, errcov_save->err_msg);	\
-   return cov->err;}
+  return cov->err;} // ok
 
 //
 //#define DEF_SAVE_ERROR

@@ -703,8 +703,8 @@ SEXP Init(SEXP model_reg, SEXP Model, SEXP x, SEXP NA_OK) {
 
   SEXP ans;
   PROTECT (ans = allocVector(INTSXP, 2));
-  INTEGER(ans)[0] = cov->vdim[0];
-  INTEGER(ans)[1] = cov->vdim[1];
+  INTEGER(ans)[0] = VDIM0;
+  INTEGER(ans)[1] = VDIM1;
   UNPROTECT(1);
   //  printf("init end\n");
   return ans;

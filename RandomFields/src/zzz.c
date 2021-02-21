@@ -31,7 +31,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #ifdef __GNUC__
 // https://gcc.gnu.org/onlinedocs/gcc/Diagnostic-Pragmas.html
-// GCC diagnostic ignored "-Wcast-function-type"
+#pragma GCC diagnostic ignored "-Wcast-function-type"
 #endif
 
 #define none 0
@@ -141,12 +141,12 @@ void R_init_RandomFields(DllInfo  *dll) {
 
 #ifdef __GNUC__
 // https://gcc.gnu.org/onlinedocs/gcc/Diagnostic-Pragmas.html
-// GCC diagnostic ignored "-Wcast-function-type"
+#pragma GCC diagnostic ignored "-Wcast-function-type"
 #endif
 void R_unload_RandomFields(DllInfo *info) {
   /* Release resources. */
 }
 #ifdef __GNUC__
-// GCC diagnostic warning "-Wcast-function-type"
+#pragma GCC diagnostic warning "-Wcast-function-type"
 #endif
 

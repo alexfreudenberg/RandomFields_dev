@@ -166,20 +166,19 @@ int checkbinary(model *cov) {
   
   model
     *next = cov->sub[0];
-   int 
-    vdim = VDIM0,
-    err = NOERROR;
-  if (VDIM0 != VDIM1) BUG;
-  kdefault(cov, BINARY_P, 0.0);
+   int err = NOERROR;
+   kdefault(cov, BINARY_P, 0.0);
   //  if (P0(BINARY_P) != 0.0) SERR("currently only threshold=0 is possible");//todo
   kdefault(cov, BINARY_CORR, 1);
   kdefault(cov, BINARY_CENTRED, 1);
-  if ((err = CHECK_PASSTYPE(next, PosDefType )) != NOERROR) RETURN_ERR(err);
+  assert(VDIM0 == VDIM1);
+  if ((err = CHECK_PASSTYPE(next, PosDefType)) != NOERROR) RETURN_ERR(err);
   //  if ((err = CHECK(next, cov->tsdim,  cov->xdimprev, PosDefType,
   //		     OWNDOM(0), OWNISO(0),
   //		     SUBMODEL_DEP, cov->frame)) != NOERROR) RETURN_ERR(err);
   setbackward(cov, next);
-  int maxv = MIN(vdim, MAXMPPVDIM);
+  assert(VDIM0 == VDIM1);
+   int maxv = MIN(VDIM0, MAXMPPVDIM);
   for (int i=0; i<maxv; i++) cov->mpp.maxheights[i] = 1.0;
   //  DEFALUT_INFO(info);
   //  COV(ZERO(next), info, next, &v);
@@ -1026,8 +1025,7 @@ void Mshape(model *cov, double *M1, double *Z,  double *V) {
   int
     nsub = cov->nsub,
     ncol = cov->ncol[M_M],
-    nrow = cov->nrow[M_M],
-    vdim1 = cov->vdim[1];
+    nrow = cov->nrow[M_M];
 
 //  printf("nrow=%d ncol=%d\n", nrow, ncol);
 //      SUBROUTINE DGEMM(TRANSA,TRANSB,M,N,K, ALPHA,A,LDA,B,LDB, BETA,C,LDC)
@@ -1050,7 +1048,7 @@ void Mshape(model *cov, double *M1, double *Z,  double *V) {
       }
     }
   } else {
-    matmult(M1, Z, V, nrow, ncol, vdim1);
+    matmult(M1, Z, V, nrow, ncol, VDIM1);
   }
 }
 
@@ -1540,7 +1538,7 @@ void kappaScatter(int i, model *cov, int *nr, int *nc){
 void Scatter(double *xx, int *info, model *cov, double *v){
   model *next = cov->sub[0];
   int
-    vdim = VDIM0 * VDIM1,
+    vdimSq = VDIM0 * VDIM1,
     tsxdim = OWNTOTALXDIM;
 getStorage(s ,   scatter); 
    int
@@ -1551,11 +1549,11 @@ getStorage(s ,   scatter);
     *inc = s->step;						
   TALLOC_X1(xstart, tsxdim);
   TALLOC_X2(x, tsxdim + 1);
-  TALLOC_X3(value, vdim);
+  TALLOC_X3(value, vdimSq);
   TALLOC_L1(nx, tsxdim);
      
 
-  for (int i=0; i<vdim; i++) v[i]=0.0;
+  for (int i=0; i<vdimSq; i++) v[i]=0.0;
   for (int d=0; d<tsxdim; d++) {
     if (P(SCATTER_STEP)[d] <= 0) {
       BUG;
@@ -1573,9 +1571,8 @@ getStorage(s ,   scatter);
 
   while (true) {
     int d;
-    // printf("Scatter[vdim=%d] =%10g\n", vdim, *x);    
     COV(x, info, next, value);
-    for (int i=0; i<vdim; i++) v[i] += value[i];
+    for (int i=0; i<vdimSq; i++) v[i] += value[i];
     STANDARDINKREMENT_X;
   }
   END_TALLOC_X1;
@@ -1626,7 +1623,7 @@ int checkScatter(model *cov) {
   mpp_options *gp = &(global->mpp);
   int d, nr, err,
     dim = OWNTOTALXDIM,
-    vdim = VDIM0 * VDIM1;
+    vdimSq = VDIM0 * VDIM1;
   assertNoLocY(cov);
   bool grid = Locgrid(cov);
   coord_type gr = Locxgr(cov);
@@ -1673,9 +1670,9 @@ int checkScatter(model *cov) {
   ONCE_EXTRA_STORAGE;
   
   if (cov->Sscatter == NULL || cov->Sscatter->dim != dim ||
-      cov->Sscatter->vdim != vdim) {
+      cov->Sscatter->vdimSq != vdimSq) {
     NEW_STORAGE(scatter);
-    cov->Sscatter->vdim = vdim;
+    cov->Sscatter->vdimSq = vdimSq;
     cov->Sscatter->dim = dim;
     ALLC_NEWINT(Sscatter, min, dim, min);
     ALLC_NEWINT(Sscatter, max, dim, max);
@@ -1994,7 +1991,7 @@ int checkId(model *cov) {
   int err;
 
   VDIM0 = VDIM1 = !PisNULL(ID_VDIM) ? P0INT(ID_VDIM) : SUBMODEL_DEP;
-  if ((err = CHECK_NOPASS(next)) !=NOERROR) RETURN_ERR(err);
+  if ((err = CHECK_NOPASS(next)) != NOERROR) RETURN_ERR(err);
   //  if ((err = CHECK(next, cov->tsdim, cov->xdimown, PosDefType, OWNDOM(0),
   //		     OWNISO(0), cov->vdim, cov->frame)) !=NOERROR) RETURN_ERR(err);
   if (VDIM0 == SUBMODEL_DEP) {
@@ -2070,7 +2067,7 @@ void Exp(double *x, int* info, model *cov, double *v, int n, bool standardize){
   model *next = cov->sub[0];
   int 
     vdim = VDIM0,
-    vdimq = vdim * vdim;
+    vdimSq = vdim * vdim;
   COV(x, info, next, v);
   if (vdim == 1) {
     double
@@ -2089,7 +2086,7 @@ void Exp(double *x, int* info, model *cov, double *v, int n, bool standardize){
   } else {
     BUG;
     // fehlt die multiplication von links und rechts mit C(0)^{-1/2}
-    for (int i=0; i<vdimq; i++) v[i] = EXP(v[i]); 
+    for (int i=0; i<vdimSq; i++) v[i] = EXP(v[i]); 
   }
 }
 
@@ -2103,7 +2100,7 @@ void nonstatExp(double *x, double *y, int *info, model *cov, double *v, int n,
   model *next = cov->sub[0];
   int k,
     vdim = VDIM0,
-    vdimq = vdim * vdim;
+    vdimSq = vdim * vdim;
 
   NONSTATCOV(x, y, info, next, v);
   if (vdim == 1) {
@@ -2125,7 +2122,7 @@ void nonstatExp(double *x, double *y, int *info, model *cov, double *v, int n,
     int i;
     BUG;
     // fehlt die multiplication von links und rechts mit C(0)^{-1/2}
-    for (i=0; i<vdimq; i++) v[i] = EXP(v[i]); 
+    for (i=0; i<vdimSq; i++) v[i] = EXP(v[i]); 
   }
 }
 
@@ -2175,8 +2172,7 @@ void DDExp(double *x, int*info, model *cov, double *v){
 
 int checkExp(model *cov) {
   model *next = cov->sub[0];
-  int err, 
-      vdim = VDIM0;
+  int err;
 
   kdefault(cov, EXP_N, -1);
   kdefault(cov, EXP_STANDARDISED, 1);
@@ -2214,14 +2210,14 @@ int checkExp(model *cov) {
   }
 
   double height= isnowVariogram(next) && !isnowPosDef(next) ? 1.0 : RF_NA;
-  int maxv = MIN(vdim, MAXMPPVDIM);
+  int maxv = MIN(VDIM0, MAXMPPVDIM);
   for (int i=0; i<maxv; i++) cov->mpp.maxheights[i] = height;
 
   cov->monotone = 
     (isBernstein(next)) ? NORMAL_MIXTURE : 
     isMonotone(next->monotone) ? MONOTONE : NOT_MONOTONE;
   cov->logspeed = 0.0;
-  cov->ptwise_definite = isnowPosDef(next) || vdim==1 ? pt_posdef : pt_unknown;
+  cov->ptwise_definite = isnowPosDef(next) || VDIM0==1 ? pt_posdef : pt_unknown;
   RETURN_NOERROR;
 }
 
@@ -2912,9 +2908,8 @@ int initsetparam(model *cov, gen_storage *s){
   getStorage(X ,   set); 
   GETSTOMODEL;
   assert(X != NULL);
-  int err,
-    vdim = VDIM0;
-  if (VDIM0 != VDIM1) BUG;
+  int err;
+  assert(VDIM0 == VDIM1);
 
   if ((err = INIT(next, cov->mpp.moments, s)) != NOERROR)
     RETURN_ERR(err);
@@ -2924,7 +2919,7 @@ int initsetparam(model *cov, gen_storage *s){
   }
 
   TaylorCopy(cov, next);
-  int maxv = MIN(vdim, MAXMPPVDIM);
+  int maxv = MIN(VDIM0, MAXMPPVDIM);
   for (int i=0; i<maxv; i++) cov->mpp.maxheights[i] = next->mpp.maxheights[i];
   RETURN_NOERROR;
 }

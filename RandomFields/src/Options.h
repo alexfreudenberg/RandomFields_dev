@@ -461,7 +461,8 @@ struct messages_options{
     warn_mode, warn_scale, warn_on_grid, warn_ambiguous, 
     note_no_fit, note_aspect_ratio, warn_coord_change, help_color_palette,
     warn_zenit, // not used anymore
-    warn_constant, warn_negvar,  help_onlyvar, 
+    warn_constant, // not used anymore
+    warn_negvar,  help_onlyvar, 
     warn_modus_operandi, warn_singlevariab, help_mle,
     warn_raw_covariates, help_addNA, help_help, warn_examples_reduced;
   usr_bool warn_mathdef  // obsolete?!

@@ -87,9 +87,12 @@ lines(x, dnorm(x, sd=sqrt(0.5)))
 distr <- RRrectangular(RMspheric(), approx=FALSE)
 z <- RFrdistr(distr, n=1000000)
 hist(z, 200, freq=!TRUE)
+
 \dontshow{StartExample(reduced=FALSE, save.seed=FALSE)}
+%save.seed=FALSE, sonst wird alles gespeichertes ueberschrieben!
 x <- seq(-10, 10, 0.01)
 lines(x, 4/3 * RFcov(RMspheric(), x))
+
 \dontshow{FinalizeExample()}}
  
 

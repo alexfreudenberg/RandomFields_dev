@@ -458,7 +458,7 @@ SEXP GetNAPositions(SEXP Model_reg, SEXP Model, SEXP x,
   }
   UNPROTECT(1);
   // PMI0(cov);
-  INTEGER(vdim)[0] = cov->vdim[0];
+  INTEGER(vdim)[0] = VDIM0;
   //  printf("length values = %d %d\n", length(values), NA_INTEGER);
   return ans;
 }

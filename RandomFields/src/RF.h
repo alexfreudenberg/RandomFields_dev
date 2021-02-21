@@ -903,7 +903,7 @@ struct bistable_storage {
 
 
 struct scatter_storage{
-  int vdim, dim, *min, *max;
+  int vdimSq, dim, *min, *max;
   double *step;
 };
 

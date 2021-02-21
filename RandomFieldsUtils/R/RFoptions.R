@@ -54,6 +54,75 @@ ARE <- function(x) if (length(x) > 1) "are" else "is"
 HAVE <- function(x) if (length(x) > 1) "have" else "has"
 
 
+sources <- function(pkgs) {
+
+
+  OneTo <- function(x) if (length(x)==0) NULL else 1:length(x);print("XX")
+  pkgs <- c("RandomFieldsUtils", "miraculix");print("XX")
+  
+  ip <- installed.packages()[pkgs, "Version"]
+  s <- c("local", "cran", "github")
+  newer <- matrix(NA, nrow=length(pkgs), ncol=length(s))
+  where <- matrix("", nrow=length(pkgs), ncol=length(s))
+  dimnames(where) <- dimnames(newer) <-list(pkgs, s)
+
+  type <- "source"
+  repos <- getOption("repos")
+  cranurl <- contrib.url(repos, type)
+  cran <- available.packages(contriburl = cranurl)[pkgs, "Version"]
+
+  giturl <- "https://github.com/schlather/PACKAGES"
+  (git <- grep("tar.gz", fixed=TRUE, readLines(giturl), value = TRUE))
+
+  for (i in 1:length(pkgs)) {
+    path <- ""
+    for (from in c("local", s)) {
+      print(c(from, pkgs[i] ))
+      if (!is.na(newer[i, from]) && !newer[i, from]) next
+      if (from == "cran") {
+        versions <- cran[i] ## length 1
+        url <- cranurl
+      } else {
+        if (from == "local") {
+          if (path == "") f <- dir(pattern=paste0(pkgs[i], "_.*\\.tar\\.gz"))
+          else f <- dir(pattern=paste0(pkgs[i], "_.*\\.tar\\.gz"),path=path)
+          path <- getwd()          
+        } else { ## gitub
+          f <- grep(paste0(pkgs[i],"_"), git, value = TRUE)
+        }
+        if (length(f) > 0) {
+          pkg <- paste0(pkgs[i],"_")
+          versions <- sapply(strsplit(f, "\\.tar\\.gz"), function(x) {
+             s <- strsplit(x[1], pkg)[[1]]
+            s[length(s)]
+            })
+          print(c( from, pkgs[i], versions))
+          old.version <- ip[i]
+        } else versions <- NULL
+        url <- paste0(pkgs[i],"_", versions, ".tar.gz")
+        if (from == "local") url <- paste0(path, "/", url)
+     }
+
+      print(c("url", url))
+      for (j in OneTo(versions)) {
+      
+        cmp <- compareVersion(versions[j], ip[i])
+         if (cmp >= 0) {
+          if (!(newer[i, from] <- cmp > 0)) {
+            where[i, from] <- url
+            break;
+          }
+          if (compareVersion(versions[j], old.version)) {
+            old.version <- versions[j]
+            where[i, from] <- url
+          }
+        }
+      }     
+    }
+  }
+}
+
+
 
 reinstallPackages <- function(ic, basic, install.control) {    
   install <- basic$install
@@ -97,11 +166,25 @@ reinstallPackages <- function(ic, basic, install.control) {
     if (!quiet)
       cat("The package", S(pkgs), " ", paste0("'", pkgs, "'", collapse=", "),
           " ",
-          HAVE(pkgs), " been compiled without appropriate SIMD/AVX2 flags. So, calculations can be slow. If the package",S(pkgs), " ", ARE(pkgs), " recompiled with the necessary flags, the calculations might be faster.\nR should be restarted after re-compiling. The argument 'install.control' might be used to run the re-compilation without asking and to pass further arguments to 'install.packages', e.g., 'RFoptions(install.control=list(repos=NULL, verbose=TRUE))'\nTo avoid this feedback, set 'RFoptions(install=\"none\")' or 'RFoptions(install=\"install\")' before calling any other function of '", pkgs[length(pkgs)],"'.\n", sep="")
-    txt <- paste0("Shall the package", S(pkgs),
-                  " and all further packages based on 'RandomFieldsUtils' be recompiled (Y/n/args) ? ")
-    install.control <- readline(txt)
+          HAVE(pkgs), " been compiled without appropriate SIMD/AVX2 flags. So, calculations can be slow. If the package",S(pkgs), " ", ARE(pkgs), " recompiled with the necessary flags, the calculations might be faster.\nR should be restarted after re-compiling. The argument 'install.control' might be used to run the re-compilation without asking and to pass further arguments to 'install.packages', e.g., 'RFoptions(install.control=list(repos=NULL, verbose=TRUE))'\nTo avoid this feedback, set 'RFoptions(install=\"none\")' or 'RFoptions(install=\"install\")' before calling any other function of '", pkgs[length(pkgs)],"'.\n\n", sep="")
+    repeat {
+      txt <- paste0("Shall '", pkgs[1],
+                    "' and all further packages based on 'RandomFieldsUtils' be recompiled (Y/n/l/h/<args>) ? ")
+     install.control <- readline(txt)
+      if (install.control %in% c("h", "H")) {
+        cat("\nHelp info\n=========\n")
+        cat("Y : installation from CRAN (this might install an older version than current one)\n")
+        cat("n : interruption. No further re-installation in this session possible\n")
+        cat("l : local, i.e., 'repos' is to to 'NULL'.\n")
+        cat("<args>: any arguments for 'install.packages', e.g. 'lib=\"~/\", quite=TRUE'\n")
+        cat("\n")
+      } else break
+    } 
+     
     install <- if (install.control %in% c("n", "N")) "none" else "install"
+    path <- NULL
+    if (install.control %in% c("l", "L"))
+      path <- readline("Give a path to all local tar balls. Press return if none.: ")
     if (nchar(install.control) <= 3)  install.control <-""
     if (verbose) {
       if (install == "none") {
@@ -126,18 +209,17 @@ reinstallPackages <- function(ic, basic, install.control) {
     }
     if (length(install.control$CXX_FLAGS) > 0) {
       CXX_FLAGS <- install.control$CXX_FLAGS
-      install.control$CXX_FLAGS <- NULL
+      install.control$CXX_FLAGS <- omp <- NULL
     }
     idx <- pmatch(names(install.control),names(as.list(args(install.packages))))
     ##        Print(idx, names(install.control), names(install.control))        
     install.control <- install.control[which(!is.na(idx))]
     
-    args <- paste0(args, " CXX_FLAGS='", CXX_FLAGS, " ", if (nchar(omp) > 0) omp
-                 , "'")
+    args <- paste0(args, " CXX_FLAGS='", CXX_FLAGS, " ", omp, "'")
     
     if (verbose) Print(install.control, args) ## OK
     args <- paste0("USE_AVX='yes' TRY_GPU='yes' ", args)
-    for (pkg in pkgs) {
+    for (pkg in pkg.list) {
       z <- Try(do.call("install.packages",
                        c(list(pkgs=pkg, type="source", configure.args=args),
                          install.control)))

@@ -55,7 +55,7 @@ try(ca20.RFmod02 <- NA + ca20.df$altitude + M) ### error ...%## OK
 ca20.RFmod03 <- ~ 1 + area + M ### 
 (ca20.fit03.RF <- RFfit(ca20.RFmod03, data=ca20.df))
 
-\dontshow{FinalizeExample(); RFoptions(coordnames=NULL, varnames=NULL)}
+\dontshow{FinalizeExample()}
 }
 
 \me

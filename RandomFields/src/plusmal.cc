@@ -171,17 +171,17 @@ int checkplusmal(model *cov) {
 
     if (i == 0) {
       setbackward(cov, sub);
-      vdim[0] = cov->vdim[0];
-      vdim[1] = cov->vdim[1];      
+      vdim[0] = VDIM0;
+      vdim[1] = VDIM1;      
     } else {      
       updatepref(cov, sub);
       //      VDIM0 = sub->vdim[0];
       // VDIM1 = sub->vdim[1];
       cov->randomkappa |= sub->randomkappa;
 
-      bool vdim0ok = vdim[0] == cov->vdim[0];
+      bool vdim0ok = vdim[0] == VDIM0;
       if ( !vdim0ok||
-	   (vdim[1] != cov->vdim[1] && vdim[1]!=1 && cov->vdim[1] != 1 &&
+	   (vdim[1] != VDIM1 && vdim[1]!=1 && VDIM1 != 1 &&
 	    !equalsnowTrend(sub) && !equalsnowTrend(cov->sub[0]))) {
 	//	printf("i=%d\n", i);	APMI(cov);
 	SERR4("multivariate dimensionality is different in the submodels (%.50s is %d-variate; %.50s is %d-variate)", NICK(cov->sub[0]), cov->vdim[vdim0ok], NICK(sub), vdim[vdim0ok]);

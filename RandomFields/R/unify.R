@@ -1081,9 +1081,10 @@ UnifyData <- function(model, x, y=NULL, z=NULL, T=NULL,  grid=NULL, data,
      if (is.null(newmodel)) stop("new model not found.", CONTACT)
      
      if (!missing.further) {
-       #Print(coordnames, varnames,extractRepeatedNames(varnames))
+       eRN <- extractRepeatedNames(varnames)     
        setRFoptions(coords.coordnames = coordnames,
-                    coords.varnames = extractRepeatedNames(varnames))
+                    coords.varnames = if (is.matrix(eRN)) colnames(eRN)
+                                      else names(eRN))
        for (m in 1:length(further.models))
          if (!is.null(further.models[[m]]) &&
              !is.numeric(further.models[[m]])) {           

@@ -86,7 +86,7 @@ x1 <- seq(-150,150,step)
 y1 <- seq(-15, 15, step)
 x2 <- seq(-50, 50, step)
 model <- RPtbm(RMexp(scale=10))
-\dontshow{if(RFoptions(getoptions_="internal")$examples_red){if ( RFoptions(getoptions_="messages")){$warn_examples_red)warning("values for x1, y1, x2 changed'");x1<-y1<-x2 <- -1:1}}%ok
+\dontshow{if(RFoptions(getoptions_="internal")$examples_red){if (RFoptions(getoptions_="messages")$warn_examples_red)warning("values for x1, y1, x2 changed'");x1<-y1<-x2 <- -1:1}}%ok
 
 RFoptions(storing=TRUE)
 mar <- c(2.2, 2.2, 0.1, 0.1)

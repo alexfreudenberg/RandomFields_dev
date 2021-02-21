@@ -178,7 +178,7 @@ int checktbmop(model *cov) {
     storedlayer = P0INT(TBMOP_LAYERS);
   bool layers = storedlayer != NA_LOGICAL ? storedlayer :
     OWNXDIM(0) == tbmdim + 1 && equalsSpaceIsotropic(OWN);
-  if(VDIM0 != VDIM1) BUG;
+   assert(VDIM0 == VDIM1);
   if (tbmdim >= fulldim)
      SERR4("'%.50s' (=%d) must be less than '%.50s' (=%d)", 
 	   KNAME(TBMOP_TBMDIM), tbmdim, KNAME(TBMOP_FULLDIM), fulldim);

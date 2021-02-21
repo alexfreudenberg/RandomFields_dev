@@ -420,6 +420,11 @@ int checkWM(model *cov) {
 
 void rangeWM(model *cov, range_type *range){
   bool tcf = isnowTcf(cov) || equalsSphericalIsotropic(OWNISO(0));
+
+  printf("tcf=%d\n", tcf);
+  PMI(cov->calling->calling->calling)
+  if (tcf) APMI(cov->calling->calling);
+  
   if (tcf) {    
     if (PisNULL(WM_NOTINV) || P0INT(WM_NOTINV)) {
       range->min[WM_NU] = 0.0;

@@ -37,4 +37,3 @@ plot(RFsimulate(RPschlather(RMgauss()), x, x))    #  17 sec
 
 
 \keyword{spatial}
-## ){if (

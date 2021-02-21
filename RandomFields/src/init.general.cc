@@ -315,6 +315,7 @@ bool CheckListmodel(){
  PRINTF(" gausslikeli ruft covvario auf und x wird gegebenefalls immer wieder von neuem transformiert"); // OK
  PRINTF(" krigin variance"); // OK
  PRINTF(" USE_OWN_ALG + GAUSS * Chol -> Ux + test in utils.cc ausprobieren; http://www.netlib.org/blas/"); // OK
+ PRINTF(" soil.Rd "); // OK
  PRINTF(" "); // OK
   //  PRINTF("done\n");
   return true;

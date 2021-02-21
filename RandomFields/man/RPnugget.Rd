@@ -79,7 +79,7 @@ RPnugget(phi, boxcox, tol, vdim)
       location. So there is no need to distinguish the spatial nugget
       effect from a measurement error.
       This is the default, see
-      \code{allow_duplicated_locations} in \link{RFoptions}.
+      \code{duplicated_locations} in \link{RFoptions}.
       
       In case several measurement have been taken in single space-time
       locations,
@@ -160,7 +160,7 @@ stopifnot(all.equal(z, as.vector(RFsimulate(model, x=x, y=x, tol=1e-10))))
 #############################################################  
 ## All the following examples refer to repeated measurements
 #############################################################  
-RFoptions(allow_duplicated_locations = TRUE, print=1) 
+RFoptions(duplicated_locations = "regard as repeated", print=1) 
 (xy <- rbind(xy, xy)) ## now, the 4 locations are repeated twice 
 
 ## standard situation: the nugget is interpreted as measurement error:
@@ -184,6 +184,5 @@ model <- RMnugget(proj=1)
 RFcovmatrix(model, x=xy)
 stopifnot(all.equal(zn, as.matrix(RFsimulate(model, x=xy))))
 
-\dontshow{FinalizeExample(); RFoptions(allow_duplicated_locations =
-FALSE) }}
+\dontshow{FinalizeExample()}}
 

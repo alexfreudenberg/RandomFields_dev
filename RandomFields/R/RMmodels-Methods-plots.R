@@ -507,7 +507,8 @@ ConvertRMlist2string <- function(model) {
   par <- paste(names(model)[pari], sep="=",
                sapply(model[pari], function(x) paste0(if (length(x) > 1) "(",
                                                       paste(x, collapse=","),
-                                                      if (length(x) > 1) ")")))
+                                                      if (length(x) > 1) ")")),
+               collapse=", ")
 
   if (model[[1]] %in% RM_S &&
       length(sub) == 1 && ## may be scale or var are given by models

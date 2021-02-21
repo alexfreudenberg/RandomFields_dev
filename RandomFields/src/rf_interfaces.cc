@@ -669,7 +669,7 @@ int struct_simulate(model *cov, model VARIABLE_IS_NOT_USED  **newmodel){
     if (//cov->key ! = NULL && // bei sub= =next waere der falsche frame gesetzt
 	// irgenwie komisch, cov->key abzufragen und check(sub aufzurufen
 	// aufgrund von Beispiel in RTpoisson geloescht
-	(err = CHECK_PASSTF(sub, ProcessType, cov->vdim[0], subframe))
+	(err = CHECK_PASSTF(sub, ProcessType, VDIM0, subframe))
 	!= NOERROR)
       //	(err = CHECK(sub, loc->timespacedim, cov->xdimown, ProcessType,
       //	     cov->domprev, cov->isoprev, cov->vdim,
@@ -2098,7 +2098,7 @@ void FctnIntern(model *cov, model *covVdim, model *genuine, bool ignore_y,
 void FctnExtern(model *cov, model *genuine, bool ignore_y, double *v){
   Types frame = cov->frame;
   int dim =  Loctsdim(cov);
-  if (alloc_fctn(cov, dim, cov->vdim[0] * cov->vdim[1]) != NOERROR)
+  if (alloc_fctn(cov, dim, VDIM0 * VDIM1) != NOERROR)
     OnErrorStop(ERRORMEMORYALLOCATION, cov);
   cov->frame = LikelihoodType; // dummy, just to please next function
   FctnIntern(cov, cov, genuine, ignore_y, v);

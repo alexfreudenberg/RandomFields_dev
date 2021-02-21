@@ -1465,14 +1465,6 @@ int checkS(model *cov) {
 
   if (isnowProcess(cov)) {
     MEMCOPY(cov->pref, PREF_NOTHING, sizeof(pref_shorttype)); 
-  } else {
-    model *calling = cov->calling; 
-    if (calling != NULL && isnowProcess(calling) &&
-	!PisNULL(DPROJ)) {
-      BUG;
-      //for (int i=0; i<Forbidden; i++) cov->pref[i] *= 0.5;
-      //cov->pref[Specific] = 5;
-    }
   }
 
   if (global->coords.coord_system == earth &&

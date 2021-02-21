@@ -584,8 +584,8 @@ PACKAGE_URL=''
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 R_LIB
+CUDA_LINKS
 CUDA_HOME
-MY_OWN_SUBST_A
 MY_OWN_CU_FILES
 MY_OWN_LIBFLAGS
 MY_OWN_CXXFLAGS
@@ -2262,14 +2262,13 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 
 
-
 { $as_echo "$as_me:${as_lineno-$LINENO}: value of USE_AVX is '${USE_AVX}'" >&5
 $as_echo "$as_me: value of USE_AVX is '${USE_AVX}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: value of USE_GPU is '${USE_GPU}'" >&5
 $as_echo "$as_me: value of USE_GPU is '${USE_GPU}'" >&6;}
 AUTOCPPFLAGS=""
 MY_OWN_CU_FILES=""
-
+CUDA_LINKS=""
 if test "${USE_AVX}" ; then
   CPU_FLAGS=""
   # Extract the first word of "lscpu", so it can be a program name with args.
@@ -2461,6 +2460,7 @@ fi
 
 
           MY_OWN_CU_FILES="solve_gpu.o"
+	  CUDA_LINKS=" -L${CUDA_HOME}/lib64 -lcudart -lcublas -lcusolver -lcusolverMg"
        else
         if test "${USE_GPU}" ; then
           as_fn_error $? "No CUDA installation found, install CUDA or specify CUDA_HOME." "$LINENO" 5

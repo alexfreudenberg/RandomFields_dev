@@ -9,7 +9,12 @@ checkExamples(exclude = NULL, include=1:length(.fct.list),
                ask=FALSE, echo=TRUE, halt=FALSE, ignore.all = FALSE,
                path=package, package = "RandomFields", 
                read.rd.files=TRUE, local = FALSE, libpath = NULL,
-               single.runs = FALSE, reset, catcherror=TRUE)}
+               single.runs = FALSE, reset, catcherror=TRUE)
+
+Dependencies(pkgs = all.pkgs, dir = "Dependencies",
+                         install = FALSE, check=TRUE, reverse=FALSE,
+  			 package="RandomFields")
+}
 \arguments{
   \item{exclude, include, ask, echo, halt, ignore.all, path, package,
     read.rd.files,  local, libpath, single.runs, reset, catcherror
@@ -21,6 +26,7 @@ checkExamples(exclude = NULL, include=1:length(.fct.list),
     then ignored. If \code{FALSE} only examples of functions (which are
     searched in the environments) are run.
   }
+  \item{pkgs, dir, check, reverse, package}{internal }
 }
 
 \me

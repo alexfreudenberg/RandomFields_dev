@@ -367,8 +367,7 @@ int checkgaussprocess(model *cov) {
       if (isAnyIsotropic(iso)) maxdom = XONLY;
       else if (isEarth(iso)) mindom = KERNEL; // and not isotropic!
 
-       
-      for (int t=TcfType; t<=weakestType; t++) {
+      for (int t=PosDefType; t<=weakestType; t++) { // not Tcf!!!
 	for (int dom = mindom; dom <=maxdom; dom++) {
 	  // for (int i=equal || equalsKernel((domain_type) dom); i<=1; i++) {
 	  //printf("@@@@@@@@@@ %d t=%d dom=%d %d\n", hasEvaluationFrame(cov), t, dom, iso);
@@ -972,16 +971,18 @@ int checkbinaryprocess(model *cov) {
   assert(next != NULL);
 
   if (key == NULL && !isProcess(next)) {
-    int i,
-      vdimSq = VDIM0 * VDIM1,
-      vdimP1 = VDIM0 + 1;
-    if ((err = checkgaussprocess(cov)) != NOERROR) {
+     if ((err = checkgaussprocess(cov)) != NOERROR) { // CHECK next
       RETURN_ERR(err);
     }
+    int // darf ja nciht vor checkgaussprocess da VDIM* undefiniert
+      vdimSq = VDIM0 * VDIM1,
+      vdimP1 = VDIM0 + 1;
     double *v = NULL; 
     if ((v = (double*) MALLOC(sizeof(double) * vdimSq)) == NULL)
       RETURN_ERR(ERRORMEMORYALLOCATION);
     AtZero(sub, v);
+ 
+    int i;
     for (i=0; i<vdimSq; i+=vdimP1) if (v[i] != 1.0) break;
     FREE(v);
     if (i < vdimSq)
@@ -1045,7 +1046,7 @@ int init_binaryprocess( model *cov, gen_storage *s) {
   int v, w, nmP1, pi,
     npi = cov->nrow[BINARY_THRESHOLD],
     err = NOERROR,
-     vdim = next->vdim[0],
+    vdim = next->vdim[0],
     vdimSq = vdim * vdim,
     vdimP1 = vdim + 1;
   assert(next->vdim[0] == next->vdim[1]);
@@ -1133,18 +1134,18 @@ void do_binaryprocess(model *cov, gen_storage *s){
 
 
 void rangebinaryprocess(model *cov, int k, int i, int j,
-		       simple_range_type *range) {
-   switch(k) {
-   case BINARY_THRESHOLD :
-     range->min = RF_NEGINF;
-     range->max = RF_INF;
-     range->pmin = -3;
-     range->pmax = 3;
-     range->openmin = false;
-     range->openmax = false;
-     break;
-   default : rangegaussprocess(cov, k, i, j, range);
-   }
+			simple_range_type *range) {
+  switch(k) {
+  case BINARY_THRESHOLD :
+    range->min = RF_NEGINF;
+    range->max = RF_INF;
+    range->pmin = -3;
+    range->pmax = 3;
+    range->openmin = false;
+    range->openmax = false;
+    break;
+  default : rangegaussprocess(cov, k, i, j, range);
+  }
 }
 
 
@@ -1163,7 +1164,7 @@ int checkchisqprocess(model *cov) {
     *next = cov->sub[0];
   double *v = NULL;
   int err = NOERROR,
-   xdim = OWNXDIM(0), // could differ from logicaldim in case of distances!
+    xdim = OWNXDIM(0), // could differ from logicaldim in case of distances!
     logicaldim = OWNLOGDIM(0);
   assert((Loc(cov)->distances && xdim==1) || xdim == logicaldim);
 
@@ -1180,7 +1181,7 @@ int checkchisqprocess(model *cov) {
 		       KERNEL, 
 		       CoordinateSystemOf(OWNISO(0)),
 		       SUBMODEL_DEP, GaussMethodType)) != NOERROR) {
-      RETURN_ERR(err);
+	RETURN_ERR(err);
       }
     }
     
@@ -1202,7 +1203,7 @@ int checkchisqprocess(model *cov) {
     for (w=0; w<vdimSq; w+=vdimP1) {
       if (v[w] != 1.0) {
 	FREE(v);
-	SERR("chisq requires a correlation function as submodel.");
+	SERR1("'%.10s' requires a correlation function as submodel.", NICK(cov));
       }
     }
     FREE(v);

@@ -80,8 +80,10 @@ plot(dta, col=colour)
 
 
 ## fit by eye
-gui.model <- RFgui(dta) 
-\dontshow{if (!interactive()) gui.model <- RMexp()} %ok
+##gui.model <- RFgui(dta)
+gui.model <- RMexp(var = 8, scale=20)
+%\dontshow{if (!interactive()) gui.model <- RMexp()} %ok
+
 
 ## fit by ML
 if (interactive()) {
@@ -114,6 +116,15 @@ Print(mean(apply(as.array(cs) <= 24, 3, all))) ## about 40 percent ...
 
 \dontshow{FinalizeExample()}}
 
+%      whittle.var whittle.s whittle.nu nugget.var      cst
+%value   10.717363  12.40961   0.695371 0.00056204 11.74404
+%sd       1.417579       Inf        Inf 0.25628118        -
+%
+%      #variab loglikelihood           AIC 
+%       5.0000     -489.7399      989.4799 
+%Print(mean(apply(as.array(cs) <= 24, 3, all))) ## about 40 percent ...
+
+> plot(fit, method=c("ml", "plain", "sqrt.n
 \keyword{datasets}
 
 

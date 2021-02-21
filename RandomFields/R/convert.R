@@ -105,7 +105,6 @@ ExtractNames <- function(Names, data, dont.add.data, model, RFopt, dots, envir) 
 
       if (length(data.names) > 0) {   
         is.var  <- extractFromNames(RFopt=RFopt, cn=data.names)
-Print(is.var, data.names, RFopt)        
         if (is.matrix(is.var)) {
           is.var.eFN <- is.var
           is.var <- c(is.var)
@@ -198,6 +197,7 @@ Print(is.var, data.names, RFopt)
     factor <- IsFactor(data, data.names, is.var=is.var) ## cannot be x-coord
     is.x <- setdiff(is.x, which(factor))
   }
+
   
   return(list(factor=factor,
               data.names=data.names,
@@ -887,15 +887,13 @@ PrepareModel2 <- function(model, ...,
   ##     names might be used for more than 1 column; only feasible when
   ##     if data are passed by matrix. data.frames don't allow it
   if (length(is.unclear) > 0) names(is.unclear) <- dn
-  
+
   if (length(dn) > 0) {
-    unidn <- unique(dn)
-    simple <-  length(dn) == length(unidn)
     CopyDotsTo(dots, envir, first = TRUE)
-    
     covariates <- data1[, is.unclear, drop=FALSE]
-    for (i in unidn) {## covariate
-      d <- data1[ , if (simple) i else which(i == dn), drop=FALSE]
+    unidn <- unique(dn)
+    for (i in unidn) {## covariate      
+      d <- data1[ , which(i == dn), drop=FALSE]
       d <- if (is.factor(d[[1]])) d[[1]] else as.matrix(d)
 
       if (dont.add.data) assign(i, envir=envir, d)
@@ -928,7 +926,7 @@ PrepareModel2 <- function(model, ...,
         } else if (!is.character(dot.covariate))
           stop("unexpected value in creating the model", CONTACT)
       }
-    }
+   }
     for (i in data.names) assign(i, i, envir=envirDummies)
     for (i in link.coord) assign(i, i, envir=envirDummies)
 
@@ -937,16 +935,13 @@ PrepareModel2 <- function(model, ...,
     ##                                     und komplett extra behandelt wird  
     if (!dont.add.data) is.unclear <- setdiff(is.unclear, is.covariate)## mues-
     ##                                                     sen alle erkannt sein
-    if (FALSE && length(is.unclear) > 0) { ## jetzt ohne factors und
-      ##                                       nur bei dont.add.data
-      ## 12.3.21 unklar wieso diese Zeilen
-      envirTest <- new.env(parent=.GlobalEnv)
-      for (i in is.unclear) {
-        n <-data.names[i]
-        m <- get(n, envir=envir)
-        ## m[min durcg data1[ , if (simple) i else which(i == dn), drop=FALSE]
-        ##ersetzen
-        assign(n, envir=envirTest, m[min(2, nrow(m)), , drop=FALSE]) # to get
+    if (length(is.unclear) > 0) { ## jetzt ohne factors und ohne is.covariate
+      envirTest <- new.env(parent=.GlobalEnv) ## wird ueberall unten gebraucht
+      dn <- data.names[is.unclear] 
+      unidn <- unique(dn)
+      for (i in unidn) {## covariate
+        d <- as.matrix(data1[ , which(i == dn), drop=FALSE])
+        assign(i, envir=envirTest, d[min(2, nrow(d)), , drop=FALSE]) # to get
         ## testing fast
       }
     }
@@ -973,10 +968,9 @@ PrepareModel2 <- function(model, ...,
 
   
   unclear.names <- data.names[is.unclear]
-
-  
-  M <- parseModel(model=model, envir=envir, envirDummies = envirDummies, add.na=add.na,
-                  unclear=unclear.names, envirTest=envirTest)
+ 
+  M <- parseModel(model=model, envir=envir, envirDummies = envirDummies,
+                  add.na=add.na, unclear=unclear.names, envirTest=envirTest)
   class(M$model) <- CLASS_CLIST
 
   M$is.x <- is.x
@@ -1074,7 +1068,7 @@ covariate.names <- function(m) {
 
 parseModel <- function(model, envir, envirDummies, add.na=NULL, 
                        unclear=NULL, envirTest=NULL) {
-                                        #
+  ##  Print(ls(envir=envir), get("altitude", envir=envir))
   ##  Print("parse", model, is.list(model),  is(model, CLASS_CLIST), isS4(model))
  
   if (!isS4(model) && is(model, CLASS_CLIST)) {
@@ -1139,7 +1133,8 @@ parseModel <- function(model, envir, envirDummies, add.na=NULL,
     ##    Print(k, S)
     C <- eval(parse(text=S), envir=envir) ## could be a function of the data col
 
-    ## Print(S, C, is.factor(C))
+
+    ##    Print(S, C, is.factor(C))
     
     if (is.factor(C)) {
       lev <- levels(C)     

@@ -309,8 +309,7 @@ bool allowedDnugget(model *cov) {
    cov->Snugget->spatialnugget = SpatialNugget(cov);
   }
   GETSTORAGE(S, cov, nugget);
-  assert(S->spatialnugget);
-   
+ 
   bool *D = cov->allowedD;
   for (int i=FIRST_DOMAIN; i<LAST_DOMAINUSER; D[i++]=false);
   D[S->spatialnugget ? XONLY : KERNEL] = true;

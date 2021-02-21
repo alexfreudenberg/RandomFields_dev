@@ -241,10 +241,12 @@ int checkconstant(model *cov) {
   int err; // anzahl listen elemente
   option_type *global = &(cov->base->global);
 
-  if (global->messages.warn_constant) {
+  /*
+    if (global->messages.warn_constant) {
     global->messages.warn_constant = false; // OK
        warning("NOTE that the definition of 'RMconstant' has changed in version 3.0.61. Maybe  'RMfixcov' is the model your are looking for. This note appears only once per session and can be fully suppressed by RFoptions(warn_constant = false)");
   }
+  */
  
   VDIM0 = VDIM1 = cov->nrow[CONSTANT_M];
   if (VDIM0 != VDIM1)  RETURN_ERR(ERROR_MATRIX_SQUARE);

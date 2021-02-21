@@ -112,8 +112,7 @@ extractRepeatedNames <- function(cn)  {
                substr(cnlow, 1, 4) == "value" |
                substr(cnlow, 1, 8) == "variable")
   ##  Print(cn, cnlow , cn[ans], ans, strsplit(cn[ans], ".", fixed=TRUE))
-
-  Print(ncol, cnlow, ans)
+  ##Print(ncol, cnlow, ans)
   
   if (length(ans) == 0) return(NULL)
   s <- strsplit(cn[ans], ".", fixed=TRUE)
@@ -125,7 +124,7 @@ extractRepeatedNames <- function(cn)  {
         dim(ans) <- c(size, rep)
         rownames(ans) <- cn[1 : size]
       }
-    }
+    } else names(ans) <- cn(ans)
   }
   return(ans)
 }
@@ -170,7 +169,6 @@ extractFromNames <- function(what="var", RFopt, cn, ncol=length(cn)) {
     }
     if (length(ans) == 0) {
       ans <- extractRepeatedNames(cn)
-      Print(ans)
       if (length(ans) == 0) return(NULL)      
     }
   } else { ## "coord"

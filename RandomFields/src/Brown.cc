@@ -1648,7 +1648,7 @@ int struct_brnormed(model *cov, model **newmodel) {
   if ((err = CHECK(STOMODEL->vario->sub[0], 1, 1, VariogramType, XONLY, 
 		   ISOTROPIC, 1, EvaluationType)) != NOERROR) goto ErrorHandling;
 
-  if ((err = CHECK_PASSTF(cov->key, ProcessType, cov->vdim[0],
+  if ((err = CHECK_PASSTF(cov->key, ProcessType, VDIM0,
 			  GaussMethodType)) != NOERROR)
     goto ErrorHandling;  
   if ((err = STRUCT(cov->key, NULL)) > NOERROR) goto ErrorHandling;
